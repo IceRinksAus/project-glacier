@@ -1,0 +1,466 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+  users  UserOrganization[]
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String
+  passwordHash String?
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventRoles    EventUser[]
+  organizations UserOrganization[]
+}
+
+model UserOrganization {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   @default("MEMBER")
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("DRAFT")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  team EventUser[]
+
+  ticketTypes TicketType[]
+
+  sessions Session[]
+
+  categories Category[]
+  products   Product[]
+
+  bookings Booking[]
+
+  rules Rule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id String @id @default(cuid())
+
+  name String
+
+  startDate DateTime
+  endDate   DateTime
+
+  capacity Int
+
+  status String @default("DRAFT")
+
+  salesStart DateTime?
+  salesEnd   DateTime?
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  bookings Booking[]
+
+  sessionProducts SessionProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String
+  description String?
+
+  status    String @default("ACTIVE")
+  sortOrder Int    @default(0)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, slug])
+  @@index([eventId])
+}
+
+model Product {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String
+  description String?
+
+  productType String @default("ADMISSION")
+
+  /**
+   * Base price used when a product has no variants.
+   * It may also act as the default price for its variants.
+   */
+  price Float
+
+  gstRate Float @default(10)
+
+  /**
+   * These fields support simple products that do not need variants.
+   */
+  sku      String?
+  barcode  String?
+  imageUrl String?
+
+  status String @default("DRAFT")
+
+  inventoryTracked  Boolean @default(false)
+  inventoryQuantity Int?
+
+  capacityControlled Boolean @default(false)
+  capacity           Int?
+
+  requiresSession Boolean @default(false)
+
+  availableOnline Boolean @default(true)
+  availablePos    Boolean @default(true)
+
+  minQuantity Int  @default(0)
+  maxQuantity Int?
+
+  sortOrder Int @default(0)
+
+  salesStart DateTime?
+  salesEnd   DateTime?
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+
+  variants ProductVariant[]
+
+  sessionProducts SessionProduct[]
+
+  bookingProducts BookingProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, slug])
+  @@unique([eventId, sku])
+  @@index([eventId])
+  @@index([categoryId])
+}
+
+model ProductVariant {
+  id String @id @default(cuid())
+
+  name String
+  slug String
+
+  description String?
+
+  /**
+   * A variant may override the product's base price.
+   * When null, Glacier will use Product.price.
+   */
+  priceOverride Float?
+
+  sku      String?
+  barcode  String?
+  imageUrl String?
+
+  status String @default("ACTIVE")
+
+  inventoryTracked  Boolean @default(false)
+  inventoryQuantity Int?
+
+  availableOnline Boolean @default(true)
+  availablePos    Boolean @default(true)
+
+  sortOrder Int @default(0)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, slug])
+  @@unique([productId, sku])
+  @@index([productId])
+}
+
+model SessionProduct {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  active Boolean @default(true)
+
+  priceOverride Float?
+
+  capacityOverride Int?
+
+  salesStart DateTime?
+  salesEnd   DateTime?
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, productId])
+  @@index([sessionId])
+  @@index([productId])
+}
+
+model TicketType {
+  id String @id @default(cuid())
+
+  name String
+
+  description String?
+
+  price Float
+
+  capacity Int
+
+  active Boolean @default(true)
+
+  saleStart DateTime?
+  saleEnd   DateTime?
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  bookingItems        BookingItem[]
+  bookingParticipants BookingParticipant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id String @id @default(cuid())
+
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id String @id @default(cuid())
+
+  bookingNumber String @unique
+
+  status String @default("PENDING")
+
+  total Float
+
+  flexibleBooking Boolean @default(false)
+
+  customerId String
+  eventId    String
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  event Event @relation(fields: [eventId], references: [id])
+
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id])
+
+  items        BookingItem[]
+  participants BookingParticipant[]
+  products     BookingProduct[]
+  tickets      Ticket[]
+
+  reservedUntil DateTime?
+  confirmedAt   DateTime?
+  paidAt        DateTime?
+  expiredAt     DateTime?
+
+  paymentStatus    String   @default("UNPAID")
+  paymentReference String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model BookingItem {
+  id String @id @default(cuid())
+
+  bookingId String
+
+  ticketTypeId String
+
+  quantity Int
+
+  unitPrice Float
+
+  totalPrice Float
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  ticketType TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model BookingParticipant {
+  id String @id @default(cuid())
+
+  firstName String
+  lastName  String?
+
+  age Int
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+
+  ticket Ticket?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([ticketTypeId])
+}
+
+model BookingProduct {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity  Int
+  unitPrice Decimal
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([productId])
+}
+
+model EventUser {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  role      String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
+model Ticket {
+  id String @id @default(cuid())
+
+  ticketNumber String @unique
+  secureToken  String @unique
+
+  status TicketStatus @default(ACTIVE)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  participantId String             @unique
+  participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  issuedAt    DateTime  @default(now())
+  checkedInAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rule {
+  id String @id @default(cuid())
+
+  name        String
+  slug        String
+  description String?
+
+  ruleType String
+  scope    String @default("BOOKING")
+
+  status   String @default("ACTIVE")
+  priority Int    @default(0)
+
+  conditions Json
+  actions    Json
+
+  message String?
+
+  stopProcessing Boolean @default(false)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, slug])
+  @@index([eventId])
+  @@index([eventId, status, priority])
+}
+
+enum TicketStatus {
+  ACTIVE
+  SCANNED
+  CANCELLED
+}

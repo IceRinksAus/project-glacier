@@ -1,0 +1,11 @@
+{
+  "name": "project-glacier",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The operating system for seasonal attractions",
+  "scripts": {
+    "dev": "Start development",
+    "build": "Build production applications",
+    "test": "Run tests"
+  }
+}
