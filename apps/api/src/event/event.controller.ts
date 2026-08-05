@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -46,6 +47,20 @@ export class EventController {
   ) {
     return this.eventService.create(user.organizationId, data);
   }
+
+@Roles('OWNER')
+@Patch(':id/status')
+updateStatus(
+  @Param('id') id: string,
+  @CurrentUser() user: AuthenticatedUser,
+  @Body() data: { status: string },
+) {
+  return this.eventService.updateStatus(
+    id,
+    user.organizationId,
+    data.status,
+  );
+}  
 
   @Roles('OWNER')
   @Delete(':id')

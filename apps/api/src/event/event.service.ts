@@ -40,6 +40,40 @@ export class EventService {
     });
   }
 
+  async updateStatus(
+    id: string,
+    organizationId: string,
+    status: string,
+  ) {
+    const allowedStatuses = ['DRAFT', 'ACTIVE', 'INACTIVE'];
+
+    if (!allowedStatuses.includes(status)) {
+      throw new BadRequestException(
+        `Event status must be one of: ${allowedStatuses.join(', ')}`,
+      );
+    }
+
+    const event = await this.prisma.event.findFirst({
+      where: {
+        id,
+        organizationId,
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    return this.prisma.event.update({
+      where: {
+        id: event.id,
+      },
+      data: {
+        status,
+      },
+    });
+  }
+
   async remove(id: string, organizationId: string) {
     const event = await this.prisma.event.findFirst({
       where: {

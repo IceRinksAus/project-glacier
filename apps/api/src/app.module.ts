@@ -19,6 +19,8 @@ import { RuleModule } from './rule/rule.module';
 import { PaymentModule } from './payment/payment.module';
 import { TicketModule } from './ticket/ticket.module';
 import { AuthModule } from './auth/auth.module';
+import { BookingValidationModule } from './booking-validation/booking-validation.module';
+import { BookingExpiryModule } from './booking-expiry/booking-expiry.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { AuthModule } from './auth/auth.module';
     PaymentModule,
     TicketModule,
     AuthModule,
+    BookingValidationModule,
+    BookingExpiryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

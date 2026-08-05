@@ -3,16 +3,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+
+import { BookingValidationService } from '../booking-validation/booking-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateBookingDto } from './dto/create-booking.dto';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
+
+import { CreateBookingDto } from './dto/create-booking.dto';
 
 @Injectable()
 export class BookingService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly ruleEvaluationService: RuleEvaluationService,
-  ) {}
+ constructor(
+  private readonly prisma: PrismaService,
+  private readonly ruleEvaluationService: RuleEvaluationService,
+  private readonly bookingValidationService: BookingValidationService,
+) {}
 
   findAll() {
     return this.prisma.booking.findMany({
@@ -77,6 +81,7 @@ export class BookingService {
   }
 
   async create(data: CreateBookingDto) {
+    await this.bookingValidationService.validateBooking(data);
     if (!data.participants || data.participants.length === 0) {
       throw new BadRequestException(
         'A booking must contain at least one participant',
@@ -270,17 +275,23 @@ export class BookingService {
      */
     const requestedSessionQuantity = data.participants.length;
 
-    const bookedQuantity =
-      await this.prisma.bookingItem.aggregate({
-        where: {
-          booking: {
-            sessionId: data.sessionId,
-          },
+const bookedQuantity =
+  await this.prisma.bookingItem.aggregate({
+    where: {
+      booking: {
+        sessionId: data.sessionId,
+        status: {
+          in: [
+            'RESERVED',
+            'CONFIRMED',
+          ],
         },
-        _sum: {
-          quantity: true,
-        },
-      });
+      },
+    },
+    _sum: {
+      quantity: true,
+    },
+  });
 
     const quantityAlreadyBooked =
       bookedQuantity._sum.quantity ?? 0;
