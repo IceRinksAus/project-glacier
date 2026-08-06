@@ -93,13 +93,21 @@ export class SessionService {
     });
   }
 
-  findAll(organizationId: string) {
-    return this.prisma.session.findMany({
-      where: {
-        event: {
-          organizationId,
-        },
+findAll(
+  organizationId: string,
+  eventId?: string,
+) {
+  return this.prisma.session.findMany({
+    where: {
+      ...(eventId
+        ? {
+            eventId,
+          }
+        : {}),
+      event: {
+        organizationId,
       },
+    },
       include: {
         event: true,
         _count: {

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -42,10 +43,16 @@ export class SessionController {
     );
   }
 
-  @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser) {
-    return this.sessionService.findAll(user.organizationId);
-  }
+ @Get()
+findAll(
+  @CurrentUser() user: AuthenticatedUser,
+  @Query('eventId') eventId?: string,
+) {
+  return this.sessionService.findAll(
+    user.organizationId,
+    eventId,
+  );
+}
 
   @Get(':id')
   findOne(

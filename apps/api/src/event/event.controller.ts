@@ -32,6 +32,17 @@ export class EventController {
     return this.eventService.findAll(user.organizationId);
   }
 
+  @Get(':id')
+findOne(
+  @Param('id') id: string,
+  @CurrentUser() user: AuthenticatedUser,
+) {
+  return this.eventService.findOne(
+    id,
+    user.organizationId,
+  );
+}
+
   @Roles('OWNER')
   @Post()
   create(

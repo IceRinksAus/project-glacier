@@ -18,6 +18,21 @@ export class EventService {
     });
   }
 
+  async findOne(id: string, organizationId: string) {
+  const event = await this.prisma.event.findFirst({
+    where: {
+      id,
+      organizationId,
+    },
+  });
+
+  if (!event) {
+    throw new NotFoundException('Event not found');
+  }
+
+  return event;
+}
+
   create(
     organizationId: string,
     data: {

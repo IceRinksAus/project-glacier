@@ -18,3 +18,34 @@ JWT contains user ID, email, role and organisation ID. Controllers extract authe
 
 ## Principle
 The backend is authoritative for permissions, tenant scope, booking rules, capacity, ticket state and payments.
+
+Booking API
+        │
+        ▼
+BookingValidationService
+        │
+        ▼
+Rule Engine
+        │
+        ▼
+Booking Service
+        │
+        ▼
+Reservation Created
+        │
+        ▼
+BookingExpiryService (Scheduler)
+
+
+
+Organisation
+    ↓
+Event
+    ↓
+Session
+    ↓
+Ticket Type
+    ↓
+Booking
+    ↓
+Customer
