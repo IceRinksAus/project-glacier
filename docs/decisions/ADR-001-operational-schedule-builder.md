@@ -8,18 +8,127 @@ Operational Schedule Builder
 
 Accepted
 
+## Context
+
+Session-based Events may contain many repeated operating periods.
+
+Creating every Session individually produces repetitive setup work and increases the risk of inconsistent dates, times and capacities.
+
+Glacier requires a reusable scheduling model that supports both recurring operations and irregular Event dates.
+
 ## Decision
 
-Glacier will generate session occurrences from operational schedules rather than requiring organisers to create every session manually.
+Glacier will generate Session occurrences from Operational Schedules rather than requiring organisers to create every Session manually.
 
-Generated sessions remain independent records.
+Generated Sessions remain independent records.
 
-The Event Wizard and Event Workspace both use the same scheduling engine.
+The Event Wizard and Event Workspace use the same scheduling engine.
+
+The Operational Schedule Builder supports four patterns:
+
+- DAILY
+- WEEKDAY_WEEKEND
+- SELECTED_DAYS
+- MANUAL
+
+## Schedule Definitions
+
+### DAILY
+
+One timetable applies to every date within the Operational Schedule range.
+
+### WEEKDAY_WEEKEND
+
+One timetable applies Monday through Friday.
+
+A separate timetable applies Saturday and Sunday.
+
+### SELECTED_DAYS
+
+One timetable applies only to explicitly selected weekdays.
+
+### MANUAL
+
+Exact dates are defined individually.
+
+Each manual date may contain its own timetable.
+
+## Timetable Entries
+
+Timetable entries may be:
+
+- BOOKABLE
+- OPERATIONAL
+
+BOOKABLE entries generate Session records.
+
+OPERATIONAL entries remain part of the Operational Schedule definition and do not create bookable Session records.
+
+Examples include:
+
+- Ice resurfacing
+- Maintenance
+- Operational closures
+
+## Generated Sessions
+
+Generated Sessions retain:
+
+- Event relationship
+- Operational Schedule relationship
+- Schedule entry identifier
+- Start timestamp
+- End timestamp
+- Capacity
+- Status
+
+Generated Sessions remain independent records after creation.
+
+## Timezone Handling
+
+Timetable times represent Event-local operating times.
+
+Operational Schedule generation uses the Event timezone to convert local date and time values into UTC before Session persistence.
+
+See:
+
+`ADR-005-event-timezone-handling.md`
+
+## Conflict Handling
+
+Glacier checks proposed generated Sessions against existing Sessions for the same Event.
+
+Overlapping Session ranges are rejected.
+
+Schedule creation and Session creation occur inside a database transaction.
+
+If a conflict exists, no partial Operational Schedule or Session data is persisted.
+
+## Review
+
+The frontend presents a Review step before generation.
+
+The Review step calculates:
+
+- Operating days
+- Bookable Sessions
+- Operational blocks
+- Admission capacity
+
+Pattern-specific details are shown before generation.
 
 ## Consequences
 
-Reduced setup time.
+Reduced Event setup time.
 
-Single implementation.
+Consistent scheduling behaviour.
 
-Supports future recurring editing.
+Single scheduling implementation.
+
+Reusable scheduling engine.
+
+Supports recurring and manual Event operations.
+
+Supports future schedule editing and exception workflows.
+
+Generated Sessions can later be managed independently of the schedule definition.
