@@ -1,6 +1,6 @@
 Organisation
 
-Tenant that owns events.
+Tenant that owns Events.
 
 --------------------------------
 
@@ -10,27 +10,105 @@ Operational management area.
 
 --------------------------------
 
+Event Workspace
+
+Operational centre for an individual Event.
+
+--------------------------------
+
 Wizard
 
 Guided setup process.
 
 --------------------------------
 
+Event Timezone
+
+IANA timezone representing the local operating timezone of an Event.
+
+Example:
+
+Australia/Melbourne
+
+--------------------------------
+
 Session
 
-A scheduled operational period.
+A scheduled bookable operational period.
 
 --------------------------------
 
 Operational Schedule
 
-Template used to generate Sessions.
+Definition used to generate Sessions from an Event operating pattern.
+
+--------------------------------
+
+Schedule Pattern
+
+Rule describing how an Operational Schedule applies across dates.
+
+Supported patterns:
+
+DAILY
+
+WEEKDAY_WEEKEND
+
+SELECTED_DAYS
+
+MANUAL
+
+--------------------------------
+
+Timetable Entry
+
+Activity definition contained within an Operational Schedule timetable.
+
+--------------------------------
+
+Bookable Entry
+
+Timetable entry that generates a Session record.
+
+--------------------------------
+
+Operational Block
+
+Non-bookable timetable entry representing operational activity such as resurfacing or maintenance.
+
+Operational blocks remain part of the Operational Schedule and do not generate Session records.
 
 --------------------------------
 
 Occurrence
 
-Generated Session record.
+Generated Session record created from an Operational Schedule.
+
+--------------------------------
+
+Selected Days
+
+Schedule pattern where a timetable applies only to selected weekdays.
+
+--------------------------------
+
+Manual Schedule
+
+Schedule pattern where exact dates are defined individually and each date may have its own timetable.
+
+--------------------------------
+
+Schedule Entry ID
+
+Identifier linking a generated Session back to the timetable entry that created it.
+
+--------------------------------
+
+UTC
+
+Canonical timezone used for timestamp persistence.
+
+Event-local schedule times are converted to UTC before storage.
 
 --------------------------------
 

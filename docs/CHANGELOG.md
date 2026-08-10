@@ -1,5 +1,59 @@
 # Changelog
 
+# Sprint 12 – Operational Scheduling
+
+## Added
+
+- Operational Schedule Builder
+- Three-step schedule creation workflow
+- Daily schedule generation
+- Weekday / weekend schedule generation
+- Selected weekday schedule generation
+- Manual exact-date schedule generation
+- Operational timetable blocks
+- Schedule review calculations
+- Generated Session linkage to Operational Schedules
+- Schedule entry identifiers on generated Sessions
+- Existing Session conflict detection
+- Transactional schedule generation
+- Event timezone support
+- Event timezone Prisma migration
+- `date-fns-tz` timezone conversion
+- Automated Operational Schedule test suite
+
+## Improved
+
+- Sessions Workspace operational workflow
+- Session generation from recurring patterns
+- Admission capacity preview
+- Timetable validation
+- Session overlap protection
+- Local Event time handling
+- Schedule-generation error handling
+- Sessions Timeline refresh after generation
+
+## Fixed
+
+- Incorrect Session times caused by treating Event-local timetable times as UTC
+- Incorrect calendar-date generation caused by timezone conversion
+- Schedule generation without required pattern data
+- Partial generation risk when Session conflicts exist
+
+## Verification
+
+- Operational Schedule tests: 38 passed
+- API production build: passed
+- Web production build: passed
+- Daily browser generation: verified
+- Weekday / weekend browser generation: verified
+- Selected-days browser generation: verified
+- Manual browser generation: verified
+
+## Known Technical Debt
+
+- Historical Nest scaffold tests remain incomplete because required providers and mocks are not configured in several legacy test modules.
+- These failures are separate from the Sprint 12 Operational Schedule test suite.
+
 # Sprint 11 – Event Workspace Foundation
 
 ## Added
