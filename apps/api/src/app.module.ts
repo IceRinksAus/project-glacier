@@ -20,6 +20,7 @@ import { PaymentModule } from './payment/payment.module';
 import { TicketModule } from './ticket/ticket.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingValidationModule } from './booking-validation/booking-validation.module';
+import { OperationalScheduleModule } from './operational-schedule/operational-schedule.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { BookingValidationModule } from './booking-validation/booking-validation
     TicketModule,
     AuthModule,
     BookingValidationModule,
+    OperationalScheduleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

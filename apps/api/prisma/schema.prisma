@@ -63,12 +63,35 @@ model Event {
 
   sessions Session[]
 
+  operationalSchedules OperationalSchedule[]
+
   categories Category[]
   products   Product[]
 
   bookings Booking[]
 
   rules Rule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OperationalSchedule {
+  id String @id @default(cuid())
+
+  name String
+
+  pattern String
+
+  startDate DateTime
+  endDate   DateTime
+
+  timetable Json
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  sessions Session[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,10 +112,15 @@ model Session {
   salesStart DateTime?
   salesEnd   DateTime?
 
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id])
+eventId String
+event   Event  @relation(fields: [eventId], references: [id])
 
-  bookings Booking[]
+operationalScheduleId String?
+operationalSchedule   OperationalSchedule? @relation(fields: [operationalScheduleId], references: [id])
+
+scheduleEntryId String?
+
+bookings Booking[]
 
   sessionProducts SessionProduct[]
 

@@ -5,8 +5,8 @@ import { use, useState } from "react";
 import { EventHeader } from "@/components/events/EventHeader";
 import { EventOverview } from "@/components/events/EventOverview";
 import { EventTabs } from "@/components/events/EventTabs";
-import { SessionsTimeline } from "@/components/events/SessionsTimeline";
 import { PlatformShell } from "@/components/layout/PlatformShell";
+import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
 import { useEvent } from "@/hooks/useEvent";
 
 interface EventWorkspacePageProps {
@@ -63,7 +63,11 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Sessions" ? (
-              <SessionsTimeline eventId={event.id} />
+              <SessionsWorkspace
+                eventId={event.id}
+                eventStartDate={event.startDate}
+                eventEndDate={event.endDate}
+              />
             ) : null}
 
             {activeTab !== "Overview" &&

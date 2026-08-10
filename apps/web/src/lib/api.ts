@@ -32,7 +32,23 @@ if (response.status === 401) {
 }
 
 if (!response.ok) {
-  throw new Error(`Request failed (${response.status})`);
+  let message = `Request failed (${response.status})`;
+
+  try {
+    const errorBody = await response.json();
+
+    if (
+      errorBody &&
+      typeof errorBody.message === "string"
+    ) {
+      message = errorBody.message;
+    }
+  } catch {
+    // Keep the default message if the response
+    // body is not valid JSON.
+  }
+
+  throw new Error(message);
 }
 
   return response.json();
