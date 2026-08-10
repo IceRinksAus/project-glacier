@@ -50,9 +50,10 @@ model Event {
   name        String
   slug        String   @unique
   description String?
-  startDate   DateTime
-  endDate     DateTime
-  status      String   @default("DRAFT")
+startDate   DateTime
+endDate     DateTime
+timezone    String?
+status      String   @default("DRAFT")
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])

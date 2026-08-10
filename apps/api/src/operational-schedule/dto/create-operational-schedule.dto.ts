@@ -7,11 +7,24 @@ export interface OperationalScheduleEntryDto {
   type: 'BOOKABLE' | 'OPERATIONAL';
 }
 
+export interface ManualScheduleDayDto {
+  date: string;
+  timetable: OperationalScheduleEntryDto[];
+}
+
 export interface CreateOperationalScheduleDto {
   eventId: string;
   name: string;
   pattern: string;
   startDate: string;
   endDate: string;
-  timetable: OperationalScheduleEntryDto[];
+
+  timetable?: OperationalScheduleEntryDto[];
+
+  weekdayTimetable?: OperationalScheduleEntryDto[];
+  weekendTimetable?: OperationalScheduleEntryDto[];
+
+  selectedDays?: number[];
+
+  manualDays?: ManualScheduleDayDto[];
 }

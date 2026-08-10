@@ -9,11 +9,20 @@ import {
   OperationalSchedulePattern,
 } from "@/services/operational-schedule.service";
 
+import {
+  ManualScheduleStep,
+  type ManualScheduleDay,
+} from "./ManualScheduleStep";
+
 import { ScheduleReviewStep } from "./ScheduleReviewStep";
+
 import {
   ScheduleTimetableStep,
   TimetableEntry,
 } from "./ScheduleTimetableStep";
+
+import { SelectedDaysTimetableStep } from "./SelectedDaysTimetableStep";
+import { WeekdayWeekendTimetableStep } from "./WeekdayWeekendTimetableStep";
 
 interface ScheduleBuilderProps {
   eventId: string;
@@ -38,20 +47,101 @@ export function ScheduleBuilder({
   onCancel,
   onComplete,
 }: ScheduleBuilderProps) {
-  const minimumDate = toDateInputValue(eventStartDate);
-  const maximumDate = toDateInputValue(eventEndDate);
+  const minimumDate =
+    toDateInputValue(eventStartDate);
+
+  const maximumDate =
+    toDateInputValue(eventEndDate);
 
   const [step, setStep] = useState(1);
 
-  const [scheduleName, setScheduleName] = useState("");
-  const [startDate, setStartDate] = useState(minimumDate);
-  const [endDate, setEndDate] = useState(maximumDate);
-  const [entries, setEntries] = useState<TimetableEntry[]>([]);
+  const [scheduleName, setScheduleName] =
+    useState("");
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState("");
+  const [startDate, setStartDate] =
+    useState(minimumDate);
+
+  const [endDate, setEndDate] =
+    useState(maximumDate);
+
+  const [entries, setEntries] =
+    useState<TimetableEntry[]>([]);
+
+  const [
+    weekdayEntries,
+    setWeekdayEntries,
+  ] = useState<TimetableEntry[]>([]);
+
+  const [
+    weekendEntries,
+    setWeekendEntries,
+  ] = useState<TimetableEntry[]>([]);
+
+  const [selectedDays, setSelectedDays] =
+    useState<number[]>([]);
+
+  const [manualDays, setManualDays] =
+    useState<ManualScheduleDay[]>(() =>
+      pattern === "MANUAL"
+        ? [
+            {
+              id: crypto.randomUUID(),
+              date: minimumDate,
+              timetable: [],
+            },
+          ]
+        : [],
+    );
+
+  const [isGenerating, setIsGenerating] =
+    useState(false);
+
+  const [generateError, setGenerateError] =
+    useState("");
 
   if (step === 2) {
+    if (pattern === "WEEKDAY_WEEKEND") {
+      return (
+        <WeekdayWeekendTimetableStep
+          weekdayEntries={weekdayEntries}
+          setWeekdayEntries={setWeekdayEntries}
+          weekendEntries={weekendEntries}
+          setWeekendEntries={setWeekendEntries}
+          onBack={() => setStep(1)}
+          onCancel={onCancel}
+          onNext={() => setStep(3)}
+        />
+      );
+    }
+
+    if (pattern === "SELECTED_DAYS") {
+      return (
+        <SelectedDaysTimetableStep
+          selectedDays={selectedDays}
+          setSelectedDays={setSelectedDays}
+          entries={entries}
+          setEntries={setEntries}
+          onBack={() => setStep(1)}
+          onCancel={onCancel}
+          onNext={() => setStep(3)}
+        />
+      );
+    }
+
+    if (pattern === "MANUAL") {
+      return (
+        <ManualScheduleStep
+          manualDays={manualDays}
+          setManualDays={setManualDays}
+          minimumDate={startDate}
+          maximumDate={endDate}
+          onBack={() => setStep(1)}
+          onCancel={onCancel}
+          onNext={() => setStep(3)}
+        />
+      );
+    }
+
     return (
       <ScheduleTimetableStep
         entries={entries}
@@ -67,9 +157,16 @@ export function ScheduleBuilder({
     return (
       <ScheduleReviewStep
         scheduleName={scheduleName}
+        pattern={pattern}
         startDate={startDate}
         endDate={endDate}
         entries={entries}
+        weekdayEntries={weekdayEntries}
+        weekendEntries={weekendEntries}
+        selectedDays={selectedDays}
+        manualDays={manualDays}
+        isGenerating={isGenerating}
+        generateError={generateError}
         onBack={() => setStep(2)}
         onCancel={onCancel}
         onGenerate={async () => {
@@ -83,7 +180,34 @@ export function ScheduleBuilder({
               pattern,
               startDate,
               endDate,
-              timetable: entries,
+
+              ...(pattern === "WEEKDAY_WEEKEND"
+                ? {
+                    weekdayTimetable:
+                      weekdayEntries,
+                    weekendTimetable:
+                      weekendEntries,
+                  }
+                : pattern === "SELECTED_DAYS"
+                  ? {
+                      timetable: entries,
+                      selectedDays,
+                    }
+                  : pattern === "MANUAL"
+                    ? {
+                        manualDays:
+                          manualDays.map(
+                            (manualDay) => ({
+                              date:
+                                manualDay.date,
+                              timetable:
+                                manualDay.timetable,
+                            }),
+                          ),
+                      }
+                    : {
+                        timetable: entries,
+                      }),
             });
 
             onComplete();
@@ -114,7 +238,8 @@ export function ScheduleBuilder({
           </h2>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Define when this operating schedule applies.
+            Define when this operating
+            schedule applies.
           </p>
         </div>
 
@@ -141,14 +266,17 @@ export function ScheduleBuilder({
             type="text"
             value={scheduleName}
             onChange={(event) =>
-              setScheduleName(event.target.value)
+              setScheduleName(
+                event.target.value,
+              )
             }
             placeholder="e.g. Daily Public Skating"
             className="mt-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Give this schedule a name that will be easy to recognise later.
+            Give this schedule a name that
+            will be easy to recognise later.
           </p>
         </div>
 
@@ -158,7 +286,8 @@ export function ScheduleBuilder({
           </p>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            The schedule must remain within the event dates.
+            The schedule must remain within
+            the event dates.
           </p>
 
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -177,7 +306,9 @@ export function ScheduleBuilder({
                 min={minimumDate}
                 max={endDate}
                 onChange={(event) =>
-                  setStartDate(event.target.value)
+                  setStartDate(
+                    event.target.value,
+                  )
                 }
                 className="mt-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
@@ -198,7 +329,9 @@ export function ScheduleBuilder({
                 min={startDate}
                 max={maximumDate}
                 onChange={(event) =>
-                  setEndDate(event.target.value)
+                  setEndDate(
+                    event.target.value,
+                  )
                 }
                 className="mt-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               />
@@ -224,7 +357,10 @@ export function ScheduleBuilder({
 
         <Button
           type="button"
-          disabled={!scheduleName.trim() || isGenerating}
+          disabled={
+            !scheduleName.trim() ||
+            isGenerating
+          }
           onClick={() => setStep(2)}
         >
           Next: Build timetable

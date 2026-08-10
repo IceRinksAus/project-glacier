@@ -1,3 +1,5 @@
+import { fromZonedTime } from 'date-fns-tz';
+
 import {
   BadRequestException,
   ConflictException,
@@ -33,6 +35,12 @@ export class OperationalScheduleService {
         'Event was not found in your organization.',
       );
     }
+
+if (!event.timezone) {
+  throw new BadRequestException(
+    'Event timezone must be configured before generating schedules.',
+  );
+}
 
     const scheduleStart = new Date(
       `${data.startDate}T00:00:00.000Z`,
@@ -72,28 +80,27 @@ export class OperationalScheduleService {
       );
     }
 
-    if (!data.timetable.length) {
-      throw new BadRequestException(
-        'At least one timetable entry is required.',
-      );
-    }
+if (
+  data.pattern !== 'DAILY' &&
+  data.pattern !== 'WEEKDAY_WEEKEND' &&
+  data.pattern !== 'SELECTED_DAYS' &&
+  data.pattern !== 'MANUAL'
+) {
+  throw new BadRequestException(
+    `Schedule pattern "${data.pattern}" is not supported yet.`,
+  );
+}
 
-    data.timetable.forEach((entry) => {
-      this.validateEntry(entry);
-    });
-
-    const bookableEntries = data.timetable.filter(
-      (entry) => entry.type === 'BOOKABLE',
-    );
-
-    this.validateTimetableConflicts(bookableEntries);
-
-    const sessionData = this.buildSessions(
-      scheduleStart,
-      scheduleEnd,
-      bookableEntries,
-      data.eventId,
-    );
+const {
+  timetableDefinition,
+  sessionData,
+  operationalBlocks,
+} = this.prepareSchedule(
+  data,
+  scheduleStart,
+  scheduleEnd,
+  event.timezone,
+);
 
     return this.prisma.$transaction(async (tx) => {
       if (sessionData.length > 0) {
@@ -133,7 +140,7 @@ export class OperationalScheduleService {
             startDate: scheduleStart,
             endDate: scheduleEnd,
             timetable:
-              data.timetable as unknown as Prisma.InputJsonValue,
+              timetableDefinition as unknown as Prisma.InputJsonValue,
             eventId: data.eventId,
           },
         });
@@ -150,11 +157,252 @@ export class OperationalScheduleService {
       return {
         schedule,
         generatedSessions: sessionData.length,
-        operationalBlocks: data.timetable.filter(
+        operationalBlocks,
+      };
+    });
+  }
+
+  private prepareSchedule(
+    data: CreateOperationalScheduleDto,
+    scheduleStart: Date,
+    scheduleEnd: Date,
+    timezone: string,
+  ) {
+    if (data.pattern === 'DAILY') {
+      const timetable = data.timetable ?? [];
+
+      if (!timetable.length) {
+        throw new BadRequestException(
+          'At least one timetable entry is required.',
+        );
+      }
+
+      this.validateTimetable(timetable);
+
+      const bookableEntries = timetable.filter(
+        (entry) => entry.type === 'BOOKABLE',
+      );
+
+const sessionData = this.buildDailySessions(
+  scheduleStart,
+  scheduleEnd,
+  bookableEntries,
+  data.eventId,
+  timezone,
+);
+
+      return {
+        timetableDefinition: timetable,
+        sessionData,
+        operationalBlocks: timetable.filter(
           (entry) => entry.type === 'OPERATIONAL',
         ).length,
       };
+    }
+
+    if (data.pattern === 'SELECTED_DAYS') {
+  const timetable = data.timetable ?? [];
+  const selectedDays = data.selectedDays ?? [];
+
+  if (!timetable.length) {
+    throw new BadRequestException(
+      'At least one timetable entry is required.',
+    );
+  }
+
+  if (!selectedDays.length) {
+    throw new BadRequestException(
+      'At least one day must be selected.',
+    );
+  }
+
+  const hasInvalidSelectedDay =
+    selectedDays.some(
+      (day) =>
+        !Number.isInteger(day) ||
+        day < 0 ||
+        day > 6,
+    );
+
+  if (hasInvalidSelectedDay) {
+    throw new BadRequestException(
+      'Selected days must be numbers from 0 to 6.',
+    );
+  }
+
+  if (
+    new Set(selectedDays).size !==
+    selectedDays.length
+  ) {
+    throw new BadRequestException(
+      'Selected days must not contain duplicates.',
+    );
+  }
+
+  this.validateTimetable(timetable);
+
+  const bookableEntries = timetable.filter(
+    (entry) => entry.type === 'BOOKABLE',
+  );
+
+  const sessionData =
+    this.buildSelectedDaysSessions(
+      scheduleStart,
+      scheduleEnd,
+      bookableEntries,
+      selectedDays,
+      data.eventId,
+      timezone,
+    );
+
+  return {
+    timetableDefinition: {
+      selectedDays,
+      timetable,
+    },
+    sessionData,
+    operationalBlocks: timetable.filter(
+      (entry) => entry.type === 'OPERATIONAL',
+    ).length,
+  };
+}
+
+if (data.pattern === 'MANUAL') {
+  const manualDays = data.manualDays ?? [];
+
+  if (!manualDays.length) {
+    throw new BadRequestException(
+      'At least one manual schedule day is required.',
+    );
+  }
+
+  const seenDates = new Set<string>();
+
+  for (const manualDay of manualDays) {
+    const manualDate = new Date(
+      `${manualDay.date}T00:00:00.000Z`,
+    );
+
+    if (Number.isNaN(manualDate.getTime())) {
+      throw new BadRequestException(
+        `Manual schedule date "${manualDay.date}" is invalid.`,
+      );
+    }
+
+    if (
+      manualDate < scheduleStart ||
+      manualDate > scheduleEnd
+    ) {
+      throw new BadRequestException(
+        `Manual schedule date "${manualDay.date}" must remain within the schedule date range.`,
+      );
+    }
+
+    if (seenDates.has(manualDay.date)) {
+      throw new BadRequestException(
+        `Manual schedule date "${manualDay.date}" is duplicated.`,
+      );
+    }
+
+    seenDates.add(manualDay.date);
+
+    if (!manualDay.timetable.length) {
+      throw new BadRequestException(
+        `Manual schedule date "${manualDay.date}" requires at least one timetable entry.`,
+      );
+    }
+
+    this.validateTimetable(
+      manualDay.timetable,
+    );
+  }
+
+  const sessionData =
+    this.buildManualSessions(
+      manualDays,
+      data.eventId,
+      timezone,
+    );
+
+  return {
+    timetableDefinition: {
+      manualDays,
+    },
+    sessionData,
+    operationalBlocks:
+      manualDays.reduce(
+        (total, manualDay) =>
+          total +
+          manualDay.timetable.filter(
+            (entry) =>
+              entry.type === 'OPERATIONAL',
+          ).length,
+        0,
+      ),
+  };
+}
+
+    const weekdayTimetable =
+      data.weekdayTimetable ?? [];
+
+    const weekendTimetable =
+      data.weekendTimetable ?? [];
+
+    if (!weekdayTimetable.length) {
+      throw new BadRequestException(
+        'At least one weekday timetable entry is required.',
+      );
+    }
+
+    if (!weekendTimetable.length) {
+      throw new BadRequestException(
+        'At least one weekend timetable entry is required.',
+      );
+    }
+
+    this.validateTimetable(weekdayTimetable);
+    this.validateTimetable(weekendTimetable);
+
+const sessionData =
+  this.buildWeekdayWeekendSessions(
+    scheduleStart,
+    scheduleEnd,
+    weekdayTimetable,
+    weekendTimetable,
+    data.eventId,
+    timezone,
+  );
+
+    return {
+      timetableDefinition: {
+        weekdayTimetable,
+        weekendTimetable,
+      },
+      sessionData,
+      operationalBlocks:
+        weekdayTimetable.filter(
+          (entry) => entry.type === 'OPERATIONAL',
+        ).length +
+        weekendTimetable.filter(
+          (entry) => entry.type === 'OPERATIONAL',
+        ).length,
+    };
+  }
+
+  private validateTimetable(
+    entries: OperationalScheduleEntryDto[],
+  ) {
+    entries.forEach((entry) => {
+      this.validateEntry(entry);
     });
+
+    const bookableEntries = entries.filter(
+      (entry) => entry.type === 'BOOKABLE',
+    );
+
+    this.validateTimetableConflicts(
+      bookableEntries,
+    );
   }
 
   private validateEntry(
@@ -205,22 +453,31 @@ export class OperationalScheduleService {
   private validateTimetableConflicts(
     entries: OperationalScheduleEntryDto[],
   ) {
-    const sortedEntries = [...entries].sort((a, b) =>
-      a.startTime.localeCompare(b.startTime),
+    const sortedEntries = [...entries].sort(
+      (a, b) =>
+        a.startTime.localeCompare(b.startTime),
     );
 
-    for (let index = 0; index < sortedEntries.length - 1; index++) {
+    for (
+      let index = 0;
+      index < sortedEntries.length - 1;
+      index++
+    ) {
       const currentEntry = sortedEntries[index];
       const nextEntry = sortedEntries[index + 1];
 
       const currentStart =
-        this.timeToMinutes(currentEntry.startTime);
+        this.timeToMinutes(
+          currentEntry.startTime,
+        );
 
       const currentEnd =
         currentStart + currentEntry.duration;
 
       const nextStart =
-        this.timeToMinutes(nextEntry.startTime);
+        this.timeToMinutes(
+          nextEntry.startTime,
+        );
 
       if (currentEnd > nextStart) {
         throw new ConflictException(
@@ -238,47 +495,26 @@ export class OperationalScheduleService {
     return hours * 60 + minutes;
   }
 
-  private buildSessions(
-    startDate: Date,
-    endDate: Date,
-    entries: OperationalScheduleEntryDto[],
-    eventId: string,
-  ) {
-    const sessions: {
-      name: string;
-      startDate: Date;
-      endDate: Date;
-      capacity: number;
-      status: string;
-      eventId: string;
-      scheduleEntryId: string;
-    }[] = [];
+private buildDailySessions(
+  startDate: Date,
+  endDate: Date,
+  entries: OperationalScheduleEntryDto[],
+  eventId: string,
+  timezone: string,
+) {
+    const sessions =
+      this.createSessionCollection();
 
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      for (const entry of entries) {
-        const sessionStart =
-          this.combineDateAndTime(
-            currentDate,
-            entry.startTime,
-          );
-
-        const sessionEnd = new Date(
-          sessionStart.getTime() +
-            entry.duration * 60 * 1000,
-        );
-
-        sessions.push({
-          name: entry.name.trim(),
-          startDate: sessionStart,
-          endDate: sessionEnd,
-          capacity: entry.capacity,
-          status: 'DRAFT',
-          eventId,
-          scheduleEntryId: entry.id,
-        });
-      }
+this.addEntriesForDate(
+  sessions,
+  currentDate,
+  entries,
+  eventId,
+  timezone,
+);
 
       currentDate.setUTCDate(
         currentDate.getUTCDate() + 1,
@@ -288,23 +524,185 @@ export class OperationalScheduleService {
     return sessions;
   }
 
-  private combineDateAndTime(
-    date: Date,
-    time: string,
-  ) {
-    const [hours, minutes] = time
-      .split(':')
-      .map(Number);
+  private buildSelectedDaysSessions(
+  startDate: Date,
+  endDate: Date,
+  entries: OperationalScheduleEntryDto[],
+  selectedDays: number[],
+  eventId: string,
+  timezone: string,
+) {
+  const sessions =
+    this.createSessionCollection();
 
-    const result = new Date(date);
+  const currentDate = new Date(startDate);
 
-    result.setUTCHours(
-      hours,
-      minutes,
-      0,
-      0,
+  while (currentDate <= endDate) {
+    const dayOfWeek =
+      currentDate.getUTCDay();
+
+    if (selectedDays.includes(dayOfWeek)) {
+      this.addEntriesForDate(
+        sessions,
+        currentDate,
+        entries,
+        eventId,
+        timezone,
+      );
+    }
+
+    currentDate.setUTCDate(
+      currentDate.getUTCDate() + 1,
+    );
+  }
+
+  return sessions;
+}
+
+private buildManualSessions(
+  manualDays: {
+    date: string;
+    timetable: OperationalScheduleEntryDto[];
+  }[],
+  eventId: string,
+  timezone: string,
+) {
+  const sessions =
+    this.createSessionCollection();
+
+  for (const manualDay of manualDays) {
+    const date = new Date(
+      `${manualDay.date}T00:00:00.000Z`,
     );
 
-    return result;
+    const bookableEntries =
+      manualDay.timetable.filter(
+        (entry) =>
+          entry.type === 'BOOKABLE',
+      );
+
+    this.addEntriesForDate(
+      sessions,
+      date,
+      bookableEntries,
+      eventId,
+      timezone,
+    );
   }
+
+  return sessions;
+}
+
+  private buildWeekdayWeekendSessions(
+    startDate: Date,
+    endDate: Date,
+    weekdayEntries: OperationalScheduleEntryDto[],
+    weekendEntries: OperationalScheduleEntryDto[],
+    eventId: string,
+    timezone: string,
+  ) {
+    const sessions =
+      this.createSessionCollection();
+
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dayOfWeek =
+        currentDate.getUTCDay();
+
+      const isWeekend =
+        dayOfWeek === 0 || dayOfWeek === 6;
+
+      const entries = isWeekend
+        ? weekendEntries
+        : weekdayEntries;
+
+      const bookableEntries = entries.filter(
+        (entry) => entry.type === 'BOOKABLE',
+      );
+
+this.addEntriesForDate(
+  sessions,
+  currentDate,
+  bookableEntries,
+  eventId,
+  timezone,
+);
+
+      currentDate.setUTCDate(
+        currentDate.getUTCDate() + 1,
+      );
+    }
+
+    return sessions;
+  }
+
+  private createSessionCollection() {
+    return [] as {
+      name: string;
+      startDate: Date;
+      endDate: Date;
+      capacity: number;
+      status: string;
+      eventId: string;
+      scheduleEntryId: string;
+    }[];
+  }
+
+  private addEntriesForDate(
+    sessions: ReturnType<
+      OperationalScheduleService['createSessionCollection']
+    >,
+    date: Date,
+    entries: OperationalScheduleEntryDto[],
+    eventId: string,
+    timezone: string,
+  ) {
+    for (const entry of entries) {
+const sessionStart =
+  this.combineDateAndTime(
+    date,
+    entry.startTime,
+    timezone,
+  );
+
+      const sessionEnd = new Date(
+        sessionStart.getTime() +
+          entry.duration * 60 * 1000,
+      );
+
+      sessions.push({
+        name: entry.name.trim(),
+        startDate: sessionStart,
+        endDate: sessionEnd,
+        capacity: entry.capacity,
+        status: 'DRAFT',
+        eventId,
+        scheduleEntryId: entry.id,
+      });
+    }
+  }
+
+private combineDateAndTime(
+  date: Date,
+  time: string,
+  timezone: string,
+) {
+  const year = date.getUTCFullYear();
+  const month = String(
+    date.getUTCMonth() + 1,
+  ).padStart(2, '0');
+
+  const day = String(
+    date.getUTCDate(),
+  ).padStart(2, '0');
+
+  const localDateTime =
+    `${year}-${month}-${day}T${time}:00`;
+
+  return fromZonedTime(
+    localDateTime,
+    timezone,
+  );
+}
 }

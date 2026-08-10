@@ -21,7 +21,11 @@ export interface CreateOperationalSchedulePayload {
   pattern: OperationalSchedulePattern;
   startDate: string;
   endDate: string;
-  timetable: OperationalScheduleEntry[];
+
+  timetable?: OperationalScheduleEntry[];
+
+  weekdayTimetable?: OperationalScheduleEntry[];
+  weekendTimetable?: OperationalScheduleEntry[];
 }
 
 export interface OperationalScheduleResponse {
@@ -31,11 +35,17 @@ export interface OperationalScheduleResponse {
     pattern: string;
     startDate: string;
     endDate: string;
-    timetable: OperationalScheduleEntry[];
+    timetable:
+      | OperationalScheduleEntry[]
+      | {
+          weekdayTimetable: OperationalScheduleEntry[];
+          weekendTimetable: OperationalScheduleEntry[];
+        };
     eventId: string;
     createdAt: string;
     updatedAt: string;
   };
+
   generatedSessions: number;
   operationalBlocks: number;
 }
