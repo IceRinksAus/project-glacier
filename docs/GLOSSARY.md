@@ -38,6 +38,26 @@ A scheduled bookable operational period.
 
 --------------------------------
 
+Session Detail
+
+Operational view of an individual Session including time, capacity, bookings, status and schedule provenance.
+
+--------------------------------
+
+Session Status
+
+Operational state of a Session.
+
+Current relevant values include:
+
+DRAFT
+
+ACTIVE
+
+CANCELLED
+
+--------------------------------
+
 Operational Schedule
 
 Definition used to generate Sessions from an Event operating pattern.
@@ -86,6 +106,40 @@ Generated Session record created from an Operational Schedule.
 
 --------------------------------
 
+Schedule Exception
+
+Generated Session that no longer exactly follows its originating Operational Schedule occurrence.
+
+--------------------------------
+
+Schedule Exception Type
+
+State describing whether a generated Session differs from its source schedule.
+
+Values:
+
+NONE
+
+MODIFIED
+
+CANCELLED
+
+--------------------------------
+
+Modified Session
+
+Generated Session that has been independently edited after creation.
+
+--------------------------------
+
+Cancelled Session
+
+Session preserved in Glacier with status CANCELLED.
+
+A generated cancelled Session is also recorded as a CANCELLED schedule exception.
+
+--------------------------------
+
 Selected Days
 
 Schedule pattern where a timetable applies only to selected weekdays.
@@ -104,11 +158,27 @@ Identifier linking a generated Session back to the timetable entry that created 
 
 --------------------------------
 
+Occupied Capacity
+
+Number of Session admissions currently consuming capacity.
+
+Calculated from BookingItem quantity for RESERVED and CONFIRMED bookings.
+
+--------------------------------
+
+Hard Delete
+
+Permanent removal of a record.
+
+A Session may only be hard deleted when it has no Booking records.
+
+--------------------------------
+
 UTC
 
 Canonical timezone used for timestamp persistence.
 
-Event-local schedule times are converted to UTC before storage.
+Event-local schedule and Session edit times are converted to UTC before storage.
 
 --------------------------------
 

@@ -83,6 +83,10 @@ The backend is authoritative for:
 - Payments
 - Operational Schedule validation
 - Session generation
+- Session editing
+- Session conflict validation
+- Session cancellation
+- Session deletion
 
 ---
 
@@ -95,6 +99,7 @@ It provides access to Event-specific capabilities including:
 - Overview
 - Sessions
 - Operational scheduling
+- Session management
 - Future Event operations modules
 
 Dynamic Event routing uses:
@@ -139,6 +144,105 @@ Operational Schedule and Session persistence occurs transactionally.
 
 ---
 
+## Session Management
+
+Generated Sessions remain independent records.
+
+Sessions may be edited individually without modifying sibling Sessions or the originating Operational Schedule.
+
+Session updates validate:
+
+- Organisation ownership
+- Event date boundaries
+- Start and end time ordering
+- Sales windows
+- Existing Session overlaps
+- Occupied capacity
+
+Session overlap checks exclude the Session being edited.
+
+Adjacent Sessions are allowed.
+
+---
+
+## Schedule Exceptions
+
+Generated Sessions preserve provenance through:
+
+- `operationalScheduleId`
+- `scheduleEntryId`
+
+Session divergence from the originating schedule is tracked using:
+
+`scheduleExceptionType`
+
+Supported values include:
+
+- NONE
+- MODIFIED
+- CANCELLED
+
+Generated Session edit:
+
+`MODIFIED`
+
+Generated Session cancellation:
+
+`CANCELLED`
+
+Standalone Session edit:
+
+`NONE`
+
+Operational Schedule definitions remain unchanged when an individual generated Session is edited, cancelled or deleted.
+
+---
+
+## Session Capacity
+
+Occupied Session capacity is calculated using:
+
+`BookingItem.quantity`
+
+for bookings with status:
+
+- RESERVED
+- CONFIRMED
+
+Session capacity cannot be reduced below the occupied quantity.
+
+Expired and other inactive Booking states do not consume Session capacity.
+
+---
+
+## Session Deletion
+
+Hard deletion is allowed only when the Session has no Booking records.
+
+This rule intentionally differs from occupied-capacity calculation.
+
+A Booking record may prevent deletion even when it does not currently consume Session capacity.
+
+Sessions with Booking records should be cancelled rather than deleted.
+
+---
+
+## Session Cancellation
+
+Cancellation uses a dedicated business action:
+
+`PATCH /session/:id/cancel`
+
+Cancellation:
+
+- preserves the Session
+- sets status to `CANCELLED`
+- marks generated Sessions as `CANCELLED` schedule exceptions
+
+Generic Session update cannot be used to bypass the cancellation flow.
+
+---
+
 ## Time Architecture
 
 Each Event defines an IANA timezone.
@@ -153,7 +257,15 @@ The API converts Event-local date and time into UTC before persistence.
 
 PostgreSQL stores canonical timestamps.
 
-Timezone-sensitive operations must use the Event timezone rather than the server timezone.
+The frontend displays Session operational times using the Event timezone.
+
+Session editing converts Event-local organiser input back into UTC before persistence.
+
+Timezone-sensitive operations must use the Event timezone rather than:
+
+- server timezone
+- browser timezone
+- developer machine timezone
 
 See:
 
@@ -230,6 +342,40 @@ Bookable Sessions Created
 ↓
 
 Sessions Timeline
+
+---
+
+## Session Management Flow
+
+Sessions Timeline
+
+↓
+
+Session Detail Panel
+
+↓
+
+Edit / Cancel / Delete
+
+↓
+
+Session API
+
+↓
+
+Organisation Validation
+
+↓
+
+Business Validation
+
+↓
+
+Persistence
+
+↓
+
+Timeline Refresh
 
 ---
 

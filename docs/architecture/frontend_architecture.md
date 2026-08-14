@@ -54,15 +54,17 @@ lib/
 
 Pages never call the API directly.
 
-Components never fetch data directly.
+Components never fetch data directly unless the component represents an isolated interaction requiring a specific record.
 
-Hooks never render UI.
+Hooks should own reusable collection retrieval and refresh behaviour.
 
 Services contain business API calls.
 
 The API client contains HTTP implementation.
 
 Business workflows should be composed from reusable components rather than duplicated across pages.
+
+The backend remains authoritative for business validation.
 
 ---
 
@@ -76,7 +78,11 @@ The Event Workspace is the operational centre for an Event.
 
 Event tabs expose individual operational capabilities.
 
-The Sessions Workspace is responsible for Session visibility and Session-generation workflows.
+The Sessions Workspace is responsible for:
+
+- Session visibility
+- Session-generation workflows
+- individual Session management
 
 ---
 
@@ -88,8 +94,87 @@ The Sessions Workspace contains:
 - Create Schedule action
 - Sessions Timeline
 - Operational Schedule Builder
+- Session Detail Panel
+- Session Edit workflow
 
 Generated Sessions refresh into the Sessions Timeline after schedule creation.
+
+Session mutations also refresh the Sessions Timeline.
+
+---
+
+## Sessions Timeline
+
+`SessionsTimeline`
+
+Groups Sessions by Event-local calendar date.
+
+Session times are formatted using the Event timezone.
+
+Session cards are interactive.
+
+Selecting a Session opens:
+
+`SessionDetailPanel`
+
+Schedule exceptions may be surfaced directly on Session cards.
+
+---
+
+## Session Detail Panel
+
+`SessionDetailPanel`
+
+Displays:
+
+- Session name
+- Event-local date
+- Event-local time
+- Capacity
+- Booked quantity
+- Available capacity
+- Status
+- Schedule exception
+- Operational Schedule origin
+- Schedule entry identifier
+- Booking count
+
+The detail panel supports:
+
+- Edit Session
+- Cancel Session
+- Delete Session
+
+The panel refreshes after successful Session mutations.
+
+---
+
+## Session Editing
+
+`EditSessionForm`
+
+Converts UTC Session timestamps into Event-local values for display.
+
+Organiser-entered Event-local date/time values are converted back to UTC before the Session update API call.
+
+The frontend uses:
+
+`date-fns-tz`
+
+Editable fields include:
+
+- name
+- date
+- start time
+- end time
+- capacity
+
+Backend validation remains authoritative for:
+
+- Event boundaries
+- overlaps
+- occupied capacity
+- cancellation rules
 
 ---
 
@@ -161,7 +246,17 @@ Operational Schedule requests use:
 
 `operational-schedule.service.ts`
 
-The Schedule Builder submits pattern-specific payloads through the service layer.
+Session management requests use:
+
+`session.service.ts`
+
+The Session service supports:
+
+- Session list retrieval
+- Session detail retrieval
+- Session updates
+- Session cancellation
+- Session deletion
 
 The shared API client handles:
 
@@ -184,7 +279,11 @@ Pattern-specific state includes:
 - Selected weekdays
 - Manual dates and timetables
 
-The backend remains authoritative for final validation and conflict detection.
+Session collection state is managed through:
+
+`useSessions`
+
+The hook exposes refresh behaviour so Session mutations can update the timeline without remounting the entire workspace.
 
 ---
 
@@ -195,3 +294,5 @@ Frontend validation improves usability.
 Backend validation protects correctness.
 
 The frontend must not replace authoritative API validation.
+
+Event operational times must be rendered and edited using the Event timezone, not the browser timezone.

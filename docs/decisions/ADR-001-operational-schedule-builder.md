@@ -84,6 +84,29 @@ Generated Sessions retain:
 
 Generated Sessions remain independent records after creation.
 
+An individual generated Session may later be:
+
+- edited
+- cancelled
+- deleted when permitted
+
+These actions do not modify the originating Operational Schedule.
+
+Generated Session divergence is tracked using:
+
+`scheduleExceptionType`
+
+Supported values include:
+
+- NONE
+- MODIFIED
+- CANCELLED
+
+A generated Session becomes `MODIFIED` when independently edited.
+
+A generated Session becomes `CANCELLED` when cancelled.
+
+The Operational Schedule remains the source definition, while generated Sessions represent independently manageable operational occurrences.
 ## Timezone Handling
 
 Timetable times represent Event-local operating times.
@@ -129,6 +152,8 @@ Reusable scheduling engine.
 
 Supports recurring and manual Event operations.
 
-Supports future schedule editing and exception workflows.
+Supports schedule exception workflows.
 
-Generated Sessions can later be managed independently of the schedule definition.
+Generated Sessions can be managed independently of the schedule definition.
+
+Individual Session edits and cancellations preserve Operational Schedule provenance without mutating the source schedule.

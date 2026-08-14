@@ -21,6 +21,8 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 - Sessions Timeline
 - Operational Schedule Builder
 - Event timezone handling
+- Session management
+- Schedule exception handling
 
 ## Completed
 
@@ -37,6 +39,8 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 ✔ Event Workspace
 
 ✔ Operational Scheduling
+
+✔ Session Management
 
 ---
 
@@ -87,9 +91,38 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ---
 
+## Sprint 13 Complete
+
+### Session Management & Schedule Exceptions
+
+- Session Detail panel
+- Individual Session editing
+- Session conflict protection
+- Booking-safe capacity reductions
+- Schedule exception tracking
+- MODIFIED generated Sessions
+- CANCELLED generated Sessions
+- Dedicated Session cancellation
+- Booking-protected hard deletion
+- Session deletion confirmation
+- Event-timezone-aware Session display
+- Event-timezone-aware Session editing
+- Timeline refresh after Session mutations
+
+### Verification
+
+- 28 SessionService tests passing
+- 38 Operational Schedule regression tests passing
+- API production build passing
+- Web production build passing
+- Edit / cancel / delete browser flows verified
+- Schedule exception behaviour browser-tested successfully
+
+---
+
 ## Current
 
-→ Sprint 13
+→ Sprint 14
 
 Scope to be defined during Sprint planning.
 

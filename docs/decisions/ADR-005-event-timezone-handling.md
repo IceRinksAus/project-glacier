@@ -34,6 +34,12 @@ UTC is the canonical stored timestamp representation.
 
 Operational Schedule generation uses the Event timezone when creating Session start and end timestamps.
 
+Session display also uses the Event timezone rather than the browser timezone.
+
+When editing a Session, stored UTC timestamps are converted to Event-local values for organiser input.
+
+Edited Event-local date and time values are converted back to UTC before persistence.
+
 Timezone conversion is performed using:
 
 `date-fns-tz`
@@ -62,6 +68,12 @@ UTC timestamps may fall on a different calendar date from the Event-local date.
 Frontend presentation must use the appropriate Event timezone when Event-local time is required.
 
 Timezone-aware behaviour must be included in automated tests.
+
+Session display remains consistent even when the organiser's browser is in a different timezone from the Event.
+
+Session editing preserves the intended Event-local operating time.
+
+Frontend and backend timezone behaviour now follow the same Event-timezone authority.
 
 ## Future Impact
 

@@ -1,5 +1,67 @@
 # Changelog
 
+# Sprint 13 – Session Management & Schedule Exceptions
+
+## Added
+
+- Session Detail panel
+- Clickable Sessions Timeline cards
+- Individual Session editing
+- Session overlap protection during edits
+- Session occupied-capacity protection
+- Schedule exception tracking
+- `scheduleExceptionType`
+- MODIFIED Session exceptions
+- CANCELLED Session exceptions
+- Dedicated Session cancellation endpoint
+- Session deletion confirmation flow
+- Booking-protected hard deletion
+- Timeline refresh after Session mutations
+- Event-timezone-aware Session display
+- Event-timezone-aware Session editing
+- `date-fns-tz` support in the web application
+- Expanded SessionService automated test suite
+
+## Improved
+
+- Sessions Workspace operational workflow
+- Session detail visibility
+- Session capacity safety
+- Generated Session provenance
+- Session cancellation behaviour
+- Session deletion behaviour
+- Operational Schedule exception visibility
+- Event-local Session time handling
+- Frontend Session service capabilities
+- Sessions hook refresh behaviour
+
+## Fixed
+
+- Session edits could overlap existing Sessions
+- Session capacity could be reduced below occupied quantity
+- Generic Session updates could bypass dedicated cancellation behaviour
+- Session display previously depended on browser timezone
+- Generated Session edits were not explicitly tracked as schedule exceptions
+
+## Verification
+
+- SessionService tests: 28 passed
+- Operational Schedule regression tests: 38 passed
+- API production build: passed
+- Web production build: passed
+- Session detail browser flow: verified
+- Session edit browser flow: verified
+- MODIFIED exception browser flow: verified
+- Session cancellation browser flow: verified
+- CANCELLED exception browser flow: verified
+- Session deletion browser flow: verified
+- Event-local Session display/editing: verified
+
+## Known Technical Debt
+
+- Historical Nest scaffold tests remain incomplete in parts of the wider repository.
+- Reservation-expiry responsibilities should be reviewed in a future technical-debt pass to avoid duplicated scheduling behaviour.
+
 # Sprint 12 – Operational Scheduling
 
 ## Added

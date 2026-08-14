@@ -59,10 +59,32 @@ Current notes include:
 - `sprint-notes/sprint-10.md`
 - `sprint-notes/sprint-11.md`
 - `sprint-notes/sprint-12.md`
+- `sprint-notes/sprint-13.md`
 
 Earlier Sprint releases are stored under:
 
 `releases/`
+
+---
+
+## Sprint Workflow
+
+Before implementation begins for a new Sprint:
+
+1. Complete and verify the previous Sprint.
+2. Commit and push code.
+3. Update documentation.
+4. Confirm a clean working tree.
+5. Create a temporary committed repository snapshot.
+6. Review relevant code, schema, tests and architecture.
+7. Finalise Sprint scope and implementation plan.
+8. Begin coding.
+
+Repository review snapshots are temporary working files and should not be committed.
+
+See:
+
+`PROJECT_PRINCIPLES.md`
 
 ---
 
