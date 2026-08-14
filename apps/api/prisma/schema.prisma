@@ -121,6 +121,8 @@ operationalSchedule   OperationalSchedule? @relation(fields: [operationalSchedul
 
 scheduleEntryId String?
 
+scheduleExceptionType String @default("NONE")
+
 bookings Booking[]
 
   sessionProducts SessionProduct[]

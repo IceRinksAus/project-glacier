@@ -79,6 +79,17 @@ findAll(
     );
   }
 
+@Roles('OWNER')
+@Patch(':id/cancel')
+cancel(
+  @Param('id') id: string,
+  @CurrentUser() user: AuthenticatedUser,
+) {
+  return this.sessionService.cancel(
+    id,
+    user.organizationId,
+  );
+}
   @Roles('OWNER')
   @Delete(':id')
   remove(

@@ -1,21 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 import {
   Session,
   sessionService,
 } from "@/services/session.service";
 
-export function useSessions(eventId: string) {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+export function useSessions(
+  eventId: string,
+) {
+  const [sessions, setSessions] =
+    useState<Session[]>([]);
 
-  useEffect(() => {
-    async function loadSessions() {
+  const [isLoading, setIsLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  const loadSessions = useCallback(
+    async () => {
       try {
-        const data = await sessionService.getSessions(eventId);
+        setIsLoading(true);
+        setError("");
+
+        const data =
+          await sessionService.getSessions(
+            eventId,
+          );
+
         setSessions(data);
       } catch (loadError) {
         setError(
@@ -26,14 +44,18 @@ export function useSessions(eventId: string) {
       } finally {
         setIsLoading(false);
       }
-    }
+    },
+    [eventId],
+  );
 
-    loadSessions();
-  }, [eventId]);
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   return {
     sessions,
     isLoading,
     error,
+    refresh: loadSessions,
   };
 }

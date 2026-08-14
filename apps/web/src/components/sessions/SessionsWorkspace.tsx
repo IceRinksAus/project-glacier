@@ -15,12 +15,14 @@ interface SessionsWorkspaceProps {
   eventId: string;
   eventStartDate: string;
   eventEndDate: string;
+  eventTimezone: string | null;
 }
 
 export function SessionsWorkspace({
   eventId,
   eventStartDate,
   eventEndDate,
+  eventTimezone,
 }: SessionsWorkspaceProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -91,9 +93,10 @@ if (selectedPattern) {
         </section>
 
         <SessionsTimeline
-          key={refreshKey}
-          eventId={eventId}
-        />
+  key={refreshKey}
+  eventId={eventId}
+  eventTimezone={eventTimezone}
+/>
       </div>
 
       <CreateScheduleDialog

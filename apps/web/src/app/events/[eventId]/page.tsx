@@ -63,12 +63,13 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Sessions" ? (
-              <SessionsWorkspace
-                eventId={event.id}
-                eventStartDate={event.startDate}
-                eventEndDate={event.endDate}
-              />
-            ) : null}
+  <SessionsWorkspace
+    eventId={event.id}
+    eventStartDate={event.startDate}
+    eventEndDate={event.endDate}
+    eventTimezone={event.timezone}
+  />
+) : null}
 
             {activeTab !== "Overview" &&
             activeTab !== "Sessions" ? (

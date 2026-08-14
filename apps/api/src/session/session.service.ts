@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -155,96 +156,214 @@ findAll(
     return session;
   }
 
-  async update(
-    id: string,
-    organizationId: string,
-    updateSessionDto: UpdateSessionDto,
-  ) {
-    const existingSession =
-      await this.prisma.session.findFirst({
-        where: {
-          id,
-          event: {
-            organizationId,
-          },
-        },
-        include: {
-          event: true,
-        },
-      });
-
-    if (!existingSession) {
-      throw new NotFoundException('Session not found.');
-    }
-
-    const startDate = updateSessionDto.startDate
-      ? new Date(updateSessionDto.startDate)
-      : existingSession.startDate;
-
-    const endDate = updateSessionDto.endDate
-      ? new Date(updateSessionDto.endDate)
-      : existingSession.endDate;
-
-    if (endDate <= startDate) {
-      throw new BadRequestException(
-        'Session end date must be later than the start date.',
-      );
-    }
-
-    if (
-      startDate < existingSession.event.startDate ||
-      endDate > existingSession.event.endDate
-    ) {
-      throw new BadRequestException(
-        'The session must occur within the event start and end dates.',
-      );
-    }
-
-    const salesStart =
-      updateSessionDto.salesStart !== undefined
-        ? new Date(updateSessionDto.salesStart)
-        : existingSession.salesStart;
-
-    const salesEnd =
-      updateSessionDto.salesEnd !== undefined
-        ? new Date(updateSessionDto.salesEnd)
-        : existingSession.salesEnd;
-
-    if (
-      salesStart &&
-      salesEnd &&
-      salesEnd <= salesStart
-    ) {
-      throw new BadRequestException(
-        'Sales end date must be later than the sales start date.',
-      );
-    }
-
-    return this.prisma.session.update({
+async update(
+  id: string,
+  organizationId: string,
+  updateSessionDto: UpdateSessionDto,
+) {
+  const existingSession =
+    await this.prisma.session.findFirst({
       where: {
-        id: existingSession.id,
-      },
-      data: {
-        name:
-          updateSessionDto.name?.trim() ??
-          existingSession.name,
-        startDate,
-        endDate,
-        capacity:
-          updateSessionDto.capacity ??
-          existingSession.capacity,
-        status:
-          updateSessionDto.status ??
-          existingSession.status,
-        salesStart,
-        salesEnd,
+        id,
+        event: {
+          organizationId,
+        },
       },
       include: {
         event: true,
       },
     });
+
+  if (!existingSession) {
+    throw new NotFoundException('Session not found.');
   }
 
+  const startDate = updateSessionDto.startDate
+    ? new Date(updateSessionDto.startDate)
+    : existingSession.startDate;
+
+  const endDate = updateSessionDto.endDate
+    ? new Date(updateSessionDto.endDate)
+    : existingSession.endDate;
+
+    if (updateSessionDto.status === 'CANCELLED') {
+  throw new BadRequestException(
+    'Use the dedicated cancellation action to cancel a session.',
+  );
+}
+
+  if (endDate <= startDate) {
+    throw new BadRequestException(
+      'Session end date must be later than the start date.',
+    );
+  }
+
+  if (
+    startDate < existingSession.event.startDate ||
+    endDate > existingSession.event.endDate
+  ) {
+    throw new BadRequestException(
+      'The session must occur within the event start and end dates.',
+    );
+  }
+
+  const salesStart =
+    updateSessionDto.salesStart !== undefined
+      ? new Date(updateSessionDto.salesStart)
+      : existingSession.salesStart;
+
+  const salesEnd =
+    updateSessionDto.salesEnd !== undefined
+      ? new Date(updateSessionDto.salesEnd)
+      : existingSession.salesEnd;
+
+  if (
+    salesStart &&
+    salesEnd &&
+    salesEnd <= salesStart
+  ) {
+    throw new BadRequestException(
+      'Sales end date must be later than the sales start date.',
+    );
+  }
+
+  if (updateSessionDto.capacity !== undefined) {
+    const bookedQuantity =
+      await this.prisma.bookingItem.aggregate({
+        where: {
+          booking: {
+            sessionId: existingSession.id,
+            status: {
+              in: [
+                'RESERVED',
+                'CONFIRMED',
+              ],
+            },
+          },
+        },
+        _sum: {
+          quantity: true,
+        },
+      });
+
+    const quantityAlreadyBooked =
+      bookedQuantity._sum.quantity ?? 0;
+
+    if (
+      updateSessionDto.capacity <
+      quantityAlreadyBooked
+    ) {
+      throw new BadRequestException(
+        `Session capacity cannot be lower than the currently booked quantity of ${quantityAlreadyBooked}.`,
+      );
+    }
+  }
+
+  const timingChanged =
+    updateSessionDto.startDate !== undefined ||
+    updateSessionDto.endDate !== undefined;
+
+  if (timingChanged) {
+    const conflictingSession =
+      await this.prisma.session.findFirst({
+        where: {
+          eventId: existingSession.eventId,
+          id: {
+            not: existingSession.id,
+          },
+          startDate: {
+            lt: endDate,
+          },
+          endDate: {
+            gt: startDate,
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          startDate: true,
+          endDate: true,
+        },
+      });
+
+    if (conflictingSession) {
+      throw new ConflictException(
+        `This session conflicts with the existing session "${conflictingSession.name}" starting at ${conflictingSession.startDate.toISOString()}.`,
+      );
+    }
+  }
+
+const scheduleExceptionType =
+  existingSession.operationalScheduleId
+    ? 'MODIFIED'
+    : existingSession.scheduleExceptionType ??
+      'NONE';
+
+return this.prisma.session.update({
+  where: {
+    id: existingSession.id,
+  },
+  data: {
+    name:
+      updateSessionDto.name?.trim() ??
+      existingSession.name,
+    startDate,
+    endDate,
+    capacity:
+      updateSessionDto.capacity ??
+      existingSession.capacity,
+    status:
+      updateSessionDto.status ??
+      existingSession.status,
+    salesStart,
+    salesEnd,
+    scheduleExceptionType,
+  },
+  include: {
+    event: true,
+  },
+});
+}
+
+async cancel(
+  id: string,
+  organizationId: string,
+) {
+  const session =
+    await this.prisma.session.findFirst({
+      where: {
+        id,
+        event: {
+          organizationId,
+        },
+      },
+    });
+
+  if (!session) {
+    throw new NotFoundException(
+      'Session not found.',
+    );
+  }
+
+  const scheduleExceptionType =
+    session.operationalScheduleId
+      ? 'CANCELLED'
+      : session.scheduleExceptionType ??
+        'NONE';
+
+  return this.prisma.session.update({
+    where: {
+      id: session.id,
+    },
+    data: {
+      status: 'CANCELLED',
+      scheduleExceptionType,
+    },
+    include: {
+      event: true,
+    },
+  });
+}
   async remove(
     id: string,
     organizationId: string,
