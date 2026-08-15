@@ -17,5 +17,8 @@ import { BookingService } from './booking.service';
     BookingService,
     BookingReservationService,
   ],
+  exports: [
+    BookingService,
+  ],
 })
 export class BookingModule {}

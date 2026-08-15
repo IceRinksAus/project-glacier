@@ -148,6 +148,12 @@ export class BookingService {
     const ruleErrors: string[] = [];
     const ruleWarnings: string[] = [];
 
+const bookingTicketTypeIds =
+  data.participants.map(
+    (participant) =>
+      participant.ticketTypeId,
+  );
+
     for (const participant of data.participants) {
       const evaluation = await this.ruleEvaluationService.evaluate(
         data.eventId,
@@ -161,6 +167,7 @@ export class BookingService {
           eventId: data.eventId,
           flexibleBooking: data.flexibleBooking ?? false,
           participantCount: data.participants.length,
+          bookingTicketTypeIds,
         },
       );
 

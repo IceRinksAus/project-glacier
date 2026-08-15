@@ -211,6 +211,16 @@ export class RuleEngineService {
           ? !expectedValue.includes(actualValue)
           : false;
 
+          case 'CONTAINS':
+  return Array.isArray(actualValue)
+    ? actualValue.includes(expectedValue)
+    : false;
+
+case 'NOT_CONTAINS':
+  return Array.isArray(actualValue)
+    ? !actualValue.includes(expectedValue)
+    : false;
+
       case 'EXISTS':
         return actualValue !== undefined && actualValue !== null;
 

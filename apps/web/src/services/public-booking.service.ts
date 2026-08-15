@@ -1,0 +1,248 @@
+import { publicApi } from "@/lib/public-api";
+
+export interface PublicEvent {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  timezone: string | null;
+  status: string;
+}
+
+export interface PublicSession {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  capacity: number;
+  status: string;
+  salesStart: string | null;
+  salesEnd: string | null;
+  eventId: string;
+}
+
+export interface PublicTicketType {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  capacity: number;
+  active: boolean;
+  saleStart: string | null;
+  saleEnd: string | null;
+  eventId: string;
+}
+
+export interface PublicProduct {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  minQuantity: number;
+  maxQuantity: number | null;
+  salesStart: string | null;
+  salesEnd: string | null;
+  eventId: string;
+}
+
+export interface PublicSessionProduct {
+  id: string;
+  sessionId: string;
+  productId: string;
+  sortOrder: number;
+  product: PublicProduct;
+}
+
+export interface CreatePublicCustomerInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
+
+export interface PublicCustomer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+}
+
+export interface CreatePublicBookingParticipantInput {
+  firstName: string;
+  lastName?: string;
+  age: number;
+  ticketTypeId: string;
+}
+
+export interface CreatePublicBookingProductInput {
+  productId: string;
+  quantity: number;
+}
+
+export interface CreatePublicBookingInput {
+  customerId: string;
+  eventId: string;
+  sessionId: string;
+  flexibleBooking?: boolean;
+  participants: CreatePublicBookingParticipantInput[];
+  products?: CreatePublicBookingProductInput[];
+}
+
+export interface PublicRulePreviewParticipant {
+  firstName: string;
+  lastName?: string;
+  age: number;
+  ticketTypeId: string;
+}
+
+export interface PublicRulePreviewInput {
+  sessionId: string;
+  flexibleBooking?: boolean;
+  participants: PublicRulePreviewParticipant[];
+}
+
+export interface PublicRequiredProduct {
+  productSlug: string;
+  quantity: number;
+  ruleIds: string[];
+  messages: string[];
+}
+
+export interface PublicRulePreviewResponse {
+  valid: boolean;
+  matchedRuleIds: string[];
+  requiredProducts: PublicRequiredProduct[];
+  errors: string[];
+  warnings: string[];
+}
+
+export interface PublicBookingResponse {
+  booking: {
+    id: string;
+    bookingNumber: string;
+    status: string;
+    paymentStatus: string;
+    total: number;
+    reservedUntil: string | null;
+    flexibleBooking: boolean;
+
+    customer: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string | null;
+    };
+
+    event: {
+      id: string;
+      name: string;
+      slug: string;
+      timezone: string | null;
+    };
+
+    session: {
+      id: string;
+      name: string;
+      startDate: string;
+      endDate: string;
+    };
+
+    items: Array<{
+      ticketTypeId: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+      ticketType: {
+        id: string;
+        name: string;
+      };
+    }>;
+
+    participants: Array<{
+      id: string;
+      firstName: string;
+      lastName: string | null;
+      age: number;
+      ticketTypeId: string;
+    }>;
+
+    products: Array<{
+      productId: string;
+      quantity: number;
+      unitPrice: number;
+      product: {
+        id: string;
+        name: string;
+        slug: string;
+      };
+    }>;
+  };
+
+  ruleEvaluation: {
+    valid: boolean;
+    matchedRuleIds: string[];
+    requiredProducts: unknown[];
+    errors: string[];
+    warnings: string[];
+  };
+}
+
+export const publicBookingService = {
+  getEvent(eventId: string) {
+    return publicApi.get<PublicEvent>(
+      `/public/events/${eventId}`,
+    );
+  },
+
+  getSessions(eventId: string) {
+    return publicApi.get<PublicSession[]>(
+      `/public/events/${eventId}/sessions`,
+    );
+  },
+
+  getTicketTypes(eventId: string) {
+    return publicApi.get<PublicTicketType[]>(
+      `/public/events/${eventId}/ticket-types`,
+    );
+  },
+
+  evaluateRules(
+    eventId: string,
+    data: PublicRulePreviewInput,
+  ) {
+    return publicApi.post<PublicRulePreviewResponse>(
+      `/public/events/${eventId}/evaluate-rules`,
+      data,
+    );
+  },
+
+  getSessionProducts(sessionId: string) {
+    return publicApi.get<PublicSessionProduct[]>(
+      `/public/sessions/${sessionId}/products`,
+    );
+  },
+
+  createCustomer(
+    data: CreatePublicCustomerInput,
+  ) {
+    return publicApi.post<PublicCustomer>(
+      "/public/customers",
+      data,
+    );
+  },
+
+  createBooking(
+    data: CreatePublicBookingInput,
+  ) {
+    return publicApi.post<PublicBookingResponse>(
+      "/public/bookings",
+      data,
+    );
+  },
+};

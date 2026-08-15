@@ -1,0 +1,552 @@
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { BookingService } from '../booking/booking.service';
+import { CreateBookingDto } from '../booking/dto/create-booking.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
+
+interface EvaluatePublicRulesParticipant {
+  firstName: string;
+  lastName?: string;
+  age: number;
+  ticketTypeId: string;
+}
+
+interface EvaluatePublicRulesData {
+  sessionId: string;
+  flexibleBooking?: boolean;
+  participants: EvaluatePublicRulesParticipant[];
+}
+
+@Injectable()
+export class PublicBookingService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly bookingService: BookingService,
+    private readonly ruleEvaluationService: RuleEvaluationService,
+  ) {}
+
+  async findEvent(eventId: string) {
+    const event =
+      await this.prisma.event.findFirst({
+        where: {
+          id: eventId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          startDate: true,
+          endDate: true,
+          timezone: true,
+          status: true,
+        },
+      });
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found.',
+      );
+    }
+
+    return event;
+  }
+
+  async findSessions(eventId: string) {
+    const event =
+      await this.prisma.event.findFirst({
+        where: {
+          id: eventId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found.',
+      );
+    }
+
+    return this.prisma.session.findMany({
+      where: {
+        eventId,
+        status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        name: true,
+        startDate: true,
+        endDate: true,
+        capacity: true,
+        status: true,
+        salesStart: true,
+        salesEnd: true,
+        eventId: true,
+      },
+      orderBy: {
+        startDate: 'asc',
+      },
+    });
+  }
+
+  async findTicketTypes(eventId: string) {
+    const event =
+      await this.prisma.event.findFirst({
+        where: {
+          id: eventId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found.',
+      );
+    }
+
+    return this.prisma.ticketType.findMany({
+      where: {
+        eventId,
+        active: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        price: true,
+        capacity: true,
+        active: true,
+        saleStart: true,
+        saleEnd: true,
+        eventId: true,
+      },
+    });
+  }
+
+  async evaluateRules(
+    eventId: string,
+    data: EvaluatePublicRulesData,
+  ) {
+    const event =
+      await this.prisma.event.findFirst({
+        where: {
+          id: eventId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event not found.',
+      );
+    }
+
+    const session =
+      await this.prisma.session.findFirst({
+        where: {
+          id: data.sessionId,
+          eventId,
+          status: 'ACTIVE',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!session) {
+      throw new NotFoundException(
+        'Session not found.',
+      );
+    }
+
+    const matchedRuleIds =
+      new Set<string>();
+
+    const requiredProductMap =
+      new Map<
+        string,
+        {
+          productSlug: string;
+          quantity: number;
+          ruleIds: Set<string>;
+          messages: Set<string>;
+        }
+      >();
+
+const errors: string[] = [];
+const warnings: string[] = [];
+
+const bookingTicketTypeIds =
+  data.participants.map(
+    (participant) =>
+      participant.ticketTypeId,
+  );
+
+for (const participant of data.participants) {
+  const evaluation =
+    await this.ruleEvaluationService.evaluate(
+      eventId,
+      {
+        customerAge:
+          participant.age,
+        participantAge:
+          participant.age,
+        participantFirstName:
+          participant.firstName,
+        participantLastName:
+          participant.lastName ?? null,
+        ticketTypeId:
+          participant.ticketTypeId,
+        sessionId:
+          data.sessionId,
+        eventId,
+        flexibleBooking:
+          data.flexibleBooking ?? false,
+        participantCount:
+          data.participants.length,
+        bookingTicketTypeIds,
+      },
+    );
+      for (
+        const ruleId of
+        evaluation.matchedRuleIds
+      ) {
+        matchedRuleIds.add(
+          ruleId,
+        );
+      }
+
+      for (
+        const error of
+        evaluation.errors
+      ) {
+        errors.push(
+          `${participant.firstName}: ${error}`,
+        );
+      }
+
+      for (
+        const warning of
+        evaluation.warnings
+      ) {
+        warnings.push(
+          `${participant.firstName}: ${warning}`,
+        );
+      }
+
+      for (
+        const requiredProduct of
+        evaluation.requiredProducts
+      ) {
+        const existingRequirement =
+          requiredProductMap.get(
+            requiredProduct.productSlug,
+          );
+
+        if (existingRequirement) {
+          existingRequirement.quantity +=
+            requiredProduct.quantity;
+
+          existingRequirement.ruleIds.add(
+            requiredProduct.ruleId,
+          );
+
+          if (
+            requiredProduct.message
+          ) {
+            existingRequirement.messages.add(
+              requiredProduct.message,
+            );
+          }
+
+          continue;
+        }
+
+        requiredProductMap.set(
+          requiredProduct.productSlug,
+          {
+            productSlug:
+              requiredProduct.productSlug,
+            quantity:
+              requiredProduct.quantity,
+            ruleIds: new Set([
+              requiredProduct.ruleId,
+            ]),
+            messages: new Set(
+              requiredProduct.message
+                ? [
+                    requiredProduct.message,
+                  ]
+                : [],
+            ),
+          },
+        );
+      }
+    }
+
+    const requiredProducts =
+      Array.from(
+        requiredProductMap.values(),
+      ).map(
+        (requirement) => ({
+          productSlug:
+            requirement.productSlug,
+          quantity:
+            requirement.quantity,
+          ruleIds: Array.from(
+            requirement.ruleIds,
+          ),
+          messages: Array.from(
+            requirement.messages,
+          ),
+        }),
+      );
+
+    return {
+      valid:
+        errors.length === 0,
+      matchedRuleIds:
+        Array.from(
+          matchedRuleIds,
+        ),
+      requiredProducts,
+      errors,
+      warnings,
+    };
+  }
+
+  async findSessionProducts(
+    sessionId: string,
+  ) {
+    const session =
+      await this.prisma.session.findFirst({
+        where: {
+          id: sessionId,
+          status: 'ACTIVE',
+          event: {
+            status: 'ACTIVE',
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!session) {
+      throw new NotFoundException(
+        'Session not found.',
+      );
+    }
+
+    return this.prisma.sessionProduct.findMany({
+      where: {
+        sessionId,
+        active: true,
+        product: {
+          status: 'ACTIVE',
+          availableOnline: true,
+          productType: {
+            not: 'ADMISSION',
+          },
+        },
+      },
+      select: {
+        id: true,
+        sessionId: true,
+        productId: true,
+        sortOrder: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            price: true,
+            imageUrl: true,
+            minQuantity: true,
+            maxQuantity: true,
+            salesStart: true,
+            salesEnd: true,
+            eventId: true,
+          },
+        },
+      },
+      orderBy: [
+        {
+          sortOrder: 'asc',
+        },
+        {
+          createdAt: 'asc',
+        },
+      ],
+    });
+  }
+
+  createCustomer(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  }) {
+    return this.prisma.customer.create({
+      data,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+      },
+    });
+  }
+
+  async createBooking(
+    data: CreateBookingDto,
+  ) {
+    const result =
+      await this.bookingService.create(
+        data,
+      );
+
+    const booking =
+      result.booking;
+
+    if (!booking.session) {
+      throw new NotFoundException(
+        'Booking session not found.',
+      );
+    }
+
+    return {
+      booking: {
+        id: booking.id,
+        bookingNumber:
+          booking.bookingNumber,
+        status: booking.status,
+        paymentStatus:
+          booking.paymentStatus,
+        total: booking.total,
+        reservedUntil:
+          booking.reservedUntil,
+        flexibleBooking:
+          booking.flexibleBooking,
+
+        customer: {
+          id: booking.customer.id,
+          firstName:
+            booking.customer
+              .firstName,
+          lastName:
+            booking.customer
+              .lastName,
+          email:
+            booking.customer.email,
+          phone:
+            booking.customer.phone,
+        },
+
+        event: {
+          id: booking.event.id,
+          name: booking.event.name,
+          slug: booking.event.slug,
+          timezone:
+            booking.event.timezone,
+        },
+
+        session: {
+          id: booking.session.id,
+          name:
+            booking.session.name,
+          startDate:
+            booking.session
+              .startDate,
+          endDate:
+            booking.session.endDate,
+        },
+
+        items:
+          booking.items.map(
+            (item) => ({
+              ticketTypeId:
+                item.ticketTypeId,
+              quantity:
+                item.quantity,
+              unitPrice:
+                item.unitPrice,
+              totalPrice:
+                item.totalPrice,
+              ticketType: {
+                id:
+                  item.ticketType.id,
+                name:
+                  item.ticketType
+                    .name,
+              },
+            }),
+          ),
+
+        participants:
+          booking.participants.map(
+            (participant) => ({
+              id:
+                participant.id,
+              firstName:
+                participant
+                  .firstName,
+              lastName:
+                participant
+                  .lastName,
+              age:
+                participant.age,
+              ticketTypeId:
+                participant
+                  .ticketTypeId,
+            }),
+          ),
+
+        products:
+          booking.products.map(
+            (bookingProduct) => ({
+              productId:
+                bookingProduct
+                  .productId,
+              quantity:
+                bookingProduct
+                  .quantity,
+              unitPrice:
+                bookingProduct
+                  .unitPrice,
+              product: {
+                id:
+                  bookingProduct
+                    .product.id,
+                name:
+                  bookingProduct
+                    .product.name,
+                slug:
+                  bookingProduct
+                    .product.slug,
+              },
+            }),
+          ),
+      },
+
+      ruleEvaluation:
+        result.ruleEvaluation,
+    };
+  }
+}
