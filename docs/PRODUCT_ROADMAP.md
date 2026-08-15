@@ -23,6 +23,11 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 - Event timezone handling
 - Session management
 - Schedule exception handling
+- Public customer booking flow
+- Public booking API boundary
+- Ticket-age eligibility rules
+- Rule-driven required Add-ons
+- Cross-participant booking rules
 
 ## Completed
 
@@ -41,6 +46,8 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 ✔ Operational Scheduling
 
 ✔ Session Management
+
+✔ Customer Booking Flow Foundation
 
 ---
 
@@ -120,9 +127,40 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ---
 
+## Sprint 14 Complete
+
+### Customer Booking Flow Foundation
+
+- Dedicated public booking API boundary
+- Public Event and Session discovery
+- Public Ticket Type discovery
+- Customer booking route
+- Ticket selection
+- Participant capture
+- Adult / Child / Young Child Ticket Types
+- Ticket-age validation
+- Rule-driven Kanga requirements
+- Young Child Adult-accompaniment rule
+- Optional additional Add-ons
+- Customer contact capture
+- Review & Reserve
+- Reservation creation
+- Reservation confirmation and expiry countdown
+
+### Verification
+
+- 29 Public Booking tests passing
+- 36 BookingService regression tests passing
+- API production build passing
+- Web production build passing
+- Mixed booking browser flow verified
+- Rule-driven booking behaviour verified
+
+---
+
 ## Current
 
-→ Sprint 14
+→ Sprint 15
 
 Scope to be defined during Sprint planning.
 
@@ -130,8 +168,6 @@ Scope to be defined during Sprint planning.
 
 ## Future
 
-- Booking engine product integration
-- Capacity and inventory reservations
 - Rule-engine integration
 - Payments
 - Waivers

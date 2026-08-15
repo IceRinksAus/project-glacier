@@ -1,5 +1,81 @@
 # Changelog
 
+
+# Sprint 14 – Customer Booking Flow Foundation
+
+## Added
+
+- Dedicated public booking API boundary
+- Public Event discovery
+- Public Session discovery
+- Public Ticket Type discovery
+- Public Session Product / Add-on discovery
+- Public Customer creation
+- Public Booking creation
+- Public booking Rule Evaluation preview
+- Customer booking route using `/book/[eventId]`
+- Session selection
+- Multi-Ticket-Type selection
+- Participant capture
+- Adult, Child and Young Child Ticket Types
+- Ticket-age eligibility rules
+- Rule-driven Kanga Skating Aid requirements
+- Young Child Adult-accompaniment rule
+- Booking-level Ticket Type rule context
+- Rule Engine `CONTAINS` and `NOT_CONTAINS` operators
+- Add-on quantity controls
+- Required Add-on minimum quantities
+- Optional additional Kanga quantities
+- Customer contact capture
+- Review & Reserve flow
+- Reservation confirmation
+- Reservation expiry countdown
+- Public booking automated test suite
+
+## Improved
+
+- BookingService Rule Engine context
+- Cross-participant rule support
+- Public customer API security boundary
+- Admission / Add-on separation
+- Required-product consolidation
+- Multi-participant required-product quantities
+- Customer booking flow ordering
+- Rule feedback during participant capture
+- Booking review and pricing visibility
+- Public response minimisation
+
+## Product Decisions
+
+- Young Child (3–5) is treated as a distinct Ticket Type.
+- Young Child Tickets require a Kanga Skating Aid.
+- Required Add-ons establish minimum quantities rather than fixed quantities.
+- Customers may add additional optional Kangas.
+- Young Child Tickets require at least one Adult Ticket in the same booking.
+- Participant capture occurs before Add-ons so mandatory requirements are known before optional extras are selected.
+- The current customer UI is a functional foundation; final customer UX refinement remains future work.
+
+## Verification
+
+- Public Booking tests: 29 passed
+- BookingService regression tests: 36 passed
+- API production build: passed
+- Web production build: passed
+- `git diff --check`: passed
+- Mixed Ticket Type booking flow: verified
+- Ticket-age validation: verified
+- Young Child Kanga requirement: verified
+- Young Child Adult-accompaniment rule: verified
+- Optional additional Kanga selection: verified
+- BookingProduct persistence: verified
+- Reservation creation and expiry countdown: verified
+
+## Known Technical Debt
+
+- Historical Nest scaffold tests remain incomplete in parts of the wider repository.
+- Product lifecycle/status administration requires a future operator-facing workflow.
+- Public booking UX requires a dedicated production design pass before launch.
+
 # Sprint 13 – Session Management & Schedule Exceptions
 
 ## Added
