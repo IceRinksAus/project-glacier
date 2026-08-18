@@ -3,6 +3,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import {
+  createHash,
+  randomBytes,
+} from 'node:crypto';
+
 import { BookingService } from '../booking/booking.service';
 import { CreateBookingDto } from '../booking/dto/create-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -187,40 +192,41 @@ export class PublicBookingService {
         }
       >();
 
-const errors: string[] = [];
-const warnings: string[] = [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
 
-const bookingTicketTypeIds =
-  data.participants.map(
-    (participant) =>
-      participant.ticketTypeId,
-  );
-
-for (const participant of data.participants) {
-  const evaluation =
-    await this.ruleEvaluationService.evaluate(
-      eventId,
-      {
-        customerAge:
-          participant.age,
-        participantAge:
-          participant.age,
-        participantFirstName:
-          participant.firstName,
-        participantLastName:
-          participant.lastName ?? null,
-        ticketTypeId:
+    const bookingTicketTypeIds =
+      data.participants.map(
+        (participant) =>
           participant.ticketTypeId,
-        sessionId:
-          data.sessionId,
-        eventId,
-        flexibleBooking:
-          data.flexibleBooking ?? false,
-        participantCount:
-          data.participants.length,
-        bookingTicketTypeIds,
-      },
-    );
+      );
+
+    for (const participant of data.participants) {
+      const evaluation =
+        await this.ruleEvaluationService.evaluate(
+          eventId,
+          {
+            customerAge:
+              participant.age,
+            participantAge:
+              participant.age,
+            participantFirstName:
+              participant.firstName,
+            participantLastName:
+              participant.lastName ?? null,
+            ticketTypeId:
+              participant.ticketTypeId,
+            sessionId:
+              data.sessionId,
+            eventId,
+            flexibleBooking:
+              data.flexibleBooking ?? false,
+            participantCount:
+              data.participants.length,
+            bookingTicketTypeIds,
+          },
+        );
+
       for (
         const ruleId of
         evaluation.matchedRuleIds
@@ -431,6 +437,33 @@ for (const participant of data.participants) {
       );
     }
 
+    /*
+     * Generate a high-entropy public access token.
+     *
+     * The raw token is returned once to the customer.
+     * Glacier stores only its SHA-256 hash.
+     */
+    const publicAccessToken =
+      randomBytes(32).toString('hex');
+
+    const publicAccessTokenHash =
+      createHash('sha256')
+        .update(publicAccessToken)
+        .digest('hex');
+
+    const publicAccessTokenCreatedAt =
+      new Date();
+
+    await this.prisma.booking.update({
+      where: {
+        id: booking.id,
+      },
+      data: {
+        publicAccessTokenHash,
+        publicAccessTokenCreatedAt,
+      },
+    });
+
     return {
       booking: {
         id: booking.id,
@@ -444,6 +477,14 @@ for (const participant of data.participants) {
           booking.reservedUntil,
         flexibleBooking:
           booking.flexibleBooking,
+
+        /*
+         * Returned only through this public
+         * reservation-creation response.
+         *
+         * The stored hash is never exposed.
+         */
+        publicAccessToken,
 
         customer: {
           id: booking.customer.id,

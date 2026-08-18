@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 
 import { CreateBookingDto } from '../booking/dto/create-booking.dto';
+
 import { PublicBookingService } from './public-booking.service';
+import { PublicPaymentService } from './public-payment.service';
 
 interface EvaluatePublicRulesParticipant {
   firstName: string;
@@ -22,10 +24,15 @@ interface EvaluatePublicRulesBody {
   participants: EvaluatePublicRulesParticipant[];
 }
 
+interface CreatePublicPaymentBody {
+  publicAccessToken: string;
+}
+
 @Controller('public')
 export class PublicBookingController {
   constructor(
     private readonly publicBookingService: PublicBookingService,
+    private readonly publicPaymentService: PublicPaymentService,
   ) {}
 
   @Get('events/:eventId')
@@ -96,6 +103,17 @@ export class PublicBookingController {
   ) {
     return this.publicBookingService.createBooking(
       data,
+    );
+  }
+
+  @Post('bookings/:bookingId/payments')
+  createPayment(
+    @Param('bookingId') bookingId: string,
+    @Body() data: CreatePublicPaymentBody,
+  ) {
+    return this.publicPaymentService.createPayment(
+      bookingId,
+      data.publicAccessToken,
     );
   }
 }

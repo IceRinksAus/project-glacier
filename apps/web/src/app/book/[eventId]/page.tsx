@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { ReservationCountdown } from "@/components/booking/ReservationCountdown";
+import { PaymentStep } from "@/components/booking/PaymentStep";
 
 import {
   PublicBookingResponse,
@@ -127,6 +128,13 @@ const [
   useState<PublicBookingResponse | null>(
     null,
   );
+
+  const [
+  paymentReference,
+  setPaymentReference,
+] = useState<string | null>(
+  null,
+);
 
   const [
     isSubmitting,
@@ -1733,106 +1741,134 @@ setSubmissionError(null);
                   </div>
                 ) : null}
 
-                {reservation ? (
-                  <div className="mt-6 rounded-2xl border bg-background p-6">
-                    <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                      Reservation created
-                    </p>
+               {reservation ? (
+  <div className="mt-6 rounded-2xl border bg-background p-6">
+    <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+      {paymentReference
+        ? "Booking confirmed"
+        : "Reservation created"}
+    </p>
 
-                    <h3 className="mt-2 text-2xl font-semibold">
-                      {
-                        reservation.booking
-                          .bookingNumber
-                      }
-                    </h3>
-
-                    <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Status
-                        </p>
-
-                        <p className="mt-1 font-semibold">
-                          {
-                            reservation.booking
-                              .status
-                          }
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Payment
-                        </p>
-
-                        <p className="mt-1 font-semibold">
-                          {
-                            reservation.booking
-                              .paymentStatus
-                          }
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm text-muted-foreground">
-                          Total
-                        </p>
-
-                        <p className="mt-1 font-semibold">
-                          {formatCurrency(
-                            reservation.booking
-                              .total,
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-{reservation.booking
-  .reservedUntil ? (
-  <div className="mt-5">
-    <ReservationCountdown
-      reservedUntil={
+    <h3 className="mt-2 text-2xl font-semibold">
+      {
         reservation.booking
-          .reservedUntil
+          .bookingNumber
       }
-    />
+    </h3>
+
+    <div className="mt-5 grid gap-4 sm:grid-cols-3">
+      <div>
+        <p className="text-sm text-muted-foreground">
+          Status
+        </p>
+
+        <p className="mt-1 font-semibold">
+          {paymentReference
+            ? "CONFIRMED"
+            : reservation.booking.status}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-sm text-muted-foreground">
+          Payment
+        </p>
+
+        <p className="mt-1 font-semibold">
+          {paymentReference
+            ? "PAID"
+            : reservation.booking
+                .paymentStatus}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-sm text-muted-foreground">
+          Total
+        </p>
+
+        <p className="mt-1 font-semibold">
+          {formatCurrency(
+            reservation.booking.total,
+          )}
+        </p>
+      </div>
+    </div>
+
+    {!paymentReference &&
+    reservation.booking
+      .reservedUntil ? (
+      <div className="mt-5">
+        <ReservationCountdown
+          reservedUntil={
+            reservation.booking
+              .reservedUntil
+          }
+        />
+      </div>
+    ) : null}
+
+    {reservation.ruleEvaluation
+      .warnings.length > 0 ? (
+      <div className="mt-5 rounded-xl border p-4">
+        <p className="font-medium">
+          Booking information
+        </p>
+
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          {reservation.ruleEvaluation.warnings.map(
+            (
+              warning,
+              index,
+            ) => (
+              <li
+                key={`${warning}-${index}`}
+              >
+                {warning}
+              </li>
+            ),
+          )}
+        </ul>
+      </div>
+    ) : null}
+
+    {!paymentReference ? (
+      <PaymentStep
+  reservation={reservation}
+  onPaymentSubmitted={() => {
+    setPaymentReference(
+      "PENDING_WEBHOOK",
+    );
+  }}
+/>
+    ) : (
+      <div className="mt-6 rounded-2xl border bg-background p-6">
+        <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          Payment confirmed
+        </p>
+
+        <h4 className="mt-2 text-xl font-semibold">
+          Your booking is confirmed
+        </h4>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Payment has been received and your
+          tickets have been issued.
+        </p>
+
+        <div className="mt-4 rounded-xl border p-4">
+          <p className="text-sm text-muted-foreground">
+            Payment reference
+          </p>
+
+          <p className="mt-1 break-all font-mono text-sm font-medium">
+            {paymentReference}
+          </p>
+        </div>
+      </div>
+    )}
   </div>
 ) : null}
-                    {reservation.ruleEvaluation
-                      .warnings.length >
-                    0 ? (
-                      <div className="mt-5 rounded-xl border p-4">
-                        <p className="font-medium">
-                          Booking information
-                        </p>
-
-                        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-                          {reservation.ruleEvaluation.warnings.map(
-                            (
-                              warning,
-                              index,
-                            ) => (
-                              <li
-                                key={`${warning}-${index}`}
-                              >
-                                {
-                                  warning
-                                }
-                              </li>
-                            ),
-                          )}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    <p className="mt-5 text-sm text-muted-foreground">
-                      Payment will be added
-                      in a later step. This
-                      reservation is currently
-                      unpaid.
-                    </p>
-                  </div>
-                ) : null}
               </section>
             ) : null}
           </>

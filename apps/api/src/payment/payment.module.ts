@@ -1,19 +1,32 @@
 import { Module } from '@nestjs/common';
+
 import { TicketModule } from '../ticket/ticket.module';
+
 import { PaymentController } from './payment.controller';
-import { MockPaymentProvider } from './mock-payment.provider';
 import { PaymentService } from './payment.service';
+import { StripePaymentProvider } from './stripe-payment.provider';
+import { StripeWebhookController } from './stripe-webhook.controller';
+import { StripeWebhookService } from './stripe-webhook.service';
 
 @Module({
-  imports: [TicketModule],
-  controllers: [PaymentController],
+  imports: [
+    TicketModule,
+  ],
+  controllers: [
+    PaymentController,
+    StripeWebhookController,
+  ],
   providers: [
     PaymentService,
-    MockPaymentProvider,
+    StripePaymentProvider,
+    StripeWebhookService,
     {
       provide: 'PAYMENT_PROVIDER',
-      useExisting: MockPaymentProvider,
+      useExisting: StripePaymentProvider,
     },
+  ],
+  exports: [
+    PaymentService,
   ],
 })
 export class PaymentModule {}

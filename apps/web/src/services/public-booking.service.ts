@@ -131,6 +131,14 @@ export interface PublicBookingResponse {
     reservedUntil: string | null;
     flexibleBooking: boolean;
 
+    /*
+     * Returned only when a public reservation is created.
+     *
+     * This credential is required for subsequent customer
+     * operations such as payment.
+     */
+    publicAccessToken: string;
+
     customer: {
       id: string;
       firstName: string;
@@ -193,6 +201,16 @@ export interface PublicBookingResponse {
   };
 }
 
+export interface PublicPaymentResponse {
+  provider: string;
+  paymentReference: string;
+  status:
+    | "PENDING"
+    | "SUCCEEDED"
+    | "FAILED";
+  clientSecret?: string;
+}
+
 export const publicBookingService = {
   getEvent(eventId: string) {
     return publicApi.get<PublicEvent>(
@@ -243,6 +261,18 @@ export const publicBookingService = {
     return publicApi.post<PublicBookingResponse>(
       "/public/bookings",
       data,
+    );
+  },
+
+  createPayment(
+    bookingId: string,
+    publicAccessToken: string,
+  ) {
+    return publicApi.post<PublicPaymentResponse>(
+      `/public/bookings/${bookingId}/payments`,
+      {
+        publicAccessToken,
+      },
     );
   },
 };

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { BookingService } from './booking.service';
 
@@ -33,7 +34,7 @@ describe('BookingService', () => {
   const adultTicketType = {
     id: 'ticket-adult',
     name: 'Adult',
-    price: 24,
+    price: new Prisma.Decimal(24),
     active: true,
     eventId: 'event-1',
   };
@@ -41,7 +42,7 @@ describe('BookingService', () => {
   const childTicketType = {
     id: 'ticket-child',
     name: 'Child',
-    price: 18,
+    price: new Prisma.Decimal(18),
     active: true,
     eventId: 'event-1',
   };
@@ -579,23 +580,21 @@ describe('BookingService', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           items: {
-            create: expect.arrayContaining([
-              {
-                ticketTypeId:
-                  'ticket-adult',
-                quantity: 2,
-                unitPrice: 24,
-                totalPrice: 48,
-              },
-              {
-                ticketTypeId:
-                  'ticket-child',
-                quantity: 1,
-                unitPrice: 18,
-                totalPrice: 18,
-              },
-            ]),
-          },
+  create: expect.arrayContaining([
+    {
+      ticketTypeId: 'ticket-adult',
+      quantity: 2,
+      unitPrice: new Prisma.Decimal(24),
+      totalPrice: new Prisma.Decimal(48),
+    },
+    {
+      ticketTypeId: 'ticket-child',
+      quantity: 1,
+      unitPrice: new Prisma.Decimal(18),
+      totalPrice: new Prisma.Decimal(18),
+    },
+  ]),
+},
         }),
       }),
     );
@@ -619,7 +618,7 @@ describe('BookingService', () => {
           reservedUntil:
             expect.any(Date),
           paymentStatus: 'UNPAID',
-          total: 24,
+          total: new Prisma.Decimal(24),
           flexibleBooking: false,
           customerId: 'customer-1',
           eventId: 'event-1',
@@ -630,8 +629,8 @@ describe('BookingService', () => {
                 ticketTypeId:
                   'ticket-adult',
                 quantity: 1,
-                unitPrice: 24,
-                totalPrice: 24,
+                unitPrice: new Prisma.Decimal(24),
+                totalPrice: new Prisma.Decimal(24),
               },
             ],
           },

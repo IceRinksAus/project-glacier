@@ -1,5 +1,6 @@
 import { PublicBookingController } from './public-booking.controller';
 import { PublicBookingService } from './public-booking.service';
+import { PublicPaymentService } from './public-payment.service';
 
 describe('PublicBookingController', () => {
   let controller: PublicBookingController;
@@ -8,17 +9,24 @@ describe('PublicBookingController', () => {
     findEvent: jest.fn(),
     findSessions: jest.fn(),
     findTicketTypes: jest.fn(),
+    evaluateRules: jest.fn(),
     findSessionProducts: jest.fn(),
     createCustomer: jest.fn(),
     createBooking: jest.fn(),
   };
 
+  const publicPaymentService = {
+    createPayment: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
-    controller = new PublicBookingController(
-      publicBookingService as unknown as PublicBookingService,
-    );
+    controller =
+      new PublicBookingController(
+        publicBookingService as unknown as PublicBookingService,
+        publicPaymentService as unknown as PublicPaymentService,
+      );
   });
 
   it('should be defined', () => {
@@ -28,16 +36,20 @@ describe('PublicBookingController', () => {
   it('should return a public event', async () => {
     const event = {
       id: 'event-1',
-      name: 'Australian Ice Festival 2027',
-      slug: 'australian-ice-festival-2027',
-      description: 'A winter ice skating festival.',
+      name:
+        'Australian Ice Festival 2027',
+      slug:
+        'australian-ice-festival-2027',
+      description:
+        'A winter ice skating festival.',
       startDate: new Date(
         '2027-06-25T00:00:00.000Z',
       ),
       endDate: new Date(
         '2027-07-18T23:59:59.999Z',
       ),
-      timezone: 'Australia/Melbourne',
+      timezone:
+        'Australia/Melbourne',
       status: 'ACTIVE',
     };
 
@@ -45,22 +57,28 @@ describe('PublicBookingController', () => {
       event,
     );
 
-    const result = await controller.findEvent(
-      'event-1',
-    );
+    const result =
+      await controller.findEvent(
+        'event-1',
+      );
 
     expect(
       publicBookingService.findEvent,
-    ).toHaveBeenCalledWith('event-1');
+    ).toHaveBeenCalledWith(
+      'event-1',
+    );
 
-    expect(result).toEqual(event);
+    expect(result).toEqual(
+      event,
+    );
   });
 
   it('should return public sessions for an event', async () => {
     const sessions = [
       {
         id: 'session-1',
-        name: 'Morning Public Skate',
+        name:
+          'Morning Public Skate',
         startDate: new Date(
           '2027-07-05T00:00:00.000Z',
         ),
@@ -79,15 +97,20 @@ describe('PublicBookingController', () => {
       sessions,
     );
 
-    const result = await controller.findSessions(
-      'event-1',
-    );
+    const result =
+      await controller.findSessions(
+        'event-1',
+      );
 
     expect(
       publicBookingService.findSessions,
-    ).toHaveBeenCalledWith('event-1');
+    ).toHaveBeenCalledWith(
+      'event-1',
+    );
 
-    expect(result).toEqual(sessions);
+    expect(result).toEqual(
+      sessions,
+    );
   });
 
   it('should return public ticket types for an event', async () => {
@@ -95,7 +118,8 @@ describe('PublicBookingController', () => {
       {
         id: 'ticket-type-1',
         name: 'Adult',
-        description: 'Adult admission',
+        description:
+          'Adult admission',
         price: 24,
         capacity: 200,
         active: true,
@@ -116,30 +140,105 @@ describe('PublicBookingController', () => {
 
     expect(
       publicBookingService.findTicketTypes,
-    ).toHaveBeenCalledWith('event-1');
+    ).toHaveBeenCalledWith(
+      'event-1',
+    );
 
-    expect(result).toEqual(ticketTypes);
+    expect(result).toEqual(
+      ticketTypes,
+    );
+  });
+
+  it('should evaluate public booking rules', async () => {
+    const evaluationData = {
+      sessionId:
+        'session-1',
+      flexibleBooking:
+        false,
+      participants: [
+        {
+          firstName:
+            'Young',
+          lastName:
+            'Skater',
+          age: 4,
+          ticketTypeId:
+            'ticket-type-1',
+        },
+      ],
+    };
+
+    const evaluationResult = {
+      valid: true,
+      matchedRuleIds: [
+        'rule-kanga-age-3-5',
+      ],
+      requiredProducts: [
+        {
+          productSlug:
+            'kanga-skating-aid',
+          quantity: 1,
+          ruleIds: [
+            'rule-kanga-age-3-5',
+          ],
+          messages: [
+            'Children aged 3 to 5 require a Kanga Skating Aid.',
+          ],
+        },
+      ],
+      errors: [],
+      warnings: [],
+    };
+
+    publicBookingService.evaluateRules.mockResolvedValue(
+      evaluationResult,
+    );
+
+    const result =
+      await controller.evaluateRules(
+        'event-1',
+        evaluationData,
+      );
+
+    expect(
+      publicBookingService.evaluateRules,
+    ).toHaveBeenCalledWith(
+      'event-1',
+      evaluationData,
+    );
+
+    expect(result).toEqual(
+      evaluationResult,
+    );
   });
 
   it('should return public products for a session', async () => {
     const sessionProducts = [
       {
-        id: 'session-product-1',
-        sessionId: 'session-1',
-        productId: 'product-kanga',
+        id:
+          'session-product-1',
+        sessionId:
+          'session-1',
+        productId:
+          'product-kanga',
         sortOrder: 0,
         product: {
-          id: 'product-kanga',
-          name: 'Kanga Skating Aid',
-          slug: 'kanga-skating-aid',
-          description: 'Skating aid hire',
+          id:
+            'product-kanga',
+          name:
+            'Kanga Skating Aid',
+          slug:
+            'kanga-skating-aid',
+          description:
+            'Skating aid hire',
           price: 10,
           imageUrl: null,
           minQuantity: 0,
           maxQuantity: 1,
           salesStart: null,
           salesEnd: null,
-          eventId: 'event-1',
+          eventId:
+            'event-1',
         },
       },
     ];
@@ -168,12 +267,15 @@ describe('PublicBookingController', () => {
     const customerData = {
       firstName: 'Jamie',
       lastName: 'Stoller',
-      email: 'jamie@example.com',
-      phone: '0400000000',
+      email:
+        'jamie@example.com',
+      phone:
+        '0400000000',
     };
 
     const createdCustomer = {
-      id: 'customer-1',
+      id:
+        'customer-1',
       ...customerData,
     };
 
@@ -199,16 +301,23 @@ describe('PublicBookingController', () => {
 
   it('should create a public booking through the existing booking engine', async () => {
     const bookingData = {
-      customerId: 'customer-1',
-      eventId: 'event-1',
-      sessionId: 'session-1',
-      flexibleBooking: false,
+      customerId:
+        'customer-1',
+      eventId:
+        'event-1',
+      sessionId:
+        'session-1',
+      flexibleBooking:
+        false,
       participants: [
         {
-          firstName: 'Jamie',
-          lastName: 'Stoller',
+          firstName:
+            'Jamie',
+          lastName:
+            'Stoller',
           age: 35,
-          ticketTypeId: 'ticket-type-1',
+          ticketTypeId:
+            'ticket-type-1',
         },
       ],
       products: [],
@@ -216,18 +325,29 @@ describe('PublicBookingController', () => {
 
     const createdBookingResult = {
       booking: {
-        id: 'booking-1',
-        bookingNumber: 'PG-1234567890-1234',
-        status: 'RESERVED',
-        paymentStatus: 'UNPAID',
+        id:
+          'booking-1',
+        bookingNumber:
+          'PG-1234567890-1234',
+        status:
+          'RESERVED',
+        paymentStatus:
+          'UNPAID',
         total: 24,
-        flexibleBooking: false,
-        customerId: 'customer-1',
-        eventId: 'event-1',
-        sessionId: 'session-1',
-        reservedUntil: new Date(
-          '2027-07-05T00:15:00.000Z',
-        ),
+        flexibleBooking:
+          false,
+        customerId:
+          'customer-1',
+        eventId:
+          'event-1',
+        sessionId:
+          'session-1',
+        reservedUntil:
+          new Date(
+            '2027-07-05T00:15:00.000Z',
+          ),
+        publicAccessToken:
+          'public-access-token',
       },
       ruleEvaluation: {
         valid: true,
@@ -255,6 +375,39 @@ describe('PublicBookingController', () => {
 
     expect(result).toEqual(
       createdBookingResult,
+    );
+  });
+
+  it('should create a public payment only through the secure public payment service', async () => {
+    const paymentResult = {
+      provider: 'MOCK',
+      paymentReference:
+        'mock-payment-1',
+      status: 'PENDING',
+    };
+
+    publicPaymentService.createPayment.mockResolvedValue(
+      paymentResult,
+    );
+
+    const result =
+      await controller.createPayment(
+        'booking-1',
+        {
+          publicAccessToken:
+            'customer-public-access-token',
+        },
+      );
+
+    expect(
+      publicPaymentService.createPayment,
+    ).toHaveBeenCalledWith(
+      'booking-1',
+      'customer-public-access-token',
+    );
+
+    expect(result).toEqual(
+      paymentResult,
     );
   });
 });

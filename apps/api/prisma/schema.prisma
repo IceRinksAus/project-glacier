@@ -50,10 +50,10 @@ model Event {
   name        String
   slug        String   @unique
   description String?
-startDate   DateTime
-endDate     DateTime
-timezone    String?
-status      String   @default("DRAFT")
+  startDate   DateTime
+  endDate     DateTime
+  timezone    String?
+  status      String   @default("DRAFT")
 
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -113,17 +113,17 @@ model Session {
   salesStart DateTime?
   salesEnd   DateTime?
 
-eventId String
-event   Event  @relation(fields: [eventId], references: [id])
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
 
-operationalScheduleId String?
-operationalSchedule   OperationalSchedule? @relation(fields: [operationalScheduleId], references: [id])
+  operationalScheduleId String?
+  operationalSchedule   OperationalSchedule? @relation(fields: [operationalScheduleId], references: [id])
 
-scheduleEntryId String?
+  scheduleEntryId String?
 
-scheduleExceptionType String @default("NONE")
+  scheduleExceptionType String @default("NONE")
 
-bookings Booking[]
+  bookings Booking[]
 
   sessionProducts SessionProduct[]
 
@@ -166,7 +166,7 @@ model Product {
    * Base price used when a product has no variants.
    * It may also act as the default price for its variants.
    */
-  price Float
+  price Decimal @db.Decimal(10, 2)
 
   gstRate Float @default(10)
 
@@ -231,7 +231,7 @@ model ProductVariant {
    * A variant may override the product's base price.
    * When null, Glacier will use Product.price.
    */
-  priceOverride Float?
+  priceOverride Decimal? @db.Decimal(10, 2)
 
   sku      String?
   barcode  String?
@@ -269,7 +269,7 @@ model SessionProduct {
 
   active Boolean @default(true)
 
-  priceOverride Float?
+  priceOverride Decimal? @db.Decimal(10, 2)
 
   capacityOverride Int?
 
@@ -293,7 +293,7 @@ model TicketType {
 
   description String?
 
-  price Float
+  price Decimal @db.Decimal(10, 2)
 
   capacity Int
 
@@ -333,7 +333,7 @@ model Booking {
 
   status String @default("PENDING")
 
-  total Float
+  total Decimal @db.Decimal(10, 2)
 
   flexibleBooking Boolean @default(false)
 
@@ -351,16 +351,19 @@ model Booking {
   participants BookingParticipant[]
   products     BookingProduct[]
   tickets      Ticket[]
+  payments     Payment[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
   paidAt        DateTime?
   expiredAt     DateTime?
 
-  paymentStatus    String   @default("UNPAID")
-  paymentReference String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  paymentStatus              String    @default("UNPAID")
+  paymentReference           String?
+  publicAccessTokenHash      String?   @unique
+  publicAccessTokenCreatedAt DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 }
 
 model BookingItem {
@@ -372,9 +375,9 @@ model BookingItem {
 
   quantity Int
 
-  unitPrice Float
+  unitPrice Decimal @db.Decimal(10, 2)
 
-  totalPrice Float
+  totalPrice Decimal @db.Decimal(10, 2)
 
   booking Booking @relation(fields: [bookingId], references: [id])
 
@@ -416,13 +419,86 @@ model BookingProduct {
   product   Product @relation(fields: [productId], references: [id])
 
   quantity  Int
-  unitPrice Decimal
+  unitPrice Decimal @db.Decimal(10, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([bookingId])
   @@index([productId])
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  provider String
+
+  providerReference String?
+  idempotencyKey    String  @unique
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("AUD")
+
+  status PaymentStatus @default(PENDING)
+
+  failureCode    String?
+  failureMessage String?
+
+  succeededAt DateTime?
+  failedAt    DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refunds PaymentRefund[]
+
+  @@index([bookingId])
+  @@index([provider, providerReference])
+  @@index([status])
+}
+
+enum PaymentRefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model PaymentRefund {
+  id String @id @default(cuid())
+
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  provider String
+
+  providerReference String? @unique
+  idempotencyKey    String  @unique
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("AUD")
+
+  status PaymentRefundStatus @default(PENDING)
+
+  reason String?
+
+  failureCode    String?
+  failureMessage String?
+
+  succeededAt DateTime?
+  failedAt    DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([provider, providerReference])
 }
 
 model EventUser {
@@ -493,5 +569,12 @@ model Rule {
 enum TicketStatus {
   ACTIVE
   SCANNED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
   CANCELLED
 }

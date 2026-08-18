@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { BookingValidationService } from '../booking-validation/booking-validation.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -468,62 +469,67 @@ const bookedQuantity =
       });
     }
 
-    /*
-     * Calculate ticket total and prepare booking item records.
-     */
-    let total = 0;
+/*
+ * Calculate ticket total and prepare booking item records.
+ *
+ * Monetary arithmetic uses Prisma.Decimal so booking totals remain
+ * deterministic and do not rely on JavaScript floating-point maths.
+ */
+let total = new Prisma.Decimal(0);
 
-    const bookingItems = consolidatedTicketItems.map((item) => {
-      const ticketType = ticketTypeMap.get(item.ticketTypeId);
+const bookingItems = consolidatedTicketItems.map((item) => {
+  const ticketType = ticketTypeMap.get(item.ticketTypeId);
 
-      if (!ticketType) {
-        throw new BadRequestException('Ticket type not found');
-      }
+  if (!ticketType) {
+    throw new BadRequestException('Ticket type not found');
+  }
 
-      const totalPrice = ticketType.price * item.quantity;
+  const totalPrice = ticketType.price.mul(item.quantity);
 
-      total += totalPrice;
+  total = total.add(totalPrice);
 
-      return {
-        ticketTypeId: ticketType.id,
-        quantity: item.quantity,
-        unitPrice: ticketType.price,
-        totalPrice,
-      };
-    });
+  return {
+    ticketTypeId: ticketType.id,
+    quantity: item.quantity,
+    unitPrice: ticketType.price,
+    totalPrice,
+  };
+});
 
-    /*
-     * Prepare participant records.
-     */
-    const bookingParticipants = data.participants.map(
-      (participant) => ({
-        firstName: participant.firstName,
-        lastName: participant.lastName,
-        age: participant.age,
-        ticketTypeId: participant.ticketTypeId,
-      }),
-    );
+/*
+ * Prepare participant records.
+ */
+const bookingParticipants = data.participants.map(
+  (participant) => ({
+    firstName: participant.firstName,
+    lastName: participant.lastName,
+    age: participant.age,
+    ticketTypeId: participant.ticketTypeId,
+  }),
+);
 
-    /*
-     * Calculate product total and prepare booking product records.
-     */
-    const bookingProducts = Array.from(
-      selectedProductQuantities.entries(),
-    ).map(([productId, quantity]) => {
-      const product = selectedProductMap.get(productId);
+/*
+ * Calculate product total and prepare booking product records.
+ */
+const bookingProducts = Array.from(
+  selectedProductQuantities.entries(),
+).map(([productId, quantity]) => {
+  const product = selectedProductMap.get(productId);
 
-      if (!product) {
-        throw new BadRequestException('Product not found');
-      }
+  if (!product) {
+    throw new BadRequestException('Product not found');
+  }
 
-      total += product.price * quantity;
+  total = total.add(
+    product.price.mul(quantity),
+  );
 
-      return {
-        productId: product.id,
-        quantity,
-        unitPrice: product.price,
-      };
-    });
+  return {
+    productId: product.id,
+    quantity,
+    unitPrice: product.price,
+  };
+});
 
     const bookingNumber = `PG-${Date.now()}-${Math.floor(
       1000 + Math.random() * 9000,

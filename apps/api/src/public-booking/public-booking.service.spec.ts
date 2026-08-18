@@ -277,6 +277,7 @@ describe('PublicBookingService', () => {
         '2027-07-05T00:15:00.000Z',
       ),
       flexibleBooking: false,
+      publicAccessToken: expect.any(String),
       customer: {
         id: 'customer-1',
         firstName: 'Jamie',
@@ -353,6 +354,9 @@ describe('PublicBookingService', () => {
     customer: {
       create: jest.fn(),
     },
+    booking: {
+  update: jest.fn(),
+},
   };
 
   const bookingService = {
@@ -816,6 +820,68 @@ describe('PublicBookingService', () => {
       bookingData,
     );
   });
+
+  it('should generate and persist a secure public booking access token', async () => {
+  const bookingData = {
+    customerId: 'customer-1',
+    eventId: 'event-1',
+    sessionId: 'session-1',
+    flexibleBooking: false,
+    participants: [
+      {
+        firstName: 'Jamie',
+        lastName: 'Stoller',
+        age: 35,
+        ticketTypeId:
+          'ticket-type-1',
+      },
+    ],
+    products: [],
+  };
+
+  const result =
+    await service.createBooking(
+      bookingData,
+    );
+
+  expect(
+    prisma.booking.update,
+  ).toHaveBeenCalledWith({
+    where: {
+      id: 'booking-1',
+    },
+    data: {
+      publicAccessTokenHash:
+        expect.stringMatching(
+          /^[a-f0-9]{64}$/,
+        ),
+      publicAccessTokenCreatedAt:
+        expect.any(Date),
+    },
+  });
+
+  expect(
+    result.booking,
+  ).toHaveProperty(
+    'publicAccessToken',
+  );
+
+  expect(
+    result.booking.publicAccessToken,
+  ).toEqual(
+    expect.any(String),
+  );
+
+  expect(
+    result.booking.publicAccessToken.length,
+  ).toBeGreaterThanOrEqual(40);
+
+  expect(
+    result.booking,
+  ).not.toHaveProperty(
+    'publicAccessTokenHash',
+  );
+});
 
   it('should return a narrow public booking response without internal fields', async () => {
     const bookingData = {
