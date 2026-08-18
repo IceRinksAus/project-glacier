@@ -28,6 +28,11 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 - Ticket-age eligibility rules
 - Rule-driven required Add-ons
 - Cross-participant booking rules
+- Stripe payment collection
+- Payment and refund persistence
+- Stripe webhook processing
+- Reservation payment cancellation
+- Automatic late-success refunds
 
 ## Completed
 
@@ -48,6 +53,8 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 ✔ Session Management
 
 ✔ Customer Booking Flow Foundation
+
+✔ Stripe Payments & Payment Hardening
 
 ---
 
@@ -158,9 +165,38 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ---
 
+## Sprint 15 Complete
+
+### Stripe Payments & Payment Hardening
+
+- Stripe Payment provider
+- Stripe PaymentIntent creation
+- Stripe Payment Element
+- signed Stripe webhooks
+- persistent Payment domain
+- persistent PaymentRefund domain
+- secure public Booking access tokens
+- authoritative backend payment amounts
+- reservation-expiry PaymentIntent cancellation
+- automatic refunds for late successful payments
+- Ticket issuance only after eligible payment confirmation
+- decimal money standardisation
+
+### Verification
+
+- 45 / 45 API test suites passing
+- 236 / 236 API tests passing
+- API production build passing
+- real Stripe sandbox payment verified
+- real Stripe cancellation path verified
+- real Stripe automatic refund path verified
+- zero-Ticket protection verified
+
+---
+
 ## Current
 
-→ Sprint 15
+→ Sprint 16
 
 Scope to be defined during Sprint planning.
 
@@ -310,7 +346,6 @@ Critical findings must be resolved before live public use.
 ## Future
 
 - Rule-engine integration
-- Payments
 - Waivers
 - Customer portal
 - Staff scanner

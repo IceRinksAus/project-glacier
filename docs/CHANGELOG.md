@@ -1,5 +1,61 @@
 # Changelog
 
+# Sprint 15 – Stripe Payments & Payment Hardening
+
+## Added
+
+- Stripe Payment provider
+- Stripe PaymentIntent creation
+- Stripe Payment Element in the public booking flow
+- Stripe webhook endpoint and signature verification
+- Payment persistence domain
+- PaymentRefund persistence domain
+- public Booking access tokens
+- public payment-initiation service
+- provider payment cancellation
+- automatic late-success refunds
+- stable payment and refund idempotency keys
+- payment cancellation tests
+- refund hardening tests
+- Stripe provider tests
+- Stripe webhook tests
+
+## Improved
+
+- Booking money storage using decimal values
+- authoritative server-side payment amounts
+- reservation expiry handling
+- payment / Booking state separation
+- Ticket issuance safety
+- retry behaviour for provider cancellation failures
+- public payment security boundary
+- legacy Nest scaffold test harnesses
+- API dependency patch level
+
+## Removed
+
+- obsolete duplicate `booking-expiry` scheduler implementation
+
+## Verification
+
+- full API suite: 45 / 45 test suites passing
+- full API tests: 236 / 236 passing
+- API production build: passed
+- real Stripe sandbox PaymentIntent success: verified
+- real Stripe sandbox expired-reservation cancellation: verified
+- real Stripe sandbox late-success automatic refund: verified
+- zero-Ticket protection on expired late payment: verified
+- Stripe secrets excluded from Git: verified
+
+## Dependency Review
+
+- non-breaking `npm audit fix` applied
+- Prisma patched from 7.9.0 to 7.9.1
+- directly remediable audit findings resolved
+- three high-severity Prisma transitive `deepmerge-ts` findings remain
+- forced Prisma downgrade to 6.12.0 was deliberately not applied
+
+
 
 # Sprint 14 – Customer Booking Flow Foundation
 

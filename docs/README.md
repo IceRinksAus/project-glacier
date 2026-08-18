@@ -27,6 +27,8 @@ It must be recorded here and committed with the code.
 - `architecture/AUTHENTICATION_AND_PERMISSIONS.md`
 - `architecture/BOOKING_ENGINE.md`
 - `architecture/MULTI_TENANCY.md`
+- `architecture/SECURITY_PRIVACY_AND_COMPLIANCE.md`
+- `architecture/FILE_AND_MEDIA_STORAGE.md`
 
 ---
 
@@ -60,6 +62,8 @@ Current notes include:
 - `sprint-notes/sprint-11.md`
 - `sprint-notes/sprint-12.md`
 - `sprint-notes/sprint-13.md`
+- `sprint-notes/sprint-14.md`
+- `sprint-notes/sprint-15.md`
 
 Earlier Sprint releases are stored under:
 

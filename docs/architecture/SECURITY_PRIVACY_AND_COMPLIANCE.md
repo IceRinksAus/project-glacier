@@ -267,20 +267,36 @@ Secrets should support rotation.
 
 ## Payment Security
 
-Glacier should minimise its PCI DSS scope.
+Glacier minimises its payment-card exposure by using Stripe as the current payment provider and Stripe-hosted/tokenised payment collection through the Payment Element.
 
-The preferred model is:
+Current implementation rules:
 
-- use a reputable PCI-compliant payment provider
-- use provider-hosted or tokenised payment collection
-- never store raw card numbers
-- never store CVV/CVC values
-- store only required payment references, status and provider identifiers
-- validate payment webhooks cryptographically
-- make webhook processing idempotent
-- maintain an auditable payment-state history where appropriate
+- raw card numbers are not stored by Glacier
+- CVV/CVC values are not stored by Glacier
+- Stripe secret keys remain server-side only
+- Stripe webhook signing secrets remain server-side only
+- the browser receives only the Stripe publishable key and PaymentIntent client secret required for checkout
+- Booking totals are calculated and supplied by the backend
+- the browser cannot choose the amount sent to Stripe
+- signed Stripe webhooks are cryptographically verified against the raw request body
+- PaymentIntent creation, cancellation and refunds use idempotency keys
+- provider Payment state is persisted independently from Booking summary state
+- refunds are persisted as `PaymentRefund` records
+- Tickets are issued only after authoritative provider success and successful Booking confirmation
+- late successful payments against expired Bookings are automatically refunded rather than fulfilled
+- public payment initiation requires the Booking's high-entropy public access token
 
-Payment security requirements must be reviewed when the payment provider is selected.
+Production requirements still include:
+
+- live Stripe credential management through managed secrets
+- production webhook registration and monitoring
+- payment-specific rate limiting and abuse protection
+- operator refund permissions and audit logging
+- payment incident-response procedures
+- PCI DSS scope confirmation before production launch
+- Security & Privacy Gate review
+
+Stripe credentials, webhook secrets and client secrets must never be written to logs or committed to source control.
 
 ---
 

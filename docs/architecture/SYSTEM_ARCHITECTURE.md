@@ -12,6 +12,8 @@ Project Glacier is a multi-tenant event commerce and operations platform.
 - bcrypt
 - QR code generation
 - date-fns-tz
+- Stripe server SDK
+- Stripe.js / React Stripe.js
 
 ## Core Model
 
@@ -48,6 +50,10 @@ Session Products
 ↓
 
 Bookings
+
+↓
+
+Payments / Payment Refunds
 
 ↓
 
@@ -273,9 +279,13 @@ See:
 
 ---
 
-## Booking Flow
+## Booking & Payment Flow
 
-Booking API
+Public Booking UI
+
+↓
+
+Public Booking API
 
 ↓
 
@@ -295,7 +305,33 @@ Reservation Created
 
 ↓
 
-BookingExpiryService
+Stripe PaymentIntent
+
+↓
+
+Stripe Payment Element
+
+↓
+
+Signed Stripe Webhook
+
+↓
+
+Payment Service
+
+↓
+
+Eligible Booking Confirmation
+
+↓
+
+Ticket Issuance
+
+Reservation expiry is handled by `BookingReservationService`.
+
+Expired Bookings with unresolved provider Payments are cleaned up through PaymentIntent cancellation.
+
+Late provider success against an expired Booking triggers an idempotent refund rather than Booking resurrection.
 
 ---
 
@@ -402,6 +438,10 @@ Ticket Type / Product
 ↓
 
 Booking
+
+↓
+
+Payment / PaymentRefund
 
 ↓
 

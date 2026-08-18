@@ -66,7 +66,7 @@ If payment is not completed before the reservation expires, the booking automati
 
 # Reservation Expiry
 
-Reservation expiry is managed by the BookingExpiryService.
+Reservation expiry is managed by BookingReservationService, which also coordinates cleanup of unresolved provider payments for expired bookings.
 
 The scheduler executes every minute.
 

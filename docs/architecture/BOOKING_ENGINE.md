@@ -46,6 +46,7 @@ Current public routes include:
 - `POST /public/events/:eventId/evaluate-rules`
 - `POST /public/customers`
 - `POST /public/bookings`
+- `POST /public/bookings/:bookingId/payments`
 
 Public endpoints return narrow customer-safe data only.
 
@@ -81,7 +82,7 @@ Reservation Created
 
 ↓
 
-BookingExpiryService
+BookingReservationService
 
 The public Rule Evaluation endpoint may preview rules before reservation creation, but final validation is always repeated by BookingService.
 
@@ -249,6 +250,75 @@ Reservations receive an expiry time.
 Expired reservations do not continue consuming active Session capacity.
 
 The customer booking UI displays the reservation expiry using a live countdown.
+
+---
+
+## Payment Lifecycle
+
+Payment is a separate persistent domain from the Booking summary state.
+
+For a valid `RESERVED` Booking:
+
+1. Glacier validates that the Booking is eligible for payment.
+2. Glacier derives the amount from authoritative `Booking.total`.
+3. Glacier creates a provider PaymentIntent using an idempotency key.
+4. Glacier persists the Payment attempt.
+5. The public client completes tokenised payment through Stripe.
+6. Stripe sends a signed webhook.
+7. Glacier records provider success.
+8. Glacier atomically confirms the Booking only if it is still eligible.
+9. Tickets are issued only after successful Booking confirmation.
+
+Provider success is necessary but not sufficient for fulfilment.
+
+A successful provider payment cannot resurrect an expired Booking.
+
+### Payment States
+
+Current provider-facing Payment states include:
+
+- `PENDING`
+- `SUCCEEDED`
+- `FAILED`
+- `CANCELLED`
+
+The Booking summary continues to track its own payment state separately.
+
+### Reservation Expiry Cleanup
+
+`BookingReservationService` expires overdue reservations and then looks for expired Bookings with unresolved `PENDING` Payments.
+
+Those provider payments are cancelled where possible.
+
+Cancellation failures remain retryable on a later scheduler run.
+
+### Late Provider Success
+
+If the provider succeeds after the Booking can no longer be fulfilled:
+
+- the Payment remains correctly recorded as `SUCCEEDED`
+- the Booking remains `EXPIRED`
+- no Tickets are issued
+- Glacier creates an idempotent refund
+- the refund is persisted as a `PaymentRefund`
+
+This compensating transaction preserves the historical truth of both the charge and refund.
+
+### Public Payment Access
+
+Public payment initiation requires the Booking's high-entropy `publicAccessToken`.
+
+The token is customer-scoped and is separate from operator JWT authentication.
+
+### Idempotency
+
+Glacier uses provider idempotency keys for:
+
+- PaymentIntent creation
+- PaymentIntent cancellation
+- refunds
+
+Idempotency prevents repeated customer requests, retries or webhook delivery from creating duplicate financial operations.
 
 ---
 
