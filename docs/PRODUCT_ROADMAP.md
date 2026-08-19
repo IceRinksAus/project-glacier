@@ -196,9 +196,26 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ## Current
 
-→ Sprint 16
+→ Sprint 16 — Event Waivers & Digital Acceptance
 
-Scope to be defined during Sprint planning.
+Sprint 16 introduces Glacier-native Event-based digital waivers.
+
+Core scope includes:
+
+- optional Event Setup Wizard Waiver step
+- approved jurisdiction-specific waiver templates
+- Event-specific immutable Waiver Versions
+- stable public Event Waiver URL / QR
+- mobile digital acceptance
+- electronic signature
+- responsible-adult / minor handling
+- immutable acceptance evidence
+- tenant-safe operator retrieval
+- optional post-Booking Waiver CTA
+- verification credential architecture
+- Apple Wallet as a stretch goal
+
+Sprint 16 deliberately does not require Booking/Ticket linkage, reminder workflows, scanner Waiver enforcement or Customer Portal integration.
 
 ---
 
