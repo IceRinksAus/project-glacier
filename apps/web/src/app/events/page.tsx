@@ -2,13 +2,24 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSyncExternalStore } from "react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
+import {
+  getAuthRoleSnapshot,
+  getServerAuthRoleSnapshot,
+  subscribeAuthSession,
+} from "@/lib/auth";
 
 export default function EventsPage() {
   const router = useRouter();
+  const role = useSyncExternalStore(
+    subscribeAuthSession,
+    getAuthRoleSnapshot,
+    getServerAuthRoleSnapshot,
+  );
   const { events, isLoading, error } = useEvents();
 
   return (
@@ -29,9 +40,11 @@ export default function EventsPage() {
             </p>
           </div>
 
-          <Button size="lg" onClick={() => router.push("/events/new")}>
-            Create event
-          </Button>
+          {role === "OWNER" ? (
+            <Button size="lg" onClick={() => router.push("/events/new")}>
+              Create event
+            </Button>
+          ) : null}
         </div>
 
         {isLoading ? (

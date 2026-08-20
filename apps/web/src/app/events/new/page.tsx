@@ -3,10 +3,11 @@
 import { fromZonedTime } from "date-fns-tz";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { Button } from "@/components/ui/button";
+import { getAuthUser } from "@/lib/auth";
 import { CreateGlacierEvent, eventService } from "@/services/event.service";
 
 const steps = [
@@ -100,6 +101,11 @@ export default function NewEventPage() {
   const [slugWasEdited, setSlugWasEdited] = useState(false);
   const [error, setError] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    const role = getAuthUser()?.role;
+    if (role && role !== "OWNER") router.replace("/events");
+  }, [router]);
 
   const interpretedDates = useMemo(() => {
     try {

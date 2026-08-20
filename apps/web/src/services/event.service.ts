@@ -37,6 +37,23 @@ export interface CreateGlacierEvent {
   entryClosesMinutesAfterEnd: number;
 }
 
+export interface EventReadinessItem {
+  id: "EVENT_DETAILS" | "SESSIONS" | "TICKET_TYPES" | "WAIVER";
+  label: string;
+  status: "COMPLETE" | "INCOMPLETE" | "NOT_REQUIRED";
+  explanation: string;
+  destinationTab: "Overview" | "Sessions" | "Ticket Types" | "Waiver";
+}
+
+export interface EventReadiness {
+  eventId: string;
+  readyToActivate: boolean;
+  completedRequiredItems: number;
+  requiredItems: number;
+  percentage: number;
+  items: EventReadinessItem[];
+}
+
 export const eventService = {
   getEvents: () => api.get<GlacierEvent[]>("/event"),
 
@@ -44,6 +61,12 @@ export const eventService = {
 
   createEvent: (data: CreateGlacierEvent) =>
     api.post<GlacierEvent>("/event", data),
+
+  getReadiness: (eventId: string) =>
+    api.get<EventReadiness>(`/event/${eventId}/readiness`),
+
+  updateStatus: (eventId: string, status: "DRAFT" | "ACTIVE" | "INACTIVE") =>
+    api.patch<GlacierEvent>(`/event/${eventId}/status`, { status }),
 
   updateEntryPolicy: (
     eventId: string,

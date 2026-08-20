@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { use, useState } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
@@ -21,8 +22,11 @@ export default function EventWorkspacePage({
   params,
 }: EventWorkspacePageProps) {
   const { eventId } = use(params);
+  const searchParams = useSearchParams();
   const { event, isLoading, error } = useEvent(eventId);
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") === "Waiver" ? "Waiver" : "Overview",
+  );
 
   return (
     <PlatformShell>
@@ -50,12 +54,15 @@ export default function EventWorkspacePage({
 
             {activeTab === "Overview" ? (
               <EventOverview
+                eventId={event.id}
                 name={event.name}
                 description={event.description}
                 status={event.status}
                 slug={event.slug}
                 startDate={event.startDate}
                 endDate={event.endDate}
+                onNavigate={setActiveTab}
+                onActivated={() => window.location.reload()}
               />
             ) : null}
 
