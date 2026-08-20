@@ -83,6 +83,15 @@ Status values:
 | GET    | `/ticket/:id/qr`          | Operator        | JWT OWNER/MEMBER              | Ticket → Booking → Event → Organisation | Param string            | PROTECTED | Authenticated and tenant-scoped.                                                          |
 | GET    | `/ticket/:id`             | Operator        | JWT OWNER/MEMBER              | Ticket → Booking → Event → Organisation | Param string            | PROTECTED | Authenticated and tenant-scoped.                                                          |
 
+## Staff Scanner
+
+| Method | Route                                             | Audience      | Authentication/role target | Tenant path                             | Validation                | Status    | Sprint 18 action                                                                 |
+| ------ | ------------------------------------------------- | ------------- | -------------------------- | --------------------------------------- | ------------------------- | --------- | -------------------------------------------------------------------------------- |
+| GET    | `/staff/scanner/events`                           | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | None                      | PROTECTED | Active Event selection with entry-policy fields only.                            |
+| GET    | `/staff/scanner/events/:eventId/context`          | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | Param string              | PROTECTED | Active selected-Event context only.                                              |
+| POST   | `/staff/scanner/events/:eventId/validate`         | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO     | PROTECTED | Read-only, privacy-minimised lookup; no Ticket or audit write.                    |
+| POST   | `/staff/scanner/events/:eventId/admit`            | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO     | PROTECTED | Server-time window, atomic admission and attributable append-only attempt record. |
+
 ## Payment
 
 | Method | Route                     | Audience | Authentication              | Tenant path                       | Validation         | Status    | Sprint 17 action                                                     |

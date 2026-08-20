@@ -20,6 +20,7 @@ import { PublicBookingModule } from './public-booking/public-booking.module';
 import { RuleModule } from './rule/rule.module';
 import { SessionModule } from './session/session.module';
 import { SessionProductModule } from './session-product/session-product.module';
+import { StaffScannerModule } from './staff-scanner/staff-scanner.module';
 import { TicketModule } from './ticket/ticket.module';
 import { TicketTypeModule } from './ticket-type/ticket-type.module';
 import { UserModule } from './user/user.module';
@@ -43,6 +44,7 @@ import { WaiverModule } from './waiver/waiver.module';
     ProductModule,
     ProductVariantModule,
     SessionProductModule,
+    StaffScannerModule,
     RuleModule,
     PaymentModule,
     TicketModule,
