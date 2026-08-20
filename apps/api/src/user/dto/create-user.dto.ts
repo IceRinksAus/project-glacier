@@ -7,6 +7,9 @@ import {
   MinLength,
 } from 'class-validator';
 
+import { ORGANIZATION_ROLES } from '../../auth/roles/organization-role';
+import type { OrganizationRole } from '../../auth/roles/organization-role';
+
 export class CreateUserDto {
   @IsEmail()
   @MaxLength(320)
@@ -22,6 +25,6 @@ export class CreateUserDto {
   @MaxLength(200)
   password: string;
 
-  @IsIn(['OWNER', 'MEMBER'])
-  role: 'OWNER' | 'MEMBER';
+  @IsIn(ORGANIZATION_ROLES)
+  role: OrganizationRole;
 }

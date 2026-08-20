@@ -29,8 +29,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events Event[]
-  users  UserOrganization[]
+  events             Event[]
+  users              UserOrganization[]
+  ticketScanAttempts TicketScanAttempt[]
 }
 
 model User {
@@ -46,6 +47,7 @@ model User {
   eventRoles              EventUser[]
   organizations           UserOrganization[]
   publishedWaiverVersions WaiverVersion[]
+  ticketScanAttempts      TicketScanAttempt[]
 }
 
 model UserOrganization {
@@ -99,7 +101,11 @@ model Event {
 
   rules Rule[]
 
-  waiver EventWaiver?
+  waiver             EventWaiver?
+  ticketScanAttempts TicketScanAttempt[]
+
+  entryOpensMinutesBeforeStart Int @default(30)
+  entryClosesMinutesAfterEnd   Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -561,6 +567,35 @@ model Ticket {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  scanAttempts TicketScanAttempt[]
+}
+
+model TicketScanAttempt {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  ticketId String?
+  ticket   Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  result TicketScanAttemptResult
+  mode   TicketScanMode
+
+  priorCheckedInAt DateTime?
+  attemptedAt      DateTime  @default(now())
+
+  @@index([organizationId, attemptedAt])
+  @@index([eventId, attemptedAt])
+  @@index([ticketId, attemptedAt])
+  @@index([userId, attemptedAt])
 }
 
 model Rule {
@@ -665,6 +700,22 @@ enum TicketStatus {
   ACTIVE
   SCANNED
   CANCELLED
+}
+
+enum TicketScanMode {
+  GATE_ENTRY
+  TICKET_LOOKUP
+}
+
+enum TicketScanAttemptResult {
+  ENTRY_GRANTED
+  ALREADY_SCANNED
+  CANCELLED
+  NOT_YET_VALID
+  ENTRY_WINDOW_CLOSED
+  WRONG_EVENT
+  NOT_FOUND
+  INVALID
 }
 
 enum PaymentStatus {
