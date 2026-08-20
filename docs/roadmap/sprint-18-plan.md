@@ -329,12 +329,12 @@ Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_
 5. If an OWNER configures a 15-minute closing grace, admission remains possible through 11:15 am.
 6. Admission recalculates the server-authoritative window even when an earlier validation was ready.
 
-### F. Accidental detection
+### F. Lookup detection remains read-only
 
-1. Camera detects a valid QR.
-2. Staff does not tap Admit.
-3. Staff cancels and returns to scanning.
-4. Ticket remains ACTIVE and no admission audit is recorded.
+1. Ticket Lookup detects a valid QR.
+2. Glacier displays the detailed result without calling admission.
+3. Staff closes the result without selecting and confirming `Process ticket`.
+4. Ticket remains ACTIVE and no admission audit is recorded. Gate Entry is intentionally different: a valid detection immediately attempts admission.
 
 ### G. Duplicate or concurrent scan
 
@@ -348,7 +348,7 @@ Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_
 1. Device 1 selects Event A and remains in Gate Entry mode.
 2. Device 2 selects Event A and remains in Ticket Lookup mode at the POS/help desk.
 3. Each device retains and visibly displays its own selected mode.
-4. Device 1 can perform the fast review-and-grant flow.
+4. Device 1 automatically attempts admission as soon as the camera or hand scanner reads a Ticket.
 5. Device 2 can inspect a Ticket without changing it, then optionally select and confirm `Process ticket` when it is eligible.
 6. Admission from either mode uses the same server authority and records the originating mode.
 7. Concurrent processing still permits only one successful Ticket transition.
@@ -399,6 +399,13 @@ Completion requires:
 - camera-denied and network-failure tests
 - documentation and changelog closeout
 - clean commits and no deployment
+
+Current automated verification after the web testing foundation was added:
+
+- 58 API suites and 351 API tests passing
+- 2 web suites and 12 scanner tests passing
+- Gate automatic admission, Lookup read-only/confirmation, early, late, duplicate, wrong-Event, unknown, malformed, network-failure, camera-denied and camera-shutdown behaviours covered
+- production dependency audit reporting zero known vulnerabilities after pinning the patched compatible `nanoid` release
 
 ## Recommended Implementation Sequence
 
