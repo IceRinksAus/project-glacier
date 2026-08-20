@@ -9,6 +9,7 @@ export interface PublicEvent {
   endDate: string;
   timezone: string | null;
   status: string;
+  waiverPublicSlug: string | null;
 }
 
 export interface PublicSession {
@@ -204,24 +205,17 @@ export interface PublicBookingResponse {
 export interface PublicPaymentResponse {
   provider: string;
   paymentReference: string;
-  status:
-    | "PENDING"
-    | "SUCCEEDED"
-    | "FAILED";
+  status: "PENDING" | "SUCCEEDED" | "FAILED";
   clientSecret?: string;
 }
 
 export const publicBookingService = {
   getEvent(eventId: string) {
-    return publicApi.get<PublicEvent>(
-      `/public/events/${eventId}`,
-    );
+    return publicApi.get<PublicEvent>(`/public/events/${eventId}`);
   },
 
   getSessions(eventId: string) {
-    return publicApi.get<PublicSession[]>(
-      `/public/events/${eventId}/sessions`,
-    );
+    return publicApi.get<PublicSession[]>(`/public/events/${eventId}/sessions`);
   },
 
   getTicketTypes(eventId: string) {
@@ -230,10 +224,7 @@ export const publicBookingService = {
     );
   },
 
-  evaluateRules(
-    eventId: string,
-    data: PublicRulePreviewInput,
-  ) {
+  evaluateRules(eventId: string, data: PublicRulePreviewInput) {
     return publicApi.post<PublicRulePreviewResponse>(
       `/public/events/${eventId}/evaluate-rules`,
       data,
@@ -246,28 +237,15 @@ export const publicBookingService = {
     );
   },
 
-  createCustomer(
-    data: CreatePublicCustomerInput,
-  ) {
-    return publicApi.post<PublicCustomer>(
-      "/public/customers",
-      data,
-    );
+  createCustomer(data: CreatePublicCustomerInput) {
+    return publicApi.post<PublicCustomer>("/public/customers", data);
   },
 
-  createBooking(
-    data: CreatePublicBookingInput,
-  ) {
-    return publicApi.post<PublicBookingResponse>(
-      "/public/bookings",
-      data,
-    );
+  createBooking(data: CreatePublicBookingInput) {
+    return publicApi.post<PublicBookingResponse>("/public/bookings", data);
   },
 
-  createPayment(
-    bookingId: string,
-    publicAccessToken: string,
-  ) {
+  createPayment(bookingId: string, publicAccessToken: string) {
     return publicApi.post<PublicPaymentResponse>(
       `/public/bookings/${bookingId}/payments`,
       {

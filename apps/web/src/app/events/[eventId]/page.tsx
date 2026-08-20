@@ -7,6 +7,7 @@ import { EventOverview } from "@/components/events/EventOverview";
 import { EventTabs } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
+import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
 import { useEvent } from "@/hooks/useEvent";
 
 interface EventWorkspacePageProps {
@@ -26,9 +27,7 @@ export default function EventWorkspacePage({
     <PlatformShell>
       <div className="flex flex-col gap-6">
         {isLoading ? (
-          <div className="rounded-xl border bg-card p-6">
-            Loading event...
-          </div>
+          <div className="rounded-xl border bg-card p-6">Loading event...</div>
         ) : null}
 
         {error ? (
@@ -46,10 +45,7 @@ export default function EventWorkspacePage({
               endDate={event.endDate}
             />
 
-            <EventTabs
-              activeTab={activeTab}
-              onChange={setActiveTab}
-            />
+            <EventTabs activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === "Overview" ? (
               <EventOverview
@@ -63,20 +59,27 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Sessions" ? (
-  <SessionsWorkspace
-    eventId={event.id}
-    eventStartDate={event.startDate}
-    eventEndDate={event.endDate}
-    eventTimezone={event.timezone}
-  />
-) : null}
+              <SessionsWorkspace
+                eventId={event.id}
+                eventStartDate={event.startDate}
+                eventEndDate={event.endDate}
+                eventTimezone={event.timezone}
+              />
+            ) : null}
+
+            {activeTab === "Waiver" ? (
+              <WaiverWorkspace
+                eventId={event.id}
+                activityType={event.activityType}
+                jurisdiction={event.jurisdiction}
+              />
+            ) : null}
 
             {activeTab !== "Overview" &&
-            activeTab !== "Sessions" ? (
+            activeTab !== "Sessions" &&
+            activeTab !== "Waiver" ? (
               <div className="rounded-xl border bg-card p-6">
-                <h2 className="text-lg font-semibold">
-                  {activeTab}
-                </h2>
+                <h2 className="text-lg font-semibold">{activeTab}</h2>
 
                 <p className="mt-2 text-sm text-muted-foreground">
                   This section will be completed in a future sprint.

@@ -9,17 +9,15 @@ export interface GlacierEvent {
   endDate: string;
   timezone: string | null;
   status: string;
+  activityType: string | null;
+  jurisdiction: string | null;
   organizationId: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export const eventService = {
-  getEvents: () =>
-    api.get<GlacierEvent[]>("/event"),
+  getEvents: () => api.get<GlacierEvent[]>("/event"),
 
-  getEvent: (eventId: string) =>
-    api.get<GlacierEvent>(
-      `/event/${eventId}`,
-    ),
+  getEvent: (eventId: string) => api.get<GlacierEvent>(`/event/${eventId}`),
 };

@@ -51,7 +51,13 @@ if (!response.ok) {
   throw new Error(message);
 }
 
-  return response.json();
+  const responseBody = await response.text();
+
+  if (!responseBody) {
+    return null as T;
+  }
+
+  return JSON.parse(responseBody) as T;
 }
 
 export const api = {

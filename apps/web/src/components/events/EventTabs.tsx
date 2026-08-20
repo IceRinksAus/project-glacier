@@ -7,6 +7,7 @@ const tabs = [
   "Ticket Types",
   "Bookings",
   "Customers",
+  "Waiver",
   "Website",
   "Reports",
   "Settings",
@@ -17,10 +18,7 @@ interface EventTabsProps {
   onChange: (tab: string) => void;
 }
 
-export function EventTabs({
-  activeTab,
-  onChange,
-}: EventTabsProps) {
+export function EventTabs({ activeTab, onChange }: EventTabsProps) {
   return (
     <div className="rounded-xl border bg-card">
       <nav className="flex overflow-x-auto">

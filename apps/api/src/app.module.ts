@@ -23,6 +23,7 @@ import { SessionProductModule } from './session-product/session-product.module';
 import { TicketModule } from './ticket/ticket.module';
 import { TicketTypeModule } from './ticket-type/ticket-type.module';
 import { UserModule } from './user/user.module';
+import { WaiverModule } from './waiver/waiver.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { UserModule } from './user/user.module';
     BookingValidationModule,
     OperationalScheduleModule,
     PublicBookingModule,
+    WaiverModule,
   ],
   controllers: [AppController],
   providers: [AppService],
