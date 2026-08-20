@@ -18,10 +18,32 @@ export interface GlacierEvent {
   updatedAt: string;
 }
 
+export interface CreateGlacierEvent {
+  name: string;
+  slug: string;
+  description?: string;
+  startDate: string;
+  endDate: string;
+  timezone: string;
+  venueName: string;
+  addressLine1: string;
+  addressLine2?: string;
+  suburb: string;
+  postcode: string;
+  country: "AU";
+  jurisdiction: "ACT" | "NSW" | "NT" | "QLD" | "SA" | "TAS" | "VIC" | "WA";
+  activityType: "ICE_SKATING" | "OTHER";
+  entryOpensMinutesBeforeStart: number;
+  entryClosesMinutesAfterEnd: number;
+}
+
 export const eventService = {
   getEvents: () => api.get<GlacierEvent[]>("/event"),
 
   getEvent: (eventId: string) => api.get<GlacierEvent>(`/event/${eventId}`),
+
+  createEvent: (data: CreateGlacierEvent) =>
+    api.post<GlacierEvent>("/event", data),
 
   updateEntryPolicy: (
     eventId: string,

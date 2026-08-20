@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
 
 export default function EventsPage() {
+  const router = useRouter();
   const { events, isLoading, error } = useEvents();
 
   return (
@@ -27,15 +29,13 @@ export default function EventsPage() {
             </p>
           </div>
 
-          <Button size="lg">
+          <Button size="lg" onClick={() => router.push("/events/new")}>
             Create event
           </Button>
         </div>
 
         {isLoading ? (
-          <div className="rounded-xl border bg-card p-6">
-            Loading events...
-          </div>
+          <div className="rounded-xl border bg-card p-6">Loading events...</div>
         ) : null}
 
         {error ? (
@@ -55,9 +55,7 @@ export default function EventsPage() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                   <div>
                     <div className="flex items-center gap-3">
-                      <h2 className="text-lg font-semibold">
-                        {event.name}
-                      </h2>
+                      <h2 className="text-lg font-semibold">{event.name}</h2>
 
                       <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
                         {event.status}
@@ -75,9 +73,7 @@ export default function EventsPage() {
                     </p>
                   </div>
 
-                  <span className="text-sm font-medium">
-                    View event →
-                  </span>
+                  <span className="text-sm font-medium">View event →</span>
                 </div>
               </Link>
             ))}
