@@ -7,10 +7,25 @@ datasource db {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  status    String   @default("ACTIVE")
+  id     String @id @default(cuid())
+  name   String
+  slug   String @unique
+  status String @default("ACTIVE")
+
+  legalName   String?
+  tradingName String?
+  abn         String?
+
+  addressLine1 String?
+  addressLine2 String?
+  suburb       String?
+  state        String?
+  postcode     String?
+  country      String? @default("AU")
+
+  contactEmail String?
+  contactPhone String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -28,8 +43,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eventRoles    EventUser[]
-  organizations UserOrganization[]
+  eventRoles              EventUser[]
+  organizations           UserOrganization[]
+  publishedWaiverVersions WaiverVersion[]
 }
 
 model UserOrganization {
@@ -55,6 +71,16 @@ model Event {
   timezone    String?
   status      String   @default("DRAFT")
 
+  venueName    String?
+  addressLine1 String?
+  addressLine2 String?
+  suburb       String?
+  postcode     String?
+  country      String? @default("AU")
+
+  jurisdiction AustralianJurisdiction?
+  activityType EventActivityType?
+
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
@@ -72,6 +98,8 @@ model Event {
   bookings Booking[]
 
   rules Rule[]
+
+  waiver EventWaiver?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -566,6 +594,73 @@ model Rule {
   @@index([eventId, status, priority])
 }
 
+model EventWaiver {
+  id String @id @default(cuid())
+
+  eventId String @unique
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  publicSlug String @unique
+
+  versions    WaiverVersion[]
+  submissions WaiverSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WaiverTemplate {
+  id String @id @default(cuid())
+
+  name         String
+  activityType EventActivityType
+  jurisdiction AustralianJurisdiction
+  revision     Int
+
+  contentTemplate       String @db.Text
+  acceptanceStatement   String @db.Text
+  legislationReferences Json?
+
+  status     WaiverTemplateStatus @default(DRAFT)
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  waiverVersions WaiverVersion[]
+
+  @@unique([activityType, jurisdiction, revision])
+  @@index([activityType, jurisdiction, status])
+}
+
+enum AustralianJurisdiction {
+  ACT
+  NSW
+  NT
+  QLD
+  SA
+  TAS
+  VIC
+  WA
+}
+
+enum EventActivityType {
+  ICE_SKATING
+  OTHER
+}
+
+enum WaiverTemplateStatus {
+  DRAFT
+  APPROVED
+  RETIRED
+}
+
+enum WaiverVersionStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+}
+
 enum TicketStatus {
   ACTIVE
   SCANNED
@@ -577,4 +672,76 @@ enum PaymentStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+}
+
+model WaiverVersion {
+  id String @id @default(cuid())
+
+  eventWaiverId String
+  eventWaiver   EventWaiver @relation(fields: [eventWaiverId], references: [id])
+
+  sourceTemplateId String
+  sourceTemplate   WaiverTemplate @relation(fields: [sourceTemplateId], references: [id])
+
+  version Int
+
+  title               String
+  content             String @db.Text
+  acceptanceStatement String @db.Text
+  contentHash         String
+
+  status WaiverVersionStatus @default(DRAFT)
+
+  publishedAt       DateTime?
+  publishedByUserId String?
+  publishedByUser   User?     @relation(fields: [publishedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  submissions WaiverSubmission[]
+
+  @@unique([eventWaiverId, version])
+  @@index([eventWaiverId, status])
+}
+
+model WaiverSubmission {
+  id String @id @default(cuid())
+
+  eventWaiverId String
+  eventWaiver   EventWaiver @relation(fields: [eventWaiverId], references: [id])
+
+  waiverVersionId String
+  waiverVersion   WaiverVersion @relation(fields: [waiverVersionId], references: [id])
+
+  signatoryFullName String
+  signatureData     String @db.Text
+
+  acceptedAt DateTime @default(now())
+
+  waiverContentHash       String
+  acceptanceStatementHash String
+
+  verificationTokenHash String @unique
+
+  minors WaiverMinor[]
+
+  createdAt DateTime @default(now())
+
+  @@index([eventWaiverId, acceptedAt])
+  @@index([waiverVersionId])
+  @@index([signatoryFullName])
+}
+
+model WaiverMinor {
+  id String @id @default(cuid())
+
+  waiverSubmissionId String
+  waiverSubmission   WaiverSubmission @relation(fields: [waiverSubmissionId], references: [id], onDelete: Cascade)
+
+  fullName    String
+  dateOfBirth DateTime @db.Date
+
+  createdAt DateTime @default(now())
+
+  @@index([waiverSubmissionId])
 }
