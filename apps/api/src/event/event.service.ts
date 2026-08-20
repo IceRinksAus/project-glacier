@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
+import { CreateEventDto } from './dto/create-event.dto';
 
 @Injectable()
 export class EventService {
@@ -19,30 +21,21 @@ export class EventService {
   }
 
   async findOne(id: string, organizationId: string) {
-  const event = await this.prisma.event.findFirst({
-    where: {
-      id,
-      organizationId,
-    },
-  });
+    const event = await this.prisma.event.findFirst({
+      where: {
+        id,
+        organizationId,
+      },
+    });
 
-  if (!event) {
-    throw new NotFoundException('Event not found');
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    return event;
   }
 
-  return event;
-}
-
-  create(
-    organizationId: string,
-    data: {
-      name: string;
-      slug: string;
-      description?: string;
-      startDate: string;
-      endDate: string;
-    },
-  ) {
+  create(organizationId: string, data: CreateEventDto) {
     return this.prisma.event.create({
       data: {
         name: data.name,
@@ -51,15 +44,13 @@ export class EventService {
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         organizationId,
+        entryOpensMinutesBeforeStart: data.entryOpensMinutesBeforeStart,
+        entryClosesMinutesAfterEnd: data.entryClosesMinutesAfterEnd,
       },
     });
   }
 
-  async updateStatus(
-    id: string,
-    organizationId: string,
-    status: string,
-  ) {
+  async updateStatus(id: string, organizationId: string, status: string) {
     const allowedStatuses = ['DRAFT', 'ACTIVE', 'INACTIVE'];
 
     if (!allowedStatuses.includes(status)) {
@@ -127,6 +118,32 @@ export class EventService {
     return this.prisma.event.delete({
       where: {
         id: event.id,
+      },
+    });
+  }
+
+  async updateEntryPolicy(
+    id: string,
+    organizationId: string,
+    data: UpdateEntryPolicyDto,
+  ) {
+    const event = await this.prisma.event.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+
+    if (!event) throw new NotFoundException('Event not found');
+
+    return this.prisma.event.update({
+      where: { id: event.id },
+      data: {
+        entryOpensMinutesBeforeStart: data.entryOpensMinutesBeforeStart,
+        entryClosesMinutesAfterEnd: data.entryClosesMinutesAfterEnd,
+      },
+      select: {
+        id: true,
+        entryOpensMinutesBeforeStart: true,
+        entryClosesMinutesAfterEnd: true,
       },
     });
   }

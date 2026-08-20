@@ -14,6 +14,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { EventService } from './event.service';
+import { CreateEventDto } from './dto/create-event.dto';
+import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 
 interface AuthenticatedUser {
   userId: string;
@@ -33,52 +35,39 @@ export class EventController {
   }
 
   @Get(':id')
-findOne(
-  @Param('id') id: string,
-  @CurrentUser() user: AuthenticatedUser,
-) {
-  return this.eventService.findOne(
-    id,
-    user.organizationId,
-  );
-}
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.eventService.findOne(id, user.organizationId);
+  }
 
   @Roles('OWNER')
   @Post()
-  create(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    data: {
-      name: string;
-      slug: string;
-      description?: string;
-      startDate: string;
-      endDate: string;
-    },
-  ) {
+  create(@CurrentUser() user: AuthenticatedUser, @Body() data: CreateEventDto) {
     return this.eventService.create(user.organizationId, data);
   }
 
-@Roles('OWNER')
-@Patch(':id/status')
-updateStatus(
-  @Param('id') id: string,
-  @CurrentUser() user: AuthenticatedUser,
-  @Body() data: { status: string },
-) {
-  return this.eventService.updateStatus(
-    id,
-    user.organizationId,
-    data.status,
-  );
-}  
+  @Roles('OWNER')
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: { status: string },
+  ) {
+    return this.eventService.updateStatus(id, user.organizationId, data.status);
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/entry-policy')
+  updateEntryPolicy(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UpdateEntryPolicyDto,
+  ) {
+    return this.eventService.updateEntryPolicy(id, user.organizationId, data);
+  }
 
   @Roles('OWNER')
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
+  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.eventService.remove(id, user.organizationId);
   }
 }

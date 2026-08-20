@@ -157,7 +157,7 @@ For a legitimate Ticket without an assigned Session, the Event start and end are
 
 Example: a 10:00 am–11:00 am Session with the defaults admits from 9:30 am through 11:00 am inclusive. A configured 15-minute closing grace extends that window to 11:15 am.
 
-The Event Workspace must provide OWNER-only controls for both values, with bounded whole-minute values from 0 to 240. Existing Events receive the safe defaults through the migration. These are Event-wide defaults in Sprint 18; per-Session overrides are deferred.
+New Event setup must offer both values as optional configuration, prefilled with the safe 30/0 defaults. The Event Workspace must also provide OWNER-only controls for later changes, with bounded whole-minute values from 0 to 240. Existing Events receive the safe defaults through the migration. These are Event-wide defaults in Sprint 18; per-Session overrides are deferred.
 
 Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_CLOSED` after the closing instant, including the relevant staff-facing window times. Admission recalculates the window on the server at mutation time rather than trusting an earlier validation response.
 
@@ -183,6 +183,7 @@ Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_
 ### 3. Entry-window administration
 
 - add bounded Event persistence fields with 30-minute-before and zero-minute-after defaults
+- accept optional customised values during new Event setup
 - add OWNER-only Event Workspace controls
 - validate whole-minute values from 0 to 240
 - preserve Event-timezone display and server-authoritative instant comparisons
