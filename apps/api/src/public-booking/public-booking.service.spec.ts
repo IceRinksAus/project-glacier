@@ -95,6 +95,7 @@ describe('PublicBookingService', () => {
         capacity: 20,
         inventoryTracked: false,
         inventoryQuantity: null,
+        variants: [],
         salesStart: null,
         salesEnd: null,
         eventId: 'event-1',
@@ -586,6 +587,32 @@ describe('PublicBookingService', () => {
             salesStart: true,
             salesEnd: true,
             eventId: true,
+            variants: {
+              where: {
+                status: 'ACTIVE',
+                availableOnline: true,
+              },
+              select: {
+                id: true,
+                productId: true,
+                name: true,
+                slug: true,
+                description: true,
+                priceOverride: true,
+                imageUrl: true,
+                inventoryTracked: true,
+                inventoryQuantity: true,
+                sortOrder: true,
+              },
+              orderBy: [
+                {
+                  sortOrder: 'asc',
+                },
+                {
+                  name: 'asc',
+                },
+              ],
+            },
           },
         },
       },
@@ -628,6 +655,78 @@ describe('PublicBookingService', () => {
         quantity: true,
       },
     });
+  });
+
+  it('removes only exhausted Product Variants while another size remains available', async () => {
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      {
+        id: 'session-product-hoodie',
+        sessionId: 'session-1',
+        productId: 'product-hoodie',
+        sortOrder: 0,
+        capacityOverride: null,
+        product: {
+          id: 'product-hoodie',
+          name: 'Event Hoodie',
+          slug: 'event-hoodie',
+          description: null,
+          price: 60,
+          imageUrl: null,
+          minQuantity: 0,
+          maxQuantity: null,
+          capacityControlled: false,
+          capacity: null,
+          inventoryTracked: false,
+          inventoryQuantity: null,
+          salesStart: null,
+          salesEnd: null,
+          eventId: 'event-1',
+          variants: [
+            {
+              id: 'variant-small',
+              productId: 'product-hoodie',
+              name: 'Small',
+              slug: 'small',
+              description: null,
+              priceOverride: null,
+              imageUrl: null,
+              inventoryTracked: true,
+              inventoryQuantity: 50,
+              sortOrder: 0,
+            },
+            {
+              id: 'variant-large',
+              productId: 'product-hoodie',
+              name: 'Large',
+              slug: 'large',
+              description: null,
+              priceOverride: 65,
+              imageUrl: null,
+              inventoryTracked: true,
+              inventoryQuantity: 40,
+              sortOrder: 1,
+            },
+          ],
+        },
+      },
+    ]);
+    prisma.bookingProduct.aggregate.mockImplementation(({ where }) =>
+      Promise.resolve({
+        _sum: {
+          quantity: where.productVariantId === 'variant-small' ? 50 : 35,
+        },
+      }),
+    );
+
+    const result = await service.findSessionProducts('session-1');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].product.variants).toEqual([
+      expect.objectContaining({
+        id: 'variant-large',
+        remainingQuantity: 5,
+      }),
+    ]);
   });
 
   it('should reject product discovery for a missing or unavailable session', async () => {

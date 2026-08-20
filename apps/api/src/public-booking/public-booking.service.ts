@@ -318,6 +318,32 @@ export class PublicBookingService {
             salesStart: true,
             salesEnd: true,
             eventId: true,
+            variants: {
+              where: {
+                status: 'ACTIVE',
+                availableOnline: true,
+              },
+              select: {
+                id: true,
+                productId: true,
+                name: true,
+                slug: true,
+                description: true,
+                priceOverride: true,
+                imageUrl: true,
+                inventoryTracked: true,
+                inventoryQuantity: true,
+                sortOrder: true,
+              },
+              orderBy: [
+                {
+                  sortOrder: 'asc',
+                },
+                {
+                  name: 'asc',
+                },
+              ],
+            },
           },
         },
       },
@@ -334,6 +360,54 @@ export class PublicBookingService {
     const availableProducts = await Promise.all(
       sessionProducts.map(async (sessionProduct) => {
         const limits: number[] = [];
+
+        const variantsWithAvailability = await Promise.all(
+          sessionProduct.product.variants.map(async (variant) => {
+            if (!variant.inventoryTracked || variant.inventoryQuantity === null) {
+              return {
+                ...variant,
+                remainingQuantity: null,
+              };
+            }
+
+            const committed = await this.prisma.bookingProduct.aggregate({
+              where: {
+                productVariantId: variant.id,
+                booking: {
+                  status: {
+                    in: ['RESERVED', 'CONFIRMED'],
+                  },
+                },
+              },
+              _sum: {
+                quantity: true,
+              },
+            });
+
+            const remainingQuantity = Math.max(
+              variant.inventoryQuantity - (committed._sum.quantity ?? 0),
+              0,
+            );
+
+            return remainingQuantity === 0
+              ? null
+              : {
+                  ...variant,
+                  remainingQuantity,
+                };
+          }),
+        );
+
+        const availableVariants = variantsWithAvailability.filter(
+          (variant): variant is NonNullable<typeof variant> => variant !== null,
+        );
+
+        if (
+          sessionProduct.product.variants.length > 0 &&
+          availableVariants.length === 0
+        ) {
+          return null;
+        }
 
         if (sessionProduct.product.capacityControlled) {
           const limit =
@@ -392,6 +466,10 @@ export class PublicBookingService {
           ? null
           : {
               ...sessionProduct,
+              product: {
+                ...sessionProduct.product,
+                variants: availableVariants,
+              },
               remainingQuantity,
             };
       }),

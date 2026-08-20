@@ -30,6 +30,7 @@ const kangaSessionProduct = {
     salesStart: null,
     salesEnd: null,
     eventId: "event-1",
+    variants: [],
   },
 };
 
@@ -43,7 +44,7 @@ describe("AddOnsStep Product availability", () => {
     const user = userEvent.setup();
     render(<AddOnsStep sessionId="session-1" onChange={vi.fn()} />);
 
-    expect(await screen.findByText("2 remaining for this session")).toBeInTheDocument();
+    expect(await screen.findByText("2 remaining")).toBeInTheDocument();
 
     const addButton = screen.getByRole("button", {
       name: "Add one Kanga Skating Aid",
@@ -76,5 +77,84 @@ describe("AddOnsStep Product availability", () => {
     expect(
       await screen.findByText("Required add-on unavailable"),
     ).toBeInTheDocument();
+  });
+
+  it("submits independent Product Variant selections and price overrides", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    getSessionProducts.mockResolvedValue([
+      {
+        ...kangaSessionProduct,
+        id: "session-product-hoodie",
+        productId: "product-hoodie",
+        remainingQuantity: null,
+        product: {
+          ...kangaSessionProduct.product,
+          id: "product-hoodie",
+          name: "Event Hoodie",
+          slug: "event-hoodie",
+          price: 60,
+          variants: [
+            {
+              id: "variant-small",
+              productId: "product-hoodie",
+              name: "Small",
+              slug: "small",
+              description: null,
+              priceOverride: 55,
+              imageUrl: null,
+              inventoryTracked: true,
+              inventoryQuantity: 50,
+              remainingQuantity: 2,
+              sortOrder: 0,
+            },
+            {
+              id: "variant-large",
+              productId: "product-hoodie",
+              name: "Large",
+              slug: "large",
+              description: null,
+              priceOverride: null,
+              imageUrl: null,
+              inventoryTracked: true,
+              inventoryQuantity: 40,
+              remainingQuantity: 4,
+              sortOrder: 1,
+            },
+          ],
+        },
+      },
+    ]);
+
+    render(<AddOnsStep sessionId="session-1" onChange={onChange} />);
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Add one Event Hoodie — Small",
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: "Add one Event Hoodie — Large",
+      }),
+    );
+
+    expect(onChange).toHaveBeenLastCalledWith(
+      [
+        expect.objectContaining({
+          productId: "product-hoodie",
+          productVariantId: "variant-small",
+          quantity: 1,
+          price: 55,
+        }),
+        expect.objectContaining({
+          productId: "product-hoodie",
+          productVariantId: "variant-large",
+          quantity: 1,
+          price: 60,
+        }),
+      ],
+      115,
+    );
   });
 });

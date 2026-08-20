@@ -472,6 +472,9 @@ export default function PublicBookingPage({ params }: PublicBookingPageProps) {
         participants,
         products: selectedProducts.map((product) => ({
           productId: product.productId,
+          ...(product.productVariantId
+            ? { productVariantId: product.productVariantId }
+            : {}),
           quantity: product.quantity,
         })),
       });

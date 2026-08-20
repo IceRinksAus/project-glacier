@@ -48,6 +48,21 @@ export interface PublicProduct {
   salesStart: string | null;
   salesEnd: string | null;
   eventId: string;
+  variants: PublicProductVariant[];
+}
+
+export interface PublicProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  priceOverride: number | null;
+  imageUrl: string | null;
+  inventoryTracked: boolean;
+  inventoryQuantity: number | null;
+  remainingQuantity: number | null;
+  sortOrder: number;
 }
 
 export interface PublicSessionProduct {
@@ -83,6 +98,7 @@ export interface CreatePublicBookingParticipantInput {
 
 export interface CreatePublicBookingProductInput {
   productId: string;
+  productVariantId?: string;
   quantity: number;
 }
 
