@@ -13,14 +13,19 @@ import { CreateBookingDto } from './dto/create-booking.dto';
 
 @Injectable()
 export class BookingService {
- constructor(
-  private readonly prisma: PrismaService,
-  private readonly ruleEvaluationService: RuleEvaluationService,
-  private readonly bookingValidationService: BookingValidationService,
-) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ruleEvaluationService: RuleEvaluationService,
+    private readonly bookingValidationService: BookingValidationService,
+  ) {}
 
-  findAll() {
+  findAll(organizationId: string) {
     return this.prisma.booking.findMany({
+      where: {
+        event: {
+          organizationId,
+        },
+      },
       include: {
         customer: true,
         event: true,
@@ -47,10 +52,13 @@ export class BookingService {
     });
   }
 
-  async findOne(id: string) {
-    const booking = await this.prisma.booking.findUnique({
+  async findOne(organizationId: string, id: string) {
+    const booking = await this.prisma.booking.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
       include: {
         customer: true,
@@ -149,11 +157,9 @@ export class BookingService {
     const ruleErrors: string[] = [];
     const ruleWarnings: string[] = [];
 
-const bookingTicketTypeIds =
-  data.participants.map(
-    (participant) =>
-      participant.ticketTypeId,
-  );
+    const bookingTicketTypeIds = data.participants.map(
+      (participant) => participant.ticketTypeId,
+    );
 
     for (const participant of data.participants) {
       const evaluation = await this.ruleEvaluationService.evaluate(
@@ -202,9 +208,7 @@ const bookingTicketTypeIds =
             quantity: requiredProduct.quantity,
             ruleIds: new Set([requiredProduct.ruleId]),
             messages: new Set(
-              requiredProduct.message
-                ? [requiredProduct.message]
-                : [],
+              requiredProduct.message ? [requiredProduct.message] : [],
             ),
           });
         }
@@ -220,14 +224,14 @@ const bookingTicketTypeIds =
       });
     }
 
-    const requiredProducts = Array.from(
-      requiredProductMap.values(),
-    ).map((requirement) => ({
-      productSlug: requirement.productSlug,
-      quantity: requirement.quantity,
-      ruleIds: Array.from(requirement.ruleIds),
-      messages: Array.from(requirement.messages),
-    }));
+    const requiredProducts = Array.from(requiredProductMap.values()).map(
+      (requirement) => ({
+        productSlug: requirement.productSlug,
+        quantity: requirement.quantity,
+        ruleIds: Array.from(requirement.ruleIds),
+        messages: Array.from(requirement.messages),
+      }),
+    );
 
     /*
      * Group participants by ticket type.
@@ -272,10 +276,7 @@ const bookingTicketTypeIds =
     }
 
     const ticketTypeMap = new Map(
-      ticketTypes.map((ticketType) => [
-        ticketType.id,
-        ticketType,
-      ]),
+      ticketTypes.map((ticketType) => [ticketType.id, ticketType]),
     );
 
     /*
@@ -283,29 +284,23 @@ const bookingTicketTypeIds =
      */
     const requestedSessionQuantity = data.participants.length;
 
-const bookedQuantity =
-  await this.prisma.bookingItem.aggregate({
-    where: {
-      booking: {
-        sessionId: data.sessionId,
-        status: {
-          in: [
-            'RESERVED',
-            'CONFIRMED',
-          ],
+    const bookedQuantity = await this.prisma.bookingItem.aggregate({
+      where: {
+        booking: {
+          sessionId: data.sessionId,
+          status: {
+            in: ['RESERVED', 'CONFIRMED'],
+          },
         },
       },
-    },
-    _sum: {
-      quantity: true,
-    },
-  });
+      _sum: {
+        quantity: true,
+      },
+    });
 
-    const quantityAlreadyBooked =
-      bookedQuantity._sum.quantity ?? 0;
+    const quantityAlreadyBooked = bookedQuantity._sum.quantity ?? 0;
 
-    const remainingSessionCapacity =
-      session.capacity - quantityAlreadyBooked;
+    const remainingSessionCapacity = session.capacity - quantityAlreadyBooked;
 
     if (requestedSessionQuantity > remainingSessionCapacity) {
       throw new BadRequestException(
@@ -331,9 +326,7 @@ const bookedQuantity =
       );
     }
 
-    const selectedProductIds = Array.from(
-      selectedProductQuantities.keys(),
-    );
+    const selectedProductIds = Array.from(selectedProductQuantities.keys());
 
     const selectedProducts =
       selectedProductIds.length > 0
@@ -354,19 +347,13 @@ const bookedQuantity =
     }
 
     const selectedProductMap = new Map(
-      selectedProducts.map((product) => [
-        product.id,
-        product,
-      ]),
+      selectedProducts.map((product) => [product.id, product]),
     );
 
     /*
      * Check product availability and quantity restrictions.
      */
-    for (const [
-      productId,
-      quantity,
-    ] of selectedProductQuantities.entries()) {
+    for (const [productId, quantity] of selectedProductQuantities.entries()) {
       const product = selectedProductMap.get(productId);
 
       if (!product) {
@@ -393,10 +380,7 @@ const bookedQuantity =
         );
       }
 
-      if (
-        product.maxQuantity !== null &&
-        quantity > product.maxQuantity
-      ) {
+      if (product.maxQuantity !== null && quantity > product.maxQuantity) {
         throw new BadRequestException(
           `${product.name} has a maximum quantity of ${product.maxQuantity}`,
         );
@@ -420,23 +404,16 @@ const bookedQuantity =
      */
     const selectedQuantityBySlug = new Map<string, number>();
 
-    for (const [
-      productId,
-      quantity,
-    ] of selectedProductQuantities.entries()) {
+    for (const [productId, quantity] of selectedProductQuantities.entries()) {
       const product = selectedProductMap.get(productId);
 
       if (!product) {
         continue;
       }
 
-      const currentQuantity =
-        selectedQuantityBySlug.get(product.slug) ?? 0;
+      const currentQuantity = selectedQuantityBySlug.get(product.slug) ?? 0;
 
-      selectedQuantityBySlug.set(
-        product.slug,
-        currentQuantity + quantity,
-      );
+      selectedQuantityBySlug.set(product.slug, currentQuantity + quantity);
     }
 
     /*
@@ -450,18 +427,14 @@ const bookedQuantity =
         return {
           ...requirement,
           selectedQuantity,
-          missingQuantity: Math.max(
-            requirement.quantity - selectedQuantity,
-            0,
-          ),
+          missingQuantity: Math.max(requirement.quantity - selectedQuantity, 0),
         };
       })
       .filter((requirement) => requirement.missingQuantity > 0);
 
     if (missingRequiredProducts.length > 0) {
       throw new BadRequestException({
-        message:
-          'The booking is missing one or more required products',
+        message: 'The booking is missing one or more required products',
         requiredProducts,
         missingRequiredProducts,
         warnings: ruleWarnings,
@@ -469,83 +442,79 @@ const bookedQuantity =
       });
     }
 
-/*
- * Calculate ticket total and prepare booking item records.
- *
- * Monetary arithmetic uses Prisma.Decimal so booking totals remain
- * deterministic and do not rely on JavaScript floating-point maths.
- */
-let total = new Prisma.Decimal(0);
+    /*
+     * Calculate ticket total and prepare booking item records.
+     *
+     * Monetary arithmetic uses Prisma.Decimal so booking totals remain
+     * deterministic and do not rely on JavaScript floating-point maths.
+     */
+    let total = new Prisma.Decimal(0);
 
-const bookingItems = consolidatedTicketItems.map((item) => {
-  const ticketType = ticketTypeMap.get(item.ticketTypeId);
+    const bookingItems = consolidatedTicketItems.map((item) => {
+      const ticketType = ticketTypeMap.get(item.ticketTypeId);
 
-  if (!ticketType) {
-    throw new BadRequestException('Ticket type not found');
-  }
+      if (!ticketType) {
+        throw new BadRequestException('Ticket type not found');
+      }
 
-  const totalPrice = ticketType.price.mul(item.quantity);
+      const totalPrice = ticketType.price.mul(item.quantity);
 
-  total = total.add(totalPrice);
+      total = total.add(totalPrice);
 
-  return {
-    ticketTypeId: ticketType.id,
-    quantity: item.quantity,
-    unitPrice: ticketType.price,
-    totalPrice,
-  };
-});
+      return {
+        ticketTypeId: ticketType.id,
+        quantity: item.quantity,
+        unitPrice: ticketType.price,
+        totalPrice,
+      };
+    });
 
-/*
- * Prepare participant records.
- */
-const bookingParticipants = data.participants.map(
-  (participant) => ({
-    firstName: participant.firstName,
-    lastName: participant.lastName,
-    age: participant.age,
-    ticketTypeId: participant.ticketTypeId,
-  }),
-);
+    /*
+     * Prepare participant records.
+     */
+    const bookingParticipants = data.participants.map((participant) => ({
+      firstName: participant.firstName,
+      lastName: participant.lastName,
+      age: participant.age,
+      ticketTypeId: participant.ticketTypeId,
+    }));
 
-/*
- * Calculate product total and prepare booking product records.
- */
-const bookingProducts = Array.from(
-  selectedProductQuantities.entries(),
-).map(([productId, quantity]) => {
-  const product = selectedProductMap.get(productId);
+    /*
+     * Calculate product total and prepare booking product records.
+     */
+    const bookingProducts = Array.from(selectedProductQuantities.entries()).map(
+      ([productId, quantity]) => {
+        const product = selectedProductMap.get(productId);
 
-  if (!product) {
-    throw new BadRequestException('Product not found');
-  }
+        if (!product) {
+          throw new BadRequestException('Product not found');
+        }
 
-  total = total.add(
-    product.price.mul(quantity),
-  );
+        total = total.add(product.price.mul(quantity));
 
-  return {
-    productId: product.id,
-    quantity,
-    unitPrice: product.price,
-  };
-});
+        return {
+          productId: product.id,
+          quantity,
+          unitPrice: product.price,
+        };
+      },
+    );
 
     const bookingNumber = `PG-${Date.now()}-${Math.floor(
       1000 + Math.random() * 9000,
     )}`;
 
-   const booking = await this.prisma.booking.create({
-  data: {
-    bookingNumber,
-    status: 'RESERVED',
-reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
-    paymentStatus: 'UNPAID',
-    total,
-    flexibleBooking: data.flexibleBooking ?? false,
-    customerId: data.customerId,
-    eventId: data.eventId,
-    sessionId: data.sessionId,
+    const booking = await this.prisma.booking.create({
+      data: {
+        bookingNumber,
+        status: 'RESERVED',
+        reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
+        paymentStatus: 'UNPAID',
+        total,
+        flexibleBooking: data.flexibleBooking ?? false,
+        customerId: data.customerId,
+        eventId: data.eventId,
+        sessionId: data.sessionId,
         items: {
           create: bookingItems,
         },

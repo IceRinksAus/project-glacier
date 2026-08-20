@@ -45,12 +45,12 @@ Status values:
 | DELETE | `/category/:id` | Operator | JWT OWNER | Category → Event → Organisation | Param string | PROTECTED | Tenant-scoped mutation. |
 | GET | `/ticket-type` | Operator | JWT OWNER/MEMBER | TicketType → Event → Organisation | None | PROTECTED | Tenant-scoped list. |
 | POST | `/ticket-type` | Operator | JWT OWNER | TicketType → Event → Organisation | Strict DTO | PROTECTED | Event ownership proven before create. |
-| POST | `/rule` | Operator | JWT OWNER | Rule → Event → Organisation | Decorated DTO; runtime pipe absent | HARDEN | Add guard, role, tenant scope and strict validation. |
-| GET | `/rule` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | None | HARDEN | Tenant-scope list. |
-| GET | `/rule/:id` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | Param string | HARDEN | Tenant-scope detail. |
-| PATCH | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Decorated DTO; runtime pipe absent | HARDEN | Prevent cross-tenant reassignment and validate. |
-| DELETE | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Param string | HARDEN | Tenant-scope mutation. |
-| POST | `/rule-evaluation/:eventId` | Legacy | To be determined | Event → Organisation | Inline context | REVIEW/REMOVE | Repository web uses dedicated public evaluation; remove or protect legacy duplicate after usage audit. |
+| POST | `/rule` | Operator | JWT OWNER | Rule → Event → Organisation | Strict DTO | PROTECTED | Event ownership proven before create. |
+| GET | `/rule` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | None | PROTECTED | Tenant-scoped list. |
+| GET | `/rule/:id` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | Param string | PROTECTED | Tenant-scoped detail. |
+| PATCH | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Strict DTO without `eventId` | PROTECTED | Parent Event reassignment is not accepted. |
+| DELETE | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Param string | PROTECTED | Tenant-scoped mutation. |
+| POST | `/rule-evaluation/:eventId` | Legacy | N/A | N/A | N/A | PROTECTED | Removed; dedicated public Booking evaluation and internal service remain authoritative. |
 
 ## Product, Session and Schedule Administration
 
@@ -66,12 +66,12 @@ Status values:
 
 | Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
 |---|---|---|---|---|---|---|---|
-| GET | `/booking` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | None | HARDEN | Tenant-scope list and minimise response. |
-| GET | `/booking/:id` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | Param string | HARDEN | Tenant-scope detail. |
-| POST | `/booking` | Operator | JWT OWNER | Booking/Event/Customer relationships | Decorated DTO; runtime pipe absent | REVIEW/REMOVE | Prefer dedicated public route; retain only if authenticated operator creation is required. |
-| GET | `/customer` | Operator | JWT OWNER/MEMBER | Customer ownership model requires audit | None | HARDEN | Establish safe Organisation scope before exposing list. |
-| GET | `/customer/:id` | Operator | JWT OWNER/MEMBER | Customer ownership model requires audit | Param string | HARDEN | Establish safe Organisation scope and minimise. |
-| POST | `/customer` | Operator | JWT OWNER | Customer ownership model requires audit | Inline body | REVIEW/REMOVE | Prefer dedicated public route unless operator creation is required. |
+| GET | `/booking` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | None | PROTECTED | Tenant-scoped list. |
+| GET | `/booking/:id` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | Param string | PROTECTED | Tenant-scoped detail. |
+| POST | `/booking` | Legacy | N/A | N/A | N/A | PROTECTED | Removed; dedicated public Booking route remains authoritative. |
+| GET | `/customer` | Operator | JWT OWNER/MEMBER | Customer → Booking → Event → Organisation | None | PROTECTED | Only customers with a Booking in the authenticated Organisation; nested Bookings filtered. |
+| GET | `/customer/:id` | Operator | JWT OWNER/MEMBER | Customer → Booking → Event → Organisation | Param string | PROTECTED | Tenant-scoped detail with nested Bookings filtered. |
+| POST | `/customer` | Legacy | N/A | N/A | N/A | PROTECTED | Removed; dedicated public Customer route remains authoritative. |
 
 ## Ticket and Gate Operations
 

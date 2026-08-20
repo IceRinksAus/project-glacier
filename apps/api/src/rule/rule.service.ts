@@ -13,10 +13,11 @@ import { UpdateRuleDto } from './dto/update-rule.dto';
 export class RuleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createRuleDto: CreateRuleDto) {
-    const event = await this.prisma.event.findUnique({
+  async create(organizationId: string, createRuleDto: CreateRuleDto) {
+    const event = await this.prisma.event.findFirst({
       where: {
         id: createRuleDto.eventId,
+        organizationId,
       },
     });
 
@@ -60,8 +61,13 @@ export class RuleService {
     });
   }
 
-  findAll() {
+  findAll(organizationId: string) {
     return this.prisma.rule.findMany({
+      where: {
+        event: {
+          organizationId,
+        },
+      },
       include: {
         event: true,
       },
@@ -76,10 +82,13 @@ export class RuleService {
     });
   }
 
-  async findOne(id: string) {
-    const rule = await this.prisma.rule.findUnique({
+  async findOne(organizationId: string, id: string) {
+    const rule = await this.prisma.rule.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
       include: {
         event: true,
@@ -93,10 +102,17 @@ export class RuleService {
     return rule;
   }
 
-  async update(id: string, updateRuleDto: UpdateRuleDto) {
-    const existingRule = await this.prisma.rule.findUnique({
+  async update(
+    organizationId: string,
+    id: string,
+    updateRuleDto: UpdateRuleDto,
+  ) {
+    const existingRule = await this.prisma.rule.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
     });
 
@@ -104,20 +120,8 @@ export class RuleService {
       throw new NotFoundException('Rule not found.');
     }
 
-    const eventId = updateRuleDto.eventId ?? existingRule.eventId;
+    const eventId = existingRule.eventId;
     const slug = updateRuleDto.slug ?? existingRule.slug;
-
-    if (updateRuleDto.eventId) {
-      const event = await this.prisma.event.findUnique({
-        where: {
-          id: updateRuleDto.eventId,
-        },
-      });
-
-      if (!event) {
-        throw new BadRequestException('Event not found.');
-      }
-    }
 
     const duplicateRule = await this.prisma.rule.findFirst({
       where: {
@@ -140,9 +144,6 @@ export class RuleService {
         id,
       },
       data: {
-        ...(updateRuleDto.eventId !== undefined && {
-          eventId: updateRuleDto.eventId,
-        }),
         ...(updateRuleDto.name !== undefined && {
           name: updateRuleDto.name,
         }),
@@ -183,10 +184,13 @@ export class RuleService {
     });
   }
 
-  async remove(id: string) {
-    const rule = await this.prisma.rule.findUnique({
+  async remove(organizationId: string, id: string) {
+    const rule = await this.prisma.rule.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
     });
 

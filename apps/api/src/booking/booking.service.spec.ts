@@ -1,7 +1,4 @@
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { BookingService } from './booking.service';
@@ -56,9 +53,7 @@ describe('BookingService', () => {
     customerId: 'customer-1',
     eventId: 'event-1',
     sessionId: 'session-1',
-    reservedUntil: new Date(
-      '2026-08-14T04:15:00.000Z',
-    ),
+    reservedUntil: new Date('2026-08-14T04:15:00.000Z'),
     paymentStatus: 'UNPAID',
     customer,
     event,
@@ -87,6 +82,7 @@ describe('BookingService', () => {
   const prisma = {
     booking: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       findUnique: jest.fn(),
       create: jest.fn(),
     },
@@ -121,29 +117,19 @@ describe('BookingService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    prisma.booking.findMany.mockResolvedValue(
-      [],
-    );
+    prisma.booking.findMany.mockResolvedValue([]);
 
-    prisma.booking.findUnique.mockResolvedValue(
-      createdBooking,
-    );
+    prisma.booking.findUnique.mockResolvedValue(createdBooking);
 
-    prisma.customer.findUnique.mockResolvedValue(
-      customer,
-    );
+    prisma.booking.findFirst.mockResolvedValue(createdBooking);
 
-    prisma.event.findUnique.mockResolvedValue(
-      event,
-    );
+    prisma.customer.findUnique.mockResolvedValue(customer);
 
-    prisma.session.findUnique.mockResolvedValue(
-      session,
-    );
+    prisma.event.findUnique.mockResolvedValue(event);
 
-    prisma.ticketType.findMany.mockResolvedValue([
-      adultTicketType,
-    ]);
+    prisma.session.findUnique.mockResolvedValue(session);
+
+    prisma.ticketType.findMany.mockResolvedValue([adultTicketType]);
 
     prisma.bookingItem.aggregate.mockResolvedValue({
       _sum: {
@@ -151,13 +137,9 @@ describe('BookingService', () => {
       },
     });
 
-    prisma.product.findMany.mockResolvedValue(
-      [],
-    );
+    prisma.product.findMany.mockResolvedValue([]);
 
-    prisma.booking.create.mockResolvedValue(
-      createdBooking,
-    );
+    prisma.booking.create.mockResolvedValue(createdBooking);
 
     ruleEvaluationService.evaluate.mockResolvedValue({
       valid: true,
@@ -167,9 +149,7 @@ describe('BookingService', () => {
       warnings: [],
     });
 
-    bookingValidationService.validateBooking.mockResolvedValue(
-      true,
-    );
+    bookingValidationService.validateBooking.mockResolvedValue(true);
 
     service = new BookingService(
       prisma as never,
@@ -183,11 +163,14 @@ describe('BookingService', () => {
   });
 
   it('should list bookings with related booking data', async () => {
-    await service.findAll();
+    await service.findAll('organization-1');
 
-    expect(
-      prisma.booking.findMany,
-    ).toHaveBeenCalledWith({
+    expect(prisma.booking.findMany).toHaveBeenCalledWith({
+      where: {
+        event: {
+          organizationId: 'organization-1',
+        },
+      },
       include: {
         customer: true,
         event: true,
@@ -215,15 +198,14 @@ describe('BookingService', () => {
   });
 
   it('should find a booking by id', async () => {
-    const result = await service.findOne(
-      'booking-1',
-    );
+    const result = await service.findOne('organization-1', 'booking-1');
 
-    expect(
-      prisma.booking.findUnique,
-    ).toHaveBeenCalledWith({
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
       where: {
         id: 'booking-1',
+        event: {
+          organizationId: 'organization-1',
+        },
       },
       include: {
         customer: true,
@@ -247,31 +229,21 @@ describe('BookingService', () => {
       },
     });
 
-    expect(result).toEqual(
-      createdBooking,
-    );
+    expect(result).toEqual(createdBooking);
   });
 
   it('should reject an unknown booking id', async () => {
-    prisma.booking.findUnique.mockResolvedValue(
-      null,
-    );
+    prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.findOne('missing-booking'),
-    ).rejects.toThrow(
-      NotFoundException,
-    );
+      service.findOne('organization-1', 'missing-booking'),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('should run booking validation before creating a booking', async () => {
-    await service.create(
-      createBookingDto,
-    );
+    await service.create(createBookingDto);
 
-    expect(
-      bookingValidationService.validateBooking,
-    ).toHaveBeenCalledWith(
+    expect(bookingValidationService.validateBooking).toHaveBeenCalledWith(
       createBookingDto,
     );
   });
@@ -282,67 +254,39 @@ describe('BookingService', () => {
         ...createBookingDto,
         participants: [],
       }),
-    ).rejects.toThrow(
-      'A booking must contain at least one participant',
-    );
+    ).rejects.toThrow('A booking must contain at least one participant');
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject an unknown customer', async () => {
-    prisma.customer.findUnique.mockResolvedValue(
-      null,
-    );
+    prisma.customer.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'Customer not found',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject an unknown event', async () => {
-    prisma.event.findUnique.mockResolvedValue(
-      null,
-    );
+    prisma.event.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'Event not found',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject an unknown session', async () => {
-    prisma.session.findUnique.mockResolvedValue(
-      null,
-    );
+    prisma.session.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'Session not found',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject a session belonging to another event', async () => {
@@ -351,17 +295,11 @@ describe('BookingService', () => {
       eventId: 'event-2',
     });
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'The selected session does not belong to the selected event',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject a session that is not active', async () => {
@@ -370,17 +308,11 @@ describe('BookingService', () => {
       status: 'DRAFT',
     });
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'The selected session is not currently available for booking',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should evaluate event rules for every participant', async () => {
@@ -407,17 +339,11 @@ describe('BookingService', () => {
       childTicketType,
     ]);
 
-    await service.create(
-      bookingWithTwoParticipants,
-    );
+    await service.create(bookingWithTwoParticipants);
 
-    expect(
-      ruleEvaluationService.evaluate,
-    ).toHaveBeenCalledTimes(2);
+    expect(ruleEvaluationService.evaluate).toHaveBeenCalledTimes(2);
 
-    expect(
-      ruleEvaluationService.evaluate,
-    ).toHaveBeenNthCalledWith(
+    expect(ruleEvaluationService.evaluate).toHaveBeenNthCalledWith(
       1,
       'event-1',
       expect.objectContaining({
@@ -430,9 +356,7 @@ describe('BookingService', () => {
       }),
     );
 
-    expect(
-      ruleEvaluationService.evaluate,
-    ).toHaveBeenNthCalledWith(
+    expect(ruleEvaluationService.evaluate).toHaveBeenNthCalledWith(
       2,
       'event-1',
       expect.objectContaining({
@@ -449,45 +373,27 @@ describe('BookingService', () => {
   it('should reject a booking when the rule engine returns errors', async () => {
     ruleEvaluationService.evaluate.mockResolvedValue({
       valid: false,
-      matchedRuleIds: [
-        'rule-child-accompaniment',
-      ],
+      matchedRuleIds: ['rule-child-accompaniment'],
       requiredProducts: [],
-      errors: [
-        'Children under 5 must be accompanied by an adult.',
-      ],
+      errors: ['Children under 5 must be accompanied by an adult.'],
       warnings: [],
     });
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       BadRequestException,
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject invalid or inactive ticket types', async () => {
-    prisma.ticketType.findMany.mockResolvedValue(
-      [],
-    );
+    prisma.ticketType.findMany.mockResolvedValue([]);
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'One or more ticket types are invalid, inactive, or belong to another event',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should reject a booking that exceeds remaining session capacity', async () => {
@@ -502,35 +408,22 @@ describe('BookingService', () => {
       },
     });
 
-    await expect(
-      service.create(
-        createBookingDto,
-      ),
-    ).rejects.toThrow(
+    await expect(service.create(createBookingDto)).rejects.toThrow(
       'Public Skate does not have enough capacity. Requested: 1. Remaining: 0.',
     );
 
-    expect(
-      prisma.booking.create,
-    ).not.toHaveBeenCalled();
+    expect(prisma.booking.create).not.toHaveBeenCalled();
   });
 
   it('should calculate occupied capacity from reserved and confirmed booking items', async () => {
-    await service.create(
-      createBookingDto,
-    );
+    await service.create(createBookingDto);
 
-    expect(
-      prisma.bookingItem.aggregate,
-    ).toHaveBeenCalledWith({
+    expect(prisma.bookingItem.aggregate).toHaveBeenCalledWith({
       where: {
         booking: {
           sessionId: 'session-1',
           status: {
-            in: [
-              'RESERVED',
-              'CONFIRMED',
-            ],
+            in: ['RESERVED', 'CONFIRMED'],
           },
         },
       },
@@ -570,53 +463,41 @@ describe('BookingService', () => {
       childTicketType,
     ]);
 
-    await service.create(
-      bookingWithThreeParticipants,
-    );
+    await service.create(bookingWithThreeParticipants);
 
-    expect(
-      prisma.booking.create,
-    ).toHaveBeenCalledWith(
+    expect(prisma.booking.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           items: {
-  create: expect.arrayContaining([
-    {
-      ticketTypeId: 'ticket-adult',
-      quantity: 2,
-      unitPrice: new Prisma.Decimal(24),
-      totalPrice: new Prisma.Decimal(48),
-    },
-    {
-      ticketTypeId: 'ticket-child',
-      quantity: 1,
-      unitPrice: new Prisma.Decimal(18),
-      totalPrice: new Prisma.Decimal(18),
-    },
-  ]),
-},
+            create: expect.arrayContaining([
+              {
+                ticketTypeId: 'ticket-adult',
+                quantity: 2,
+                unitPrice: new Prisma.Decimal(24),
+                totalPrice: new Prisma.Decimal(48),
+              },
+              {
+                ticketTypeId: 'ticket-child',
+                quantity: 1,
+                unitPrice: new Prisma.Decimal(18),
+                totalPrice: new Prisma.Decimal(18),
+              },
+            ]),
+          },
         }),
       }),
     );
   });
 
   it('should create a reserved unpaid booking with a reservation expiry', async () => {
-    await service.create(
-      createBookingDto,
-    );
+    await service.create(createBookingDto);
 
-    expect(
-      prisma.booking.create,
-    ).toHaveBeenCalledWith(
+    expect(prisma.booking.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          bookingNumber:
-            expect.stringMatching(
-              /^PG-\d+-\d{4}$/,
-            ),
+          bookingNumber: expect.stringMatching(/^PG-\d+-\d{4}$/),
           status: 'RESERVED',
-          reservedUntil:
-            expect.any(Date),
+          reservedUntil: expect.any(Date),
           paymentStatus: 'UNPAID',
           total: new Prisma.Decimal(24),
           flexibleBooking: false,
@@ -626,8 +507,7 @@ describe('BookingService', () => {
           items: {
             create: [
               {
-                ticketTypeId:
-                  'ticket-adult',
+                ticketTypeId: 'ticket-adult',
                 quantity: 1,
                 unitPrice: new Prisma.Decimal(24),
                 totalPrice: new Prisma.Decimal(24),
@@ -640,8 +520,7 @@ describe('BookingService', () => {
                 firstName: 'Jamie',
                 lastName: 'Stoller',
                 age: 35,
-                ticketTypeId:
-                  'ticket-adult',
+                ticketTypeId: 'ticket-adult',
               },
             ],
           },
@@ -656,32 +535,22 @@ describe('BookingService', () => {
   it('should return the booking together with rule evaluation results', async () => {
     ruleEvaluationService.evaluate.mockResolvedValue({
       valid: true,
-      matchedRuleIds: [
-        'rule-1',
-      ],
+      matchedRuleIds: ['rule-1'],
       requiredProducts: [],
       errors: [],
-      warnings: [
-        'Helmet recommended.',
-      ],
+      warnings: ['Helmet recommended.'],
     });
 
-    const result = await service.create(
-      createBookingDto,
-    );
+    const result = await service.create(createBookingDto);
 
     expect(result).toEqual({
       booking: createdBooking,
       ruleEvaluation: {
         valid: true,
-        matchedRuleIds: [
-          'rule-1',
-        ],
+        matchedRuleIds: ['rule-1'],
         requiredProducts: [],
         errors: [],
-        warnings: [
-          'Jamie: Helmet recommended.',
-        ],
+        warnings: ['Jamie: Helmet recommended.'],
       },
     });
   });

@@ -5,10 +5,25 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CustomerService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(organizationId: string) {
     return this.prisma.customer.findMany({
+      where: {
+        bookings: {
+          some: {
+            event: {
+              organizationId,
+            },
+          },
+        },
+      },
       include: {
-        bookings: true,
+        bookings: {
+          where: {
+            event: {
+              organizationId,
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -16,13 +31,25 @@ export class CustomerService {
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.customer.findUnique({
+  findOne(organizationId: string, id: string) {
+    return this.prisma.customer.findFirst({
       where: {
         id,
+        bookings: {
+          some: {
+            event: {
+              organizationId,
+            },
+          },
+        },
       },
       include: {
         bookings: {
+          where: {
+            event: {
+              organizationId,
+            },
+          },
           include: {
             event: true,
             items: {
