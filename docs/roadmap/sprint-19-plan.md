@@ -210,7 +210,9 @@ Replace the hard-coded 25% setup card with authoritative readiness items.
    - jurisdiction and activity type;
    - valid entry policy.
 2. At least one ACTIVE Session exists within the Event dates.
-3. At least one active Ticket Type exists with a valid non-negative price and capacity.
+3. At least one active Ticket Type exists with a valid non-negative price.
+
+Session capacity is the authoritative shared admission limit across all Ticket Types. Adult, Child and other admission categories consume the same Session capacity in any combination. The legacy Ticket Type `capacity` field is not an activation requirement and is not presented as a rink limit; a future optional per-category sales limit must be introduced under a distinct name and explicit booking rule if required.
 
 ### Conditional item
 

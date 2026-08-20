@@ -97,7 +97,26 @@ describe('TicketTypeService', () => {
     expect(prismaMock.ticketType.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         eventId: 'event-1',
+        capacity: 100,
         saleStart: new Date('2027-01-01T00:00:00.000Z'),
+      }),
+    });
+  });
+
+  it('does not treat Ticket Type capacity as the shared admission limit', async () => {
+    prismaMock.event.findFirst.mockResolvedValue({ id: 'event-1' });
+    prismaMock.ticketType.create.mockResolvedValue({ id: 'ticket-type-1' });
+
+    await service.create('organization-1', {
+      name: 'Child',
+      price: 18,
+      eventId: 'event-1',
+    });
+
+    expect(prismaMock.ticketType.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventId: 'event-1',
+        capacity: 0,
       }),
     });
   });

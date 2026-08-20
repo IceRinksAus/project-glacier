@@ -42,6 +42,7 @@ export class TicketTypeService {
     return this.prisma.ticketType.create({
       data: {
         ...data,
+        capacity: data.capacity ?? 0,
         saleStart: data.saleStart ? new Date(data.saleStart) : undefined,
         saleEnd: data.saleEnd ? new Date(data.saleEnd) : undefined,
       },

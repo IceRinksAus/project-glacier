@@ -27,9 +27,14 @@ export class CreateTicketTypeDto {
   @Min(0)
   price: number;
 
+  /**
+   * Legacy compatibility field. Session capacity is the authoritative shared
+   * admission limit; Ticket Type capacity is not enforced by Booking.
+   */
+  @IsOptional()
   @IsInt()
   @Min(0)
-  capacity: number;
+  capacity?: number;
 
   @IsOptional()
   @IsBoolean()

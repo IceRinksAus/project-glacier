@@ -42,7 +42,6 @@ export function TicketTypesWorkspace({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [capacity, setCapacity] = useState("");
 
   const loadTicketTypes = useCallback(async () => {
     try {
@@ -81,18 +80,9 @@ export function TicketTypesWorkspace({
     event.preventDefault();
     const cleanName = name.trim();
     const parsedPrice = Number(price);
-    const parsedCapacity = Number(capacity);
 
-    if (
-      !cleanName ||
-      !Number.isFinite(parsedPrice) ||
-      parsedPrice < 0 ||
-      !Number.isInteger(parsedCapacity) ||
-      parsedCapacity < 0
-    ) {
-      setError(
-        "Enter a name, a non-negative price and a whole non-negative capacity.",
-      );
+    if (!cleanName || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      setError("Enter a name and a non-negative price.");
       setSavedMessage("");
       return;
     }
@@ -107,13 +97,11 @@ export function TicketTypesWorkspace({
         name: cleanName,
         ...(description.trim() ? { description: description.trim() } : {}),
         price: parsedPrice,
-        capacity: parsedCapacity,
         active: true,
       });
       setName("");
       setDescription("");
       setPrice("");
-      setCapacity("");
       setSavedMessage(
         "Active Ticket Type created. Event readiness will update automatically.",
       );
@@ -140,7 +128,8 @@ export function TicketTypesWorkspace({
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
           Ticket Types define the admission options customers can book for this
-          Event. At least one active Ticket Type is required before activation.
+          Event. The Session capacity remains the shared rink limit across every
+          Ticket Type combination.
         </p>
 
         {isLoading ? (
@@ -164,17 +153,11 @@ export function TicketTypesWorkspace({
                     {ticketType.active ? "ACTIVE" : "INACTIVE"}
                   </span>
                 </div>
-                <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <dl className="mt-4 text-sm">
                   <div>
                     <dt className="text-muted-foreground">Price</dt>
                     <dd className="mt-1 font-semibold">
                       {formatPrice(ticketType.price)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Capacity</dt>
-                    <dd className="mt-1 font-semibold">
-                      {ticketType.capacity}
                     </dd>
                   </div>
                 </dl>
@@ -230,31 +213,22 @@ export function TicketTypesWorkspace({
                   className="mt-2 w-full rounded-lg border bg-background px-3 py-2"
                 />
               </label>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <label className="block text-sm font-medium">
-                  Price (AUD)
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={price}
-                    onChange={(event) => setPrice(event.target.value)}
-                    required
-                    className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Capacity
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={capacity}
-                    onChange={(event) => setCapacity(event.target.value)}
-                    required
-                    className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
-                  />
-                </label>
+              <label className="block text-sm font-medium">
+                Price (AUD)
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={price}
+                  onChange={(event) => setPrice(event.target.value)}
+                  required
+                  className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
+                />
+              </label>
+
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm leading-6">
+                Rink capacity is configured on Sessions and shared across Adult,
+                Child and other Ticket Types.
               </div>
 
               {error ? (

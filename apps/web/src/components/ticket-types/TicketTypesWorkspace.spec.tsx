@@ -59,7 +59,6 @@ describe("TicketTypesWorkspace", () => {
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Adult");
     await user.type(screen.getByLabelText("Price (AUD)"), "25");
-    await user.type(screen.getByLabelText("Capacity"), "100");
     await user.click(
       screen.getByRole("button", { name: "Create active Ticket Type" }),
     );
@@ -69,13 +68,23 @@ describe("TicketTypesWorkspace", () => {
         eventId: "event-1",
         name: "Adult",
         price: 25,
-        capacity: 100,
         active: true,
       }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Event readiness will update automatically",
     );
+  });
+
+  it("explains that rink capacity is shared at Session level", async () => {
+    render(
+      <TicketTypesWorkspace eventId="event-1" onReturnToReadiness={vi.fn()} />,
+    );
+
+    expect(
+      await screen.findByText(/Session capacity remains the shared rink limit/),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Capacity")).not.toBeInTheDocument();
   });
 
   it("keeps MEMBER access read-only", async () => {

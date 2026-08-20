@@ -17,7 +17,6 @@ export interface CreateTicketType {
   name: string;
   description?: string;
   price: number;
-  capacity: number;
   active: boolean;
 }
 
