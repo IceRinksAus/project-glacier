@@ -58,6 +58,40 @@ describe('EventService', () => {
     entryClosesMinutesAfterEnd: 0,
   };
 
+  const readyEvent = {
+    id: 'event-1',
+    name: 'Winter Ice Event',
+    slug: 'winter-ice-event',
+    description: null,
+    startDate: new Date('2027-09-01T00:00:00.000Z'),
+    endDate: new Date('2027-09-05T00:00:00.000Z'),
+    timezone: 'Australia/Melbourne',
+    status: 'DRAFT',
+    venueName: 'Preview Ice Arena',
+    addressLine1: '1 Example Street',
+    addressLine2: null,
+    suburb: 'Melbourne',
+    postcode: '3000',
+    country: 'AU',
+    jurisdiction: AustralianJurisdiction.VIC,
+    activityType: EventActivityType.ICE_SKATING,
+    organizationId: 'organization-1',
+    entryOpensMinutesBeforeStart: 30,
+    entryClosesMinutesAfterEnd: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    sessions: [
+      {
+        id: 'session-1',
+        status: 'ACTIVE',
+        startDate: new Date('2027-09-01T01:00:00.000Z'),
+        endDate: new Date('2027-09-01T02:00:00.000Z'),
+      },
+    ],
+    ticketTypes: [{ id: 'ticket-type-1', active: true }],
+    waiver: null,
+  };
+
   it('creates a tenant-owned DRAFT Event with complete setup fields', async () => {
     prismaMock.event.create.mockResolvedValue({ id: 'event-1' });
 
@@ -98,6 +132,75 @@ describe('EventService', () => {
     await expect(
       service.create('organization-1', createData),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('reports authoritative readiness with No Waiver as not required', async () => {
+    prismaMock.event.findFirst.mockResolvedValue(readyEvent);
+
+    await expect(
+      service.getReadiness('event-1', 'organization-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        eventId: 'event-1',
+        readyToActivate: true,
+        percentage: 100,
+        items: expect.arrayContaining([
+          expect.objectContaining({ id: 'WAIVER', status: 'NOT_REQUIRED' }),
+        ]),
+      }),
+    );
+  });
+
+  it('reports missing foundations and an unpublished Waiver', async () => {
+    prismaMock.event.findFirst.mockResolvedValue({
+      ...readyEvent,
+      sessions: [],
+      ticketTypes: [],
+      waiver: { id: 'waiver-1', versions: [] },
+    });
+
+    const readiness = await service.getReadiness('event-1', 'organization-1');
+
+    expect(readiness.readyToActivate).toBe(false);
+    expect(readiness.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'SESSIONS', status: 'INCOMPLETE' }),
+        expect.objectContaining({
+          id: 'TICKET_TYPES',
+          status: 'INCOMPLETE',
+        }),
+        expect.objectContaining({ id: 'WAIVER', status: 'INCOMPLETE' }),
+      ]),
+    );
+  });
+
+  it('blocks activation when current readiness is incomplete', async () => {
+    prismaMock.event.findFirst.mockResolvedValue({
+      ...readyEvent,
+      sessions: [],
+    });
+
+    await expect(
+      service.updateStatus('event-1', 'organization-1', 'ACTIVE'),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ missingItems: ['SESSIONS'] }),
+    });
+    expect(prismaMock.event.update).not.toHaveBeenCalled();
+  });
+
+  it('activates a currently ready tenant-owned Event', async () => {
+    prismaMock.event.findFirst.mockResolvedValue(readyEvent);
+    prismaMock.event.update.mockResolvedValue({
+      ...readyEvent,
+      status: 'ACTIVE',
+    });
+
+    await service.updateStatus('event-1', 'organization-1', 'ACTIVE');
+
+    expect(prismaMock.event.update).toHaveBeenCalledWith({
+      where: { id: 'event-1' },
+      data: { status: 'ACTIVE' },
+    });
   });
 
   it('tenant-scopes and updates the Event entry policy', async () => {

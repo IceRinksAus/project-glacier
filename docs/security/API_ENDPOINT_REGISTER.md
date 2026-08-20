@@ -32,36 +32,37 @@ Status values:
 
 ## Event and Catalogue Administration
 
-| Method | Route                       | Audience | Authentication/role target | Tenant path                       | Validation                   | Status    | Sprint 17 action                                                                        |
-| ------ | --------------------------- | -------- | -------------------------- | --------------------------------- | ---------------------------- | --------- | --------------------------------------------------------------------------------------- |
-| GET    | `/event`                    | Operator | JWT OWNER/MEMBER           | Event → Organisation              | DTO/query review             | PROTECTED | Guard and tenant tests retained.                                                        |
-| GET    | `/event/:id`                | Operator | JWT OWNER/MEMBER           | Event → Organisation              | Param string                 | PROTECTED | Cross-tenant test retained.                                                             |
-| POST   | `/event`                    | Operator | JWT OWNER                  | JWT Organisation                  | Strict DTO                   | PROTECTED | Global strict runtime validation active.                                                |
-| PATCH  | `/event/:id/status`         | Operator | JWT OWNER                  | Event → Organisation              | Strict DTO                   | PROTECTED | Global strict runtime validation active.                                                |
-| PATCH  | `/event/:id/entry-policy`   | Operator | JWT OWNER                  | Event → Organisation              | Strict bounded DTO           | PROTECTED | Configures Event-wide scanner opening lead and closing grace from 0–240 minutes.        |
-| DELETE | `/event/:id`                | Operator | JWT OWNER                  | Event → Organisation              | Param string                 | PROTECTED | Retain dependency/business checks.                                                      |
-| POST   | `/category`                 | Operator | JWT OWNER                  | Category → Event → Organisation   | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                   |
-| GET    | `/category`                 | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | None                         | PROTECTED | Tenant-scoped list.                                                                     |
-| GET    | `/category/:id`             | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | Param string                 | PROTECTED | Tenant-scoped detail.                                                                   |
-| DELETE | `/category/:id`             | Operator | JWT OWNER                  | Category → Event → Organisation   | Param string                 | PROTECTED | Tenant-scoped mutation.                                                                 |
-| GET    | `/ticket-type`              | Operator | JWT OWNER/MEMBER           | TicketType → Event → Organisation | None                         | PROTECTED | Tenant-scoped list.                                                                     |
-| POST   | `/ticket-type`              | Operator | JWT OWNER                  | TicketType → Event → Organisation | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                   |
-| POST   | `/rule`                     | Operator | JWT OWNER                  | Rule → Event → Organisation       | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                   |
-| GET    | `/rule`                     | Operator | JWT OWNER/MEMBER           | Rule → Event → Organisation       | None                         | PROTECTED | Tenant-scoped list.                                                                     |
-| GET    | `/rule/:id`                 | Operator | JWT OWNER/MEMBER           | Rule → Event → Organisation       | Param string                 | PROTECTED | Tenant-scoped detail.                                                                   |
-| PATCH  | `/rule/:id`                 | Operator | JWT OWNER                  | Rule → Event → Organisation       | Strict DTO without `eventId` | PROTECTED | Parent Event reassignment is not accepted.                                              |
-| DELETE | `/rule/:id`                 | Operator | JWT OWNER                  | Rule → Event → Organisation       | Param string                 | PROTECTED | Tenant-scoped mutation.                                                                 |
-| POST   | `/rule-evaluation/:eventId` | Legacy   | N/A                        | N/A                               | N/A                          | PROTECTED | Removed; dedicated public Booking evaluation and internal service remain authoritative. |
+| Method | Route                       | Audience | Authentication/role target | Tenant path                       | Validation                   | Status    | Sprint 17 action                                                                                  |
+| ------ | --------------------------- | -------- | -------------------------- | --------------------------------- | ---------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
+| GET    | `/event`                    | Operator | JWT OWNER/MEMBER           | Event → Organisation              | DTO/query review             | PROTECTED | Guard and tenant tests retained.                                                                  |
+| GET    | `/event/:id`                | Operator | JWT OWNER/MEMBER           | Event → Organisation              | Param string                 | PROTECTED | Cross-tenant test retained.                                                                       |
+| GET    | `/event/:id/readiness`      | Operator | JWT OWNER/MEMBER           | Event → Organisation              | Param string                 | PROTECTED | Authoritative setup state only; SCANNER denied.                                                   |
+| POST   | `/event`                    | Operator | JWT OWNER                  | JWT Organisation                  | Strict complete setup DTO    | PROTECTED | Creates DRAFT only; validates Australian timezone, venue, activity and gate policy.               |
+| PATCH  | `/event/:id/status`         | Operator | JWT OWNER                  | Event → Organisation              | Strict DTO                   | PROTECTED | ACTIVE requires current server-side Event, Session, Ticket Type and conditional Waiver readiness. |
+| PATCH  | `/event/:id/entry-policy`   | Operator | JWT OWNER                  | Event → Organisation              | Strict bounded DTO           | PROTECTED | Configures Event-wide scanner opening lead and closing grace from 0–240 minutes.                  |
+| DELETE | `/event/:id`                | Operator | JWT OWNER                  | Event → Organisation              | Param string                 | PROTECTED | Retain dependency/business checks.                                                                |
+| POST   | `/category`                 | Operator | JWT OWNER                  | Category → Event → Organisation   | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                             |
+| GET    | `/category`                 | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | None                         | PROTECTED | Tenant-scoped list.                                                                               |
+| GET    | `/category/:id`             | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | Param string                 | PROTECTED | Tenant-scoped detail.                                                                             |
+| DELETE | `/category/:id`             | Operator | JWT OWNER                  | Category → Event → Organisation   | Param string                 | PROTECTED | Tenant-scoped mutation.                                                                           |
+| GET    | `/ticket-type`              | Operator | JWT OWNER/MEMBER           | TicketType → Event → Organisation | None                         | PROTECTED | Tenant-scoped list.                                                                               |
+| POST   | `/ticket-type`              | Operator | JWT OWNER                  | TicketType → Event → Organisation | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                             |
+| POST   | `/rule`                     | Operator | JWT OWNER                  | Rule → Event → Organisation       | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                             |
+| GET    | `/rule`                     | Operator | JWT OWNER/MEMBER           | Rule → Event → Organisation       | None                         | PROTECTED | Tenant-scoped list.                                                                               |
+| GET    | `/rule/:id`                 | Operator | JWT OWNER/MEMBER           | Rule → Event → Organisation       | Param string                 | PROTECTED | Tenant-scoped detail.                                                                             |
+| PATCH  | `/rule/:id`                 | Operator | JWT OWNER                  | Rule → Event → Organisation       | Strict DTO without `eventId` | PROTECTED | Parent Event reassignment is not accepted.                                                        |
+| DELETE | `/rule/:id`                 | Operator | JWT OWNER                  | Rule → Event → Organisation       | Param string                 | PROTECTED | Tenant-scoped mutation.                                                                           |
+| POST   | `/rule-evaluation/:eventId` | Legacy   | N/A                        | N/A                               | N/A                          | PROTECTED | Removed; dedicated public Booking evaluation and internal service remain authoritative.           |
 
 ## Product, Session and Schedule Administration
 
-| Route group             | Audience | Authentication/role  | Tenant path                              | Status    | Sprint 17 action                                             |
-| ----------------------- | -------- | -------------------- | ---------------------------------------- | --------- | ------------------------------------------------------------ |
-| `/product`              | Operator | JWT; OWNER mutations | Product → Event → Organisation           | PROTECTED | Strict DTOs and negative tenant tests retained.             |
-| `/product-variant`      | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Strict DTOs and negative tenant tests retained.             |
-| `/session-product`      | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation   | PROTECTED | Cross-parent tenant integrity retained.                     |
-| `/session`              | Operator | JWT; OWNER mutations | Session → Event → Organisation           | PROTECTED | Preserve time, capacity and overlap rules.                   |
-| `/operational-schedule` | Operator | JWT OWNER            | Schedule → Event → Organisation          | PROTECTED | Preserve generation and transactional behaviour.             |
+| Route group             | Audience | Authentication/role  | Tenant path                              | Status    | Sprint 17 action                                 |
+| ----------------------- | -------- | -------------------- | ---------------------------------------- | --------- | ------------------------------------------------ |
+| `/product`              | Operator | JWT; OWNER mutations | Product → Event → Organisation           | PROTECTED | Strict DTOs and negative tenant tests retained.  |
+| `/product-variant`      | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Strict DTOs and negative tenant tests retained.  |
+| `/session-product`      | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation   | PROTECTED | Cross-parent tenant integrity retained.          |
+| `/session`              | Operator | JWT; OWNER mutations | Session → Event → Organisation           | PROTECTED | Preserve time, capacity and overlap rules.       |
+| `/operational-schedule` | Operator | JWT OWNER            | Schedule → Event → Organisation          | PROTECTED | Preserve generation and transactional behaviour. |
 
 ## Booking and Customer Administration
 
@@ -86,12 +87,12 @@ Status values:
 
 ## Staff Scanner
 
-| Method | Route                                             | Audience      | Authentication/role target | Tenant path                             | Validation                | Status    | Sprint 18 action                                                                 |
-| ------ | ------------------------------------------------- | ------------- | -------------------------- | --------------------------------------- | ------------------------- | --------- | -------------------------------------------------------------------------------- |
-| GET    | `/staff/scanner/events`                           | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | None                      | PROTECTED | Active Event selection with entry-policy fields only.                            |
-| GET    | `/staff/scanner/events/:eventId/context`          | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | Param string              | PROTECTED | Active selected-Event context only.                                              |
-| POST   | `/staff/scanner/events/:eventId/validate`         | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO     | PROTECTED | Read-only, privacy-minimised lookup; no Ticket or audit write.                    |
-| POST   | `/staff/scanner/events/:eventId/admit`            | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO     | PROTECTED | Server-time window, atomic admission and attributable append-only attempt record. |
+| Method | Route                                     | Audience       | Authentication/role target | Tenant path                             | Validation            | Status    | Sprint 18 action                                                                  |
+| ------ | ----------------------------------------- | -------------- | -------------------------- | --------------------------------------- | --------------------- | --------- | --------------------------------------------------------------------------------- |
+| GET    | `/staff/scanner/events`                   | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | None                  | PROTECTED | Active Event selection with entry-policy fields only.                             |
+| GET    | `/staff/scanner/events/:eventId/context`  | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Event → Organisation                    | Param string          | PROTECTED | Active selected-Event context only.                                               |
+| POST   | `/staff/scanner/events/:eventId/validate` | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO | PROTECTED | Read-only, privacy-minimised lookup; no Ticket or audit write.                    |
+| POST   | `/staff/scanner/events/:eventId/admit`    | Gate/POS staff | JWT OWNER/MEMBER/SCANNER   | Ticket → Booking → Event → Organisation | Strict token/mode DTO | PROTECTED | Server-time window, atomic admission and attributable append-only attempt record. |
 
 ## Payment
 
@@ -115,10 +116,10 @@ Status values:
 
 ## Public Waivers
 
-| Method | Route                                              | Audience          | Authentication                | Validation                              | Status | Sprint 17 action                                                 |
-| ------ | -------------------------------------------------- | ----------------- | ----------------------------- | --------------------------------------- | ------ | ---------------------------------------------------------------- |
-| GET    | `/public/waivers/verifications/:verificationToken` | Credential holder | High-entropy possession token | Strict controller pipe + service format | PUBLIC | Retain privacy-minimised response.                               |
-| GET    | `/public/waivers/:publicSlug`                      | Participant       | None                          | Strict controller pipe                  | PUBLIC | Retain active/published-only lookup.                             |
+| Method | Route                                              | Audience          | Authentication                | Validation                              | Status | Sprint 17 action                                                                     |
+| ------ | -------------------------------------------------- | ----------------- | ----------------------------- | --------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| GET    | `/public/waivers/verifications/:verificationToken` | Credential holder | High-entropy possession token | Strict controller pipe + service format | PUBLIC | Retain privacy-minimised response.                                                   |
+| GET    | `/public/waivers/:publicSlug`                      | Participant       | None                          | Strict controller pipe                  | PUBLIC | Retain active/published-only lookup.                                                 |
 | POST   | `/public/waivers/:publicSlug/submissions`          | Participant       | None                          | Strict nested DTO and local pipe        | PUBLIC | Server-authoritative evidence retained; deployment-edge abuse limit is a pilot gate. |
 
 ## Event Waiver Administration

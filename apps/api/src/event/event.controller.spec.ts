@@ -7,6 +7,7 @@ describe('EventController', () => {
   let controller: EventController;
 
   const serviceMock = {
+    getReadiness: jest.fn(),
     updateEntryPolicy: jest.fn(),
   };
 
@@ -47,6 +48,20 @@ describe('EventController', () => {
       'event-1',
       'organization-1',
       data,
+    );
+  });
+
+  it('uses trusted organization context for readiness', async () => {
+    await controller.getReadiness('event-1', {
+      userId: 'user-1',
+      email: 'member@example.com',
+      role: 'MEMBER',
+      organizationId: 'organization-1',
+    });
+
+    expect(serviceMock.getReadiness).toHaveBeenCalledWith(
+      'event-1',
+      'organization-1',
     );
   });
 });

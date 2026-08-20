@@ -34,6 +34,15 @@ export class EventController {
     return this.eventService.findAll(user.organizationId);
   }
 
+  @Roles('OWNER', 'MEMBER')
+  @Get(':id/readiness')
+  getReadiness(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.eventService.getReadiness(id, user.organizationId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.eventService.findOne(id, user.organizationId);
