@@ -7,15 +7,19 @@ import { CreateTicketTypeDto } from './dto/create-ticket-type.dto';
 export class TicketTypeService {
   constructor(private prisma: PrismaService) {}
 
-  findAll(organizationId: string) {
+  findAll(organizationId: string, eventId?: string) {
     return this.prisma.ticketType.findMany({
       where: {
+        ...(eventId ? { eventId } : {}),
         event: {
           organizationId,
         },
       },
       include: {
         event: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     });
   }

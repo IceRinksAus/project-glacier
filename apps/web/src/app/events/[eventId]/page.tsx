@@ -13,6 +13,7 @@ import {
 import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
+import { TicketTypesWorkspace } from "@/components/ticket-types/TicketTypesWorkspace";
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
 import { useEvent } from "@/hooks/useEvent";
 
@@ -98,6 +99,13 @@ export default function EventWorkspacePage({
               />
             ) : null}
 
+            {activeTab === "Ticket Types" ? (
+              <TicketTypesWorkspace
+                eventId={event.id}
+                onReturnToReadiness={() => selectTab("Overview")}
+              />
+            ) : null}
+
             {activeTab === "Settings" ? (
               <EventEntryPolicySettings
                 eventId={event.id}
@@ -110,6 +118,7 @@ export default function EventWorkspacePage({
 
             {activeTab !== "Overview" &&
             activeTab !== "Sessions" &&
+            activeTab !== "Ticket Types" &&
             activeTab !== "Waiver" &&
             activeTab !== "Settings" ? (
               <div className="rounded-xl border bg-card p-6">

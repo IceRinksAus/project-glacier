@@ -51,6 +51,23 @@ describe('TicketTypeService', () => {
     );
   });
 
+  it('filters a Ticket Type list to the requested tenant Event', async () => {
+    prismaMock.ticketType.findMany.mockResolvedValue([]);
+
+    await service.findAll('organization-1', 'event-1');
+
+    expect(prismaMock.ticketType.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          eventId: 'event-1',
+          event: {
+            organizationId: 'organization-1',
+          },
+        },
+      }),
+    );
+  });
+
   it('does not create a Ticket Type for another tenant Event', async () => {
     prismaMock.event.findFirst.mockResolvedValue(null);
 

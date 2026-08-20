@@ -6,7 +6,9 @@ import { TicketTypeService } from './ticket-type.service';
 describe('TicketTypeController', () => {
   let controller: TicketTypeController;
 
-  const serviceMock = {};
+  const serviceMock = {
+    findAll: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule =
@@ -30,5 +32,17 @@ describe('TicketTypeController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('passes trusted Organisation and optional Event filter to the service', () => {
+    controller.findAll(
+      { organizationId: 'organization-1' },
+      { eventId: 'event-1' },
+    );
+
+    expect(serviceMock.findAll).toHaveBeenCalledWith(
+      'organization-1',
+      'event-1',
+    );
   });
 });
