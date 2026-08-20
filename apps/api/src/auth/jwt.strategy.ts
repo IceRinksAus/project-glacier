@@ -6,8 +6,8 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
-  organizationId: string;
+  role: string | null;
+  organizationId: string | null;
 }
 
 @Injectable()

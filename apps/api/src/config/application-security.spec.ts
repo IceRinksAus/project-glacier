@@ -46,4 +46,38 @@ describe('application security configuration', () => {
       ),
     ).rejects.toThrow(BadRequestException);
   });
+
+  it('rejects oversized login credentials before authentication work', async () => {
+    const pipe = createApplicationValidationPipe();
+
+    await expect(
+      pipe.transform(
+        {
+          email: `${'a'.repeat(250)}@example.com`,
+          password: 'p'.repeat(129),
+        },
+        {
+          type: 'body',
+          metatype: LoginDto,
+        },
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects an empty login password before authentication work', async () => {
+    const pipe = createApplicationValidationPipe();
+
+    await expect(
+      pipe.transform(
+        {
+          email: 'owner@example.com',
+          password: '',
+        },
+        {
+          type: 'body',
+          metatype: LoginDto,
+        },
+      ),
+    ).rejects.toThrow(BadRequestException);
+  });
 });
