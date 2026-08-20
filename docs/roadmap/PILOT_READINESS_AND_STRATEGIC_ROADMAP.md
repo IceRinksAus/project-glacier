@@ -498,7 +498,7 @@ Core implementation complete. Approved production legal content, complete metada
 
 ---
 
-## Next Milestone — API Boundary & Security Hardening
+## Sprint 17 — API Boundary & Security Hardening
 
 Goal:
 
@@ -517,6 +517,8 @@ Likely areas:
 - input validation policy
 
 This milestone should remain targeted rather than becoming an open-ended security rewrite.
+
+Status: approved. See `docs/roadmap/sprint-17-plan.md` for the locked scope, decisions, acceptance scenarios and definition of done.
 
 ---
 

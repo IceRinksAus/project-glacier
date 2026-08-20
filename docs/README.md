@@ -67,6 +67,10 @@ Current notes include:
 - `sprint-notes/sprint-15.md`
 - `sprint-notes/sprint-16.md`
 
+Current approved Sprint plan:
+
+- `roadmap/sprint-17-plan.md`
+
 Earlier Sprint releases are stored under:
 
 `releases/`

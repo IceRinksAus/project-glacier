@@ -213,7 +213,9 @@ Delivered:
 
 Before production use, Glacier still requires approved legal templates, complete operator controls for required Event/Organisation metadata, stronger signature-format validation, retention/legal-hold policy, rate limiting and final privacy/legal review.
 
-The next numbered Sprint has not yet been selected. Broader Waiver integrations remain prioritised through the pilot-readiness roadmap rather than being implied as part of Sprint 16.
+The next numbered Sprint is Sprint 17 — API Boundary & Security Hardening. Its approved contract is recorded in `roadmap/sprint-17-plan.md`.
+
+Sprint 17 will secure and validate existing Operator, Staff and Public API boundaries before Glacier adds more privileged operational UI. Broader Waiver integrations remain prioritised through the pilot-readiness roadmap rather than being implied as part of Sprint 16.
 
 ---
 
