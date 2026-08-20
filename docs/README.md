@@ -66,10 +66,17 @@ Current notes include:
 - `sprint-notes/sprint-14.md`
 - `sprint-notes/sprint-15.md`
 - `sprint-notes/sprint-16.md`
+- `sprint-notes/sprint-17.md`
 
-Current approved Sprint plan:
+Sprint 17's approved contract:
 
 - `roadmap/sprint-17-plan.md`
+
+## Security Controls
+
+- `security/API_ENDPOINT_REGISTER.md`
+- `security/AUTHENTICATION_ABUSE_CONTROLS.md`
+- `operations/PRODUCTION_CHECKLIST.md`
 
 Earlier Sprint releases are stored under:
 

@@ -3,13 +3,19 @@
 ## Security
 
 - Rotate development credentials
-- HTTPS
-- managed secret storage
-- rate limiting
+- enforce HTTPS/TLS
+- configure managed secret storage
+- set an explicit production `CORS_ORIGINS` allowlist
+- verify production fails closed without the allowlist
+- configure deployment-edge login rate limiting and record its rule identifier
+- configure abuse limits for public Booking, Payment, Ticket-token and Waiver-submission routes
+- test the configured limit response and alert destination
 - audit logging
 - formal role matrix
+- MFA for privileged users
+- password reset/recovery and session-revocation decision
 - privacy review
-- tenant-isolation verification
+- tenant-isolation integration verification against a production-like database
 - dependency vulnerability review
 - Security & Privacy Gate
 

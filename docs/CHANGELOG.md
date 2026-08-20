@@ -1,5 +1,53 @@
 # Changelog
 
+# Sprint 17 – API Boundary & Security Hardening
+
+## Added
+
+- complete API endpoint security register
+- global strict DTO validation with transformation and unknown-field rejection
+- environment-configured CORS allowlist with production fail-closed behaviour
+- tenant and role regression coverage across legacy operator domains
+- bounded public Booking, Customer, Payment and Rule Evaluation DTOs
+- documented deployment-edge authentication abuse-control gate
+
+## Secured
+
+- Organisation, User, Category and Ticket Type APIs
+- Rule, Booking and Customer operator APIs
+- Ticket detail, QR, validation and atomic scan operations
+- login credential input and authenticated-user typing
+- Organisation scope through trusted JWT context and authoritative relationships
+- public Ticket responses through explicit field minimisation
+
+## Removed
+
+- ordinary public Organisation bootstrap route
+- duplicate legacy Booking and Customer creation routes
+- duplicate legacy Rule Evaluation controller
+- unauthenticated legacy Payment initiation route
+
+## Verification
+
+- full API suite: 52 / 52 test suites passing
+- full API tests: 326 / 326 passing
+- original 45-suite / 236-test baseline preserved
+- API production build: passed
+- web production build: passed
+- browser smoke: login boundary, unauthenticated Event Workspace redirect, public Booking and public Waiver passed
+- endpoint register reconciled against all controllers
+- no deployment performed
+
+## Remaining Pre-Pilot Controls
+
+- configure and prove deployment-edge rate limiting and monitoring
+- complete infrastructure secret, TLS, logging, backup and incident-response controls
+- complete production-like tenant-isolation integration and penetration testing
+- implement granular Staff permissions, privileged-user MFA and account recovery
+- resolve or formally accept remaining dependency findings
+
+See `sprint-notes/sprint-17.md` for the detailed closeout and residual-risk record.
+
 # Sprint 16 – Event Waivers & Digital Acceptance
 
 ## Added

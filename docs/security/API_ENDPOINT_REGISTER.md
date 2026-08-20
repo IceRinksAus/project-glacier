@@ -16,7 +16,7 @@ Status values:
 
 | Method | Route         | Audience       | Authentication | Validation                             | Status    | Sprint 17 action                                                                             |
 | ------ | ------------- | -------------- | -------------- | -------------------------------------- | --------- | -------------------------------------------------------------------------------------------- |
-| GET    | `/`           | Health         | None           | N/A                                    | PUBLIC    | Confirm response contains no internal detail.                                                |
+| GET    | `/`           | Health         | None           | N/A                                    | PUBLIC    | Static service-health message only; no internal detail.                                      |
 | POST   | `/auth/login` | Operator/Staff | Credentials    | Strict bounded DTO through global pipe | PROTECTED | Generic credential failure; deployment-edge rate limiting is required before pilot exposure. |
 | GET    | `/auth/me`    | Operator/Staff | JWT            | N/A                                    | PROTECTED | Typed, minimal JWT claims response.                                                          |
 
@@ -34,10 +34,10 @@ Status values:
 
 | Method | Route                       | Audience | Authentication/role target | Tenant path                       | Validation                   | Status    | Sprint 17 action                                                                        |
 | ------ | --------------------------- | -------- | -------------------------- | --------------------------------- | ---------------------------- | --------- | --------------------------------------------------------------------------------------- |
-| GET    | `/event`                    | Operator | JWT OWNER/MEMBER           | Event → Organisation              | DTO/query review             | PROTECTED | Add/retain guard and tenant tests.                                                      |
-| GET    | `/event/:id`                | Operator | JWT OWNER/MEMBER           | Event → Organisation              | Param string                 | PROTECTED | Add/retain cross-tenant test.                                                           |
-| POST   | `/event`                    | Operator | JWT OWNER                  | JWT Organisation                  | DTO                          | PROTECTED | Confirm strict runtime validation.                                                      |
-| PATCH  | `/event/:id/status`         | Operator | JWT OWNER                  | Event → Organisation              | DTO                          | PROTECTED | Confirm strict runtime validation.                                                      |
+| GET    | `/event`                    | Operator | JWT OWNER/MEMBER           | Event → Organisation              | DTO/query review             | PROTECTED | Guard and tenant tests retained.                                                        |
+| GET    | `/event/:id`                | Operator | JWT OWNER/MEMBER           | Event → Organisation              | Param string                 | PROTECTED | Cross-tenant test retained.                                                             |
+| POST   | `/event`                    | Operator | JWT OWNER                  | JWT Organisation                  | Strict DTO                   | PROTECTED | Global strict runtime validation active.                                                |
+| PATCH  | `/event/:id/status`         | Operator | JWT OWNER                  | Event → Organisation              | Strict DTO                   | PROTECTED | Global strict runtime validation active.                                                |
 | DELETE | `/event/:id`                | Operator | JWT OWNER                  | Event → Organisation              | Param string                 | PROTECTED | Retain dependency/business checks.                                                      |
 | POST   | `/category`                 | Operator | JWT OWNER                  | Category → Event → Organisation   | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                   |
 | GET    | `/category`                 | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | None                         | PROTECTED | Tenant-scoped list.                                                                     |
@@ -56,9 +56,9 @@ Status values:
 
 | Route group             | Audience | Authentication/role  | Tenant path                              | Status    | Sprint 17 action                                             |
 | ----------------------- | -------- | -------------------- | ---------------------------------------- | --------- | ------------------------------------------------------------ |
-| `/product`              | Operator | JWT; OWNER mutations | Product → Event → Organisation           | PROTECTED | Confirm strict runtime validation and negative tenant tests. |
-| `/product-variant`      | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Confirm strict runtime validation and negative tenant tests. |
-| `/session-product`      | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation   | PROTECTED | Confirm cross-parent tenant integrity.                       |
+| `/product`              | Operator | JWT; OWNER mutations | Product → Event → Organisation           | PROTECTED | Strict DTOs and negative tenant tests retained.             |
+| `/product-variant`      | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Strict DTOs and negative tenant tests retained.             |
+| `/session-product`      | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation   | PROTECTED | Cross-parent tenant integrity retained.                     |
 | `/session`              | Operator | JWT; OWNER mutations | Session → Event → Organisation           | PROTECTED | Preserve time, capacity and overlap rules.                   |
 | `/operational-schedule` | Operator | JWT OWNER            | Schedule → Event → Organisation          | PROTECTED | Preserve generation and transactional behaviour.             |
 
@@ -94,11 +94,11 @@ Status values:
 
 | Method | Route                                    | Audience | Authentication              | Validation                    | Status | Sprint 17 action                                            |
 | ------ | ---------------------------------------- | -------- | --------------------------- | ----------------------------- | ------ | ----------------------------------------------------------- |
-| GET    | `/public/events/:eventId`                | Customer | None                        | Param string                  | PUBLIC | Confirm ACTIVE-only response minimisation.                  |
-| GET    | `/public/events/:eventId/sessions`       | Customer | None                        | Param string                  | PUBLIC | Confirm availability and response minimisation.             |
-| GET    | `/public/events/:eventId/ticket-types`   | Customer | None                        | Param string                  | PUBLIC | Confirm availability and response minimisation.             |
+| GET    | `/public/events/:eventId`                | Customer | None                        | Param string                  | PUBLIC | ACTIVE-only response minimisation retained.                 |
+| GET    | `/public/events/:eventId/sessions`       | Customer | None                        | Param string                  | PUBLIC | Availability and response minimisation retained.            |
+| GET    | `/public/events/:eventId/ticket-types`   | Customer | None                        | Param string                  | PUBLIC | Availability and response minimisation retained.            |
 | POST   | `/public/events/:eventId/evaluate-rules` | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; 1–50 participants.                |
-| GET    | `/public/sessions/:sessionId/products`   | Customer | None                        | Param string                  | PUBLIC | Confirm Event/session availability and minimisation.        |
+| GET    | `/public/sessions/:sessionId/products`   | Customer | None                        | Param string                  | PUBLIC | Event/session availability and minimisation retained.       |
 | POST   | `/public/customers`                      | Customer | None                        | Strict bounded DTO            | PUBLIC | Global strict validation and email validation.              |
 | POST   | `/public/bookings`                       | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; Booking authority unchanged.      |
 | POST   | `/public/bookings/:bookingId/payments`   | Customer | Booking public-access token | Strict 64-character token DTO | PUBLIC | Global strict validation and hash-only server verification. |
@@ -109,7 +109,7 @@ Status values:
 | ------ | -------------------------------------------------- | ----------------- | ----------------------------- | --------------------------------------- | ------ | ---------------------------------------------------------------- |
 | GET    | `/public/waivers/verifications/:verificationToken` | Credential holder | High-entropy possession token | Strict controller pipe + service format | PUBLIC | Retain privacy-minimised response.                               |
 | GET    | `/public/waivers/:publicSlug`                      | Participant       | None                          | Strict controller pipe                  | PUBLIC | Retain active/published-only lookup.                             |
-| POST   | `/public/waivers/:publicSlug/submissions`          | Participant       | None                          | Strict nested DTO and local pipe        | PUBLIC | Review abuse-control hook; retain server-authoritative evidence. |
+| POST   | `/public/waivers/:publicSlug/submissions`          | Participant       | None                          | Strict nested DTO and local pipe        | PUBLIC | Server-authoritative evidence retained; deployment-edge abuse limit is a pilot gate. |
 
 ## Event Waiver Administration
 

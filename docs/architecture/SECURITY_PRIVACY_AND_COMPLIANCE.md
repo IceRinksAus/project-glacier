@@ -215,7 +215,19 @@ Public responses should:
 
 Sprint 14 established the first dedicated public booking API boundary.
 
-That pattern should continue.
+Sprint 17 extended and standardised that pattern:
+
+- all ordinary operator controllers are authenticated;
+- OWNER/MEMBER role intent is explicit;
+- Organisation authority comes from the JWT and relationship-scoped service queries;
+- legacy public Booking, Customer, Rule Evaluation and Payment entry points were removed;
+- public Booking mutations use bounded DTOs and reject unknown fields;
+- public Ticket presentation is minimised while scan/detail operations are authenticated and tenant-scoped; and
+- every route is classified in `docs/security/API_ENDPOINT_REGISTER.md`.
+
+The global request policy transforms DTO input, strips no unknown values silently and rejects non-whitelisted fields. Stripe raw-body signature verification remains a separate external boundary.
+
+Production distributed rate limiting, monitoring and incident response remain deployment controls rather than claims made by the application repository.
 
 ---
 

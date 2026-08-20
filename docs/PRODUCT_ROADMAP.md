@@ -196,26 +196,26 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ## Current
 
-Sprint 16 — Event Waivers & Digital Acceptance is implementation-complete and awaiting clean commit closeout.
+Sprint 17 — API Boundary & Security Hardening is implementation-complete and locally verified.
 
 Delivered:
 
-- optional Event Waiver configuration in the existing Event Workspace
-- activity- and jurisdiction-aware template/version foundation
-- Event-specific immutable published Waiver Versions
-- stable public Event Waiver URL and downloadable venue QR
-- mobile digital acceptance and electronic signature
-- responsible-adult handling for zero to 20 minors
-- immutable, server-authoritative acceptance evidence
-- high-entropy verification credential and privacy-minimised verifier
-- tenant-safe operator search and evidence retrieval
-- optional post-Booking Waiver CTA
+- explicit classification of every API route
+- authenticated and role-controlled ordinary operator APIs
+- trusted JWT Organisation context and relationship-based tenant scope
+- global strict runtime DTO validation
+- environment-safe CORS with production fail-closed behaviour
+- protected, tenant-scoped and atomic Ticket scan operations
+- minimised public Ticket presentation
+- removal of duplicate legacy Booking, Customer, Rule Evaluation and Payment boundaries
+- documented deployment-edge login abuse-control gate
+- 52 API suites and 326 API tests passing
 
-Before production use, Glacier still requires approved legal templates, complete operator controls for required Event/Organisation metadata, stronger signature-format validation, retention/legal-hold policy, rate limiting and final privacy/legal review.
+Before pilot exposure, Glacier still requires deployment-edge rate limiting and monitoring, managed production infrastructure controls, production-like tenant integration tests, independent security testing, granular Staff permissions and the previously documented Waiver legal/privacy controls.
 
-The next numbered Sprint is Sprint 17 — API Boundary & Security Hardening. Its approved contract is recorded in `roadmap/sprint-17-plan.md`.
+The next product milestone is Staff Scanner & Gate Operations. Sprint 17 deliberately secured Ticket scan authority without building that interface.
 
-Sprint 17 will secure and validate existing Operator, Staff and Public API boundaries before Glacier adds more privileged operational UI. Broader Waiver integrations remain prioritised through the pilot-readiness roadmap rather than being implied as part of Sprint 16.
+The detailed Sprint 17 evidence and residual-risk record is in `sprint-notes/sprint-17.md`.
 
 ---
 

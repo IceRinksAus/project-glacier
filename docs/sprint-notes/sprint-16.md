@@ -2,9 +2,9 @@
 
 ## Status
 
-Core implementation complete and locally verified on 20 August 2026.
+Complete, committed and pushed on 20 August 2026.
 
-The implementation remains uncommitted at the time of this closeout. The Waiver persistence foundation was previously committed in `0659a93`.
+The Waiver persistence foundation was committed in `0659a93`, the application capability in `5ed3755`, and closeout documentation in `72ee94d`.
 
 ## Objective
 
@@ -210,6 +210,7 @@ The original optional Event Setup Wizard concept was delivered through the exist
 ## Closeout State
 
 - Persistence foundation commit: `0659a93`.
-- Application, web and documentation changes: present in the working tree and not yet committed.
+- Application and web implementation commit: `5ed3755`.
+- Sprint closeout documentation commit: `72ee94d`.
 - No deployment was performed.
 - Local preview services are temporary and may stop when the desktop work session ends.

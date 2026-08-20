@@ -518,7 +518,7 @@ Likely areas:
 
 This milestone should remain targeted rather than becoming an open-ended security rewrite.
 
-Status: approved. See `docs/roadmap/sprint-17-plan.md` for the locked scope, decisions, acceptance scenarios and definition of done.
+Status: implementation complete and locally verified. See `docs/roadmap/sprint-17-plan.md` for the locked contract and `docs/sprint-notes/sprint-17.md` for delivery evidence and residual risks.
 
 ---
 
