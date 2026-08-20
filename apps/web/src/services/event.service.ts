@@ -11,6 +11,8 @@ export interface GlacierEvent {
   status: string;
   activityType: string | null;
   jurisdiction: string | null;
+  entryOpensMinutesBeforeStart: number;
+  entryClosesMinutesAfterEnd: number;
   organizationId: string;
   createdAt: string;
   updatedAt: string;
@@ -20,4 +22,19 @@ export const eventService = {
   getEvents: () => api.get<GlacierEvent[]>("/event"),
 
   getEvent: (eventId: string) => api.get<GlacierEvent>(`/event/${eventId}`),
+
+  updateEntryPolicy: (
+    eventId: string,
+    entryOpensMinutesBeforeStart: number,
+    entryClosesMinutesAfterEnd: number,
+  ) =>
+    api.patch<
+      Pick<
+        GlacierEvent,
+        "id" | "entryOpensMinutesBeforeStart" | "entryClosesMinutesAfterEnd"
+      >
+    >(`/event/${eventId}/entry-policy`, {
+      entryOpensMinutesBeforeStart,
+      entryClosesMinutesAfterEnd,
+    }),
 };

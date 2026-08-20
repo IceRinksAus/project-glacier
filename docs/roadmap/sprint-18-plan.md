@@ -222,6 +222,7 @@ Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_
 - visible scan target and concise instructions
 - QR-only continuous detection with duplicate-frame suppression
 - automatic Gate Entry processing on a camera or hand-scanner read, followed by a compact, unmistakable outcome
+- Event Settings controls for owners to review and update the 0–240 minute opening and closing offsets, with the 30/0 creation defaults explained in context
 - detailed Ticket Lookup with secondary `Process ticket` only for an eligible Ticket
 - explicit confirmation after selecting `Process ticket` from Lookup
 - close/scan-next action that leaves the looked-up Ticket unchanged

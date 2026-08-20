@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
+import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
 import { EventOverview } from "@/components/events/EventOverview";
 import { EventTabs } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
@@ -75,9 +76,20 @@ export default function EventWorkspacePage({
               />
             ) : null}
 
+            {activeTab === "Settings" ? (
+              <EventEntryPolicySettings
+                eventId={event.id}
+                initialOpensMinutesBeforeStart={
+                  event.entryOpensMinutesBeforeStart
+                }
+                initialClosesMinutesAfterEnd={event.entryClosesMinutesAfterEnd}
+              />
+            ) : null}
+
             {activeTab !== "Overview" &&
             activeTab !== "Sessions" &&
-            activeTab !== "Waiver" ? (
+            activeTab !== "Waiver" &&
+            activeTab !== "Settings" ? (
               <div className="rounded-xl border bg-card p-6">
                 <h2 className="text-lg font-semibold">{activeTab}</h2>
 

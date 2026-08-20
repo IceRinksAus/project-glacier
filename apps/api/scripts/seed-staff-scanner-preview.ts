@@ -18,6 +18,7 @@ async function main() {
   const participantId = 'dev-sprint18-scanner-participant';
   const ticketId = 'dev-sprint18-scanner-ticket';
   const userId = 'dev-sprint18-scanner-user';
+  const ownerUserId = 'dev-sprint18-owner-user';
   const now = new Date();
   const sessionStart = new Date(now.getTime() + 15 * 60_000);
   const sessionEnd = new Date(now.getTime() + 75 * 60_000);
@@ -59,6 +60,34 @@ async function main() {
     },
     update: { role: 'SCANNER' },
     create: { userId: user.id, organizationId, role: 'SCANNER' },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'owner.preview@glacier.local' },
+    update: {
+      name: 'Owner Preview Staff',
+      passwordHash: await bcrypt.hash('OwnerPreview!2026', 10),
+      isActive: true,
+    },
+    create: {
+      id: ownerUserId,
+      email: 'owner.preview@glacier.local',
+      name: 'Owner Preview Staff',
+      passwordHash: await bcrypt.hash('OwnerPreview!2026', 10),
+      isActive: true,
+    },
+  });
+
+  const ownerUser = await prisma.user.findUniqueOrThrow({
+    where: { email: 'owner.preview@glacier.local' },
+  });
+
+  await prisma.userOrganization.upsert({
+    where: {
+      userId_organizationId: { userId: ownerUser.id, organizationId },
+    },
+    update: { role: 'OWNER' },
+    create: { userId: ownerUser.id, organizationId, role: 'OWNER' },
   });
 
   await prisma.event.upsert({
