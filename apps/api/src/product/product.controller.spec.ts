@@ -6,7 +6,9 @@ import { ProductService } from './product.service';
 describe('ProductController', () => {
   let controller: ProductController;
 
-  const serviceMock = {};
+  const serviceMock = {
+    findAll: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule =
@@ -30,5 +32,22 @@ describe('ProductController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('passes trusted Organisation and optional Event filter to the service', () => {
+    controller.findAll(
+      {
+        userId: 'user-1',
+        email: 'owner@example.com',
+        role: 'OWNER',
+        organizationId: 'organization-1',
+      },
+      { eventId: 'event-1' },
+    );
+
+    expect(serviceMock.findAll).toHaveBeenCalledWith(
+      'organization-1',
+      'event-1',
+    );
   });
 });

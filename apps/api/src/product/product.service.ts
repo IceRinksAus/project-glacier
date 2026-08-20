@@ -167,9 +167,10 @@ export class ProductService {
     });
   }
 
-  findAll(organizationId: string) {
+  findAll(organizationId: string, eventId?: string) {
     return this.prisma.product.findMany({
       where: {
+        ...(eventId ? { eventId } : {}),
         event: {
           organizationId,
         },

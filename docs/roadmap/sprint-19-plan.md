@@ -229,6 +229,34 @@ The existing data model does not persist a separate `waiverRequired` boolean. In
 - Branding/Website remains future work and does not block this Sprint's DRAFT readiness.
 - Bookings and Customers cannot exist before activation and are not setup tasks.
 
+## Product Setup Continuation
+
+Products remain optional for Event activation, but the Event Workspace should connect their existing catalogue, Session availability and Rule Engine relationships through one guided setup flow.
+
+### Product versus admission capacity
+
+- Session capacity is the shared rink admission limit across every Ticket Type.
+- Ticket Types describe participant admission categories and pricing.
+- Products describe non-admission extras such as Kanga skating aids, hire items, food or merchandise.
+- Product inventory or product-specific capacity is independent of Session admission capacity and is enabled only when that extra requires its own operational limit.
+
+### Optional and required Products
+
+Assigning an active Product to a Session makes it available as an optional add-on for that Session. A Product becomes mandatory only through an active server-side Rule.
+
+The guided builder must support the established Kanga pattern without exposing raw rule JSON:
+
+1. create the Product as DRAFT;
+2. select the Sessions where it is available;
+3. optionally select one or more Ticket Types that require it;
+4. express the requirement through the existing `REQUIRE_PRODUCT` action using the stable Product slug;
+5. calculate one required unit per matching participant unless a future explicit quantity option is added;
+6. review availability and requirements before Product activation.
+
+For example, each Young Child Ticket may require one Kanga. Two matching participants therefore require a minimum of two Kangas, while customers may add more voluntarily. Public rule preview provides early guidance, but the Booking service remains authoritative and re-evaluates the same requirement before reservation creation.
+
+Product setup must preserve tenant scope across Product, Session and Ticket Type relationships. Partial setup remains DRAFT and must not become publicly selectable. Raw condition/action editors and a general-purpose Rules redesign remain outside this Sprint.
+
 Readiness response should include item identifiers, status, explanation and destination tab. The percentage, if retained, is derived from required and conditional items only.
 
 ## Activation Boundary

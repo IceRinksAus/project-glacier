@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 
 import { CreateProductDto } from './dto/create-product.dto';
+import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 
@@ -43,8 +45,11 @@ export class ProductController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: AuthenticatedUser) {
-    return this.productService.findAll(user.organizationId);
+  findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ListProductsQueryDto,
+  ) {
+    return this.productService.findAll(user.organizationId, query.eventId);
   }
 
   @Get(':id')
