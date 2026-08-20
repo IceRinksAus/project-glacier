@@ -42,6 +42,15 @@ function formatCurrency(
   ).format(amount);
 }
 
+function getAvailableMaximum(sessionProduct: PublicSessionProduct) {
+  const limits = [
+    sessionProduct.product.maxQuantity,
+    sessionProduct.remainingQuantity,
+  ].filter((limit): limit is number => limit !== null);
+
+  return limits.length > 0 ? Math.min(...limits) : null;
+}
+
 export function AddOnsStep({
   sessionId,
   requiredProducts = [],
@@ -277,8 +286,7 @@ export function AddOnsStep({
             }
 
             const maximum =
-              sessionProduct.product
-                .maxQuantity;
+              getAvailableMaximum(sessionProduct);
 
             return (
               maximum !== null &&
@@ -322,14 +330,13 @@ export function AddOnsStep({
             currentQuantity + change,
           );
 
-        if (
-          product.maxQuantity !==
-          null
-        ) {
+        const availableMaximum = getAvailableMaximum(sessionProduct);
+
+        if (availableMaximum !== null) {
           nextQuantity =
             Math.min(
               nextQuantity,
-              product.maxQuantity,
+              availableMaximum,
             );
         }
 
@@ -493,11 +500,12 @@ export function AddOnsStep({
                 quantity <=
                 requiredMinimum;
 
+              const availableMaximum =
+                getAvailableMaximum(sessionProduct);
+
               const atMaximum =
-                product.maxQuantity !==
-                  null &&
-                quantity >=
-                  product.maxQuantity;
+                availableMaximum !== null &&
+                quantity >= availableMaximum;
 
               return (
                 <div
@@ -548,6 +556,13 @@ export function AddOnsStep({
                           product.maxQuantity
                         }{" "}
                         per booking
+                      </p>
+                    ) : null}
+
+                    {sessionProduct.remainingQuantity !== null ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {sessionProduct.remainingQuantity} remaining for this
+                        session
                       </p>
                     ) : null}
                   </div>

@@ -55,6 +55,7 @@ export interface PublicSessionProduct {
   sessionId: string;
   productId: string;
   sortOrder: number;
+  remainingQuantity: number | null;
   product: PublicProduct;
 }
 

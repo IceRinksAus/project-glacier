@@ -81,6 +81,7 @@ describe('PublicBookingService', () => {
       sessionId: 'session-1',
       productId: 'product-kanga',
       sortOrder: 0,
+      capacityOverride: null,
       product: {
         id: 'product-kanga',
         name: 'Kanga Skating Aid',
@@ -90,6 +91,10 @@ describe('PublicBookingService', () => {
         imageUrl: null,
         minQuantity: 0,
         maxQuantity: 1,
+        capacityControlled: true,
+        capacity: 20,
+        inventoryTracked: false,
+        inventoryQuantity: null,
         salesStart: null,
         salesEnd: null,
         eventId: 'event-1',
@@ -294,6 +299,9 @@ describe('PublicBookingService', () => {
     sessionProduct: {
       findMany: jest.fn(),
     },
+    bookingProduct: {
+      aggregate: jest.fn(),
+    },
     customer: {
       create: jest.fn(),
     },
@@ -320,6 +328,10 @@ describe('PublicBookingService', () => {
     prisma.ticketType.findMany.mockResolvedValue(activeTicketTypes);
 
     prisma.sessionProduct.findMany.mockResolvedValue(sessionProducts);
+
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 0 },
+    });
 
     prisma.customer.create.mockResolvedValue(createdCustomer);
 
@@ -556,6 +568,7 @@ describe('PublicBookingService', () => {
         sessionId: true,
         productId: true,
         sortOrder: true,
+        capacityOverride: true,
         product: {
           select: {
             id: true,
@@ -566,6 +579,10 @@ describe('PublicBookingService', () => {
             imageUrl: true,
             minQuantity: true,
             maxQuantity: true,
+            capacityControlled: true,
+            capacity: true,
+            inventoryTracked: true,
+            inventoryQuantity: true,
             salesStart: true,
             salesEnd: true,
             eventId: true,
@@ -582,7 +599,35 @@ describe('PublicBookingService', () => {
       ],
     });
 
-    expect(result).toEqual(sessionProducts);
+    expect(result).toEqual([
+      {
+        ...sessionProducts[0],
+        remainingQuantity: 20,
+      },
+    ]);
+  });
+
+  it('removes a capacity-controlled Product when its Session pool is exhausted', async () => {
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 20 },
+    });
+
+    await expect(service.findSessionProducts('session-1')).resolves.toEqual([]);
+
+    expect(prisma.bookingProduct.aggregate).toHaveBeenCalledWith({
+      where: {
+        productId: 'product-kanga',
+        booking: {
+          sessionId: 'session-1',
+          status: {
+            in: ['RESERVED', 'CONFIRMED'],
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
   });
 
   it('should reject product discovery for a missing or unavailable session', async () => {

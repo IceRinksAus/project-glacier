@@ -283,7 +283,7 @@ export class PublicBookingService {
       throw new NotFoundException('Session not found.');
     }
 
-    return this.prisma.sessionProduct.findMany({
+    const sessionProducts = await this.prisma.sessionProduct.findMany({
       where: {
         sessionId,
         active: true,
@@ -300,6 +300,7 @@ export class PublicBookingService {
         sessionId: true,
         productId: true,
         sortOrder: true,
+        capacityOverride: true,
         product: {
           select: {
             id: true,
@@ -310,6 +311,10 @@ export class PublicBookingService {
             imageUrl: true,
             minQuantity: true,
             maxQuantity: true,
+            capacityControlled: true,
+            capacity: true,
+            inventoryTracked: true,
+            inventoryQuantity: true,
             salesStart: true,
             salesEnd: true,
             eventId: true,
@@ -325,6 +330,77 @@ export class PublicBookingService {
         },
       ],
     });
+
+    const availableProducts = await Promise.all(
+      sessionProducts.map(async (sessionProduct) => {
+        const limits: number[] = [];
+
+        if (sessionProduct.product.capacityControlled) {
+          const limit =
+            sessionProduct.capacityOverride ?? sessionProduct.product.capacity;
+
+          if (limit !== null) {
+            const occupied = await this.prisma.bookingProduct.aggregate({
+              where: {
+                productId: sessionProduct.productId,
+                booking: {
+                  sessionId,
+                  status: {
+                    in: ['RESERVED', 'CONFIRMED'],
+                  },
+                },
+              },
+              _sum: {
+                quantity: true,
+              },
+            });
+
+            limits.push(Math.max(limit - (occupied._sum.quantity ?? 0), 0));
+          }
+        }
+
+        if (
+          sessionProduct.product.inventoryTracked &&
+          sessionProduct.product.inventoryQuantity !== null
+        ) {
+          const committed = await this.prisma.bookingProduct.aggregate({
+            where: {
+              productId: sessionProduct.productId,
+              booking: {
+                status: {
+                  in: ['RESERVED', 'CONFIRMED'],
+                },
+              },
+            },
+            _sum: {
+              quantity: true,
+            },
+          });
+
+          limits.push(
+            Math.max(
+              sessionProduct.product.inventoryQuantity -
+                (committed._sum.quantity ?? 0),
+              0,
+            ),
+          );
+        }
+
+        const remainingQuantity = limits.length > 0 ? Math.min(...limits) : null;
+
+        return remainingQuantity === 0
+          ? null
+          : {
+              ...sessionProduct,
+              remainingQuantity,
+            };
+      }),
+    );
+
+    return availableProducts.filter(
+      (sessionProduct): sessionProduct is NonNullable<typeof sessionProduct> =>
+        sessionProduct !== null,
+    );
   }
 
   createCustomer(data: {
