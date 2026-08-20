@@ -1,5 +1,7 @@
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
+  IsIn,
   IsDateString,
   IsInt,
   IsNotEmpty,
@@ -10,6 +12,9 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { AustralianJurisdiction, EventActivityType } from '@prisma/client';
+
+import { AUSTRALIAN_EVENT_TIMEZONES } from '../event.constants';
 
 export class CreateEventDto {
   @IsString()
@@ -32,6 +37,44 @@ export class CreateEventDto {
 
   @IsDateString()
   endDate: string;
+
+  @IsString()
+  @IsIn(AUSTRALIAN_EVENT_TIMEZONES)
+  timezone: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  venueName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(300)
+  addressLine1: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  addressLine2?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  suburb: string;
+
+  @IsString()
+  @Matches(/^\d{4}$/)
+  postcode: string;
+
+  @IsString()
+  @IsIn(['AU'])
+  country: string;
+
+  @IsEnum(AustralianJurisdiction)
+  jurisdiction: AustralianJurisdiction;
+
+  @IsEnum(EventActivityType)
+  activityType: EventActivityType;
 
   @IsOptional()
   @Type(() => Number)
