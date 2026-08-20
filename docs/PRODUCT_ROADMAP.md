@@ -196,25 +196,26 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ## Current
 
-Sprint 18 — Staff Scanner & Gate Operations is implementation-complete and locally verified, pending physical iPhone Safari and Android Chrome sign-off.
+Sprint 19 — Organiser Event Creation & Setup is implementation-complete and locally verified.
 
 Delivered:
 
-- dedicated OWNER/MEMBER/SCANNER Staff Scanner boundary
-- automatic concert-style Gate Entry and controlled Ticket Lookup modes
-- configurable Event entry windows with server-time enforcement
-- tenant-safe, privacy-minimised Ticket results
-- atomic duplicate-safe admission with append-only attributable attempts
-- QR camera support and manual/hardware-scanner fallback
-- fail-closed early, late, invalid, duplicate, camera and connectivity states
-- 58 API suites / 351 tests and 2 web suites / 12 scanner tests passing
+- guided OWNER Event creation with authoritative readiness and activation
+- connected Session, Ticket Type, Product and optional Waiver setup destinations
+- Ticket Types that share Session admission capacity rather than fragmenting it
+- guided Product configuration for unlimited, reusable per-Session and Variant-stock models
+- concurrent-safe Session, reusable Product and global Variant availability protection
+- public remaining availability and Product Variant selection
+- 58 API suites / 378 tests and 9 web suites / 38 tests passing
 - zero known web dependency audit vulnerabilities
 
 Before pilot exposure, Glacier still requires deployment-edge rate limiting and monitoring, managed production infrastructure controls, production-like tenant integration tests, independent security testing, granular Staff permissions and the previously documented Waiver legal/privacy controls.
 
-Physical mobile-device verification remains required before pilot sign-off. The next planning milestone is Organiser & Customer Experience Productisation.
+Physical Staff Scanner mobile-device verification remains required before pilot sign-off. The next planning milestone is Customer Experience Productisation.
 
-The detailed Sprint 18 evidence and residual-risk record is in `sprint-notes/sprint-18.md`.
+The next organiser UX pass should make Create Event the dedicated setup journey, while the Events area becomes the operational tracking surface for current Events. Configuration should remain available after creation but should not dominate routine Event management.
+
+The detailed Sprint 19 evidence and residual-risk record is in `sprint-notes/sprint-19.md`.
 
 ---
 

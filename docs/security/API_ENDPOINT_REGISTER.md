@@ -59,6 +59,7 @@ Status values:
 | Route group             | Audience | Authentication/role  | Tenant path                              | Status    | Sprint 17 action                                 |
 | ----------------------- | -------- | -------------------- | ---------------------------------------- | --------- | ------------------------------------------------ |
 | `/product`              | Operator | JWT; OWNER mutations | Product → Event → Organisation           | PROTECTED | Strict DTOs and Event-filtered tenant lists retained. Product availability does not alter shared Session admission capacity. |
+| `PATCH /product/:id/status` | Operator | JWT OWNER | Product → Event → Organisation | PROTECTED | ACTIVE requires a valid tenant Product, online Session assignment and usable Variant configuration when Variants exist. |
 | `/product-variant`      | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Strict DTOs and negative tenant tests retained.  |
 | `/session-product`      | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation   | PROTECTED | Cross-parent tenant integrity retained.          |
 | `/session`              | Operator | JWT; OWNER mutations | Session → Event → Organisation           | PROTECTED | Preserve time, capacity and overlap rules.       |

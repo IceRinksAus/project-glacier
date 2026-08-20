@@ -3,8 +3,8 @@
 export const eventTabs = [
   "Overview",
   "Sessions",
-  "Products",
   "Ticket Types",
+  "Products",
   "Bookings",
   "Customers",
   "Waiver",

@@ -434,6 +434,72 @@ export class ProductService {
     });
   }
 
+  async updateStatus(
+    id: string,
+    organizationId: string,
+    status: 'DRAFT' | 'ACTIVE' | 'INACTIVE',
+  ) {
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id,
+        event: {
+          organizationId,
+        },
+      },
+      include: {
+        variants: true,
+        sessionProducts: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found.');
+    }
+
+    if (status === 'ACTIVE') {
+      const hasActiveSessionAssignment = product.sessionProducts.some(
+        (assignment) => assignment.active,
+      );
+
+      if (
+        product.availableOnline &&
+        product.productType !== 'ADMISSION' &&
+        !hasActiveSessionAssignment
+      ) {
+        throw new BadRequestException(
+          'An online add-on must be assigned to at least one Session before activation.',
+        );
+      }
+
+      if (
+        product.variants.length > 0 &&
+        !product.variants.some(
+          (variant) =>
+            variant.status === 'ACTIVE' &&
+            (!product.availableOnline || variant.availableOnline),
+        )
+      ) {
+        throw new BadRequestException(
+          'At least one available Product Variant is required before activation.',
+        );
+      }
+    }
+
+    return this.prisma.product.update({
+      where: {
+        id: product.id,
+      },
+      data: {
+        status,
+      },
+      include: {
+        category: true,
+        variants: true,
+        sessionProducts: true,
+      },
+    });
+  }
+
   async remove(
     id: string,
     organizationId: string,

@@ -43,6 +43,8 @@ Never commit real secrets.
 
 `CORS_ORIGINS` is a comma-separated allowlist of trusted web origins. Local development defaults to `http://localhost:3001`. Production fails to start when this variable is absent; wildcard origins must not be used with credentials.
 
+`NEXT_DIST_DIR` optionally selects an isolated Next.js output directory for parallel local preview verification. Leave it unset for normal development; the default remains `.next`.
+
 ## Web Environment
 
 `apps/web/.env.local`

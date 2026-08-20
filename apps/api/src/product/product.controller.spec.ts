@@ -8,6 +8,7 @@ describe('ProductController', () => {
 
   const serviceMock = {
     findAll: jest.fn(),
+    updateStatus: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -48,6 +49,25 @@ describe('ProductController', () => {
     expect(serviceMock.findAll).toHaveBeenCalledWith(
       'organization-1',
       'event-1',
+    );
+  });
+
+  it('passes Product status changes through trusted Organisation scope', () => {
+    controller.updateStatus(
+      'product-1',
+      {
+        userId: 'user-1',
+        email: 'owner@example.com',
+        role: 'OWNER',
+        organizationId: 'organization-1',
+      },
+      { status: 'ACTIVE' },
+    );
+
+    expect(serviceMock.updateStatus).toHaveBeenCalledWith(
+      'product-1',
+      'organization-1',
+      'ACTIVE',
     );
   });
 });

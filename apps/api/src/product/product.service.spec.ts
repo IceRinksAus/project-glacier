@@ -9,6 +9,8 @@ describe('ProductService', () => {
   const prismaMock = {
     product: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -47,6 +49,55 @@ describe('ProductService', () => {
             organizationId: 'organization-1',
           },
         },
+      }),
+    );
+  });
+
+  it('does not activate an online add-on without a Session assignment', async () => {
+    prismaMock.product.findFirst.mockResolvedValue({
+      id: 'product-1',
+      productType: 'ADD_ON',
+      availableOnline: true,
+      variants: [],
+      sessionProducts: [],
+    });
+
+    await expect(
+      service.updateStatus('product-1', 'organization-1', 'ACTIVE'),
+    ).rejects.toThrow(
+      'An online add-on must be assigned to at least one Session before activation.',
+    );
+    expect(prismaMock.product.update).not.toHaveBeenCalled();
+  });
+
+  it('activates a configured tenant Product', async () => {
+    prismaMock.product.findFirst.mockResolvedValue({
+      id: 'product-1',
+      productType: 'ADD_ON',
+      availableOnline: true,
+      variants: [
+        {
+          status: 'ACTIVE',
+          availableOnline: true,
+        },
+      ],
+      sessionProducts: [{ active: true }],
+    });
+    prismaMock.product.update.mockResolvedValue({
+      id: 'product-1',
+      status: 'ACTIVE',
+    });
+
+    await expect(
+      service.updateStatus('product-1', 'organization-1', 'ACTIVE'),
+    ).resolves.toEqual({
+      id: 'product-1',
+      status: 'ACTIVE',
+    });
+    expect(prismaMock.product.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'product-1' },
+        data: { status: 'ACTIVE' },
       }),
     );
   });

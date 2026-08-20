@@ -18,6 +18,7 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 import { ProductService } from './product.service';
 
 interface AuthenticatedUser {
@@ -60,6 +61,20 @@ export class ProductController {
     return this.productService.findOne(
       id,
       user.organizationId,
+    );
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UpdateProductStatusDto,
+  ) {
+    return this.productService.updateStatus(
+      id,
+      user.organizationId,
+      data.status,
     );
   }
 

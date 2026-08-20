@@ -1,5 +1,47 @@
 # Changelog
 
+# Sprint 19 – Organiser Event Creation & Setup
+
+## Added
+
+- six-step OWNER Event creation wizard with bounded Event, timezone, venue, jurisdiction, activity and gate-policy inputs
+- server-authoritative Event readiness and activation enforcement
+- connected readiness destinations for Sessions, Ticket Types, Products and optional Waivers
+- Event Ticket Type setup that preserves shared Session admission capacity
+- guided Product setup for unlimited extras, reusable per-Session equipment and finite merchandise Variants
+- one-click Product assignment to every active Session, with individual exceptions and controlled assignment batches
+- Product DRAFT-to-ACTIVE lifecycle checks and safe partial-setup behaviour
+- public remaining availability for capacity-controlled Products and finite Variants
+- customer selection and Booking persistence for Product Variants
+
+## Capacity and Commerce Safety
+
+- Session capacity remains the shared admission limit across all Ticket Types
+- reusable equipment such as Kangas uses a separate per-Session Product pool
+- RESERVED and CONFIRMED bookings hold Product and Variant availability; cancelled and expired bookings release it
+- reservation creation rechecks Session, Product and Variant availability inside a serializable transaction
+- merchandise sizes retain independent global finite inventory and optional price overrides
+- active Rule Engine requirements continue to enforce one required Product per matching participant
+
+## Security and Reliability
+
+- OWNER-only Event, Ticket Type and Product mutations; MEMBER read-only behaviour
+- tenant scope derived through authoritative Event relationships
+- Product activation requires an online Session assignment and a usable active Variant when Variants exist
+- partial guided Product setup remains DRAFT if a later configuration step fails
+- original 45-suite / 236-test baseline preserved
+
+## Verification
+
+- full API suite: 58 / 58 suites and 378 / 378 tests passing
+- full web suite: 9 / 9 suites and 38 / 38 tests passing
+- API and web production builds passed
+- web production dependency audit reports zero known vulnerabilities
+- API audit reports the documented high-severity `deepmerge-ts` advisory inherited through Prisma, with no upstream fix currently available
+- no deployment performed
+
+See `sprint-notes/sprint-19.md` and `roadmap/sprint-19-plan.md`.
+
 # Sprint 18 – Staff Scanner & Gate Operations
 
 ## Added
