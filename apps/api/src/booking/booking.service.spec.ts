@@ -108,6 +108,9 @@ describe('BookingService', () => {
     product: {
       findMany: jest.fn(),
     },
+    productVariant: {
+      findMany: jest.fn(),
+    },
     sessionProduct: {
       findMany: jest.fn(),
     },
@@ -158,6 +161,8 @@ describe('BookingService', () => {
     );
 
     prisma.product.findMany.mockResolvedValue([]);
+
+    prisma.productVariant.findMany.mockResolvedValue([]);
 
     prisma.booking.create.mockResolvedValue(createdBooking);
 
@@ -535,6 +540,134 @@ describe('BookingService', () => {
       }),
     ).rejects.toThrow(
       'Kanga Skating Aid does not have enough capacity for this Session. Requested: 1. Remaining: 0.',
+    );
+  });
+
+  it('holds finite inventory independently for each Product Variant', async () => {
+    const hoodie = {
+      id: 'product-hoodie',
+      name: 'Event Hoodie',
+      slug: 'event-hoodie',
+      eventId: 'event-1',
+      status: 'ACTIVE',
+      availableOnline: true,
+      minQuantity: 0,
+      maxQuantity: null,
+      price: new Prisma.Decimal(60),
+      inventoryTracked: false,
+      inventoryQuantity: null,
+      capacityControlled: false,
+      capacity: null,
+    };
+    const small = {
+      id: 'variant-small',
+      productId: hoodie.id,
+      name: 'Small',
+      status: 'ACTIVE',
+      availableOnline: true,
+      inventoryTracked: true,
+      inventoryQuantity: 50,
+      priceOverride: new Prisma.Decimal(55),
+    };
+
+    prisma.product.findMany.mockResolvedValue([hoodie]);
+    prisma.productVariant.findMany.mockResolvedValue([small]);
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      { productId: hoodie.id, capacityOverride: null },
+    ]);
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 49 },
+    });
+
+    await expect(
+      service.create({
+        ...createBookingDto,
+        products: [
+          {
+            productId: hoodie.id,
+            productVariantId: small.id,
+            quantity: 2,
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Small does not have enough inventory available. Requested: 2. Remaining: 1.',
+    );
+
+    expect(prisma.bookingProduct.aggregate).toHaveBeenCalledWith({
+      where: {
+        productVariantId: small.id,
+        booking: {
+          status: {
+            in: ['RESERVED', 'CONFIRMED'],
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
+  });
+
+  it('persists the selected Product Variant and its price override', async () => {
+    const hoodie = {
+      id: 'product-hoodie',
+      name: 'Event Hoodie',
+      slug: 'event-hoodie',
+      eventId: 'event-1',
+      status: 'ACTIVE',
+      availableOnline: true,
+      minQuantity: 0,
+      maxQuantity: null,
+      price: new Prisma.Decimal(60),
+      inventoryTracked: false,
+      inventoryQuantity: null,
+      capacityControlled: false,
+      capacity: null,
+    };
+    const small = {
+      id: 'variant-small',
+      productId: hoodie.id,
+      name: 'Small',
+      status: 'ACTIVE',
+      availableOnline: true,
+      inventoryTracked: true,
+      inventoryQuantity: 50,
+      priceOverride: new Prisma.Decimal(55),
+    };
+
+    prisma.product.findMany.mockResolvedValue([hoodie]);
+    prisma.productVariant.findMany.mockResolvedValue([small]);
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      { productId: hoodie.id, capacityOverride: null },
+    ]);
+
+    await service.create({
+      ...createBookingDto,
+      products: [
+        {
+          productId: hoodie.id,
+          productVariantId: small.id,
+          quantity: 1,
+        },
+      ],
+    });
+
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          products: {
+            create: [
+              {
+                productId: hoodie.id,
+                productVariantId: small.id,
+                quantity: 1,
+                unitPrice: new Prisma.Decimal(55),
+              },
+            ],
+          },
+        }),
+      }),
     );
   });
 

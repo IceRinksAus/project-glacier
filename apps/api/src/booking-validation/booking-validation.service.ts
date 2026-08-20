@@ -30,6 +30,8 @@ await this.validateProducts(
   consolidatedProducts,
 );
 
+await this.validateProductVariants(createBookingDto.products ?? []);
+
     return true;
   }
 
@@ -171,6 +173,68 @@ await this.validateProducts(
           quantity: bookingProduct.quantity,
         };
       }),
+    );
+  }
+
+  private async validateProductVariants(
+    products: NonNullable<CreateBookingDto['products']>,
+  ) {
+    const quantitiesByVariantId = new Map<
+      string,
+      { productId: string; quantity: number }
+    >();
+
+    for (const product of products) {
+      if (!product.productVariantId) {
+        continue;
+      }
+
+      const current = quantitiesByVariantId.get(product.productVariantId);
+
+      if (current && current.productId !== product.productId) {
+        throw new BadRequestException(
+          'A Product Variant cannot be selected for multiple Products',
+        );
+      }
+
+      quantitiesByVariantId.set(product.productVariantId, {
+        productId: product.productId,
+        quantity: (current?.quantity ?? 0) + product.quantity,
+      });
+    }
+
+    await Promise.all(
+      Array.from(quantitiesByVariantId.entries()).map(
+        async ([productVariantId, selection]) => {
+          const variant = await this.prisma.productVariant.findUnique({
+            where: {
+              id: productVariantId,
+            },
+          });
+
+          if (!variant || variant.productId !== selection.productId) {
+            throw new BadRequestException(
+              'The selected Product Variant does not belong to the selected Product',
+            );
+          }
+
+          if (variant.status !== 'ACTIVE' || !variant.availableOnline) {
+            throw new BadRequestException(
+              'The selected Product Variant is not available',
+            );
+          }
+
+          if (
+            variant.inventoryTracked &&
+            (variant.inventoryQuantity === null ||
+              selection.quantity > variant.inventoryQuantity)
+          ) {
+            throw new BadRequestException(
+              'The selected Product Variant does not have enough inventory available',
+            );
+          }
+        },
+      ),
     );
   }
 

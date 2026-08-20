@@ -193,6 +193,8 @@ Reservation creation rechecks Session admission capacity and Product availabilit
 
 Finite merchandise inventory is a separate global stock model. Size or other merchandise options use Product Variants and must not be represented as Session capacity.
 
+`BookingProduct.productVariantId` is nullable for backward compatibility and for Products that do not use Variants. When supplied, the Variant must belong to the selected Product and be active/online. Its price override becomes the BookingProduct unit-price snapshot; otherwise the Product base price applies. Variant inventory is held globally by RESERVED and CONFIRMED bookings inside the same serializable reservation transaction. Each Variant therefore has an independent stock pool.
+
 ---
 
 ## Adult Accompaniment

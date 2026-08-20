@@ -23,6 +23,9 @@ describe('BookingValidationService', () => {
     product: {
       findUnique: jest.fn(),
     },
+    productVariant: {
+      findUnique: jest.fn(),
+    },
     sessionProduct: {
       findUnique: jest.fn(),
     },
@@ -341,5 +344,51 @@ it('should allow quantity within inventory', () => {
       inventoryQuantity: 5,
     }),
   ).not.toThrow();
+});
+
+it('should reject a Product Variant from another Product', async () => {
+  prismaMock.productVariant.findUnique.mockResolvedValue({
+    id: 'variant-small',
+    productId: 'product-other',
+    status: 'ACTIVE',
+    availableOnline: true,
+    inventoryTracked: true,
+    inventoryQuantity: 50,
+  });
+
+  await expect(
+    (service as any).validateProductVariants([
+      {
+        productId: 'product-hoodie',
+        productVariantId: 'variant-small',
+        quantity: 1,
+      },
+    ]),
+  ).rejects.toThrow(
+    'The selected Product Variant does not belong to the selected Product',
+  );
+});
+
+it('should reject a Product Variant selection above its configured inventory', async () => {
+  prismaMock.productVariant.findUnique.mockResolvedValue({
+    id: 'variant-small',
+    productId: 'product-hoodie',
+    status: 'ACTIVE',
+    availableOnline: true,
+    inventoryTracked: true,
+    inventoryQuantity: 1,
+  });
+
+  await expect(
+    (service as any).validateProductVariants([
+      {
+        productId: 'product-hoodie',
+        productVariantId: 'variant-small',
+        quantity: 2,
+      },
+    ]),
+  ).rejects.toThrow(
+    'The selected Product Variant does not have enough inventory available',
+  );
 });
 });

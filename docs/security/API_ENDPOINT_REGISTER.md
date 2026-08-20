@@ -111,7 +111,7 @@ Status values:
 | POST   | `/public/events/:eventId/evaluate-rules` | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; 1–50 participants.                |
 | GET    | `/public/sessions/:sessionId/products`   | Customer | None                        | Param string                  | PUBLIC | Event/session availability and minimisation retained.       |
 | POST   | `/public/customers`                      | Customer | None                        | Strict bounded DTO            | PUBLIC | Global strict validation and email validation.              |
-| POST   | `/public/bookings`                       | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; Booking authority unchanged.      |
+| POST   | `/public/bookings`                       | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; nullable Product Variant selections are parent-validated and inventory-protected. |
 | POST   | `/public/bookings/:bookingId/payments`   | Customer | Booking public-access token | Strict 64-character token DTO | PUBLIC | Global strict validation and hash-only server verification. |
 
 ## Public Waivers

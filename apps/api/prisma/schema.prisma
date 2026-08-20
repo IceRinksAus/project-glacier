@@ -284,6 +284,8 @@ model ProductVariant {
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
+  bookingProducts BookingProduct[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -452,6 +454,9 @@ model BookingProduct {
   productId String
   product   Product @relation(fields: [productId], references: [id])
 
+  productVariantId String?
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
   quantity  Int
   unitPrice Decimal @db.Decimal(10, 2)
 
@@ -460,6 +465,7 @@ model BookingProduct {
 
   @@index([bookingId])
   @@index([productId])
+  @@index([productVariantId])
 }
 
 model Payment {

@@ -341,6 +341,14 @@ export class BookingService {
      * appears more than once in the request.
      */
     const selectedProductQuantities = new Map<string, number>();
+    const selectedProductSelections = new Map<
+      string,
+      {
+        productId: string;
+        productVariantId: string | null;
+        quantity: number;
+      }
+    >();
 
     for (const selectedProduct of data.products ?? []) {
       const currentQuantity =
@@ -350,6 +358,17 @@ export class BookingService {
         selectedProduct.productId,
         currentQuantity + selectedProduct.quantity,
       );
+
+      const selectionKey = `${selectedProduct.productId}:${
+        selectedProduct.productVariantId ?? ''
+      }`;
+      const currentSelection = selectedProductSelections.get(selectionKey);
+
+      selectedProductSelections.set(selectionKey, {
+        productId: selectedProduct.productId,
+        productVariantId: selectedProduct.productVariantId ?? null,
+        quantity: (currentSelection?.quantity ?? 0) + selectedProduct.quantity,
+      });
     }
 
     const selectedProductIds = Array.from(selectedProductQuantities.keys());
@@ -375,6 +394,51 @@ export class BookingService {
     const selectedProductMap = new Map(
       selectedProducts.map((product) => [product.id, product]),
     );
+
+    const selectedVariantIds = Array.from(selectedProductSelections.values())
+      .map((selection) => selection.productVariantId)
+      .filter((variantId): variantId is string => variantId !== null);
+
+    const selectedVariants =
+      selectedVariantIds.length > 0
+        ? await this.prisma.productVariant.findMany({
+            where: {
+              id: {
+                in: selectedVariantIds,
+              },
+            },
+          })
+        : [];
+
+    if (selectedVariants.length !== new Set(selectedVariantIds).size) {
+      throw new BadRequestException(
+        'One or more selected Product Variants are invalid',
+      );
+    }
+
+    const selectedVariantMap = new Map(
+      selectedVariants.map((variant) => [variant.id, variant]),
+    );
+
+    for (const selection of selectedProductSelections.values()) {
+      if (!selection.productVariantId) {
+        continue;
+      }
+
+      const variant = selectedVariantMap.get(selection.productVariantId);
+
+      if (!variant || variant.productId !== selection.productId) {
+        throw new BadRequestException(
+          'The selected Product Variant does not belong to the selected Product',
+        );
+      }
+
+      if (variant.status !== 'ACTIVE' || !variant.availableOnline) {
+        throw new BadRequestException(
+          `${variant.name} is not currently available`,
+        );
+      }
+    }
 
     /*
      * Check product availability and quantity restrictions.
@@ -508,20 +572,26 @@ export class BookingService {
     /*
      * Calculate product total and prepare booking product records.
      */
-    const bookingProducts = Array.from(selectedProductQuantities.entries()).map(
-      ([productId, quantity]) => {
+    const bookingProducts = Array.from(selectedProductSelections.values()).map(
+      ({ productId, productVariantId, quantity }) => {
         const product = selectedProductMap.get(productId);
 
         if (!product) {
           throw new BadRequestException('Product not found');
         }
 
-        total = total.add(product.price.mul(quantity));
+        const variant = productVariantId
+          ? selectedVariantMap.get(productVariantId)
+          : null;
+        const unitPrice = variant?.priceOverride ?? product.price;
+
+        total = total.add(unitPrice.mul(quantity));
 
         return {
           productId: product.id,
+          productVariantId,
           quantity,
-          unitPrice: product.price,
+          unitPrice,
         };
       },
     );
@@ -677,6 +747,75 @@ export class BookingService {
                       0,
                     )}.`,
                 );
+              }
+            }
+          }
+
+          if (selectedVariantIds.length > 0) {
+            const currentVariants = await transaction.productVariant.findMany({
+              where: {
+                id: {
+                  in: selectedVariantIds,
+                },
+                status: 'ACTIVE',
+                availableOnline: true,
+              },
+            });
+
+            if (currentVariants.length !== new Set(selectedVariantIds).size) {
+              throw new BadRequestException(
+                'One or more selected Product Variants are no longer available',
+              );
+            }
+
+            const currentVariantMap = new Map(
+              currentVariants.map((variant) => [variant.id, variant]),
+            );
+
+            for (const selection of selectedProductSelections.values()) {
+              if (!selection.productVariantId) {
+                continue;
+              }
+
+              const variant = currentVariantMap.get(selection.productVariantId);
+
+              if (!variant || variant.productId !== selection.productId) {
+                throw new BadRequestException(
+                  'Product Variant availability changed.',
+                );
+              }
+
+              if (
+                variant.inventoryTracked &&
+                variant.inventoryQuantity !== null
+              ) {
+                const committed = await transaction.bookingProduct.aggregate({
+                  where: {
+                    productVariantId: variant.id,
+                    booking: {
+                      status: {
+                        in: ['RESERVED', 'CONFIRMED'],
+                      },
+                    },
+                  },
+                  _sum: {
+                    quantity: true,
+                  },
+                });
+
+                const remainingInventory =
+                  variant.inventoryQuantity -
+                  (committed._sum.quantity ?? 0);
+
+                if (selection.quantity > remainingInventory) {
+                  throw new BadRequestException(
+                    `${variant.name} does not have enough inventory available. ` +
+                      `Requested: ${selection.quantity}. Remaining: ${Math.max(
+                        remainingInventory,
+                        0,
+                      )}.`,
+                  );
+                }
               }
             }
           }
