@@ -4,6 +4,7 @@ import {
   CreditCard,
   LayoutDashboard,
   Package,
+  ScanLine,
   Settings,
   Ticket,
   Users,
@@ -20,6 +21,11 @@ const navigationItems = [
     label: "Events",
     href: "/events",
     icon: CalendarDays,
+  },
+  {
+    label: "Staff Scanner",
+    href: "/staff/scanner",
+    icon: ScanLine,
   },
   {
     label: "Bookings",
@@ -52,10 +58,7 @@ export function PlatformSidebar() {
   return (
     <aside className="hidden w-64 shrink-0 border-r bg-card lg:flex lg:flex-col">
       <div className="flex h-16 items-center border-b px-6">
-        <Link
-          href="/"
-          className="text-xl font-semibold tracking-tight"
-        >
+        <Link href="/" className="text-xl font-semibold tracking-tight">
           Glacier
         </Link>
       </div>

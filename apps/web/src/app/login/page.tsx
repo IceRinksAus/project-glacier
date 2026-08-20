@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -20,7 +22,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3000/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -40,12 +42,10 @@ export default function LoginPage() {
       localStorage.setItem("glacier_access_token", data.accessToken);
       localStorage.setItem("glacier_user", JSON.stringify(data.user));
 
-      router.push("/events");
+      router.push(data.user.role === "SCANNER" ? "/staff/scanner" : "/events");
     } catch (loginError) {
       setError(
-        loginError instanceof Error
-          ? loginError.message
-          : "Unable to sign in",
+        loginError instanceof Error ? loginError.message : "Unable to sign in",
       );
     } finally {
       setIsSubmitting(false);
@@ -69,15 +69,9 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form
-          className="space-y-5"
-          onSubmit={handleSubmit}
-        >
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium"
-            >
+            <label htmlFor="email" className="mb-2 block text-sm font-medium">
               Email
             </label>
 
@@ -110,9 +104,7 @@ export default function LoginPage() {
           </div>
 
           {error ? (
-            <p className="text-sm font-medium text-destructive">
-              {error}
-            </p>
+            <p className="text-sm font-medium text-destructive">{error}</p>
           ) : null}
 
           <Button
