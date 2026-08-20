@@ -58,6 +58,24 @@ Waiver remains a first-class optional choice. `No Waiver` is a valid Event confi
 
 After Event creation, the Event Workspace is the durable setup home. The initial wizard does not need cross-device draft persistence before an Event exists.
 
+### One connected setup journey
+
+The Event foundation wizard remains deliberately focused and does not absorb the full Session, Ticket Type/Product or Waiver builders. Those capabilities remain dedicated Workspace tools because organisers need room to create, review and revisit them throughout the Event lifecycle.
+
+The user experience must nevertheless be continuous:
+
+- successful Event creation opens the new Event Workspace;
+- authoritative readiness identifies the next incomplete foundation;
+- each readiness item opens the relevant Session, Ticket Type/Product or Waiver destination;
+- completing a foundation updates readiness from server state;
+- OWNER activation becomes available only when every required and conditional item is complete.
+
+This is the locked product direction for subsequent implementation. It avoids an oversized creation form without leaving organisers to discover disconnected setup screens.
+
+### Progressive UX productisation
+
+Sprint 19 establishes the safe, usable workflow and its authoritative state model; it is not the final visual treatment. Later productisation Sprints may refine layout, transitions, contextual guidance, responsive behaviour and consistency across the specialist builders. Those refinements must preserve the server-authoritative readiness and activation controls delivered here.
+
 ## Authorised Users
 
 - OWNER may create Events, edit setup fields and activate an eligible Event.
@@ -280,7 +298,8 @@ Keep the existing status route but add readiness enforcement and behavioural tes
 - support tablet and desktop as the primary Organiser surfaces while remaining usable on mobile;
 - replace static Event readiness with API-driven status and destinations;
 - add an explicit activation action only for OWNER and only after readiness review;
-- retain the existing Event Workspace navigation and mature Sessions/Waiver tools.
+- retain the existing Event Workspace navigation and dedicated Sessions/Waiver tools;
+- progressively connect the dedicated Session and Ticket Type/Product builders to readiness destinations so setup feels like one guided journey.
 
 Recommended routes:
 
@@ -291,7 +310,7 @@ Recommended routes:
 
 - customer Event-site redesign;
 - public Booking step redesign;
-- embedded Operational Schedule creation inside the Event wizard;
+- embedded Session, Operational Schedule or Ticket Type/Product builders inside the Event foundation wizard;
 - complete Products, Categories or Ticket Types UI redesign;
 - Booking/Customer service tools;
 - POS/on-site sales;
@@ -396,3 +415,7 @@ Sprint 19 is complete when an authenticated OWNER can create a fully described D
 ## Approved Scope Decision
 
 Sprint 19 is **Organiser Event Creation & Setup**. Customer Experience Productisation remains the next separate milestone.
+
+The approved continuation model is also locked: Event creation, Session setup, Ticket Type/Product setup, optional Waiver setup, readiness review and activation form one guided journey through the Event Workspace. The specialist builders remain separate from the six-step Event foundation wizard and are linked through contextual destinations and authoritative readiness state.
+
+Visual and interaction polish will continue in later productisation Sprints. Sprint 19's interface is the functional pilot foundation, not a declaration that the organiser experience has reached its final design.
