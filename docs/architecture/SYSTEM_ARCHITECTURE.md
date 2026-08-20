@@ -63,6 +63,18 @@ Participants
 
 Tickets
 
+Event Waivers form a separate Event branch:
+
+```text
+Event
+  └─ EventWaiver
+       ├─ WaiverVersion ← WaiverTemplate
+       └─ WaiverSubmission
+            └─ WaiverMinor
+```
+
+This branch is intentionally independent of Booking and Ticket identity.
+
 ---
 
 ## Security
@@ -93,6 +105,10 @@ The backend is authoritative for:
 - Session conflict validation
 - Session cancellation
 - Session deletion
+- Waiver template selection and substitution
+- Waiver version publication
+- Waiver acceptance timestamp, version and hashes
+- operator Waiver tenant scope
 
 ---
 
@@ -106,11 +122,28 @@ It provides access to Event-specific capabilities including:
 - Sessions
 - Operational scheduling
 - Session management
+- Waiver configuration, publication, QR and submission evidence
 - Future Event operations modules
 
 Dynamic Event routing uses:
 
 `/events/[eventId]`
+
+---
+
+## Event Waivers
+
+An Event may have zero or one `EventWaiver`. Absence is the valid no-Waiver state.
+
+Approved templates are selected by activity type and Australian jurisdiction. Controlled substitution creates Event-specific version snapshots. Published versions are immutable and changes require a new version.
+
+The public route resolves the current published version through a stable opaque Event slug. Public acceptance requires no Booking, Ticket, account or email. Glacier records the exact version, server acceptance time, electronic signature, hashes and optional minors.
+
+Operator access is JWT-authenticated and Organisation-scoped. Public verification uses a high-entropy credential and returns no signatory/minor identity.
+
+See:
+
+`architecture/WAIVERS.md`
 
 ---
 

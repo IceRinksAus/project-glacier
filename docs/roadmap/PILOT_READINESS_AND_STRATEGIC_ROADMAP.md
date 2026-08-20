@@ -335,11 +335,11 @@ Before live pilot Glacier also requires:
 
 ---
 
-# 6. Sprint 16 — Current Next Sprint
+# 6. Sprint 16 — Delivered Foundation
 
 ## Sprint 16 — Event Waivers & Digital Acceptance
 
-Sprint 16 is the currently agreed next Sprint.
+Sprint 16's core implementation is complete and in closeout.
 
 Core principles:
 
@@ -358,7 +358,9 @@ Core principles:
 - Digital Waiver Pass architecture should be considered.
 - Apple Wallet is a stretch goal and must not block Sprint 16 completion.
 
-Sprint 16 must preserve Sprint 15 payment and Ticket authority.
+Sprint 16 preserved Sprint 15 payment and Ticket authority.
+
+Delivered capability and remaining production-readiness items are recorded in `docs/sprint-notes/sprint-16.md`. The next numbered Sprint has not yet been selected.
 
 ---
 
@@ -490,6 +492,9 @@ Capability order is more important than numbering.
 
 Goal:
 Complete Glacier-native Event waiver creation, publication, public acceptance and evidence.
+
+Status:
+Core implementation complete. Approved production legal content, complete metadata administration and pre-launch privacy/security controls remain follow-up work.
 
 ---
 

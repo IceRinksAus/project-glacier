@@ -34,8 +34,11 @@ Expected local variables include:
 - `JWT_SECRET`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
+- `WEB_APP_URL`
 
 Never commit real secrets.
+
+`WEB_APP_URL` is the canonical web origin encoded in Event Waiver QR codes. The local fallback is `http://localhost:3001`. Production must set the deployed HTTPS origin explicitly.
 
 ## Web Environment
 

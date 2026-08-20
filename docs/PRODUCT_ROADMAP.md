@@ -196,26 +196,24 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ## Current
 
-→ Sprint 16 — Event Waivers & Digital Acceptance
+Sprint 16 — Event Waivers & Digital Acceptance is implementation-complete and awaiting clean commit closeout.
 
-Sprint 16 introduces Glacier-native Event-based digital waivers.
+Delivered:
 
-Core scope includes:
-
-- optional Event Setup Wizard Waiver step
-- approved jurisdiction-specific waiver templates
-- Event-specific immutable Waiver Versions
-- stable public Event Waiver URL / QR
-- mobile digital acceptance
-- electronic signature
-- responsible-adult / minor handling
-- immutable acceptance evidence
-- tenant-safe operator retrieval
+- optional Event Waiver configuration in the existing Event Workspace
+- activity- and jurisdiction-aware template/version foundation
+- Event-specific immutable published Waiver Versions
+- stable public Event Waiver URL and downloadable venue QR
+- mobile digital acceptance and electronic signature
+- responsible-adult handling for zero to 20 minors
+- immutable, server-authoritative acceptance evidence
+- high-entropy verification credential and privacy-minimised verifier
+- tenant-safe operator search and evidence retrieval
 - optional post-Booking Waiver CTA
-- verification credential architecture
-- Apple Wallet as a stretch goal
 
-Sprint 16 deliberately does not require Booking/Ticket linkage, reminder workflows, scanner Waiver enforcement or Customer Portal integration.
+Before production use, Glacier still requires approved legal templates, complete operator controls for required Event/Organisation metadata, stronger signature-format validation, retention/legal-hold policy, rate limiting and final privacy/legal review.
+
+The next numbered Sprint has not yet been selected. Broader Waiver integrations remain prioritised through the pilot-readiness roadmap rather than being implied as part of Sprint 16.
 
 ---
 
@@ -303,9 +301,11 @@ The customer should not need to understand Glacier's internal Rule Engine, Produ
 
 ---
 
-## Waiver Phase Requirements
+## Broader Waiver Programme Requirements
 
-The Waiver phase must include a standalone legal/content and Glacier functional review of the current operational waiver template.
+Sprint 16 delivered the Event-centric Waiver foundation, public acceptance, immutable evidence, operator retrieval, verification and QR access.
+
+The broader Waiver programme still requires a standalone legal/content and Glacier functional review of the operational template before production use.
 
 Scope should include:
 
@@ -315,10 +315,9 @@ Scope should include:
 - guardian / minor handling
 - privacy wording
 - optional consent separation
-- waiver versioning
-- digital acceptance design
-- immutable acceptance evidence
-- Booking / Participant linkage
+- production template approval and seeding
+- complete Event/Organisation metadata administration
+- Booking / Participant linkage only if later operational evidence justifies it
 - guardian relationship capture
 - acceptance timestamp
 - audit evidence
@@ -328,7 +327,7 @@ Scope should include:
 - privacy requirements
 - current Australian legal verification
 
-The detailed Waiver architecture should be finalised only after the existing operational waiver template is reviewed.
+The implemented architecture is documented in `architecture/WAIVERS.md`. Legal wording, retention policy and broader operational integrations remain subject to review and must not be inferred as Sprint 16 deliverables.
 
 ---
 

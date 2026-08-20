@@ -1,5 +1,68 @@
 # Changelog
 
+# Sprint 16 – Event Waivers & Digital Acceptance
+
+## Added
+
+- Event-centric Waiver persistence domain
+- activity- and jurisdiction-specific Waiver Templates
+- Event-specific draft, published and superseded Waiver Versions
+- controlled Event/Organisation template substitution
+- immutable accepted-version evidence and content hashes
+- electronic signature capture
+- zero-to-20-minor acceptance support
+- high-entropy, hash-only verification credentials
+- privacy-minimised public verification API
+- mobile public Waiver page requiring no Booking, Ticket, account or email
+- tenant-safe operator Waiver workspace
+- Waiver version preview and publication workflow
+- submission search and evidence detail
+- stable public Event Waiver URL
+- downloadable venue QR code
+- conditional post-payment Waiver shortcut
+- dedicated Waiver architecture documentation
+
+## Improved
+
+- Organisation and Event legal/location metadata foundation
+- strict validation at the new public Waiver boundary
+- successful empty-response handling in the web API client
+- Event Workspace navigation
+- public Event response minimisation and conditional Waiver discovery
+
+## Security
+
+- Organisation scope comes from authenticated JWT context for operator access
+- OWNER authority is required for draft generation and publication
+- public retrieval is restricted to active Events and current published versions
+- the server chooses authoritative version, timestamp and hashes
+- public verification excludes signatory, minor and signature data
+- raw verification credentials are never stored
+- submission search and evidence remain authenticated and tenant-scoped
+
+## Verification
+
+- full API suite: 51 / 51 test suites passing
+- full API tests: 280 / 280 passing
+- pre-Sprint API baseline preserved: 45 suites / 236 tests
+- API production build: passed
+- web production build: passed
+- targeted Waiver/web lint: no errors
+- public and operator browser workflows: verified
+- optional no-Waiver Event state: verified
+- Booking-independent fictional acceptance: verified
+- stable public link and venue QR: verified
+
+## Known Follow-Up
+
+- production legal templates require approval and seeding
+- Event/Organisation Waiver metadata still needs complete operator editing controls
+- signature MIME/data-URI validation should be tightened before production
+- retention, legal hold, rate limiting and final privacy/legal review remain pre-launch work
+- Digital Waiver Pass, Wallet, reminders, scanner enforcement and Booking/Ticket linkage remain deferred
+
+See `sprint-notes/sprint-16.md` for the detailed closeout and limitations.
+
 # Sprint 15 – Stripe Payments & Payment Hardening
 
 ## Added

@@ -522,25 +522,27 @@ Customer-facing privacy information should clearly explain:
 
 ## Waivers
 
-Detailed waiver architecture will be completed during the Waiver phase.
+Sprint 16 introduced an Event-centric Waiver domain. It is deliberately independent of Booking, Ticket, Customer account and email.
 
-That phase must include:
+Implemented controls include:
 
-- review of the existing waiver template
-- legal/content review
-- digital acceptance design
-- guardian/minor handling
-- waiver versioning
-- immutable record of accepted wording
-- Booking / Participant linkage
-- acceptance timestamp
-- audit evidence
-- staff / QR waiver-status verification
-- retention requirements
-- privacy requirements
-- current Australian legal verification
+- immutable Event-specific published wording
+- exact accepted-version and hash evidence
+- server-authoritative acceptance timestamps
+- explicit acceptance and electronic signature
+- bounded adult/minor data
+- tenant-scoped operator retrieval
+- active/published-only public access
+- high-entropy verification credentials stored only as hashes
+- privacy-minimised public verification
 
-The detailed waiver model should not be finalised before the actual operational waiver is reviewed.
+Waiver evidence contains personal information and child data and must be treated as restricted legal/operational evidence.
+
+Before production launch, Glacier still requires approved jurisdiction templates, current Australian legal review, a documented retention and legal-hold policy, operator access policy, abuse/rate controls and final privacy notices.
+
+Booking/Participant linkage, scanner enforcement and reminders remain future product decisions rather than implicit Waiver requirements.
+
+See `architecture/WAIVERS.md` for the implemented domain and boundaries.
 
 ---
 
