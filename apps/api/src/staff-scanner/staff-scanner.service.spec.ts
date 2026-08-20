@@ -1,4 +1,4 @@
-import { TicketScanMode } from '@prisma/client';
+import { TicketScanMode, TicketStatus } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -133,6 +133,8 @@ describe('StaffScannerService', () => {
       }),
     });
     expect(result.result).toBe(ScannerTicketResult.ENTRY_GRANTED);
+    expect(result.status).toBe(TicketStatus.SCANNED);
+    expect(result.checkedInAt).toEqual(now);
   });
 
   it('returns already scanned when another device wins the atomic update', async () => {

@@ -12,7 +12,7 @@ The Staff application has two explicit modes.
 
 Gate Entry:
 
-staff sign-in → choose an active Event → choose Gate Entry → scan → review compact eligibility result → grant entry → scan next
+staff sign-in → choose an active Event → choose Gate Entry → scan → automatic server validation and admission → review the compact result → scan next
 
 Ticket Lookup:
 
@@ -36,7 +36,7 @@ Scanning reads and validates a Ticket. It does not immediately mutate the Ticket
 
 This adds one intentional tap but prevents an accidental camera detection from consuming a Ticket. After a result is acknowledged, the scanner returns immediately to ready state.
 
-Every scan begins read-only in both modes. Gate Entry presents a prominent `Grant entry` action when eligible. Ticket Lookup prioritises details and presents a secondary `Process ticket` action when eligible; selecting it opens an explicit entry confirmation. Staff can close either result without changing the Ticket.
+Gate Entry is the high-throughput operating mode: reading a Ticket immediately calls the authoritative admission operation and processes entry when eligible, without a second button click. Ticket Lookup begins read-only, prioritises details and presents a secondary `Process ticket` action when eligible; selecting it opens an explicit entry confirmation. Staff can close a Lookup result without changing the Ticket.
 
 ### Minimal information
 
@@ -104,7 +104,7 @@ All routes require JWT authentication and explicit OWNER, MEMBER or SCANNER auth
 
 The existing Ticket endpoints remain for compatibility during this Sprint, but the Staff UI uses only the dedicated Staff boundary. Any later removal is a separately verified migration.
 
-The validate route powers both modes and is strictly read-only. Only an explicit call to the admit route from `Grant entry` or the confirmed Lookup `Process ticket` action may transition Ticket state.
+The validate route powers Ticket Lookup and is strictly read-only. Gate Entry calls the admit route immediately when a Ticket is read; confirmed Lookup `Process ticket` also calls the admit route. The admit route always recalculates eligibility before it may transition Ticket state.
 
 Lookup remains useful outside the admission window: it shows the same-Event Ticket's details and explains whether it is early, currently eligible, already scanned, cancelled or closed. Time policy restricts admission, not legitimate staff lookup.
 
@@ -221,7 +221,7 @@ Validation returns `NOT_YET_VALID` before the opening instant and `ENTRY_WINDOW_
 - camera permission/start/stop lifecycle
 - visible scan target and concise instructions
 - QR-only continuous detection with duplicate-frame suppression
-- compact Gate Entry review with prominent `Grant entry` only for an eligible Ticket
+- automatic Gate Entry processing on a camera or hand-scanner read, followed by a compact, unmistakable outcome
 - detailed Ticket Lookup with secondary `Process ticket` only for an eligible Ticket
 - explicit confirmation after selecting `Process ticket` from Lookup
 - close/scan-next action that leaves the looked-up Ticket unchanged
@@ -417,11 +417,11 @@ Completion requires:
 
 ## Definition of Done
 
-Sprint 18 is complete when an authenticated OWNER, MEMBER or narrowly authorised SCANNER can select an active Event and use either Gate Entry or Ticket Lookup; decode or manually enter a Ticket without scanning alone changing it; review an authoritative privacy-minimised result; grant entry through the fast Gate action or the Lookup mode's secondary action and confirmation; admit an eligible participant only inside the configured server-authoritative entry window; receive an unmistakable result and safely continue scanning; while early, late, wrong-Event, cross-tenant, cancelled, duplicate and connectivity cases cannot falsely grant entry or leak unrelated data, and every admission attempt is attributable without storing raw Ticket credentials.
+Sprint 18 is complete when an authenticated OWNER, MEMBER or narrowly authorised SCANNER can select an active Event and use either Gate Entry or Ticket Lookup; automatically process a Gate Entry scan or perform a read-only Lookup; grant entry through the automatic Gate operation or the Lookup mode's secondary action and confirmation; admit an eligible participant only inside the configured server-authoritative entry window; receive an unmistakable result and safely continue scanning; while early, late, wrong-Event, cross-tenant, cancelled, duplicate and connectivity cases cannot falsely grant entry or leak unrelated data, and every admission attempt is attributable without storing raw Ticket credentials.
 
 ## Approved Product Decisions
 
-1. Use a deliberate `Review → Admit` step rather than automatic check-in on camera detection.
+1. Use automatic validation and admission in Gate Entry for concert-style throughput; retain deliberate `Review → Process → Confirm` behaviour in Ticket Lookup.
 2. Add a narrow Organisation-level `SCANNER` role; Event-specific staff assignment remains later work.
 3. Record append-only admission attempts from the first scanner release.
 4. Treat offline admission as explicitly out of scope; loss of connectivity must fail closed.

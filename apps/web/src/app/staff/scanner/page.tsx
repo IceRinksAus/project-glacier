@@ -193,7 +193,7 @@ export default function StaffScannerPage() {
       setError("");
       try {
         const response = await api.post<TicketResult>(
-          `/staff/scanner/events/${eventId}/validate`,
+          `/staff/scanner/events/${eventId}/${mode === "GATE_ENTRY" ? "admit" : "validate"}`,
           { token, mode },
         );
         setActiveToken(token);
@@ -311,7 +311,7 @@ export default function StaffScannerPage() {
                     className={`block text-xs ${mode === value ? "text-slate-300" : "text-slate-500"}`}
                   >
                     {value === "GATE_ENTRY"
-                      ? "Fast admission"
+                      ? "Automatic admission"
                       : "Detailed POS view"}
                   </span>
                 </span>
@@ -352,11 +352,21 @@ export default function StaffScannerPage() {
                 <label htmlFor="manual-ticket" className="text-sm font-bold">
                   Manual or hardware scanner entry
                 </label>
+                {mode === "GATE_ENTRY" ? (
+                  <p className="mt-1 text-sm text-slate-600">
+                    A valid scan processes entry automatically.
+                  </p>
+                ) : null}
                 <div className="mt-2 flex gap-2">
                   <input
                     id="manual-ticket"
                     value={manualToken}
                     onChange={(event) => setManualToken(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      void lookup(event.currentTarget.value);
+                    }}
                     placeholder="64-character Ticket code"
                     autoComplete="off"
                     className="h-12 min-w-0 flex-1 rounded-xl border px-3 font-mono text-sm"
@@ -366,7 +376,7 @@ export default function StaffScannerPage() {
                     size="lg"
                     disabled={isWorking || !eventId}
                   >
-                    Look up
+                    {mode === "GATE_ENTRY" ? "Scan ticket" : "Look up"}
                   </Button>
                 </div>
               </form>
@@ -480,17 +490,6 @@ export default function StaffScannerPage() {
               ) : null}
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {eligible && mode === "GATE_ENTRY" ? (
-                  <Button
-                    size="lg"
-                    className="min-h-14 flex-1 text-lg"
-                    onClick={() => void processTicket()}
-                    disabled={isWorking}
-                  >
-                    <TicketCheck className="size-5" />{" "}
-                    {isWorking ? "Processing..." : "Grant entry"}
-                  </Button>
-                ) : null}
                 {eligible &&
                 mode === "TICKET_LOOKUP" &&
                 !confirmLookupProcess ? (

@@ -150,6 +150,7 @@ export class StaffScannerService {
       return {
         ...result,
         result: ScannerTicketResult.ENTRY_GRANTED,
+        status: TicketStatus.SCANNED,
         checkedInAt: now,
       };
     });
