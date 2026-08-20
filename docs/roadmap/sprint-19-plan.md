@@ -240,6 +240,10 @@ Products remain optional for Event activation, but the Event Workspace should co
 - Products describe non-admission extras such as Kanga skating aids, hire items, food or merchandise.
 - Product inventory or product-specific capacity is independent of Session admission capacity and is enabled only when that extra requires its own operational limit.
 
+Reusable equipment such as Kangas uses a default Product capacity with an optional `SessionProduct.capacityOverride`. RESERVED and CONFIRMED quantities consume the selected Session's pool; expired and cancelled reservations release it. Capacity exhaustion removes the optional Product from availability and prevents a booking whose active rules require that Product.
+
+Merchandise uses global finite inventory, normally at Product Variant level. For example, Small and Large hoodies hold independent quantities, SKUs and optional price overrides. Variant stock is held during an active reservation and consumed by confirmed sales; one exhausted size must not hide other available sizes.
+
 ### Optional and required Products
 
 Assigning an active Product to a Session makes it available as an optional add-on for that Session. A Product becomes mandatory only through an active server-side Rule.

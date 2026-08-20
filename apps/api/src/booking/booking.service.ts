@@ -19,6 +19,32 @@ export class BookingService {
     private readonly bookingValidationService: BookingValidationService,
   ) {}
 
+  private async createWithCapacityProtection<T>(
+    operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+  ) {
+    const maximumAttempts = 3;
+
+    for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        const isWriteConflict =
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'P2034';
+
+        if (!isWriteConflict || attempt === maximumAttempts) {
+          throw error;
+        }
+      }
+    }
+
+    throw new BadRequestException('Unable to reserve booking capacity.');
+  }
+
   findAll(organizationId: string) {
     return this.prisma.booking.findMany({
       where: {
@@ -504,48 +530,202 @@ export class BookingService {
       1000 + Math.random() * 9000,
     )}`;
 
-    const booking = await this.prisma.booking.create({
-      data: {
-        bookingNumber,
-        status: 'RESERVED',
-        reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
-        paymentStatus: 'UNPAID',
-        total,
-        flexibleBooking: data.flexibleBooking ?? false,
-        customerId: data.customerId,
-        eventId: data.eventId,
-        sessionId: data.sessionId,
-        items: {
-          create: bookingItems,
-        },
-        participants: {
-          create: bookingParticipants,
-        },
-        products: {
-          create: bookingProducts,
-        },
+    const booking = await this.createWithCapacityProtection(
+      async (transaction) => {
+        const currentSession = await transaction.session.findUnique({
+          where: {
+            id: data.sessionId,
+          },
+          select: {
+            id: true,
+            name: true,
+            capacity: true,
+            status: true,
+            eventId: true,
+          },
+        });
+
+        if (
+          !currentSession ||
+          currentSession.status !== 'ACTIVE' ||
+          currentSession.eventId !== data.eventId
+        ) {
+          throw new BadRequestException(
+            'The selected session is no longer available for booking',
+          );
+        }
+
+        const currentBookedQuantity = await transaction.bookingItem.aggregate({
+          where: {
+            booking: {
+              sessionId: data.sessionId,
+              status: {
+                in: ['RESERVED', 'CONFIRMED'],
+              },
+            },
+          },
+          _sum: {
+            quantity: true,
+          },
+        });
+
+        const currentSessionRemaining =
+          currentSession.capacity - (currentBookedQuantity._sum.quantity ?? 0);
+
+        if (requestedSessionQuantity > currentSessionRemaining) {
+          throw new BadRequestException(
+            `${currentSession.name} does not have enough capacity. ` +
+              `Requested: ${requestedSessionQuantity}. ` +
+              `Remaining: ${currentSessionRemaining}.`,
+          );
+        }
+
+        if (selectedProductIds.length > 0) {
+          const sessionProducts = await transaction.sessionProduct.findMany({
+            where: {
+              sessionId: data.sessionId,
+              productId: {
+                in: selectedProductIds,
+              },
+              active: true,
+            },
+            select: {
+              productId: true,
+              capacityOverride: true,
+            },
+          });
+
+          if (sessionProducts.length !== selectedProductIds.length) {
+            throw new BadRequestException(
+              'One or more selected products are not active for the selected session',
+            );
+          }
+
+          const sessionProductMap = new Map(
+            sessionProducts.map((assignment) => [
+              assignment.productId,
+              assignment,
+            ]),
+          );
+
+          for (const [productId, quantity] of selectedProductQuantities) {
+            const product = selectedProductMap.get(productId);
+            const assignment = sessionProductMap.get(productId);
+
+            if (!product || !assignment) {
+              throw new BadRequestException('Product availability changed.');
+            }
+
+            if (product.capacityControlled) {
+              const capacityLimit =
+                assignment.capacityOverride ?? product.capacity;
+
+              if (capacityLimit === null) {
+                throw new BadRequestException(
+                  `${product.name} capacity has not been configured`,
+                );
+              }
+
+              const occupied = await transaction.bookingProduct.aggregate({
+                where: {
+                  productId,
+                  booking: {
+                    sessionId: data.sessionId,
+                    status: {
+                      in: ['RESERVED', 'CONFIRMED'],
+                    },
+                  },
+                },
+                _sum: {
+                  quantity: true,
+                },
+              });
+
+              const remaining = capacityLimit - (occupied._sum.quantity ?? 0);
+
+              if (quantity > remaining) {
+                throw new BadRequestException(
+                  `${product.name} does not have enough capacity for this Session. ` +
+                    `Requested: ${quantity}. Remaining: ${Math.max(remaining, 0)}.`,
+                );
+              }
+            }
+
+            if (product.inventoryTracked && product.inventoryQuantity !== null) {
+              const committed = await transaction.bookingProduct.aggregate({
+                where: {
+                  productId,
+                  booking: {
+                    status: {
+                      in: ['RESERVED', 'CONFIRMED'],
+                    },
+                  },
+                },
+                _sum: {
+                  quantity: true,
+                },
+              });
+
+              const remainingInventory =
+                product.inventoryQuantity - (committed._sum.quantity ?? 0);
+
+              if (quantity > remainingInventory) {
+                throw new BadRequestException(
+                  `${product.name} does not have enough inventory available. ` +
+                    `Requested: ${quantity}. Remaining: ${Math.max(
+                      remainingInventory,
+                      0,
+                    )}.`,
+                );
+              }
+            }
+          }
+        }
+
+        return transaction.booking.create({
+          data: {
+            bookingNumber,
+            status: 'RESERVED',
+            reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
+            paymentStatus: 'UNPAID',
+            total,
+            flexibleBooking: data.flexibleBooking ?? false,
+            customerId: data.customerId,
+            eventId: data.eventId,
+            sessionId: data.sessionId,
+            items: {
+              create: bookingItems,
+            },
+            participants: {
+              create: bookingParticipants,
+            },
+            products: {
+              create: bookingProducts,
+            },
+          },
+          include: {
+            customer: true,
+            event: true,
+            session: true,
+            items: {
+              include: {
+                ticketType: true,
+              },
+            },
+            participants: {
+              include: {
+                ticketType: true,
+              },
+            },
+            products: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        });
       },
-      include: {
-        customer: true,
-        event: true,
-        session: true,
-        items: {
-          include: {
-            ticketType: true,
-          },
-        },
-        participants: {
-          include: {
-            ticketType: true,
-          },
-        },
-        products: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    );
 
     return {
       booking,

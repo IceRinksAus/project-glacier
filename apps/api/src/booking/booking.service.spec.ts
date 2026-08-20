@@ -80,6 +80,7 @@ describe('BookingService', () => {
   };
 
   const prisma = {
+    $transaction: jest.fn(),
     booking: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
@@ -101,7 +102,13 @@ describe('BookingService', () => {
     bookingItem: {
       aggregate: jest.fn(),
     },
+    bookingProduct: {
+      aggregate: jest.fn(),
+    },
     product: {
+      findMany: jest.fn(),
+    },
+    sessionProduct: {
       findMany: jest.fn(),
     },
   };
@@ -136,6 +143,19 @@ describe('BookingService', () => {
         quantity: 0,
       },
     });
+
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: {
+        quantity: 0,
+      },
+    });
+
+    prisma.sessionProduct.findMany.mockResolvedValue([]);
+
+    prisma.$transaction.mockImplementation(
+      async (operation: (transaction: typeof prisma) => unknown) =>
+        operation(prisma),
+    );
 
     prisma.product.findMany.mockResolvedValue([]);
 
@@ -431,6 +451,102 @@ describe('BookingService', () => {
         quantity: true,
       },
     });
+  });
+
+  it('holds per-Session Product capacity across reserved and confirmed bookings', async () => {
+    const kanga = {
+      id: 'product-kanga',
+      name: 'Kanga Skating Aid',
+      slug: 'kanga-skating-aid',
+      eventId: 'event-1',
+      status: 'ACTIVE',
+      availableOnline: true,
+      minQuantity: 0,
+      maxQuantity: null,
+      price: new Prisma.Decimal(10),
+      inventoryTracked: false,
+      inventoryQuantity: null,
+      capacityControlled: true,
+      capacity: 20,
+    };
+    const bookingWithKangas = {
+      ...createBookingDto,
+      products: [{ productId: kanga.id, quantity: 3 }],
+    };
+
+    prisma.product.findMany.mockResolvedValue([kanga]);
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      { productId: kanga.id, capacityOverride: null },
+    ]);
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 18 },
+    });
+
+    await expect(service.create(bookingWithKangas)).rejects.toThrow(
+      'Kanga Skating Aid does not have enough capacity for this Session. Requested: 3. Remaining: 2.',
+    );
+
+    expect(prisma.bookingProduct.aggregate).toHaveBeenCalledWith({
+      where: {
+        productId: kanga.id,
+        booking: {
+          sessionId: 'session-1',
+          status: {
+            in: ['RESERVED', 'CONFIRMED'],
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('uses a Session-specific Product capacity override', async () => {
+    const kanga = {
+      id: 'product-kanga',
+      name: 'Kanga Skating Aid',
+      slug: 'kanga-skating-aid',
+      eventId: 'event-1',
+      status: 'ACTIVE',
+      availableOnline: true,
+      minQuantity: 0,
+      maxQuantity: null,
+      price: new Prisma.Decimal(10),
+      inventoryTracked: false,
+      inventoryQuantity: null,
+      capacityControlled: true,
+      capacity: 20,
+    };
+
+    prisma.product.findMany.mockResolvedValue([kanga]);
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      { productId: kanga.id, capacityOverride: 5 },
+    ]);
+    prisma.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 5 },
+    });
+
+    await expect(
+      service.create({
+        ...createBookingDto,
+        products: [{ productId: kanga.id, quantity: 1 }],
+      }),
+    ).rejects.toThrow(
+      'Kanga Skating Aid does not have enough capacity for this Session. Requested: 1. Remaining: 0.',
+    );
+  });
+
+  it('creates bookings in a serializable capacity transaction', async () => {
+    await service.create(createBookingDto);
+
+    expect(prisma.$transaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      },
+    );
   });
 
   it('should consolidate participants into ticket booking items', async () => {

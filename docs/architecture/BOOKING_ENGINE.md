@@ -187,6 +187,12 @@ Examples:
 
 The backend validates the required product again when the reservation is submitted.
 
+Kanga availability is a Product capacity pool for the selected Session; it is not part of rink admission capacity. Active `SessionProduct` assignment makes the Kanga available, and `capacityOverride` may replace the Product's default capacity for a particular Session. RESERVED and CONFIRMED BookingProduct quantities hold that Session pool. Expired or cancelled bookings do not occupy it.
+
+Reservation creation rechecks Session admission capacity and Product availability in a serializable transaction. This prevents simultaneous booking requests from overselling either the rink or a capacity-controlled Product. A required Kanga that has no remaining capacity blocks the affected reservation rather than bypassing the rule.
+
+Finite merchandise inventory is a separate global stock model. Size or other merchandise options use Product Variants and must not be represented as Session capacity.
+
 ---
 
 ## Adult Accompaniment
