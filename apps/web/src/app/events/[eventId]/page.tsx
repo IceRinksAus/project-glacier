@@ -1,12 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { use, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { use } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
 import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
 import { EventOverview } from "@/components/events/EventOverview";
-import { EventTabs } from "@/components/events/EventTabs";
+import {
+  EventTabs,
+  parseEventTab,
+} from "@/components/events/EventTabs";
+import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
@@ -22,11 +26,22 @@ export default function EventWorkspacePage({
   params,
 }: EventWorkspacePageProps) {
   const { eventId } = use(params);
+  const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { event, isLoading, error } = useEvent(eventId);
-  const [activeTab, setActiveTab] = useState(
-    searchParams.get("tab") === "Waiver" ? "Waiver" : "Overview",
-  );
+  const activeTab = parseEventTab(searchParams.get("tab"));
+
+  function selectTab(tab: EventTab) {
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    if (tab === "Overview") {
+      nextSearchParams.delete("tab");
+    } else {
+      nextSearchParams.set("tab", tab);
+    }
+    const query = nextSearchParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
 
   return (
     <PlatformShell>
@@ -50,7 +65,7 @@ export default function EventWorkspacePage({
               endDate={event.endDate}
             />
 
-            <EventTabs activeTab={activeTab} onChange={setActiveTab} />
+            <EventTabs activeTab={activeTab} onChange={selectTab} />
 
             {activeTab === "Overview" ? (
               <EventOverview
@@ -61,7 +76,7 @@ export default function EventWorkspacePage({
                 slug={event.slug}
                 startDate={event.startDate}
                 endDate={event.endDate}
-                onNavigate={setActiveTab}
+                onNavigate={selectTab}
                 onActivated={() => window.location.reload()}
               />
             ) : null}

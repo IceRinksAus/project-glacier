@@ -4,6 +4,7 @@ import { CheckCircle2, CircleAlert, CircleMinus } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
+import type { EventTab } from "@/components/events/EventTabs";
 import {
   getAuthRoleSnapshot,
   getServerAuthRoleSnapshot,
@@ -14,7 +15,7 @@ import { EventReadiness, eventService } from "@/services/event.service";
 interface Props {
   eventId: string;
   eventStatus: string;
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: EventTab) => void;
   onActivated: () => void;
 }
 

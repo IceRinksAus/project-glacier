@@ -1,4 +1,5 @@
 import { EventReadinessPanel } from "./EventReadinessPanel";
+import type { EventTab } from "./EventTabs";
 
 interface EventOverviewProps {
   eventId: string;
@@ -8,7 +9,7 @@ interface EventOverviewProps {
   slug: string;
   startDate: string;
   endDate: string;
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: EventTab) => void;
   onActivated: () => void;
 }
 
