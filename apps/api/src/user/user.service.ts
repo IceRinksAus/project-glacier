@@ -12,8 +12,15 @@ import { CreateUserDto } from './dto/create-user.dto';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(organizationId: string) {
     return this.prisma.user.findMany({
+      where: {
+        organizations: {
+          some: {
+            organizationId,
+          },
+        },
+      },
       select: {
         id: true,
         email: true,
@@ -22,6 +29,9 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
         organizations: {
+          where: {
+            organizationId,
+          },
           select: {
             organizationId: true,
             role: true,
@@ -31,7 +41,7 @@ export class UserService {
     });
   }
 
-  async create(createUserDto: CreateUserDto) {
+  async create(organizationId: string, createUserDto: CreateUserDto) {
     const email = createUserDto.email.trim().toLowerCase();
 
     const existingUser = await this.prisma.user.findUnique({
@@ -41,14 +51,12 @@ export class UserService {
     });
 
     if (existingUser) {
-      throw new ConflictException(
-        'A user with this email already exists',
-      );
+      throw new ConflictException('A user with this email already exists');
     }
 
     const organization = await this.prisma.organization.findUnique({
       where: {
-        id: createUserDto.organizationId,
+        id: organizationId,
       },
     });
 
@@ -56,10 +64,7 @@ export class UserService {
       throw new NotFoundException('Organization not found');
     }
 
-    const passwordHash = await bcrypt.hash(
-      createUserDto.password,
-      10,
-    );
+    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
 
     return this.prisma.$transaction(async (prisma) => {
       const user = await prisma.user.create({
@@ -74,7 +79,7 @@ export class UserService {
       const membership = await prisma.userOrganization.create({
         data: {
           userId: user.id,
-          organizationId: createUserDto.organizationId,
+          organizationId,
           role: createUserDto.role,
         },
       });

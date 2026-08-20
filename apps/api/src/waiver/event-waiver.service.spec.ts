@@ -7,6 +7,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EventWaiverService } from './event-waiver.service';
 import { WaiverTemplateService } from './waiver-template.service';
 
+jest.mock('qrcode', () => ({
+  toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,qr-code'),
+}));
+
 describe('EventWaiverService', () => {
   let service: EventWaiverService;
 

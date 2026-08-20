@@ -1,0 +1,124 @@
+# API Endpoint Security Register
+
+## Purpose
+
+This register is the Sprint 17 control for classifying every Glacier API route. It records intended audience, authentication, role policy, tenant path, validation status and Sprint action.
+
+Status values:
+
+- `PROTECTED` — current boundary matches the intended policy.
+- `PUBLIC` — deliberately public and subject to minimised response/validation review.
+- `EXTERNAL` — authenticated by a trusted external protocol rather than Glacier JWT.
+- `HARDEN` — existing route requires Sprint 17 protection or validation.
+- `REVIEW/REMOVE` — legacy or duplicate route must be proven necessary before retention.
+
+## Platform and Authentication
+
+| Method | Route | Audience | Authentication | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|
+| GET | `/` | Health | None | N/A | PUBLIC | Confirm response contains no internal detail. |
+| POST | `/auth/login` | Operator/Staff | Credentials | Decorated DTO; runtime pipe absent | HARDEN | Add authoritative validation and login abuse-control decision. |
+| GET | `/auth/me` | Operator/Staff | JWT | N/A | PROTECTED | Replace `any` user type and retain minimal claims response. |
+
+## Organisation and Users
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|---|
+| GET | `/organization` | Operator | JWT OWNER/MEMBER | JWT Organisation | None | PROTECTED | Returns only authenticated Organisation with explicit fields. |
+| POST | `/organization` | Onboarding/Admin | Controlled bootstrap | Not currently expressible | N/A | PROTECTED | Removed from ordinary API; future onboarding needs a controlled bootstrap flow. |
+| POST | `/organization/:id/users` | Operator | JWT OWNER | JWT Organisation must equal target | Strict DTO | PROTECTED | Role allowlist and tenant equality enforced. |
+| GET | `/user` | Operator | JWT OWNER/MEMBER | Membership in JWT Organisation | None | PROTECTED | Returns only users/membership in authenticated Organisation. |
+| POST | `/user` | Operator | JWT OWNER | JWT Organisation | Strict DTO; no Organisation field | PROTECTED | Organisation comes only from JWT context. |
+
+## Event and Catalogue Administration
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|---|
+| GET | `/event` | Operator | JWT OWNER/MEMBER | Event → Organisation | DTO/query review | PROTECTED | Add/retain guard and tenant tests. |
+| GET | `/event/:id` | Operator | JWT OWNER/MEMBER | Event → Organisation | Param string | PROTECTED | Add/retain cross-tenant test. |
+| POST | `/event` | Operator | JWT OWNER | JWT Organisation | DTO | PROTECTED | Confirm strict runtime validation. |
+| PATCH | `/event/:id/status` | Operator | JWT OWNER | Event → Organisation | DTO | PROTECTED | Confirm strict runtime validation. |
+| DELETE | `/event/:id` | Operator | JWT OWNER | Event → Organisation | Param string | PROTECTED | Retain dependency/business checks. |
+| POST | `/category` | Operator | JWT OWNER | Category → Event → Organisation | Strict DTO | PROTECTED | Event ownership proven before create. |
+| GET | `/category` | Operator | JWT OWNER/MEMBER | Category → Event → Organisation | None | PROTECTED | Tenant-scoped list. |
+| GET | `/category/:id` | Operator | JWT OWNER/MEMBER | Category → Event → Organisation | Param string | PROTECTED | Tenant-scoped detail. |
+| DELETE | `/category/:id` | Operator | JWT OWNER | Category → Event → Organisation | Param string | PROTECTED | Tenant-scoped mutation. |
+| GET | `/ticket-type` | Operator | JWT OWNER/MEMBER | TicketType → Event → Organisation | None | PROTECTED | Tenant-scoped list. |
+| POST | `/ticket-type` | Operator | JWT OWNER | TicketType → Event → Organisation | Strict DTO | PROTECTED | Event ownership proven before create. |
+| POST | `/rule` | Operator | JWT OWNER | Rule → Event → Organisation | Decorated DTO; runtime pipe absent | HARDEN | Add guard, role, tenant scope and strict validation. |
+| GET | `/rule` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | None | HARDEN | Tenant-scope list. |
+| GET | `/rule/:id` | Operator | JWT OWNER/MEMBER | Rule → Event → Organisation | Param string | HARDEN | Tenant-scope detail. |
+| PATCH | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Decorated DTO; runtime pipe absent | HARDEN | Prevent cross-tenant reassignment and validate. |
+| DELETE | `/rule/:id` | Operator | JWT OWNER | Rule → Event → Organisation | Param string | HARDEN | Tenant-scope mutation. |
+| POST | `/rule-evaluation/:eventId` | Legacy | To be determined | Event → Organisation | Inline context | REVIEW/REMOVE | Repository web uses dedicated public evaluation; remove or protect legacy duplicate after usage audit. |
+
+## Product, Session and Schedule Administration
+
+| Route group | Audience | Authentication/role | Tenant path | Status | Sprint 17 action |
+|---|---|---|---|---|---|
+| `/product` | Operator | JWT; OWNER mutations | Product → Event → Organisation | PROTECTED | Confirm strict runtime validation and negative tenant tests. |
+| `/product-variant` | Operator | JWT; OWNER mutations | Variant → Product → Event → Organisation | PROTECTED | Confirm strict runtime validation and negative tenant tests. |
+| `/session-product` | Operator | JWT; OWNER mutations | Session/Product → Event → Organisation | PROTECTED | Confirm cross-parent tenant integrity. |
+| `/session` | Operator | JWT; OWNER mutations | Session → Event → Organisation | PROTECTED | Preserve time, capacity and overlap rules. |
+| `/operational-schedule` | Operator | JWT OWNER | Schedule → Event → Organisation | PROTECTED | Preserve generation and transactional behaviour. |
+
+## Booking and Customer Administration
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|---|
+| GET | `/booking` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | None | HARDEN | Tenant-scope list and minimise response. |
+| GET | `/booking/:id` | Operator | JWT OWNER/MEMBER | Booking → Event → Organisation | Param string | HARDEN | Tenant-scope detail. |
+| POST | `/booking` | Operator | JWT OWNER | Booking/Event/Customer relationships | Decorated DTO; runtime pipe absent | REVIEW/REMOVE | Prefer dedicated public route; retain only if authenticated operator creation is required. |
+| GET | `/customer` | Operator | JWT OWNER/MEMBER | Customer ownership model requires audit | None | HARDEN | Establish safe Organisation scope before exposing list. |
+| GET | `/customer/:id` | Operator | JWT OWNER/MEMBER | Customer ownership model requires audit | Param string | HARDEN | Establish safe Organisation scope and minimise. |
+| POST | `/customer` | Operator | JWT OWNER | Customer ownership model requires audit | Inline body | REVIEW/REMOVE | Prefer dedicated public route unless operator creation is required. |
+
+## Ticket and Gate Operations
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|---|
+| GET | `/ticket/token/:token` | Customer/holder | High-entropy possession token | Ticket token | Token format review | PUBLIC | Minimise response and avoid internal/customer leakage. |
+| GET | `/ticket/validate/:token` | Staff pre-check | JWT MEMBER/OWNER recommended | Ticket → Booking → Event → Organisation | Token format review | HARDEN | Move validation into authenticated operational boundary unless a public use is proven. |
+| POST | `/ticket/scan/:token` | Staff | JWT MEMBER/OWNER | Ticket → Booking → Event → Organisation | Token format review | HARDEN | Authenticate, tenant-scope and preserve atomic scan. |
+| GET | `/ticket/:id/qr` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | HARDEN | Authenticate and tenant-scope. |
+| GET | `/ticket/:id` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | HARDEN | Authenticate, tenant-scope and minimise. |
+
+## Payment
+
+| Method | Route | Audience | Authentication | Tenant path | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|---|
+| POST | `/payment/:bookingId` | Legacy | None currently | Booking → Event → Organisation | Param only | REVIEW/REMOVE | Remove if unused; otherwise protect as OWNER operator action. |
+| POST | `/payment/stripe/webhook` | Stripe | Stripe signature + raw body | Provider event → internal records | Signature/raw body | EXTERNAL | Preserve raw-body verification and idempotency. |
+
+## Public Booking
+
+| Method | Route | Audience | Authentication | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|
+| GET | `/public/events/:eventId` | Customer | None | Param string | PUBLIC | Confirm ACTIVE-only response minimisation. |
+| GET | `/public/events/:eventId/sessions` | Customer | None | Param string | PUBLIC | Confirm availability and response minimisation. |
+| GET | `/public/events/:eventId/ticket-types` | Customer | None | Param string | PUBLIC | Confirm availability and response minimisation. |
+| POST | `/public/events/:eventId/evaluate-rules` | Customer | None | Inline nested body | HARDEN | Add explicit DTO and strict validation. |
+| GET | `/public/sessions/:sessionId/products` | Customer | None | Param string | PUBLIC | Confirm Event/session availability and minimisation. |
+| POST | `/public/customers` | Customer | None | Inline body | HARDEN | Add bounded DTO and strict validation. |
+| POST | `/public/bookings` | Customer | None | Decorated nested DTO; runtime pipe absent | HARDEN | Apply strict runtime validation without changing Booking authority. |
+| POST | `/public/bookings/:bookingId/payments` | Customer | Booking public-access token | Inline body | HARDEN | Add explicit token DTO and strict validation. |
+
+## Public Waivers
+
+| Method | Route | Audience | Authentication | Validation | Status | Sprint 17 action |
+|---|---|---|---|---|---|---|
+| GET | `/public/waivers/verifications/:verificationToken` | Credential holder | High-entropy possession token | Strict controller pipe + service format | PUBLIC | Retain privacy-minimised response. |
+| GET | `/public/waivers/:publicSlug` | Participant | None | Strict controller pipe | PUBLIC | Retain active/published-only lookup. |
+| POST | `/public/waivers/:publicSlug/submissions` | Participant | None | Strict nested DTO and local pipe | PUBLIC | Review abuse-control hook; retain server-authoritative evidence. |
+
+## Event Waiver Administration
+
+| Route group | Audience | Authentication/role | Tenant path | Status | Sprint 17 action |
+|---|---|---|---|---|---|
+| `GET /event/:eventId/waiver...` | Operator | JWT OWNER/MEMBER | Event → Organisation | PROTECTED | Retain tenant tests. |
+| `POST /event/:eventId/waiver/drafts` | Operator | JWT OWNER | Event → Organisation | PROTECTED | Retain template/value validation. |
+| `POST /event/:eventId/waiver/versions/:id/publish` | Operator | JWT OWNER | Event → Organisation | PROTECTED | Retain immutable publication transaction. |
+
+## Completion Rule
+
+Sprint 17 cannot close while any `HARDEN` route lacks its agreed protection/tests or any `REVIEW/REMOVE` route remains accidentally public without a documented decision.

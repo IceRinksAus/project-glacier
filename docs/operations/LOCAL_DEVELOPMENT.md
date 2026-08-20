@@ -35,10 +35,13 @@ Expected local variables include:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `WEB_APP_URL`
+- `CORS_ORIGINS`
 
 Never commit real secrets.
 
 `WEB_APP_URL` is the canonical web origin encoded in Event Waiver QR codes. The local fallback is `http://localhost:3001`. Production must set the deployed HTTPS origin explicitly.
+
+`CORS_ORIGINS` is a comma-separated allowlist of trusted web origins. Local development defaults to `http://localhost:3001`. Production fails to start when this variable is absent; wildcard origins must not be used with credentials.
 
 ## Web Environment
 

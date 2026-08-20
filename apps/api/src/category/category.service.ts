@@ -4,15 +4,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
 
 @Injectable()
 export class CategoryService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
+  findAll(organizationId: string) {
     return this.prisma.category.findMany({
+      where: {
+        event: {
+          organizationId,
+        },
+      },
       include: {
         products: true,
       },
@@ -27,10 +31,13 @@ export class CategoryService {
     });
   }
 
-  async findOne(id: string) {
-    const category = await this.prisma.category.findUnique({
+  async findOne(organizationId: string, id: string) {
+    const category = await this.prisma.category.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
       include: {
         products: true,
@@ -44,16 +51,11 @@ export class CategoryService {
     return category;
   }
 
-  async create(data: {
-    name: string;
-    slug: string;
-    description?: string;
-    eventId: string;
-    sortOrder?: number;
-  }) {
-    const event = await this.prisma.event.findUnique({
+  async create(organizationId: string, data: CreateCategoryDto) {
+    const event = await this.prisma.event.findFirst({
       where: {
         id: data.eventId,
+        organizationId,
       },
     });
 
@@ -85,10 +87,13 @@ export class CategoryService {
     });
   }
 
-  async remove(id: string) {
-    const category = await this.prisma.category.findUnique({
+  async remove(organizationId: string, id: string) {
+    const category = await this.prisma.category.findFirst({
       where: {
         id,
+        event: {
+          organizationId,
+        },
       },
       include: {
         products: true,
