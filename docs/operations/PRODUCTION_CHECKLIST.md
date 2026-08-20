@@ -53,6 +53,20 @@
 - payment-provider outage handling
 - scanner offline/retry strategy
 
+## Staff Scanner and Gate Operations
+
+- require HTTPS for production camera access
+- verify SCANNER accounts cannot reach Event, Booking, Customer, catalogue or Ticket administration routes
+- confirm the correct active Event and Gate Entry/Ticket Lookup mode on every device before opening gates
+- confirm Event Settings entry window matches the operating plan
+- test one eligible, too-early, closed, cancelled, wrong-Event and already-scanned Ticket
+- test automatic Gate admission and confirmed Lookup processing separately
+- test simultaneous scans from two devices; only one may grant entry
+- verify camera-denied and network-loss states fail closed and retain hardware/manual fallback
+- verify append-only scan attempts identify User, Event, mode and result without raw Ticket credentials
+- complete the physical-device matrix in `operations/STAFF_SCANNER_RUNBOOK.md`
+- document the on-duty escalation owner and procedure for connectivity or scanner failure
+
 ## Quality
 
 - unit tests
@@ -68,8 +82,4 @@
 
 ## Current Dependency Note
 
-Sprint 15 closeout leaves three high-severity audit findings through Prisma's transitive `deepmerge-ts` dependency.
-
-Do not use `npm audit fix --force` merely to clear the scanner if it requires a breaking Prisma downgrade.
-
-Reassess the finding when a compatible upstream Prisma dependency resolution is available.
+Sprint 18 web closeout reports zero known npm audit vulnerabilities after a compatible override to patched `nanoid 3.3.18`. Continue auditing both workspaces and do not use forced breaking downgrades merely to clear a report.

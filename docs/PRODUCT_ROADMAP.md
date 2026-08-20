@@ -196,26 +196,25 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 
 ## Current
 
-Sprint 17 — API Boundary & Security Hardening is implementation-complete and locally verified.
+Sprint 18 — Staff Scanner & Gate Operations is implementation-complete and locally verified, pending physical iPhone Safari and Android Chrome sign-off.
 
 Delivered:
 
-- explicit classification of every API route
-- authenticated and role-controlled ordinary operator APIs
-- trusted JWT Organisation context and relationship-based tenant scope
-- global strict runtime DTO validation
-- environment-safe CORS with production fail-closed behaviour
-- protected, tenant-scoped and atomic Ticket scan operations
-- minimised public Ticket presentation
-- removal of duplicate legacy Booking, Customer, Rule Evaluation and Payment boundaries
-- documented deployment-edge login abuse-control gate
-- 52 API suites and 326 API tests passing
+- dedicated OWNER/MEMBER/SCANNER Staff Scanner boundary
+- automatic concert-style Gate Entry and controlled Ticket Lookup modes
+- configurable Event entry windows with server-time enforcement
+- tenant-safe, privacy-minimised Ticket results
+- atomic duplicate-safe admission with append-only attributable attempts
+- QR camera support and manual/hardware-scanner fallback
+- fail-closed early, late, invalid, duplicate, camera and connectivity states
+- 58 API suites / 351 tests and 2 web suites / 12 scanner tests passing
+- zero known web dependency audit vulnerabilities
 
 Before pilot exposure, Glacier still requires deployment-edge rate limiting and monitoring, managed production infrastructure controls, production-like tenant integration tests, independent security testing, granular Staff permissions and the previously documented Waiver legal/privacy controls.
 
-The next product milestone is Staff Scanner & Gate Operations. Sprint 17 deliberately secured Ticket scan authority without building that interface.
+Physical mobile-device verification remains required before pilot sign-off. The next planning milestone is Organiser & Customer Experience Productisation.
 
-The detailed Sprint 17 evidence and residual-risk record is in `sprint-notes/sprint-17.md`.
+The detailed Sprint 18 evidence and residual-risk record is in `sprint-notes/sprint-18.md`.
 
 ---
 

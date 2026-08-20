@@ -1,5 +1,41 @@
 # Changelog
 
+# Sprint 18 – Staff Scanner & Gate Operations
+
+## Added
+
+- dedicated authenticated Staff Scanner and narrow SCANNER role
+- Gate Entry automatic admission and Ticket Lookup controlled-processing modes
+- configurable Event entry opening lead and closing grace
+- append-only attributable Ticket scan attempts
+- QR camera decoding and manual/hardware-scanner fallback
+- Event Settings gate-policy controls
+- repeatable fictional Staff Scanner preview fixture
+- web component testing foundation and 12 scanner workflow tests
+- Staff Scanner Event-day runbook and physical-device sign-off matrix
+
+## Security and Reliability
+
+- tenant-scoped selected-Event authority and privacy-minimised results
+- strict token-in-body scanner DTOs
+- server-time entry-window recalculation
+- atomic duplicate-safe admission under concurrent devices
+- fail-closed early, late, invalid, wrong-Event, camera and connectivity states
+- default denial of SCANNER on ordinary operator routes
+- zero known web dependency audit vulnerabilities after a compatible patched nanoid override
+
+## Verification
+
+- full API suite: 58 / 58 suites and 351 / 351 tests passing
+- original 45-suite / 236-test baseline preserved
+- web scanner suite: 2 / 2 suites and 12 / 12 tests passing
+- API and web production builds passed
+- Gate, Lookup, duplicate, audit and Event Settings browser workflows verified
+- physical iPhone Safari and Android Chrome sign-off remains pending before pilot
+- no deployment performed
+
+See `sprint-notes/sprint-18.md` and `operations/STAFF_SCANNER_RUNBOOK.md`.
+
 # Sprint 17 – API Boundary & Security Hardening
 
 ## Added
@@ -165,8 +201,6 @@ See `sprint-notes/sprint-16.md` for the detailed closeout and limitations.
 - directly remediable audit findings resolved
 - three high-severity Prisma transitive `deepmerge-ts` findings remain
 - forced Prisma downgrade to 6.12.0 was deliberately not applied
-
-
 
 # Sprint 14 – Customer Booking Flow Foundation
 

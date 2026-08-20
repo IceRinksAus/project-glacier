@@ -30,13 +30,11 @@ Gate operation is also the next concrete pilot capability in the strategic roadm
 
 ## Product Principles
 
-### Fast but deliberate
-
-Scanning reads and validates a Ticket. It does not immediately mutate the Ticket. A prominent `Admit` action performs check-in only after staff can see the validation result.
-
-This adds one intentional tap but prevents an accidental camera detection from consuming a Ticket. After a result is acknowledged, the scanner returns immediately to ready state.
+### Fast mode, deliberate mode
 
 Gate Entry is the high-throughput operating mode: reading a Ticket immediately calls the authoritative admission operation and processes entry when eligible, without a second button click. Ticket Lookup begins read-only, prioritises details and presents a secondary `Process ticket` action when eligible; selecting it opens an explicit entry confirmation. Staff can close a Lookup result without changing the Ticket.
+
+After a result is acknowledged, either mode returns immediately to ready state.
 
 ### Minimal information
 
@@ -112,7 +110,7 @@ Lookup remains useful outside the admission window: it shows the same-Event Tick
 
 Use `@zxing/browser` with a QR-only reader and the rear-facing camera preference. The native `BarcodeDetector` API remains limited/experimental and is not a safe sole dependency for the expected iPhone and Android mix.
 
-Camera access starts only after a staff action, stops on route exit or result review, and restarts only when the scanner returns to ready state. The UI must explain denied/unavailable camera access.
+Camera access is requested while the authenticated scanner is ready, stops on route exit or result review, and restarts only when the scanner returns to ready state. The UI must explain denied/unavailable camera access.
 
 Provide two fallbacks:
 

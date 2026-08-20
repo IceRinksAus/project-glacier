@@ -23,8 +23,9 @@ The request passes through Glacier's global strict validation boundary. Email is
 
 - OWNER: read and write
 - MEMBER: read-only for protected catalogue and event-management endpoints, plus Ticket validation and scan
+- SCANNER: dedicated active-Event scanner context, read-only Ticket lookup and admission only
 
-This is the intentionally narrow Sprint 17 policy. A granular Staff permission model remains future work.
+SCANNER is intentionally denied ordinary Event administration, Booking, Customer, catalogue, Ticket detail and QR-generation routes unless a controller explicitly opts into that role. OWNER and MEMBER retain scanner capability during the transition. Event-specific staff assignment remains future work.
 
 ## Tenant authority
 
@@ -36,7 +37,7 @@ Cross-tenant identifiers receive a privacy-safe not-found or forbidden response 
 
 - Customer Booking and Waiver routes use dedicated `/public/...` APIs with strict DTOs and minimised responses.
 - Public Ticket presentation relies on a high-entropy possession token and returns presentation-only data.
-- Ticket validation and check-in require JWT authentication and OWNER or MEMBER authority.
+- Dedicated Staff Scanner validation and admission require JWT authentication and explicit OWNER, MEMBER or SCANNER authority.
 - Stripe webhooks use Stripe signature verification and raw request-body access rather than Glacier JWT authentication.
 
 ## Abuse controls

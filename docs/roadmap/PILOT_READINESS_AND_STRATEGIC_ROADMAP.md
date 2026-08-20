@@ -1,4 +1,5 @@
 # Project Glacier — Pilot Readiness & Strategic Roadmap
+
 **Prepared:** 19 August 2026  
 **Status:** Strategic control document  
 **Purpose:** Define Glacier's current position, the path to pilot, and the broader product direction so roadmap decisions do not depend on chat history.
@@ -401,6 +402,7 @@ Before internal pilot there should be a deliberate Organiser & Customer Experien
 Likely focus:
 
 ### Organiser
+
 - Organisation dashboard
 - Event cards
 - Event Wizard
@@ -411,6 +413,7 @@ Likely focus:
 - tablet/desktop usability
 
 ### Customer
+
 - Event landing page
 - Event branding
 - mobile-first booking
@@ -437,46 +440,46 @@ This test should override arbitrary software-category labels such as "Phase 1" o
 
 # 9. Pilot Capability Matrix
 
-| Capability | Pre-Pilot Status | Reason |
-|---|---|---|
-| Core Event model | Complete foundation | Required |
-| Sessions | Complete foundation | Required |
-| Operational scheduling | Complete foundation | Required |
-| Products / Ticket Types | Complete foundation | Required |
-| Rule Engine | Complete foundation | Required |
-| Public Booking | Complete foundation | Required |
-| Stripe Payments | Complete foundation | Required |
-| Ticket issuance | Complete foundation | Required |
-| Event Waivers | **Required before pilot** | Real participation/check-in operation |
-| Event Setup Wizard | **Required before pilot** | Organiser must create Events without developer intervention |
-| Organiser UX productisation | **Required before pilot** | Platform must be operationally usable |
-| Customer UX productisation | **Required before pilot** | Real customers must use it reliably |
-| Staff Scanner / Check-in | **Required before pilot** | Gate operation |
-| API / tenant hardening | **Required before pilot** | Security boundary |
-| Booking lookup | **Required before pilot** | Customer service |
-| Customer lookup | **Required before pilot** | Customer service |
-| Booking changes / rescheduling | **Likely required before pilot** | Existing operational requirement; exact scope to confirm |
-| Refund operations | **Likely required before pilot** | Customer service; exact scope to confirm |
-| Minimum on-site sales / POS | **Likely required before pilot** | Walk-up sales |
-| Basic Event reporting | **Required before pilot** | Event management |
-| Payment reconciliation | **Required before pilot** | Commercial control |
-| Minimum venue data | **Required before pilot** | Event setup / operational context |
-| Production deployment | **Required before pilot** | Live use |
-| Logging / monitoring | **Required before pilot** | Operational reliability |
-| Backup / restore | **Required before pilot** | Production safety |
-| Rate limiting / abuse protection | **Required before pilot** | Public production safety |
-| Security & Privacy Gate | **Required before live pilot** | Release gate |
-| Customer Portal | Post-pilot unless operational evidence promotes it | Not essential to first operator pilot |
-| CRM campaigns | Post-pilot | Growth capability |
-| Memberships | Post-pilot | Commercial expansion |
-| Gift Cards | Post-pilot | Commercial expansion |
-| Advanced Venue Management | Post-pilot | Broader event-management expansion |
-| Asset Management | Post-pilot | Broader event-management expansion |
-| Staff rostering | Post-pilot unless required operationally | Broader operations |
-| Sponsorship management | Post-pilot | Commercial event-management expansion |
-| Marketing automation | Post-pilot | Growth |
-| glacier.com B2B website | Commercialisation stage | Sells Glacier rather than operating Events |
-| SaaS self-service billing | Commercialisation stage | External operator scale |
+| Capability                       | Pre-Pilot Status                                   | Reason                                                      |
+| -------------------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
+| Core Event model                 | Complete foundation                                | Required                                                    |
+| Sessions                         | Complete foundation                                | Required                                                    |
+| Operational scheduling           | Complete foundation                                | Required                                                    |
+| Products / Ticket Types          | Complete foundation                                | Required                                                    |
+| Rule Engine                      | Complete foundation                                | Required                                                    |
+| Public Booking                   | Complete foundation                                | Required                                                    |
+| Stripe Payments                  | Complete foundation                                | Required                                                    |
+| Ticket issuance                  | Complete foundation                                | Required                                                    |
+| Event Waivers                    | **Required before pilot**                          | Real participation/check-in operation                       |
+| Event Setup Wizard               | **Required before pilot**                          | Organiser must create Events without developer intervention |
+| Organiser UX productisation      | **Required before pilot**                          | Platform must be operationally usable                       |
+| Customer UX productisation       | **Required before pilot**                          | Real customers must use it reliably                         |
+| Staff Scanner / Check-in         | Complete foundation; physical sign-off pending     | Gate operation                                              |
+| API / tenant hardening           | **Required before pilot**                          | Security boundary                                           |
+| Booking lookup                   | **Required before pilot**                          | Customer service                                            |
+| Customer lookup                  | **Required before pilot**                          | Customer service                                            |
+| Booking changes / rescheduling   | **Likely required before pilot**                   | Existing operational requirement; exact scope to confirm    |
+| Refund operations                | **Likely required before pilot**                   | Customer service; exact scope to confirm                    |
+| Minimum on-site sales / POS      | **Likely required before pilot**                   | Walk-up sales                                               |
+| Basic Event reporting            | **Required before pilot**                          | Event management                                            |
+| Payment reconciliation           | **Required before pilot**                          | Commercial control                                          |
+| Minimum venue data               | **Required before pilot**                          | Event setup / operational context                           |
+| Production deployment            | **Required before pilot**                          | Live use                                                    |
+| Logging / monitoring             | **Required before pilot**                          | Operational reliability                                     |
+| Backup / restore                 | **Required before pilot**                          | Production safety                                           |
+| Rate limiting / abuse protection | **Required before pilot**                          | Public production safety                                    |
+| Security & Privacy Gate          | **Required before live pilot**                     | Release gate                                                |
+| Customer Portal                  | Post-pilot unless operational evidence promotes it | Not essential to first operator pilot                       |
+| CRM campaigns                    | Post-pilot                                         | Growth capability                                           |
+| Memberships                      | Post-pilot                                         | Commercial expansion                                        |
+| Gift Cards                       | Post-pilot                                         | Commercial expansion                                        |
+| Advanced Venue Management        | Post-pilot                                         | Broader event-management expansion                          |
+| Asset Management                 | Post-pilot                                         | Broader event-management expansion                          |
+| Staff rostering                  | Post-pilot unless required operationally           | Broader operations                                          |
+| Sponsorship management           | Post-pilot                                         | Commercial event-management expansion                       |
+| Marketing automation             | Post-pilot                                         | Growth                                                      |
+| glacier.com B2B website          | Commercialisation stage                            | Sells Glacier rather than operating Events                  |
+| SaaS self-service billing        | Commercialisation stage                            | External operator scale                                     |
 
 Items marked "Likely required" should be confirmed against actual Ice Rinks Australia event-day operations before their Sprint is scoped.
 
@@ -522,7 +525,7 @@ Status: implementation complete and locally verified. See `docs/roadmap/sprint-1
 
 ---
 
-## Next Milestone — Staff Scanner & Gate Operations
+## Sprint 18 — Staff Scanner & Gate Operations
 
 Goal:
 
@@ -536,6 +539,8 @@ staff login
 → VALID / ALREADY SCANNED / INVALID
 → check in
 → continue
+
+Status: implementation complete and locally verified on 20 August 2026. Physical iPhone Safari and Android Chrome camera verification remains a pilot sign-off gate. See `docs/roadmap/sprint-18-plan.md`, `docs/sprint-notes/sprint-18.md` and `docs/operations/STAFF_SCANNER_RUNBOOK.md`.
 
 ---
 
@@ -689,6 +694,7 @@ Ticketing remains a major module, not the whole product.
 Potential expansion domains:
 
 ## 13.1 Event operations
+
 - Event run sheets
 - operating checklists
 - tasks
@@ -699,6 +705,7 @@ Potential expansion domains:
 - contractors
 
 ## 13.2 Venue management
+
 - venue records
 - spaces / zones
 - capacities
@@ -708,6 +715,7 @@ Potential expansion domains:
 - reusable venue configurations
 
 ## 13.3 Workforce
+
 - staff
 - roles
 - shifts
@@ -716,12 +724,14 @@ Potential expansion domains:
 - contractor access
 
 ## 13.4 Assets
+
 - equipment
 - asset allocation
 - maintenance state
 - Event assignment
 
 ## 13.5 Customer / CRM
+
 - customer history
 - segmentation
 - campaigns
@@ -730,6 +740,7 @@ Potential expansion domains:
 - group / corporate sales
 
 ## 13.6 Commercial
+
 - Gift Cards
 - promotions
 - sponsorship
@@ -739,6 +750,7 @@ Potential expansion domains:
 - settlement
 
 ## 13.7 Reporting / Intelligence
+
 - Event performance
 - revenue
 - attendance
@@ -838,7 +850,7 @@ Development to date has necessarily concentrated heavily on backend/platform cap
 Going forward, effort should increasingly balance:
 
 - backend / security / reliability
-with
+- together with
 - Organiser UX
 - Customer UX
 - Staff UX

@@ -109,6 +109,7 @@ The backend is authoritative for:
 - Waiver version publication
 - Waiver acceptance timestamp, version and hashes
 - operator Waiver tenant scope
+- Staff Scanner Event scope, server-time admission policy and atomic Ticket transition
 
 ---
 
@@ -123,6 +124,7 @@ It provides access to Event-specific capabilities including:
 - Operational scheduling
 - Session management
 - Waiver configuration, publication, QR and submission evidence
+- owner-configurable Ticket entry-window policy
 - Future Event operations modules
 
 Dynamic Event routing uses:
@@ -144,6 +146,20 @@ Operator access is JWT-authenticated and Organisation-scoped. Public verificatio
 See:
 
 `architecture/WAIVERS.md`
+
+---
+
+## Staff Scanner and Gate Operations
+
+The dedicated `/staff/scanner` surface is separate from the broader Event Workspace. OWNER, MEMBER and the narrow SCANNER role may use its tenant-scoped routes; SCANNER does not inherit ordinary Event, Booking, Customer, catalogue or Ticket administration access.
+
+Gate Entry submits a decoded or hardware-scanner Ticket credential directly to the authoritative admission route. Ticket Lookup uses the read-only validation route first and requires `Process ticket` plus confirmation before admission. Both admission paths recalculate Event/Session timing on the server and use the same atomic `ACTIVE → SCANNED` transition.
+
+Event-wide policy defines a bounded 0–240 minute opening lead and closing grace. Session-linked Tickets use Session times; other Tickets use Event times. The default is 30 minutes before start and zero minutes after end.
+
+Every authenticated admission attempt is appended to `TicketScanAttempt` with Organisation, Event, acting User, mode, outcome, time and resolved Ticket where safe. Raw Ticket credentials are not copied into the audit record. Connectivity loss fails closed.
+
+See `operations/STAFF_SCANNER_RUNBOOK.md` and `security/API_ENDPOINT_REGISTER.md`.
 
 ---
 
