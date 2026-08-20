@@ -77,17 +77,17 @@ Status values:
 
 | Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Sprint 17 action |
 |---|---|---|---|---|---|---|---|
-| GET | `/ticket/token/:token` | Customer/holder | High-entropy possession token | Ticket token | Token format review | PUBLIC | Minimise response and avoid internal/customer leakage. |
-| GET | `/ticket/validate/:token` | Staff pre-check | JWT MEMBER/OWNER recommended | Ticket → Booking → Event → Organisation | Token format review | HARDEN | Move validation into authenticated operational boundary unless a public use is proven. |
-| POST | `/ticket/scan/:token` | Staff | JWT MEMBER/OWNER | Ticket → Booking → Event → Organisation | Token format review | HARDEN | Authenticate, tenant-scope and preserve atomic scan. |
-| GET | `/ticket/:id/qr` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | HARDEN | Authenticate and tenant-scope. |
-| GET | `/ticket/:id` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | HARDEN | Authenticate, tenant-scope and minimise. |
+| GET | `/ticket/token/:token` | Customer/holder | High-entropy possession token | Ticket token | 64-character hex format | PUBLIC | Response limited to Ticket status, participant name, Event and Session presentation data. |
+| GET | `/ticket/validate/:token` | Staff pre-check | JWT MEMBER/OWNER | Ticket → Booking → Event → Organisation | 64-character hex format | PROTECTED | Authenticated and tenant-scoped. |
+| POST | `/ticket/scan/:token` | Staff | JWT MEMBER/OWNER | Ticket → Booking → Event → Organisation | 64-character hex format | PROTECTED | Authenticated/tenant-scoped; atomic status update preserved. |
+| GET | `/ticket/:id/qr` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | PROTECTED | Authenticated and tenant-scoped. |
+| GET | `/ticket/:id` | Operator | JWT OWNER/MEMBER | Ticket → Booking → Event → Organisation | Param string | PROTECTED | Authenticated and tenant-scoped. |
 
 ## Payment
 
 | Method | Route | Audience | Authentication | Tenant path | Validation | Status | Sprint 17 action |
 |---|---|---|---|---|---|---|---|
-| POST | `/payment/:bookingId` | Legacy | None currently | Booking → Event → Organisation | Param only | REVIEW/REMOVE | Remove if unused; otherwise protect as OWNER operator action. |
+| POST | `/payment/:bookingId` | Legacy | N/A | N/A | N/A | PROTECTED | Removed; token-protected public Payment route remains authoritative. |
 | POST | `/payment/stripe/webhook` | Stripe | Stripe signature + raw body | Provider event → internal records | Signature/raw body | EXTERNAL | Preserve raw-body verification and idempotency. |
 
 ## Public Booking
@@ -97,11 +97,11 @@ Status values:
 | GET | `/public/events/:eventId` | Customer | None | Param string | PUBLIC | Confirm ACTIVE-only response minimisation. |
 | GET | `/public/events/:eventId/sessions` | Customer | None | Param string | PUBLIC | Confirm availability and response minimisation. |
 | GET | `/public/events/:eventId/ticket-types` | Customer | None | Param string | PUBLIC | Confirm availability and response minimisation. |
-| POST | `/public/events/:eventId/evaluate-rules` | Customer | None | Inline nested body | HARDEN | Add explicit DTO and strict validation. |
+| POST | `/public/events/:eventId/evaluate-rules` | Customer | None | Strict bounded nested DTO | PUBLIC | Global strict validation; 1–50 participants. |
 | GET | `/public/sessions/:sessionId/products` | Customer | None | Param string | PUBLIC | Confirm Event/session availability and minimisation. |
-| POST | `/public/customers` | Customer | None | Inline body | HARDEN | Add bounded DTO and strict validation. |
-| POST | `/public/bookings` | Customer | None | Decorated nested DTO; runtime pipe absent | HARDEN | Apply strict runtime validation without changing Booking authority. |
-| POST | `/public/bookings/:bookingId/payments` | Customer | Booking public-access token | Inline body | HARDEN | Add explicit token DTO and strict validation. |
+| POST | `/public/customers` | Customer | None | Strict bounded DTO | PUBLIC | Global strict validation and email validation. |
+| POST | `/public/bookings` | Customer | None | Strict bounded nested DTO | PUBLIC | Global strict validation; Booking authority unchanged. |
+| POST | `/public/bookings/:bookingId/payments` | Customer | Booking public-access token | Strict 64-character token DTO | PUBLIC | Global strict validation and hash-only server verification. |
 
 ## Public Waivers
 

@@ -65,10 +65,15 @@ export class TicketService {
     });
   }
 
-  async getTicketById(id: string) {
-    const ticket = await this.prisma.ticket.findUnique({
+  async getTicketById(organizationId: string, id: string) {
+    const ticket = await this.prisma.ticket.findFirst({
       where: {
         id,
+        booking: {
+          event: {
+            organizationId,
+          },
+        },
       },
       include: {
         participant: true,
@@ -90,17 +95,36 @@ export class TicketService {
   }
 
   async getTicketByToken(token: string) {
+    this.validateSecureToken(token);
+
     const ticket = await this.prisma.ticket.findUnique({
       where: {
         secureToken: token,
       },
-      include: {
-        participant: true,
+      select: {
+        ticketNumber: true,
+        status: true,
+        checkedInAt: true,
+        participant: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
         booking: {
-          include: {
-            customer: true,
-            event: true,
-            session: true,
+          select: {
+            event: {
+              select: {
+                name: true,
+              },
+            },
+            session: {
+              select: {
+                name: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
           },
         },
       },
@@ -114,11 +138,19 @@ export class TicketService {
   }
 
   async validateTicket(
+    organizationId: string,
     token: string,
   ): Promise<TicketValidationResponseDto> {
-    const ticket = await this.prisma.ticket.findUnique({
+    this.validateSecureToken(token);
+
+    const ticket = await this.prisma.ticket.findFirst({
       where: {
         secureToken: token,
+        booking: {
+          event: {
+            organizationId,
+          },
+        },
       },
       include: {
         participant: true,
@@ -166,35 +198,91 @@ export class TicketService {
         name: ticket.booking.event.name,
       },
       session: ticket.booking.session
-  ? {
-      name: ticket.booking.session.name,
-      start: ticket.booking.session.startDate,
-    }
-  : {
-      name: 'No session assigned',
-      start: new Date(0),
-    },
+        ? {
+            name: ticket.booking.session.name,
+            start: ticket.booking.session.startDate,
+          }
+        : {
+            name: 'No session assigned',
+            start: new Date(0),
+          },
     };
   }
 
-async checkInTicket(token: string): Promise<TicketScanResponseDto> {
-  const checkedInAt = new Date();
+  async checkInTicket(
+    organizationId: string,
+    token: string,
+  ): Promise<TicketScanResponseDto> {
+    this.validateSecureToken(token);
+    const checkedInAt = new Date();
 
-  const updateResult = await this.prisma.ticket.updateMany({
-    where: {
-      secureToken: token,
-      status: 'ACTIVE',
-    },
-    data: {
-      status: 'SCANNED',
-      checkedInAt,
-    },
-  });
-
-  if (updateResult.count === 1) {
-    const ticket = await this.prisma.ticket.findUnique({
+    const updateResult = await this.prisma.ticket.updateMany({
       where: {
         secureToken: token,
+        status: 'ACTIVE',
+        booking: {
+          event: {
+            organizationId,
+          },
+        },
+      },
+      data: {
+        status: 'SCANNED',
+        checkedInAt,
+      },
+    });
+
+    if (updateResult.count === 1) {
+      const ticket = await this.prisma.ticket.findFirst({
+        where: {
+          secureToken: token,
+          booking: {
+            event: {
+              organizationId,
+            },
+          },
+        },
+        include: {
+          participant: true,
+          booking: {
+            include: {
+              event: true,
+              session: true,
+            },
+          },
+        },
+      });
+
+      if (!ticket) {
+        throw new NotFoundException('Ticket not found');
+      }
+
+      const participantName = [
+        ticket.participant.firstName,
+        ticket.participant.lastName,
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return {
+        result: TicketScanResult.ENTRY_GRANTED,
+        message: 'Entry granted. Welcome!',
+        ticketNumber: ticket.ticketNumber,
+        participantName,
+        eventName: ticket.booking.event.name,
+        sessionName: ticket.booking.session?.name ?? null,
+        checkedInAt: ticket.checkedInAt,
+      };
+    }
+
+    const ticket = await this.prisma.ticket.findFirst({
+      where: {
+        secureToken: token,
+        booking: {
+          event: {
+            organizationId,
+          },
+        },
       },
       include: {
         participant: true,
@@ -211,49 +299,45 @@ async checkInTicket(token: string): Promise<TicketScanResponseDto> {
       throw new NotFoundException('Ticket not found');
     }
 
-    const participantName = [
-      ticket.participant.firstName,
-      ticket.participant.lastName,
-    ]
-      .filter(Boolean)
-      .join(' ');
+    if (ticket.status === 'SCANNED') {
+      return {
+        result: TicketScanResult.ALREADY_SCANNED,
+        message: ticket.checkedInAt
+          ? `Ticket was already scanned at ${ticket.checkedInAt.toISOString()}.`
+          : 'Ticket has already been scanned.',
+        ticketNumber: ticket.ticketNumber,
+        participantName: [
+          ticket.participant.firstName,
+          ticket.participant.lastName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        eventName: ticket.booking.event.name,
+        sessionName: ticket.booking.session?.name ?? null,
+        checkedInAt: ticket.checkedInAt,
+      };
+    }
+
+    if (ticket.status === 'CANCELLED') {
+      return {
+        result: TicketScanResult.CANCELLED,
+        message: 'Ticket has been cancelled.',
+        ticketNumber: ticket.ticketNumber,
+        participantName: [
+          ticket.participant.firstName,
+          ticket.participant.lastName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        eventName: ticket.booking.event.name,
+        sessionName: ticket.booking.session?.name ?? null,
+        checkedInAt: ticket.checkedInAt,
+      };
+    }
 
     return {
-      result: TicketScanResult.ENTRY_GRANTED,
-      message: 'Entry granted. Welcome!',
-      ticketNumber: ticket.ticketNumber,
-      participantName,
-      eventName: ticket.booking.event.name,
-      sessionName: ticket.booking.session?.name ?? null,
-      checkedInAt: ticket.checkedInAt,
-    };
-  }
-
-  const ticket = await this.prisma.ticket.findUnique({
-    where: {
-      secureToken: token,
-    },
-    include: {
-      participant: true,
-      booking: {
-        include: {
-          event: true,
-          session: true,
-        },
-      },
-    },
-  });
-
-  if (!ticket) {
-    throw new NotFoundException('Ticket not found');
-  }
-
-  if (ticket.status === 'SCANNED') {
-    return {
-      result: TicketScanResult.ALREADY_SCANNED,
-      message: ticket.checkedInAt
-        ? `Ticket was already scanned at ${ticket.checkedInAt.toISOString()}.`
-        : 'Ticket has already been scanned.',
+      result: TicketScanResult.INVALID,
+      message: `Ticket cannot be scanned because its status is ${ticket.status}.`,
       ticketNumber: ticket.ticketNumber,
       participantName: [
         ticket.participant.firstName,
@@ -267,43 +351,18 @@ async checkInTicket(token: string): Promise<TicketScanResponseDto> {
     };
   }
 
-  if (ticket.status === 'CANCELLED') {
-    return {
-      result: TicketScanResult.CANCELLED,
-      message: 'Ticket has been cancelled.',
-      ticketNumber: ticket.ticketNumber,
-      participantName: [
-        ticket.participant.firstName,
-        ticket.participant.lastName,
-      ]
-        .filter(Boolean)
-        .join(' '),
-      eventName: ticket.booking.event.name,
-      sessionName: ticket.booking.session?.name ?? null,
-      checkedInAt: ticket.checkedInAt,
-    };
-  }
-
-  return {
-    result: TicketScanResult.INVALID,
-    message: `Ticket cannot be scanned because its status is ${ticket.status}.`,
-    ticketNumber: ticket.ticketNumber,
-    participantName: [
-      ticket.participant.firstName,
-      ticket.participant.lastName,
-    ]
-      .filter(Boolean)
-      .join(' '),
-    eventName: ticket.booking.event.name,
-    sessionName: ticket.booking.session?.name ?? null,
-    checkedInAt: ticket.checkedInAt,
-  };
-}
-
-  async generateQrCode(ticketId: string): Promise<Buffer> {
-    const ticket = await this.prisma.ticket.findUnique({
+  async generateQrCode(
+    organizationId: string,
+    ticketId: string,
+  ): Promise<Buffer> {
+    const ticket = await this.prisma.ticket.findFirst({
       where: {
         id: ticketId,
+        booking: {
+          event: {
+            organizationId,
+          },
+        },
       },
       select: {
         id: true,
@@ -321,5 +380,11 @@ async checkInTicket(token: string): Promise<TicketScanResponseDto> {
       width: 512,
       margin: 2,
     });
+  }
+
+  private validateSecureToken(token: string) {
+    if (!/^[a-f0-9]{64}$/.test(token)) {
+      throw new NotFoundException('Ticket not found');
+    }
   }
 }
