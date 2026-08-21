@@ -1,6 +1,4 @@
-import {
-  NotFoundException,
-} from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 
 import { PaymentService } from '../payment/payment.service';
@@ -33,13 +31,11 @@ describe('PublicPaymentService', () => {
   });
 
   it('should hash the supplied public access token before looking up the booking', async () => {
-    const publicAccessToken =
-      'customer-public-access-token';
+    const publicAccessToken = 'customer-public-access-token';
 
-    const expectedHash =
-      createHash('sha256')
-        .update(publicAccessToken)
-        .digest('hex');
+    const expectedHash = createHash('sha256')
+      .update(publicAccessToken)
+      .digest('hex');
 
     prisma.booking.findFirst.mockResolvedValue({
       id: 'booking-1',
@@ -47,23 +43,16 @@ describe('PublicPaymentService', () => {
 
     paymentService.createPayment.mockResolvedValue({
       provider: 'MOCK',
-      paymentReference:
-        'mock-payment-1',
+      paymentReference: 'mock-payment-1',
       status: 'PENDING',
     });
 
-    await service.createPayment(
-      'booking-1',
-      publicAccessToken,
-    );
+    await service.createPayment('booking-1', publicAccessToken);
 
-    expect(
-      prisma.booking.findFirst,
-    ).toHaveBeenCalledWith({
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
       where: {
         id: 'booking-1',
-        publicAccessTokenHash:
-          expectedHash,
+        publicAccessTokenHash: expectedHash,
       },
       select: {
         id: true,
@@ -72,45 +61,27 @@ describe('PublicPaymentService', () => {
   });
 
   it('should reject an unknown booking without calling the payment service', async () => {
-    prisma.booking.findFirst.mockResolvedValue(
-      null,
-    );
+    prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.createPayment(
-        'missing-booking',
-        'some-token',
-      ),
+      service.createPayment('missing-booking', 'some-token'),
     ).rejects.toThrow(
-      new NotFoundException(
-        'Booking not found or access token invalid.',
-      ),
+      new NotFoundException('Booking not found or access token invalid.'),
     );
 
-    expect(
-      paymentService.createPayment,
-    ).not.toHaveBeenCalled();
+    expect(paymentService.createPayment).not.toHaveBeenCalled();
   });
 
   it('should reject an invalid public access token without revealing whether the booking exists', async () => {
-    prisma.booking.findFirst.mockResolvedValue(
-      null,
-    );
+    prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.createPayment(
-        'booking-1',
-        'wrong-token',
-      ),
+      service.createPayment('booking-1', 'wrong-token'),
     ).rejects.toThrow(
-      new NotFoundException(
-        'Booking not found or access token invalid.',
-      ),
+      new NotFoundException('Booking not found or access token invalid.'),
     );
 
-    expect(
-      paymentService.createPayment,
-    ).not.toHaveBeenCalled();
+    expect(paymentService.createPayment).not.toHaveBeenCalled();
   });
 
   it('should delegate to PaymentService only after public booking access is verified', async () => {
@@ -120,31 +91,22 @@ describe('PublicPaymentService', () => {
 
     paymentService.createPayment.mockResolvedValue({
       provider: 'MOCK',
-      paymentReference:
-        'mock-payment-1',
+      paymentReference: 'mock-payment-1',
       status: 'PENDING',
     });
 
-    const result =
-      await service.createPayment(
-        'booking-1',
-        'valid-public-token',
-      );
-
-    expect(
-      paymentService.createPayment,
-    ).toHaveBeenCalledTimes(1);
-
-    expect(
-      paymentService.createPayment,
-    ).toHaveBeenCalledWith(
+    const result = await service.createPayment(
       'booking-1',
+      'valid-public-token',
     );
+
+    expect(paymentService.createPayment).toHaveBeenCalledTimes(1);
+
+    expect(paymentService.createPayment).toHaveBeenCalledWith('booking-1');
 
     expect(result).toEqual({
       provider: 'MOCK',
-      paymentReference:
-        'mock-payment-1',
+      paymentReference: 'mock-payment-1',
       status: 'PENDING',
     });
   });
