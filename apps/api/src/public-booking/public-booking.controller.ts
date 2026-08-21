@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Res,
+  StreamableFile,
+} from '@nestjs/common';
+import type { Response } from 'express';
 
 import { CreateBookingDto } from '../booking/dto/create-booking.dto';
 
@@ -7,17 +16,43 @@ import { CreatePublicPaymentDto } from './dto/create-public-payment.dto';
 import { EvaluatePublicRulesDto } from './dto/evaluate-public-rules.dto';
 import { PublicBookingService } from './public-booking.service';
 import { PublicPaymentService } from './public-payment.service';
+import { FileAssetService } from '../file-asset/file-asset.service';
 
 @Controller('public')
 export class PublicBookingController {
   constructor(
     private readonly publicBookingService: PublicBookingService,
     private readonly publicPaymentService: PublicPaymentService,
+    private readonly fileAssetService: FileAssetService,
   ) {}
 
   @Get('events/:eventId')
   findEvent(@Param('eventId') eventId: string) {
     return this.publicBookingService.findEvent(eventId);
+  }
+
+  @Get('event-sites/:eventSlug')
+  findEventBySlug(@Param('eventSlug') eventSlug: string) {
+    return this.publicBookingService.findEventBySlug(eventSlug);
+  }
+
+  @Get('event-sites/:eventSlug/assets/:assetId')
+  async getPublicBrandingAsset(
+    @Param('eventSlug') eventSlug: string,
+    @Param('assetId') assetId: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const asset = await this.fileAssetService.getPublicBrandingAsset(
+      eventSlug,
+      assetId,
+    );
+    response.set({
+      'Content-Type': asset.mimeType,
+      'Cache-Control': 'public, max-age=300',
+      ETag: `"${asset.checksum}"`,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return new StreamableFile(asset.content);
   }
 
   @Get('events/:eventId/sessions')

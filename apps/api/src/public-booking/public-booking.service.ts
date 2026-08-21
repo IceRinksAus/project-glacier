@@ -73,6 +73,56 @@ export class PublicBookingService {
     };
   }
 
+  async findEventBySlug(eventSlug: string) {
+    const event = await this.prisma.event.findFirst({
+      where: { slug: eventSlug, status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        timezone: true,
+        venueName: true,
+        suburb: true,
+        branding: {
+          select: {
+            primaryColor: true,
+            secondaryColor: true,
+            accentColor: true,
+            backgroundColor: true,
+            surfaceColor: true,
+            textColor: true,
+            headingFont: true,
+            bodyFont: true,
+            heroHeadline: true,
+            heroDescription: true,
+            logoAsset: { select: { id: true, width: true, height: true } },
+            heroAsset: { select: { id: true, width: true, height: true } },
+          },
+        },
+        waiver: {
+          select: {
+            publicSlug: true,
+            versions: {
+              where: { status: 'PUBLISHED' },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    if (!event) throw new NotFoundException('Event not found.');
+    const { waiver, ...publicEvent } = event;
+    return {
+      ...publicEvent,
+      waiverPublicSlug:
+        waiver && waiver.versions.length > 0 ? waiver.publicSlug : null,
+    };
+  }
+
   async findSessions(eventId: string) {
     const event = await this.prisma.event.findFirst({
       where: {
@@ -363,7 +413,10 @@ export class PublicBookingService {
 
         const variantsWithAvailability = await Promise.all(
           sessionProduct.product.variants.map(async (variant) => {
-            if (!variant.inventoryTracked || variant.inventoryQuantity === null) {
+            if (
+              !variant.inventoryTracked ||
+              variant.inventoryQuantity === null
+            ) {
               return {
                 ...variant,
                 remainingQuantity: null,
@@ -460,7 +513,8 @@ export class PublicBookingService {
           );
         }
 
-        const remainingQuantity = limits.length > 0 ? Math.min(...limits) : null;
+        const remainingQuantity =
+          limits.length > 0 ? Math.min(...limits) : null;
 
         return remainingQuantity === 0
           ? null

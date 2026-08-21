@@ -12,6 +12,25 @@ export interface PublicEvent {
   waiverPublicSlug: string | null;
 }
 
+export interface PublicEventSite extends PublicEvent {
+  venueName: string | null;
+  suburb: string | null;
+  branding: {
+    primaryColor: string;
+    secondaryColor: string;
+    accentColor: string;
+    backgroundColor: string;
+    surfaceColor: string;
+    textColor: string;
+    headingFont: "INTER" | "NUNITO_SANS" | "PLAYFAIR_DISPLAY" | "OSWALD";
+    bodyFont: "INTER" | "NUNITO_SANS" | "PLAYFAIR_DISPLAY" | "OSWALD";
+    heroHeadline: string | null;
+    heroDescription: string | null;
+    logoAsset: { id: string; width: number; height: number } | null;
+    heroAsset: { id: string; width: number; height: number } | null;
+  } | null;
+}
+
 export interface PublicSession {
   id: string;
   name: string;
@@ -227,6 +246,16 @@ export interface PublicPaymentResponse {
 }
 
 export const publicBookingService = {
+  getEventSite(eventSlug: string) {
+    return publicApi.get<PublicEventSite>(
+      `/public/event-sites/${encodeURIComponent(eventSlug)}`,
+    );
+  },
+
+  brandingAssetUrl(eventSlug: string, assetId: string) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/public/event-sites/${encodeURIComponent(eventSlug)}/assets/${encodeURIComponent(assetId)}`;
+  },
+
   getEvent(eventId: string) {
     return publicApi.get<PublicEvent>(`/public/events/${eventId}`);
   },

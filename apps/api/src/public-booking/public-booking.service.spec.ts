@@ -395,6 +395,56 @@ describe('PublicBookingService', () => {
     });
   });
 
+  it('returns a privacy-minimised active Event site by slug', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      ...activeEvent,
+      venueName: 'Preview Ice Arena',
+      suburb: 'Melbourne',
+      branding: {
+        primaryColor: '#0F172A',
+        secondaryColor: '#334155',
+        accentColor: '#0EA5E9',
+        backgroundColor: '#FFFFFF',
+        surfaceColor: '#F8FAFC',
+        textColor: '#0F172A',
+        headingFont: 'INTER',
+        bodyFont: 'INTER',
+        heroHeadline: 'Skate into winter',
+        heroDescription: null,
+        logoAsset: { id: 'logo-1', width: 512, height: 512 },
+        heroAsset: null,
+      },
+    });
+
+    const result = await service.findEventBySlug(
+      'australian-ice-festival-2027',
+    );
+
+    expect(prisma.event.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: 'australian-ice-festival-2027', status: 'ACTIVE' },
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'event-1',
+        venueName: 'Preview Ice Arena',
+        waiverPublicSlug: 'public-waiver-slug',
+        branding: expect.objectContaining({
+          logoAsset: { id: 'logo-1', width: 512, height: 512 },
+        }),
+      }),
+    );
+    expect(result).not.toHaveProperty('organizationId');
+  });
+
+  it('does not expose a draft or unknown Event site slug', async () => {
+    prisma.event.findFirst.mockResolvedValue(null);
+    await expect(service.findEventBySlug('private-event')).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+
   it('should not imply a Waiver when the active Event has no published version', async () => {
     prisma.event.findFirst.mockResolvedValue({
       ...activeEvent,

@@ -104,4 +104,48 @@ export class FileAssetService {
     if (!asset) throw new NotFoundException('Branding asset not found');
     return { ...asset, content: await this.storage.get(asset.storageKey) };
   }
+
+  async getPublicBrandingAsset(eventSlug: string, assetId: string) {
+    const event = await this.prisma.event.findFirst({
+      where: {
+        slug: eventSlug,
+        status: 'ACTIVE',
+        branding: {
+          OR: [{ logoAssetId: assetId }, { heroAssetId: assetId }],
+        },
+      },
+      select: {
+        branding: {
+          select: {
+            logoAsset: {
+              select: {
+                id: true,
+                storageKey: true,
+                mimeType: true,
+                displayName: true,
+                checksum: true,
+                status: true,
+              },
+            },
+            heroAsset: {
+              select: {
+                id: true,
+                storageKey: true,
+                mimeType: true,
+                displayName: true,
+                checksum: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    const candidates = [event?.branding?.logoAsset, event?.branding?.heroAsset];
+    const asset = candidates.find(
+      (candidate) => candidate?.id === assetId && candidate.status === 'READY',
+    );
+    if (!asset) throw new NotFoundException('Branding asset not found');
+    return { ...asset, content: await this.storage.get(asset.storageKey) };
+  }
 }
