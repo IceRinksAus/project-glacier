@@ -7,7 +7,10 @@ import {
   Patch,
   Post,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -17,6 +20,9 @@ import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 import { EventBrandingDto } from './dto/event-branding.dto';
+import { UploadBrandingAssetDto } from './dto/upload-branding-asset.dto';
+import { FileAssetService } from '../file-asset/file-asset.service';
+import type { BrandingImageUpload } from '../file-asset/file-asset.types';
 
 interface AuthenticatedUser {
   userId: string;
@@ -28,7 +34,10 @@ interface AuthenticatedUser {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('event')
 export class EventController {
-  constructor(private readonly eventService: EventService) {}
+  constructor(
+    private readonly eventService: EventService,
+    private readonly fileAssetService: FileAssetService,
+  ) {}
 
   @Get()
   findAll(@CurrentUser() user: AuthenticatedUser) {
@@ -83,6 +92,29 @@ export class EventController {
     @Body() data: EventBrandingDto,
   ) {
     return this.eventService.updateBranding(id, user.organizationId, data);
+  }
+
+  @Roles('OWNER')
+  @Post(':id/branding/assets')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }),
+  )
+  uploadBrandingAsset(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UploadBrandingAssetDto,
+    @UploadedFile() file: BrandingImageUpload,
+  ) {
+    return this.fileAssetService.createBrandingAsset({
+      eventId: id,
+      organizationId: user.organizationId,
+      userId: user.userId,
+      purpose: data.purpose,
+      displayName: data.displayName,
+      file,
+    });
   }
 
   @Roles('OWNER')

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { EventController } from './event.controller';
 import { EventService } from './event.service';
+import { FileAssetService } from '../file-asset/file-asset.service';
 
 describe('EventController', () => {
   let controller: EventController;
@@ -18,6 +19,10 @@ describe('EventController', () => {
         {
           provide: EventService,
           useValue: serviceMock,
+        },
+        {
+          provide: FileAssetService,
+          useValue: { createBrandingAsset: jest.fn() },
         },
       ],
     }).compile();

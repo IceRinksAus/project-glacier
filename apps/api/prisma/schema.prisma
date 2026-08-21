@@ -32,6 +32,7 @@ model Organization {
   events             Event[]
   users              UserOrganization[]
   ticketScanAttempts TicketScanAttempt[]
+  fileAssets         FileAsset[]
 }
 
 model User {
@@ -48,6 +49,7 @@ model User {
   organizations           UserOrganization[]
   publishedWaiverVersions WaiverVersion[]
   ticketScanAttempts      TicketScanAttempt[]
+  createdFileAssets       FileAsset[]
 }
 
 model UserOrganization {
@@ -103,6 +105,7 @@ model Event {
 
   waiver             EventWaiver?
   branding           EventBranding?
+  fileAssets         FileAsset[]
   ticketScanAttempts TicketScanAttempt[]
 
   entryOpensMinutesBeforeStart Int @default(30)
@@ -129,8 +132,55 @@ model EventBranding {
   heroHeadline    String?
   heroDescription String?
 
+  logoAssetId String?    @unique
+  logoAsset   FileAsset? @relation("EventBrandingLogo", fields: [logoAssetId], references: [id])
+  heroAssetId String?    @unique
+  heroAsset   FileAsset? @relation("EventBrandingHero", fields: [heroAssetId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum FileAssetPurpose {
+  EVENT_LOGO
+  EVENT_HERO
+}
+
+enum FileAssetStatus {
+  READY
+  REPLACED
+  FAILED
+}
+
+model FileAsset {
+  id String @id @default(cuid())
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id])
+  eventId         String
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdByUserId String
+  createdByUser   User         @relation(fields: [createdByUserId], references: [id])
+
+  purpose          FileAssetPurpose
+  status           FileAssetStatus  @default(READY)
+  storageProvider  String
+  storageKey       String           @unique
+  originalFilename String
+  displayName      String
+  mimeType         String
+  fileSize         Int
+  checksum         String
+  width            Int
+  height           Int
+
+  usedAsLogo EventBranding? @relation("EventBrandingLogo")
+  usedAsHero EventBranding? @relation("EventBrandingHero")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, eventId])
 }
 
 model OperationalSchedule {

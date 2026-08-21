@@ -15,6 +15,7 @@ build/
 
 # Database
 *.db
+.glacier-storage/
 
 # OS files
 .DS_Store
