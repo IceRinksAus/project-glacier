@@ -10,6 +10,7 @@ export interface BrandingImageUpload {
 export interface StorageProvider {
   readonly name: string;
   put(storageKey: string, content: Buffer): Promise<void>;
+  get(storageKey: string): Promise<Buffer>;
   remove(storageKey: string): Promise<void>;
 }
 

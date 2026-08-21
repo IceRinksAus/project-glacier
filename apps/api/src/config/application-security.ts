@@ -23,5 +23,5 @@ export function getCorsOrigins(environment: Environment = process.env) {
     throw new Error('CORS_ORIGINS must be configured in production.');
   }
 
-  return ['http://localhost:3001'];
+  return ['http://localhost:3001', 'http://localhost:3002'];
 }

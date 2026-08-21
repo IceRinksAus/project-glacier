@@ -44,7 +44,28 @@ export class EventService {
       where: {
         organizationId,
       },
-      include: { branding: true },
+      include: {
+        branding: {
+          include: {
+            logoAsset: {
+              select: {
+                id: true,
+                displayName: true,
+                width: true,
+                height: true,
+              },
+            },
+            heroAsset: {
+              select: {
+                id: true,
+                displayName: true,
+                width: true,
+                height: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -54,7 +75,28 @@ export class EventService {
         id,
         organizationId,
       },
-      include: { branding: true },
+      include: {
+        branding: {
+          include: {
+            logoAsset: {
+              select: {
+                id: true,
+                displayName: true,
+                width: true,
+                height: true,
+              },
+            },
+            heroAsset: {
+              select: {
+                id: true,
+                displayName: true,
+                width: true,
+                height: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!event) {

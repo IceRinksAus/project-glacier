@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
 import { StorageProvider } from './file-asset.types';
@@ -28,6 +28,10 @@ export class LocalStorageProvider implements StorageProvider {
     const target = this.resolveKey(storageKey);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, content, { flag: 'wx' });
+  }
+
+  get(storageKey: string) {
+    return readFile(this.resolveKey(storageKey));
   }
 
   async remove(storageKey: string) {

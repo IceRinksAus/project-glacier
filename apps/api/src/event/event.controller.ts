@@ -9,7 +9,10 @@ import {
   UseGuards,
   UploadedFile,
   UseInterceptors,
+  StreamableFile,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -115,6 +118,29 @@ export class EventController {
       displayName: data.displayName,
       file,
     });
+  }
+
+  @Roles('OWNER', 'MEMBER')
+  @Get(':id/branding/assets/:assetId')
+  async getBrandingAsset(
+    @Param('id') id: string,
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const asset = await this.fileAssetService.getBrandingAsset(
+      id,
+      assetId,
+      user.organizationId,
+    );
+    response.set({
+      'Content-Type': asset.mimeType,
+      'Content-Disposition': `inline; filename="${asset.displayName.replace(/["\\]/g, '')}"`,
+      'Cache-Control': 'private, max-age=300',
+      ETag: `"${asset.checksum}"`,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return new StreamableFile(asset.content);
   }
 
   @Roles('OWNER')

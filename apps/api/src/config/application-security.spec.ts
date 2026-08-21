@@ -10,6 +10,7 @@ describe('application security configuration', () => {
   it('uses the local web origin outside production by default', () => {
     expect(getCorsOrigins({ NODE_ENV: 'development' })).toEqual([
       'http://localhost:3001',
+      'http://localhost:3002',
     ]);
   });
 

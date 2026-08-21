@@ -19,6 +19,19 @@ export interface EventBranding {
   heroDescription?: string;
 }
 
+export interface EventBrandingAsset {
+  id: string;
+  displayName: string;
+  width: number;
+  height: number;
+}
+
+export interface PersistedEventBranding extends EventBranding {
+  id: string;
+  logoAsset: EventBrandingAsset | null;
+  heroAsset: EventBrandingAsset | null;
+}
+
 export interface GlacierEvent {
   id: string;
   name: string;
@@ -35,7 +48,7 @@ export interface GlacierEvent {
   organizationId: string;
   createdAt: string;
   updatedAt: string;
-  branding: (EventBranding & { id: string }) | null;
+  branding: PersistedEventBranding | null;
 }
 
 export interface CreateGlacierEvent {
@@ -106,4 +119,21 @@ export const eventService = {
 
   updateBranding: (eventId: string, branding: EventBranding) =>
     api.patch<EventBranding>(`/event/${eventId}/branding`, branding),
+
+  uploadBrandingAsset: (
+    eventId: string,
+    purpose: "EVENT_LOGO" | "EVENT_HERO",
+    file: File,
+  ) => {
+    const body = new FormData();
+    body.append("purpose", purpose);
+    body.append("file", file);
+    return api.upload<EventBrandingAsset>(
+      `/event/${eventId}/branding/assets`,
+      body,
+    );
+  },
+
+  getBrandingAsset: (eventId: string, assetId: string) =>
+    api.blob(`/event/${eventId}/branding/assets/${assetId}`),
 };

@@ -6,6 +6,7 @@ import { use } from "react";
 import { EventHeader } from "@/components/events/EventHeader";
 import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
 import { EventOverview } from "@/components/events/EventOverview";
+import { EventBrandingWorkspace } from "@/components/events/EventBrandingWorkspace";
 import {
   EventTabs,
   parseEventTab,
@@ -111,6 +112,16 @@ export default function EventWorkspacePage({
               <ProductsWorkspace eventId={event.id} />
             ) : null}
 
+            {activeTab === "Website" ? (
+              <EventBrandingWorkspace
+                eventId={event.id}
+                eventSlug={event.slug}
+                eventName={event.name}
+                eventDescription={event.description}
+                initialBranding={event.branding}
+              />
+            ) : null}
+
             {activeTab === "Settings" ? (
               <EventEntryPolicySettings
                 eventId={event.id}
@@ -126,6 +137,7 @@ export default function EventWorkspacePage({
             activeTab !== "Ticket Types" &&
             activeTab !== "Products" &&
             activeTab !== "Waiver" &&
+            activeTab !== "Website" &&
             activeTab !== "Settings" ? (
               <div className="rounded-xl border bg-card p-6">
                 <h2 className="text-lg font-semibold">{activeTab}</h2>

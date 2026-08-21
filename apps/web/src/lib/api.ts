@@ -11,7 +11,9 @@ async function request<T>(
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(options.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
       ...(token
         ? {
             Authorization: `Bearer ${token}`,
@@ -60,6 +62,15 @@ if (!response.ok) {
   return JSON.parse(responseBody) as T;
 }
 
+async function requestBlob(path: string) {
+  const token = getAccessToken();
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) throw new Error(`Unable to load image (${response.status})`);
+  return response.blob();
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
 
@@ -68,6 +79,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  upload: <T>(path: string, body: FormData) =>
+    request<T>(path, { method: "POST", body }),
+
+  blob: (path: string) => requestBlob(path),
 
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, {

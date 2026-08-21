@@ -80,4 +80,28 @@ export class FileAssetService {
       throw error;
     }
   }
+
+  async getBrandingAsset(
+    eventId: string,
+    assetId: string,
+    organizationId: string,
+  ) {
+    const asset = await this.prisma.fileAsset.findFirst({
+      where: {
+        id: assetId,
+        eventId,
+        organizationId,
+        status: 'READY',
+        purpose: { in: ['EVENT_LOGO', 'EVENT_HERO'] },
+      },
+      select: {
+        storageKey: true,
+        mimeType: true,
+        displayName: true,
+        checksum: true,
+      },
+    });
+    if (!asset) throw new NotFoundException('Branding asset not found');
+    return { ...asset, content: await this.storage.get(asset.storageKey) };
+  }
 }

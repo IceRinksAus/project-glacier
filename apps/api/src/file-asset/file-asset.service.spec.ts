@@ -29,11 +29,17 @@ describe('FileAssetService', () => {
   };
   const prisma = {
     event: { findFirst: jest.fn() },
+    fileAsset: { findFirst: jest.fn() },
     $transaction: jest.fn((callback: (client: typeof transaction) => unknown) =>
       callback(transaction),
     ),
   };
-  const storage = { name: 'TEST', put: jest.fn(), remove: jest.fn() };
+  const storage = {
+    name: 'TEST',
+    put: jest.fn(),
+    get: jest.fn(),
+    remove: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -114,5 +120,31 @@ describe('FileAssetService', () => {
       }),
     ).rejects.toThrow('database unavailable');
     expect(storage.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it('tenant-scopes authorised asset delivery', async () => {
+    prisma.fileAsset.findFirst.mockResolvedValue({
+      storageKey: 'event-branding/org/event/asset.png',
+      mimeType: 'image/png',
+      displayName: 'Logo',
+      checksum: 'checksum',
+    });
+    storage.get.mockResolvedValue(Buffer.from('image'));
+
+    await expect(
+      service.getBrandingAsset('event-1', 'asset-1', 'organization-1'),
+    ).resolves.toEqual(
+      expect.objectContaining({ content: Buffer.from('image') }),
+    );
+    expect(prisma.fileAsset.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'asset-1',
+          eventId: 'event-1',
+          organizationId: 'organization-1',
+          status: 'READY',
+        }),
+      }),
+    );
   });
 });
