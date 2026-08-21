@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   PublicRequiredProduct,
@@ -20,6 +20,7 @@ export interface SelectedBookingProduct {
 interface AddOnsStepProps {
   sessionId: string;
   requiredProducts?: PublicRequiredProduct[];
+  initialProducts?: SelectedBookingProduct[];
   disabled?: boolean;
   onChange: (products: SelectedBookingProduct[], subtotal: number) => void;
 }
@@ -92,6 +93,7 @@ function buildChoices(sessionProducts: PublicSessionProduct[]) {
 export function AddOnsStep({
   sessionId,
   requiredProducts = [],
+  initialProducts = [],
   disabled = false,
   onChange,
 }: AddOnsStepProps) {
@@ -99,6 +101,7 @@ export function AddOnsStep({
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const initialProductsRef = useRef(initialProducts);
 
   useEffect(() => {
     let isCurrent = true;
@@ -108,7 +111,14 @@ export function AddOnsStep({
       .then((result) => {
         if (!isCurrent) return;
         setSessionProducts(result);
-        setQuantities({});
+        setQuantities(Object.fromEntries(
+          initialProductsRef.current.map((product) => [
+            product.productVariantId
+              ? `${product.productId}:${product.productVariantId}`
+              : product.productId,
+            product.quantity,
+          ]),
+        ));
         setError(null);
       })
       .catch((loadError) => {

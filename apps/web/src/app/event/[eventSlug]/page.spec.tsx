@@ -34,7 +34,7 @@ describe("PublicEventPage", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "The ice comes alive" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Book tickets/ })).toHaveAttribute("href", "/book/event-1");
+    expect(screen.getByRole("link", { name: /Book tickets/ })).toHaveAttribute("href", "/book/event-1/session");
     expect(screen.getByText("Preview Arena, Melbourne")).toBeVisible();
   });
 
