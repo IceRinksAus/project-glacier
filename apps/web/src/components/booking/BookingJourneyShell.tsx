@@ -11,6 +11,7 @@ const steps = [
   ["details", "Your details"],
   ["review", "Review"],
   ["payment", "Payment"],
+  ["confirmation", "Confirmation"],
 ] as const;
 
 export function BookingJourneyShell({ children }: { children: React.ReactNode }) {

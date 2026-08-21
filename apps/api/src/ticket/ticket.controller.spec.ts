@@ -1,3 +1,4 @@
+import { StreamableFile } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { TicketController } from './ticket.controller';
@@ -8,6 +9,7 @@ describe('TicketController', () => {
 
   const serviceMock = {
     getTicketByToken: jest.fn(),
+    generatePublicQrCode: jest.fn(),
     validateTicket: jest.fn(),
     checkInTicket: jest.fn(),
     generateQrCode: jest.fn(),
@@ -42,6 +44,17 @@ describe('TicketController', () => {
     await controller.getTicketByToken('a'.repeat(64));
 
     expect(serviceMock.getTicketByToken).toHaveBeenCalledWith('a'.repeat(64));
+  });
+
+  it('keeps public Ticket QR presentation token-based', async () => {
+    serviceMock.generatePublicQrCode.mockResolvedValue(Buffer.from('qr-code'));
+
+    const result = await controller.getPublicTicketQrCode('a'.repeat(64));
+
+    expect(serviceMock.generatePublicQrCode).toHaveBeenCalledWith(
+      'a'.repeat(64),
+    );
+    expect(result).toBeInstanceOf(StreamableFile);
   });
 
   it('uses trusted organization context for Ticket validation', async () => {

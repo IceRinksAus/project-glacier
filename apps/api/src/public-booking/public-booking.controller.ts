@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   Param,
   Post,
   Res,
@@ -94,6 +95,18 @@ export class PublicBookingController {
     @Body() data: CreatePublicPaymentDto,
   ) {
     return this.publicPaymentService.createPayment(
+      bookingId,
+      data.publicAccessToken,
+    );
+  }
+
+  @Post('bookings/:bookingId/status')
+  @Header('Cache-Control', 'no-store')
+  getBookingStatus(
+    @Param('bookingId') bookingId: string,
+    @Body() data: CreatePublicPaymentDto,
+  ) {
+    return this.publicPaymentService.getBookingStatus(
       bookingId,
       data.publicAccessToken,
     );

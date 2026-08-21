@@ -18,6 +18,7 @@ describe('PublicBookingController', () => {
 
   const publicPaymentService = {
     createPayment: jest.fn(),
+    getBookingStatus: jest.fn(),
   };
 
   beforeEach(() => {
@@ -274,5 +275,25 @@ describe('PublicBookingController', () => {
     );
 
     expect(result).toEqual(paymentResult);
+  });
+
+  it('should read public Booking status only through the secure public payment service', async () => {
+    const statusResult = {
+      bookingNumber: 'PG-1234',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      tickets: [],
+    };
+    publicPaymentService.getBookingStatus.mockResolvedValue(statusResult);
+
+    const result = await controller.getBookingStatus('booking-1', {
+      publicAccessToken: 'customer-public-access-token',
+    });
+
+    expect(publicPaymentService.getBookingStatus).toHaveBeenCalledWith(
+      'booking-1',
+      'customer-public-access-token',
+    );
+    expect(result).toEqual(statusResult);
   });
 });

@@ -43,7 +43,7 @@ export default function SessionPage({ params }: { params: Promise<{ eventId: str
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 1 of 7</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 1 of 8</p>
         <h1 className="mt-3 text-3xl font-bold">Choose your Session</h1>
         <p className="mt-2 text-slate-600">{event ? event.name : "Select the time you would like to attend."}</p>
 

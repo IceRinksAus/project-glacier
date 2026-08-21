@@ -35,7 +35,7 @@ export default function TicketsPage({ params }: { params: Promise<{ eventId: str
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 2 of 7</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 2 of 8</p>
         <h1 className="mt-3 text-3xl font-bold">Choose your Tickets</h1>
         <p className="mt-2 text-slate-600">All Ticket Types draw from the shared capacity of your selected Session.</p>
 

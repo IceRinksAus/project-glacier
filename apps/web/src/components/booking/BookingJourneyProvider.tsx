@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 import type { SelectedBookingProduct } from "./AddOnsStep";
 import {
   PublicBookingResponse,
+  PublicBookingStatus,
   PublicRulePreviewResponse,
 } from "@/services/public-booking.service";
 
@@ -31,6 +32,7 @@ interface BookingJourneyState {
   customerData: BookingCustomerData;
   reservation: PublicBookingResponse | null;
   paymentSubmitted: boolean;
+  bookingStatus: PublicBookingStatus | null;
   selectSession: (sessionId: string) => void;
   setTicketQuantity: (ticketTypeId: string, quantity: number) => void;
   updateParticipant: (
@@ -46,6 +48,7 @@ interface BookingJourneyState {
   updateCustomer: (field: keyof BookingCustomerData, value: string) => void;
   setReservation: (reservation: PublicBookingResponse | null) => void;
   setPaymentSubmitted: (submitted: boolean) => void;
+  setBookingStatus: (status: PublicBookingStatus | null) => void;
   totalTicketQuantity: number;
 }
 
@@ -68,6 +71,7 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
   });
   const [reservation, setReservation] = useState<PublicBookingResponse | null>(null);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<PublicBookingStatus | null>(null);
 
   const updateSelectedProducts = useCallback(
     (products: SelectedBookingProduct[], subtotal: number) => {
@@ -94,6 +98,7 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
       customerData,
       reservation,
       paymentSubmitted,
+      bookingStatus,
       selectSession(sessionId) {
         if (sessionId !== selectedSessionId) {
           setSelectedSessionId(sessionId);
@@ -104,6 +109,7 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
           setProductSubtotal(0);
           setReservation(null);
           setPaymentSubmitted(false);
+          setBookingStatus(null);
         }
       },
       setTicketQuantity(ticketTypeId, quantity) {
@@ -130,12 +136,14 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
       updateCustomer,
       setReservation,
       setPaymentSubmitted,
+      setBookingStatus,
       totalTicketQuantity: Object.values(ticketQuantities).reduce(
         (total, quantity) => total + quantity,
         0,
       ),
     }),
     [
+      bookingStatus,
       customerData,
       participantData,
       paymentSubmitted,

@@ -110,4 +110,97 @@ describe('PublicPaymentService', () => {
       status: 'PENDING',
     });
   });
+
+  it('should return a minimised pending Booking status without exposing Tickets', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'PG-1',
+      status: 'RESERVED',
+      paymentStatus: 'UNPAID',
+      total: 24,
+      reservedUntil: new Date('2027-07-05T00:15:00.000Z'),
+      confirmedAt: null,
+      paidAt: null,
+      event: {
+        name: 'Test Event',
+        slug: 'test-event',
+        waiver: { publicSlug: 'test-waiver' },
+      },
+      tickets: [
+        {
+          ticketNumber: 'TKT-1',
+          secureToken: 'ticket-token',
+          status: 'ACTIVE',
+          participant: { firstName: 'Jamie', lastName: 'Test' },
+        },
+      ],
+    });
+
+    const result = await service.getBookingStatus(
+      'booking-1',
+      'valid-public-token',
+    );
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'booking-1',
+          publicAccessTokenHash: createHash('sha256')
+            .update('valid-public-token')
+            .digest('hex'),
+        },
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        bookingNumber: 'PG-1',
+        status: 'RESERVED',
+        paymentStatus: 'UNPAID',
+        event: {
+          name: 'Test Event',
+          slug: 'test-event',
+          waiverPublicSlug: 'test-waiver',
+        },
+        tickets: [],
+      }),
+    );
+  });
+
+  it('should expose issued Ticket presentation credentials only after confirmation', async () => {
+    const ticket = {
+      ticketNumber: 'TKT-1',
+      secureToken: 'ticket-token',
+      status: 'ACTIVE',
+      participant: { firstName: 'Jamie', lastName: 'Test' },
+    };
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'PG-1',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      total: 24,
+      reservedUntil: null,
+      confirmedAt: new Date('2027-07-05T00:01:00.000Z'),
+      paidAt: new Date('2027-07-05T00:01:00.000Z'),
+      event: { name: 'Test Event', slug: 'test-event', waiver: null },
+      tickets: [ticket],
+    });
+
+    const result = await service.getBookingStatus(
+      'booking-1',
+      'valid-public-token',
+    );
+
+    expect(result.tickets).toEqual([ticket]);
+  });
+
+  it('should reject a status request with the same non-enumerating response', async () => {
+    prisma.booking.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.getBookingStatus('booking-1', 'wrong-token'),
+    ).rejects.toThrow(
+      new NotFoundException('Booking not found or access token invalid.'),
+    );
+  });
 });

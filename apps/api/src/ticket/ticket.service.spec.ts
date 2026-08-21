@@ -94,6 +94,18 @@ describe('TicketService', () => {
     expect(JSON.stringify(query)).not.toContain('customer');
   });
 
+  it('generates a public QR only for a valid possession token', async () => {
+    prismaMock.ticket.findUnique.mockResolvedValue({ secureToken: token });
+
+    const result = await service.generatePublicQrCode(token);
+
+    expect(prismaMock.ticket.findUnique).toHaveBeenCalledWith({
+      where: { secureToken: token },
+      select: { secureToken: true },
+    });
+    expect(result).toEqual(Buffer.from('qr-code'));
+  });
+
   it('tenant-scopes Ticket detail through Booking and Event', async () => {
     prismaMock.ticket.findFirst.mockResolvedValue(ticket);
 

@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Res,
+  StreamableFile,
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -26,6 +27,14 @@ export class TicketController {
   @Get('token/:token')
   getTicketByToken(@Param('token') token: string) {
     return this.ticketService.getTicketByToken(token);
+  }
+
+  @Get('token/:token/qr')
+  @Header('Content-Type', 'image/png')
+  @Header('Cache-Control', 'private, no-store')
+  async getPublicTicketQrCode(@Param('token') token: string) {
+    const qrCode = await this.ticketService.generatePublicQrCode(token);
+    return new StreamableFile(qrCode);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

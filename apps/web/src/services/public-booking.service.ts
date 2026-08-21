@@ -245,6 +245,49 @@ export interface PublicPaymentResponse {
   clientSecret?: string;
 }
 
+export interface PublicBookingStatus {
+  id: string;
+  bookingNumber: string;
+  status: string;
+  paymentStatus: string;
+  total: number;
+  reservedUntil: string | null;
+  confirmedAt: string | null;
+  paidAt: string | null;
+  event: {
+    name: string;
+    slug: string;
+    waiverPublicSlug: string | null;
+  };
+  tickets: Array<{
+    ticketNumber: string;
+    secureToken: string;
+    status: string;
+    participant: {
+      firstName: string;
+      lastName: string | null;
+    };
+  }>;
+}
+
+export interface PublicTicketPresentation {
+  ticketNumber: string;
+  status: string;
+  checkedInAt: string | null;
+  participant: {
+    firstName: string;
+    lastName: string | null;
+  };
+  booking: {
+    event: { name: string };
+    session: {
+      name: string;
+      startDate: string;
+      endDate: string;
+    } | null;
+  };
+}
+
 export const publicBookingService = {
   getEventSite(eventSlug: string) {
     return publicApi.get<PublicEventSite>(
@@ -298,5 +341,22 @@ export const publicBookingService = {
         publicAccessToken,
       },
     );
+  },
+
+  getBookingStatus(bookingId: string, publicAccessToken: string) {
+    return publicApi.post<PublicBookingStatus>(
+      `/public/bookings/${bookingId}/status`,
+      { publicAccessToken },
+    );
+  },
+
+  getTicket(token: string) {
+    return publicApi.get<PublicTicketPresentation>(
+      `/ticket/token/${encodeURIComponent(token)}`,
+    );
+  },
+
+  ticketQrUrl(token: string) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/ticket/token/${encodeURIComponent(token)}/qr`;
   },
 };

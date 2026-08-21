@@ -382,6 +382,30 @@ export class TicketService {
     });
   }
 
+  async generatePublicQrCode(token: string): Promise<Buffer> {
+    this.validateSecureToken(token);
+
+    const ticket = await this.prisma.ticket.findUnique({
+      where: {
+        secureToken: token,
+      },
+      select: {
+        secureToken: true,
+      },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Ticket not found');
+    }
+
+    return QRCode.toBuffer(ticket.secureToken, {
+      type: 'png',
+      errorCorrectionLevel: 'H',
+      width: 512,
+      margin: 2,
+    });
+  }
+
   private validateSecureToken(token: string) {
     if (!/^[a-f0-9]{64}$/.test(token)) {
       throw new NotFoundException('Ticket not found');

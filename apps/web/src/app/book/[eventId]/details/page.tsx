@@ -46,7 +46,7 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ even
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 5 of 7</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 5 of 8</p>
         <h1 className="mt-3 text-3xl font-bold">Your details</h1>
         <p className="mt-2 text-slate-600">We’ll use these details for the booking confirmation and important Event updates.</p>
         <div className="mt-8 grid gap-5 sm:grid-cols-2">

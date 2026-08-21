@@ -18,7 +18,10 @@ The journey is separated into dedicated pages:
 4. `/addons` — apply Rule-required Products and allow eligible optional Products or Variants.
 5. `/details` — collect the booking contact.
 6. `/review` — display Session, Ticket, Product, contact and total information before creating a reservation.
-7. `/payment` — display the live reservation hold and hand payment to Stripe.
+7. `/payment` — display the live reservation hold, hand payment to Stripe and poll protected status.
+8. `/confirmation` — display confirmed Tickets and the configured Waiver continuation.
+
+Each issued Ticket has its own private presentation route at `/tickets/:secureToken` with a scannable QR. This Ticket possession credential is distinct from the Booking access credential.
 
 The previous single-page implementation remains available temporarily as a compatibility reference at `/book/:eventId`, but the public Event CTA uses the routed journey.
 
@@ -37,6 +40,7 @@ The provider retains:
 - customer contact details;
 - the created reservation and one-time public access credential;
 - whether Stripe submission has begun.
+- the latest credential-protected Booking status.
 
 Changing Session clears Ticket, participant, Rule, Product and reservation state because those selections are no longer valid. Changing Ticket or participant data invalidates the Rule preview and requires the authoritative Event Rules to be evaluated again.
 
@@ -60,6 +64,10 @@ The routed UI does not redefine Glacier’s existing commerce rules:
 
 The browser never marks a Booking paid or confirmed after client-side Stripe submission alone. The Payment page states that payment is awaiting secure confirmation. Glacier’s verified Stripe webhook remains the only authority allowed to confirm payment and trigger ticket issuance.
 
+After Stripe submission, the Payment page polls `POST /public/bookings/:bookingId/status`. POST is deliberately used for this read so the public Booking token remains in the request body rather than leaking into URLs or access logs. Responses use `Cache-Control: no-store`.
+
+The status service hashes the supplied token before lookup and returns the same not-found response for an unknown Booking and a wrong token. Ticket numbers and Ticket possession tokens are withheld unless the Booking is simultaneously `CONFIRMED` and `PAID`.
+
 The reservation’s public access token is held only in the in-memory journey state and is passed to the existing protected payment endpoint. It is not placed in route parameters.
 
 ## Browser Acceptance Evidence
@@ -81,6 +89,9 @@ Verified behavior:
 - reservation creation produces a 15-minute inventory hold;
 - Payment displays the authoritative reservation number and amount due;
 - Stripe submission is not described as confirmed payment.
+- Confirmation is unreachable without a webhook-confirmed status result;
+- confirmed status can expose issued Tickets and the optional Waiver continuation;
+- each confirmed Ticket can be presented through its private token route and QR endpoint.
 
 The browser-created unpaid acceptance reservation is expected to expire through the normal reservation-expiry mechanism.
 
@@ -97,10 +108,6 @@ At this checkpoint:
 
 ## Remaining Sprint 20 Work
 
-- add the protected public Booking-status read contract;
-- poll or refresh webhook-authoritative status after Stripe submission;
-- implement the authoritative Confirmation page;
-- expose issued Ticket and configured Waiver continuation only after confirmation;
 - apply Event branding consistently across every booking step;
 - add route-focused automated tests for guards, Rule failures, reservation errors and payment-pending copy;
 - run payment-webhook, inventory-release, responsive and console-error browser acceptance;
