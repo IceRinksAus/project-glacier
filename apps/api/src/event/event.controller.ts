@@ -16,6 +16,7 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
+import { EventBrandingDto } from './dto/event-branding.dto';
 
 interface AuthenticatedUser {
   userId: string;
@@ -72,6 +73,16 @@ export class EventController {
     @Body() data: UpdateEntryPolicyDto,
   ) {
     return this.eventService.updateEntryPolicy(id, user.organizationId, data);
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/branding')
+  updateBranding(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: EventBrandingDto,
+  ) {
+    return this.eventService.updateBranding(id, user.organizationId, data);
   }
 
   @Roles('OWNER')

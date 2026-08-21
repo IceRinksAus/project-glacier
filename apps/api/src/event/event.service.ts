@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventReadiness, EventReadinessItem } from './event-readiness.types';
+import { EventBrandingDto } from './dto/event-branding.dto';
 
 const readinessInclude = {
   sessions: {
@@ -43,6 +44,7 @@ export class EventService {
       where: {
         organizationId,
       },
+      include: { branding: true },
     });
   }
 
@@ -52,6 +54,7 @@ export class EventService {
         id,
         organizationId,
       },
+      include: { branding: true },
     });
 
     if (!event) {
@@ -90,7 +93,13 @@ export class EventService {
           status: 'DRAFT',
           entryOpensMinutesBeforeStart: data.entryOpensMinutesBeforeStart,
           entryClosesMinutesAfterEnd: data.entryClosesMinutesAfterEnd,
+          branding: data.branding
+            ? {
+                create: data.branding,
+              }
+            : undefined,
         },
+        include: { branding: true },
       });
     } catch (error) {
       if (
@@ -104,6 +113,27 @@ export class EventService {
 
       throw error;
     }
+  }
+
+  async updateBranding(
+    id: string,
+    organizationId: string,
+    branding: EventBrandingDto,
+  ) {
+    const event = await this.prisma.event.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Event not found');
+    }
+
+    return this.prisma.eventBranding.upsert({
+      where: { eventId: event.id },
+      create: { eventId: event.id, ...branding },
+      update: branding,
+    });
   }
 
   async updateStatus(id: string, organizationId: string, status: string) {

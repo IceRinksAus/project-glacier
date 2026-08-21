@@ -3,7 +3,11 @@ import {
   EventActivityType,
   Prisma,
 } from '@prisma/client';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +21,9 @@ describe('EventService', () => {
       create: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+    },
+    eventBranding: {
+      upsert: jest.fn(),
     },
   };
 
@@ -97,18 +104,90 @@ describe('EventService', () => {
 
     await service.create('organization-1', createData);
 
-    expect(prismaMock.event.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        organizationId: 'organization-1',
-        status: 'DRAFT',
-        timezone: 'Australia/Melbourne',
-        venueName: 'Preview Ice Arena',
-        jurisdiction: AustralianJurisdiction.VIC,
-        activityType: EventActivityType.ICE_SKATING,
-        entryOpensMinutesBeforeStart: 30,
-        entryClosesMinutesAfterEnd: 0,
+    expect(prismaMock.event.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organizationId: 'organization-1',
+          status: 'DRAFT',
+          timezone: 'Australia/Melbourne',
+          venueName: 'Preview Ice Arena',
+          jurisdiction: AustralianJurisdiction.VIC,
+          activityType: EventActivityType.ICE_SKATING,
+          entryOpensMinutesBeforeStart: 30,
+          entryClosesMinutesAfterEnd: 0,
+        }),
+        include: { branding: true },
       }),
+    );
+  });
+
+  it('creates optional branding atomically with its Event', async () => {
+    prismaMock.event.create.mockResolvedValue({ id: 'event-1' });
+    const branding = {
+      primaryColor: '#112233',
+      secondaryColor: '#223344',
+      accentColor: '#334455',
+      backgroundColor: '#FFFFFF',
+      surfaceColor: '#F8FAFC',
+      textColor: '#0F172A',
+      headingFont: 'OSWALD',
+      bodyFont: 'INTER',
+      heroHeadline: 'Skate into winter',
+    };
+
+    await service.create('organization-1', { ...createData, branding });
+
+    expect(prismaMock.event.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ branding: { create: branding } }),
+        include: { branding: true },
+      }),
+    );
+  });
+
+  it('tenant-scopes and upserts Event branding', async () => {
+    prismaMock.event.findFirst.mockResolvedValue({ id: 'event-1' });
+    prismaMock.eventBranding.upsert.mockResolvedValue({ id: 'branding-1' });
+    const branding = {
+      primaryColor: '#112233',
+      secondaryColor: '#223344',
+      accentColor: '#334455',
+      backgroundColor: '#FFFFFF',
+      surfaceColor: '#F8FAFC',
+      textColor: '#0F172A',
+      headingFont: 'OSWALD',
+      bodyFont: 'INTER',
+    };
+
+    await service.updateBranding('event-1', 'organization-1', branding);
+
+    expect(prismaMock.event.findFirst).toHaveBeenCalledWith({
+      where: { id: 'event-1', organizationId: 'organization-1' },
+      select: { id: true },
     });
+    expect(prismaMock.eventBranding.upsert).toHaveBeenCalledWith({
+      where: { eventId: 'event-1' },
+      create: { eventId: 'event-1', ...branding },
+      update: branding,
+    });
+  });
+
+  it('does not reveal another tenant Event during branding update', async () => {
+    prismaMock.event.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.updateBranding('event-1', 'organization-2', {
+        primaryColor: '#112233',
+        secondaryColor: '#223344',
+        accentColor: '#334455',
+        backgroundColor: '#FFFFFF',
+        surfaceColor: '#F8FAFC',
+        textColor: '#0F172A',
+        headingFont: 'OSWALD',
+        bodyFont: 'INTER',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prismaMock.eventBranding.upsert).not.toHaveBeenCalled();
   });
 
   it('rejects an Event whose end is not after its start', async () => {

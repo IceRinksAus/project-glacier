@@ -102,10 +102,32 @@ model Event {
   rules Rule[]
 
   waiver             EventWaiver?
+  branding           EventBranding?
   ticketScanAttempts TicketScanAttempt[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventBranding {
+  id String @id @default(cuid())
+
+  eventId String @unique
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  primaryColor    String  @default("#0F172A")
+  secondaryColor  String  @default("#334155")
+  accentColor     String  @default("#0EA5E9")
+  backgroundColor String  @default("#FFFFFF")
+  surfaceColor    String  @default("#F8FAFC")
+  textColor       String  @default("#0F172A")
+  headingFont     String  @default("INTER")
+  bodyFont        String  @default("INTER")
+  heroHeadline    String?
+  heroDescription String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

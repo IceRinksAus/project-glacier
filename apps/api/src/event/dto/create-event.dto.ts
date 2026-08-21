@@ -11,10 +11,12 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { AustralianJurisdiction, EventActivityType } from '@prisma/client';
 
 import { AUSTRALIAN_EVENT_TIMEZONES } from '../event.constants';
+import { EventBrandingDto } from './event-branding.dto';
 
 export class CreateEventDto {
   @IsString()
@@ -89,4 +91,9 @@ export class CreateEventDto {
   @Min(0)
   @Max(240)
   entryClosesMinutesAfterEnd?: number;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EventBrandingDto)
+  branding?: EventBrandingDto;
 }
