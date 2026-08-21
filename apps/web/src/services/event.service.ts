@@ -1,5 +1,24 @@
 import { api } from "@/lib/api";
 
+export type EventBrandingFont =
+  | "INTER"
+  | "NUNITO_SANS"
+  | "PLAYFAIR_DISPLAY"
+  | "OSWALD";
+
+export interface EventBranding {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  textColor: string;
+  headingFont: EventBrandingFont;
+  bodyFont: EventBrandingFont;
+  heroHeadline?: string;
+  heroDescription?: string;
+}
+
 export interface GlacierEvent {
   id: string;
   name: string;
@@ -16,6 +35,7 @@ export interface GlacierEvent {
   organizationId: string;
   createdAt: string;
   updatedAt: string;
+  branding: (EventBranding & { id: string }) | null;
 }
 
 export interface CreateGlacierEvent {
@@ -35,6 +55,7 @@ export interface CreateGlacierEvent {
   activityType: "ICE_SKATING" | "OTHER";
   entryOpensMinutesBeforeStart: number;
   entryClosesMinutesAfterEnd: number;
+  branding?: EventBranding;
 }
 
 export interface EventReadinessItem {
@@ -82,4 +103,7 @@ export const eventService = {
       entryOpensMinutesBeforeStart,
       entryClosesMinutesAfterEnd,
     }),
+
+  updateBranding: (eventId: string, branding: EventBranding) =>
+    api.patch<EventBranding>(`/event/${eventId}/branding`, branding),
 };

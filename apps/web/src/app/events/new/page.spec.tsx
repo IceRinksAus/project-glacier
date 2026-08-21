@@ -30,6 +30,9 @@ async function reachReview(user: ReturnType<typeof userEvent.setup>) {
   );
   await user.click(screen.getByRole("button", { name: /Continue/ }));
 
+  expect(screen.getByText("Live public preview")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: /Continue/ }));
+
   await user.type(screen.getByLabelText("Starts"), "2027-09-01T10:00");
   await user.type(screen.getByLabelText("Ends"), "2027-09-01T18:00");
   await user.click(screen.getByRole("button", { name: /Continue/ }));
@@ -99,6 +102,12 @@ describe("NewEventPage", () => {
         activityType: "ICE_SKATING",
         entryOpensMinutesBeforeStart: 30,
         entryClosesMinutesAfterEnd: 0,
+        branding: expect.objectContaining({
+          primaryColor: "#0F172A",
+          accentColor: "#0EA5E9",
+          headingFont: "INTER",
+          bodyFont: "INTER",
+        }),
       }),
     );
     expect(routerPush).toHaveBeenCalledWith("/events/event-1");
