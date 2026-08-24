@@ -70,7 +70,9 @@ The dedicated Booking investigation page presents:
 
 The UI never offers `Mark paid`. When Stripe still reports PENDING, the page explicitly states that no local state was changed.
 
-Web verification now passes 16 suites / 51 tests, targeted lint for every new Bookings file and the webpack production build with `/bookings` plus `/bookings/[bookingId]` routes.
+The Bookings register now supports bounded, server-side operational discovery by customer name, email or Booking number. Organisers can narrow results by Event, then a Session owned by that Event, filter Booking and Payment state, and choose a deterministic sort order. Results are tenant-scoped, return only the register fields required by the dashboard and are paginated at 25 rows by default with a hard 100-row maximum.
+
+Web verification now passes 17 suites / 53 tests, targeted lint for every new Bookings file and the webpack production build with `/bookings` plus `/bookings/[bookingId]` routes.
 
 ## Local Reconciliation Acceptance
 
@@ -98,6 +100,10 @@ Authenticated browser acceptance then verified:
 - no reconciliation button appears after the terminal state has already been resolved;
 - the narrow responsive presentation has no horizontal page overflow; and
 - the browser console reports no warnings or errors.
+
+The refreshed production dashboard was also accepted against current local data. An exact email lookup returned one correct Booking, Event filtering exposed only the selected Event's Sessions, and narrowing to its 10:30 Session retained the correct single result. The updated `/bookings` workspace remains open on port 3002 for organiser review.
+
+The completed search slice passes the full API suite at 64 suites / 418 tests, the full web suite at 17 suites / 53 tests, both production builds and targeted dashboard lint.
 
 ## Remaining Sprint 21 Work
 

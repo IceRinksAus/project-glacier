@@ -13,6 +13,7 @@ describe('BookingController', () => {
     findPaymentInvestigation:
       jest.fn(),
     reconcilePayment: jest.fn(),
+    search: jest.fn(),
   };
   const user = {
     userId: 'user-1',
@@ -95,6 +96,30 @@ describe('BookingController', () => {
     await controller.findAll(user);
 
     expect(serviceMock.findAll).toHaveBeenCalledWith('organization-1');
+  });
+
+  it('uses trusted organization context for bounded Booking search', async () => {
+    const query = {
+      search: 'Jamie',
+      page: 1,
+      pageSize: 25,
+    } as never;
+
+    serviceMock.search.mockResolvedValue({
+      items: [],
+    });
+
+    await controller.search(
+      user,
+      query,
+    );
+
+    expect(
+      serviceMock.search,
+    ).toHaveBeenCalledWith(
+      'organization-1',
+      query,
+    );
   });
 
   it('uses trusted organization context for Booking detail', async () => {

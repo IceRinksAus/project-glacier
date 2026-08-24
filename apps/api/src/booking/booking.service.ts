@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
 
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { SearchBookingsQueryDto } from './dto/search-bookings-query.dto';
 
 @Injectable()
 export class BookingService {
@@ -88,6 +89,195 @@ export class BookingService {
         createdAt: 'desc',
       },
     });
+  }
+
+  async search(
+    organizationId: string,
+    query: SearchBookingsQueryDto,
+  ) {
+    const searchTerms = query.search
+      ? query.search
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 5)
+      : [];
+
+    const where: Prisma.BookingWhereInput = {
+      event: {
+        organizationId,
+      },
+      ...(query.eventId
+        ? {
+            eventId: query.eventId,
+          }
+        : {}),
+      ...(query.sessionId
+        ? {
+            sessionId: query.sessionId,
+          }
+        : {}),
+      ...(query.bookingStatus
+        ? {
+            status:
+              query.bookingStatus,
+          }
+        : {}),
+      ...(query.paymentStatus
+        ? {
+            paymentStatus:
+              query.paymentStatus,
+          }
+        : {}),
+      ...(searchTerms.length > 0
+        ? {
+            AND: searchTerms.map(
+              (term) => ({
+                OR: [
+                  {
+                    bookingNumber: {
+                      contains: term,
+                      mode: 'insensitive',
+                    },
+                  },
+                  {
+                    customer: {
+                      firstName: {
+                        contains: term,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                  {
+                    customer: {
+                      lastName: {
+                        contains: term,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                  {
+                    customer: {
+                      email: {
+                        contains: term,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                ],
+              }),
+            ),
+          }
+        : {}),
+    };
+
+    const direction =
+      query.sortDirection;
+    const orderBy: Prisma.BookingOrderByWithRelationInput[] =
+      query.sortBy ===
+      'sessionStart'
+        ? [
+            {
+              session: {
+                startDate: direction,
+              },
+            },
+            {
+              id: direction,
+            },
+          ]
+        : query.sortBy ===
+            'customerName'
+          ? [
+              {
+                customer: {
+                  lastName: direction,
+                },
+              },
+              {
+                customer: {
+                  firstName: direction,
+                },
+              },
+              {
+                id: direction,
+              },
+            ]
+          : [
+              {
+                [query.sortBy]:
+                  direction,
+              },
+              {
+                id: direction,
+              },
+            ];
+
+    const skip =
+      (query.page - 1) *
+      query.pageSize;
+
+    const [totalItems, items] =
+      await this.prisma.$transaction([
+        this.prisma.booking.count({
+          where,
+        }),
+        this.prisma.booking.findMany({
+          where,
+          select: {
+            id: true,
+            bookingNumber: true,
+            status: true,
+            paymentStatus: true,
+            total: true,
+            createdAt: true,
+            customer: {
+              select: {
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            event: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            session: {
+              select: {
+                id: true,
+                name: true,
+                startDate: true,
+              },
+            },
+          },
+          orderBy,
+          skip,
+          take: query.pageSize,
+        }),
+      ]);
+
+    return {
+      items: items.map(
+        (booking) => ({
+          ...booking,
+          total:
+            booking.total.toNumber(),
+        }),
+      ),
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        totalItems,
+        totalPages: Math.max(
+          1,
+          Math.ceil(
+            totalItems /
+              query.pageSize,
+          ),
+        ),
+      },
+    };
   }
 
   async findOne(organizationId: string, id: string) {

@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { BookingService } from './booking.service';
+import { SearchBookingsQueryDto } from './dto/search-bookings-query.dto';
 
 interface AuthenticatedUser {
   userId: string;
@@ -19,6 +20,17 @@ export class BookingController {
   @Get()
   findAll(@CurrentUser() user: AuthenticatedUser) {
     return this.bookingService.findAll(user.organizationId);
+  }
+
+  @Get('search')
+  search(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: SearchBookingsQueryDto,
+  ) {
+    return this.bookingService.search(
+      user.organizationId,
+      query,
+    );
   }
 
   @Get(':id')

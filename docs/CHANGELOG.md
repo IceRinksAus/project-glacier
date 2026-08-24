@@ -14,15 +14,16 @@
 - Kept manual reconciliation read-authoritative: a provider-pending Payment is neither cancelled nor marked paid.
 - Added the dashboard Bookings register and dedicated payment-investigation workspace.
 - Presented lifecycle, masked Payment, refund, Ticket and attributable reconciliation history with one controlled recovery action.
+- Added tenant-scoped, paginated Booking lookup by customer name, email or Booking number, with Event/Session and lifecycle filters plus deterministic sorting.
 
 ## Current Verification
 
 - Focused Payment and reservation suite: 6 suites and 61 tests passed.
-- Full API suite: 62 suites and 413 tests passed.
+- Full API suite: 64 suites and 418 tests passed.
 - API production build: passed.
-- Web: 16 suites and 51 tests passed; targeted new-file lint and webpack production build passed.
+- Web: 17 suites and 53 tests passed; targeted new-file lint and webpack production build passed.
 - Local audit migration applied; two historical missed-success Stripe test Payments each reconciled to one successful AUD 34 refund, retained expired Bookings and issued zero Tickets.
-- Authenticated browser acceptance passed for the Bookings register and responsive investigation page with no console warnings or errors.
+- Authenticated browser acceptance passed for the Bookings register, exact email lookup, Event/Session narrowing and responsive investigation page.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.
 

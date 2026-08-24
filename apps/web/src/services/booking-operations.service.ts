@@ -23,6 +23,28 @@ export interface BookingListItem {
   } | null;
 }
 
+export interface BookingSearchOptions {
+  search?: string;
+  eventId?: string;
+  sessionId?: string;
+  bookingStatus?: string;
+  paymentStatus?: string;
+  sortBy?: "createdAt" | "sessionStart" | "customerName" | "total";
+  sortDirection?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface BookingSearchResponse {
+  items: BookingListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
 export interface PaymentInvestigation {
   id: string;
   bookingNumber: string;
@@ -95,6 +117,20 @@ export interface PaymentInvestigation {
 export const bookingOperationsService = {
   list: () =>
     api.get<BookingListItem[]>("/booking"),
+
+  search: (options: BookingSearchOptions) => {
+    const query = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== "") {
+        query.set(key, String(value));
+      }
+    }
+
+    return api.get<BookingSearchResponse>(
+      `/booking/search?${query.toString()}`,
+    );
+  },
 
   investigate: (bookingId: string) =>
     api.get<PaymentInvestigation>(
