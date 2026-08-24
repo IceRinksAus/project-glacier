@@ -128,3 +128,64 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .event-booking-theme {
+    background-color: var(--booking-background);
+    color: var(--booking-text);
+    font-family: var(--booking-body-font);
+  }
+
+  .event-booking-theme .booking-header,
+  .event-booking-theme .bg-white {
+    background-color: var(--booking-surface);
+  }
+
+  .event-booking-theme .booking-heading,
+  .event-booking-theme h1,
+  .event-booking-theme h2,
+  .event-booking-theme legend {
+    font-family: var(--booking-heading-font);
+  }
+
+  .event-booking-theme .booking-progress-active,
+  .event-booking-theme .bg-slate-950 {
+    border-color: var(--booking-primary);
+    background-color: var(--booking-primary);
+    color: var(--booking-background);
+  }
+
+  .event-booking-theme .booking-progress-inactive {
+    border-color: color-mix(in srgb, var(--booking-secondary) 24%, transparent);
+    background-color: var(--booking-surface);
+    color: var(--booking-secondary);
+  }
+
+  .event-booking-theme .border-slate-950 {
+    border-color: var(--booking-accent);
+  }
+
+  .event-booking-theme .bg-slate-50 {
+    background-color: color-mix(in srgb, var(--booking-accent) 9%, var(--booking-surface));
+  }
+
+  .event-booking-theme .text-slate-950 {
+    color: var(--booking-text);
+  }
+
+  .event-booking-theme .text-slate-500,
+  .event-booking-theme .text-slate-600 {
+    color: color-mix(in srgb, var(--booking-text) 68%, transparent);
+  }
+
+  .event-booking-theme input,
+  .event-booking-theme select,
+  .event-booking-theme textarea {
+    background-color: var(--booking-background);
+    color: var(--booking-text);
+  }
+
+  .event-booking-theme :is(button, a):focus-visible {
+    outline-color: var(--booking-accent);
+  }
+}

@@ -5,31 +5,13 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 
 import {
+  defaultEventBranding,
+  eventFontFamilies,
+} from "@/components/booking/event-branding";
+import {
   PublicEventSite,
   publicBookingService,
 } from "@/services/public-booking.service";
-
-const defaultBranding = {
-  primaryColor: "#0F172A",
-  secondaryColor: "#334155",
-  accentColor: "#0EA5E9",
-  backgroundColor: "#FFFFFF",
-  surfaceColor: "#F8FAFC",
-  textColor: "#0F172A",
-  headingFont: "INTER" as const,
-  bodyFont: "INTER" as const,
-  heroHeadline: null,
-  heroDescription: null,
-  logoAsset: null,
-  heroAsset: null,
-};
-
-const fontFamilies = {
-  INTER: "var(--font-geist-sans), Arial, sans-serif",
-  NUNITO_SANS: '"Avenir Next", "Trebuchet MS", sans-serif',
-  PLAYFAIR_DISPLAY: 'Georgia, "Times New Roman", serif',
-  OSWALD: '"Arial Narrow", Impact, sans-serif',
-};
 
 export default function PublicEventPage({
   params,
@@ -65,7 +47,7 @@ export default function PublicEventPage({
   }
   if (!event) return <main className="grid min-h-screen place-items-center bg-slate-50"><p>Loading Event…</p></main>;
 
-  const branding = event.branding ?? defaultBranding;
+  const branding = event.branding ?? defaultEventBranding;
   const logoUrl = branding.logoAsset
     ? publicBookingService.brandingAssetUrl(event.slug, branding.logoAsset.id)
     : null;
@@ -79,7 +61,7 @@ export default function PublicEventPage({
       style={{
         backgroundColor: branding.backgroundColor,
         color: branding.textColor,
-        fontFamily: fontFamilies[branding.bodyFont],
+        fontFamily: eventFontFamilies[branding.bodyFont],
       }}
     >
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
@@ -103,7 +85,7 @@ export default function PublicEventPage({
         ) : null}
         <div className="relative mx-auto grid min-h-[520px] max-w-6xl content-center px-5 py-20 sm:px-8 lg:py-28">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] opacity-80">{event.name}</p>
-          <h1 className="mt-5 max-w-4xl text-4xl font-bold leading-tight sm:text-6xl" style={{ fontFamily: fontFamilies[branding.headingFont] }}>
+          <h1 className="mt-5 max-w-4xl text-4xl font-bold leading-tight sm:text-6xl" style={{ fontFamily: eventFontFamilies[branding.headingFont] }}>
             {branding.heroHeadline || event.name}
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 opacity-90">
@@ -123,7 +105,7 @@ export default function PublicEventPage({
         <Info icon={<ShieldCheck />} label="Secure booking" value="Tickets and payments are processed securely by Glacier." surface={branding.surfaceColor} />
       </section>
 
-      {event.description ? <section className="mx-auto max-w-3xl px-5 pb-14 text-center sm:px-8"><h2 className="text-2xl font-bold" style={{ fontFamily: fontFamilies[branding.headingFont] }}>About this Event</h2><p className="mt-4 leading-7 opacity-75">{event.description}</p>{event.waiverPublicSlug ? <Link className="mt-5 inline-block font-semibold underline underline-offset-4" href={`/waivers/${event.waiverPublicSlug}`}>View Event Waiver</Link> : null}</section> : null}
+      {event.description ? <section className="mx-auto max-w-3xl px-5 pb-14 text-center sm:px-8"><h2 className="text-2xl font-bold" style={{ fontFamily: eventFontFamilies[branding.headingFont] }}>About this Event</h2><p className="mt-4 leading-7 opacity-75">{event.description}</p>{event.waiverPublicSlug ? <Link className="mt-5 inline-block font-semibold underline underline-offset-4" href={`/waivers/${event.waiverPublicSlug}`}>View Event Waiver</Link> : null}</section> : null}
     </main>
   );
 }

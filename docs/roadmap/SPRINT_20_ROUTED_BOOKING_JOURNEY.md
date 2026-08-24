@@ -25,6 +25,23 @@ Each issued Ticket has its own private presentation route at `/tickets/:secureTo
 
 The previous single-page implementation remains available temporarily as a compatibility reference at `/book/:eventId`, but the public Event CTA uses the routed journey.
 
+## Event Branding Continuity
+
+The booking layout resolves the public Event by its opaque Event ID and then loads the same published Event-site identity used by `/event/:eventSlug`. This happens once at the shared journey-provider boundary, so every routed step receives one consistent theme without duplicating requests or branding rules across pages.
+
+The routed journey applies the configured:
+
+- Event name or published logo;
+- primary, secondary and accent colours;
+- background and surface colours;
+- text colour;
+- heading and body font choices; and
+- active and inactive progress treatment.
+
+The public Event page and booking journey share the same default-branding and font mappings. If an Event has no custom branding, or the optional branding request fails, booking remains usable with Glacier’s safe default theme. Branding failure does not weaken or bypass any booking, capacity, Rule, inventory, payment or authentication control.
+
+Brand asset URLs continue to use the restricted public Event-site asset endpoint, which exposes only assets explicitly published for that Event.
+
 ## State and Navigation
 
 `BookingJourneyProvider` owns in-memory state below the Event route layout. This preserves selections across client-side Back and Continue navigation without placing personal information, participant ages, customer details or the public booking credential in the URL.
@@ -92,6 +109,9 @@ Verified behavior:
 - Confirmation is unreachable without a webhook-confirmed status result;
 - confirmed status can expose issued Tickets and the optional Waiver continuation;
 - each confirmed Ticket can be presented through its private token route and QR endpoint.
+- the published Event identity continues from the public Event page through every routed booking step;
+- custom logo, colour and font selections are resolved once by the shared booking layout;
+- missing or unavailable custom branding falls back safely without blocking booking.
 
 The browser-created unpaid acceptance reservation is expected to expire through the normal reservation-expiry mechanism.
 
@@ -99,8 +119,8 @@ The browser-created unpaid acceptance reservation is expected to expire through 
 
 At this checkpoint:
 
-- 12 web suites pass;
-- 43 web tests pass;
+- 13 web suites pass;
+- 44 web tests pass;
 - the Next.js webpack production build passes;
 - all routed booking pages are present in the production route manifest;
 - `git diff --check` passes;
@@ -108,7 +128,6 @@ At this checkpoint:
 
 ## Remaining Sprint 20 Work
 
-- apply Event branding consistently across every booking step;
 - add route-focused automated tests for guards, Rule failures, reservation errors and payment-pending copy;
 - run payment-webhook, inventory-release, responsive and console-error browser acceptance;
 - complete endpoint, authentication, storage, payment and closeout documentation;

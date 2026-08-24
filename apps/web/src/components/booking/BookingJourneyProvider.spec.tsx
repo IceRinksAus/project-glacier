@@ -1,6 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const { getEvent, getEventSite } = vi.hoisted(() => ({
+  getEvent: vi.fn(),
+  getEventSite: vi.fn(),
+}));
+
+vi.mock("@/services/public-booking.service", () => ({
+  publicBookingService: { getEvent, getEventSite },
+}));
 
 import { BookingJourneyProvider, useBookingJourney } from "./BookingJourneyProvider";
 
@@ -22,9 +31,23 @@ function JourneyHarness() {
 }
 
 describe("BookingJourneyProvider", () => {
+  beforeEach(() => {
+    getEvent.mockResolvedValue({ id: "event-1", slug: "winter-festival" });
+    getEventSite.mockResolvedValue({
+      id: "event-1",
+      name: "Winter Festival",
+      slug: "winter-festival",
+      branding: null,
+    });
+  });
+
   it("preserves selections between steps and clears incompatible Tickets when the Session changes", async () => {
     const user = userEvent.setup();
-    render(<BookingJourneyProvider><JourneyHarness /></BookingJourneyProvider>);
+    render(
+      <BookingJourneyProvider eventId="event-1">
+        <JourneyHarness />
+      </BookingJourneyProvider>,
+    );
 
     await user.click(screen.getByRole("button", { name: "Select first Session" }));
     await user.click(screen.getByRole("button", { name: "Add Tickets" }));

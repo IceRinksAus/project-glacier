@@ -1,12 +1,21 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import type { SelectedBookingProduct } from "./AddOnsStep";
 import {
   PublicBookingResponse,
   PublicBookingStatus,
+  PublicEventSite,
   PublicRulePreviewResponse,
+  publicBookingService,
 } from "@/services/public-booking.service";
 
 export interface BookingParticipantData {
@@ -23,6 +32,8 @@ export interface BookingCustomerData {
 }
 
 interface BookingJourneyState {
+  eventSite: PublicEventSite | null;
+  eventSiteLoaded: boolean;
   selectedSessionId: string | null;
   ticketQuantities: Record<string, number>;
   participantData: Record<string, BookingParticipantData>;
@@ -54,7 +65,21 @@ interface BookingJourneyState {
 
 const BookingJourneyContext = createContext<BookingJourneyState | null>(null);
 
-export function BookingJourneyProvider({ children }: { children: React.ReactNode }) {
+export function BookingJourneyProvider({
+  children,
+  eventId,
+}: {
+  children: React.ReactNode;
+  eventId: string;
+}) {
+  const [eventSiteResult, setEventSiteResult] = useState<{
+    eventId: string;
+    site: PublicEventSite | null;
+  } | null>(null);
+  const eventSite = eventSiteResult?.eventId === eventId
+    ? eventSiteResult.site
+    : null;
+  const eventSiteLoaded = eventSiteResult?.eventId === eventId;
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
   const [participantData, setParticipantData] = useState<
@@ -73,6 +98,25 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<PublicBookingStatus | null>(null);
 
+  useEffect(() => {
+    let active = true;
+
+    void publicBookingService
+      .getEvent(eventId)
+      .then((event) => publicBookingService.getEventSite(event.slug))
+      .then((site) => {
+        if (active) setEventSiteResult({ eventId, site });
+      })
+      .catch(() => {
+        // Booking remains available with Glacier's safe default theme.
+        if (active) setEventSiteResult({ eventId, site: null });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [eventId]);
+
   const updateSelectedProducts = useCallback(
     (products: SelectedBookingProduct[], subtotal: number) => {
       setSelectedProducts(products);
@@ -89,6 +133,8 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
 
   const value = useMemo<BookingJourneyState>(
     () => ({
+      eventSite,
+      eventSiteLoaded,
       selectedSessionId,
       ticketQuantities,
       participantData,
@@ -145,6 +191,8 @@ export function BookingJourneyProvider({ children }: { children: React.ReactNode
     [
       bookingStatus,
       customerData,
+      eventSite,
+      eventSiteLoaded,
       participantData,
       paymentSubmitted,
       productSubtotal,
