@@ -98,8 +98,9 @@ model Event {
 
   operationalSchedules OperationalSchedule[]
 
-  categories Category[]
-  products   Product[]
+  categories    Category[]
+  products      Product[]
+  productGroups ProductGroup[]
 
   bookings Booking[]
 
@@ -313,6 +314,9 @@ model Product {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
 
+  productGroupId String?
+  productGroup   ProductGroup? @relation(fields: [productGroupId], references: [id], onDelete: SetNull)
+
   variants ProductVariant[]
 
   sessionProducts SessionProduct[]
@@ -326,6 +330,26 @@ model Product {
   @@unique([eventId, sku])
   @@index([eventId])
   @@index([categoryId])
+  @@index([productGroupId])
+}
+
+model ProductGroup {
+  id String @id @default(cuid())
+
+  name        String
+  description String?
+  sortOrder   Int     @default(0)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, name])
+  @@index([eventId, sortOrder])
 }
 
 model ProductVariant {

@@ -15,15 +15,19 @@
 - Added the dashboard Bookings register and dedicated payment-investigation workspace.
 - Presented lifecycle, masked Payment, refund, Ticket and attributable reconciliation history with one controlled recovery action.
 - Added tenant-scoped, paginated Booking lookup by customer name, email or Booking number, with Event/Session and lifecycle filters plus deterministic sorting.
+- Added Event-owned customer Product groups with transactional group assignment and ordering.
+- Added drag-and-drop plus accessible up/down organiser controls and grouped public Add-ons presentation with a deterministic ungrouped fallback.
+- Preserved Kanga Rules, Session Product capacity and Product/Variant inventory as separate authoritative systems.
 
 ## Current Verification
 
 - Focused Payment and reservation suite: 6 suites and 61 tests passed.
-- Full API suite: 64 suites and 418 tests passed.
+- Full API suite: 65 suites and 424 tests passed.
 - API production build: passed.
-- Web: 17 suites and 53 tests passed; targeted new-file lint and webpack production build passed.
+- Web: 17 suites and 54 tests passed; targeted changed-file lint and webpack production build passed.
 - Local audit migration applied; two historical missed-success Stripe test Payments each reconciled to one successful AUD 34 refund, retained expired Bookings and issued zero Tickets.
 - Authenticated browser acceptance passed for the Bookings register, exact email lookup, Event/Session narrowing and responsive investigation page.
+- Organiser/public browser acceptance passed for persisted Popular/Merchandise ordering, Kanga/Safety Pack assignment and grouped public Add-ons rendering.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.
 

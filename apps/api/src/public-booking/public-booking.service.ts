@@ -368,6 +368,15 @@ export class PublicBookingService {
             salesStart: true,
             salesEnd: true,
             eventId: true,
+            sortOrder: true,
+            productGroup: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                sortOrder: true,
+              },
+            },
             variants: {
               where: {
                 status: 'ACTIVE',
@@ -529,10 +538,26 @@ export class PublicBookingService {
       }),
     );
 
-    return availableProducts.filter(
-      (sessionProduct): sessionProduct is NonNullable<typeof sessionProduct> =>
-        sessionProduct !== null,
-    );
+    return availableProducts
+      .filter(
+        (sessionProduct): sessionProduct is NonNullable<typeof sessionProduct> =>
+          sessionProduct !== null,
+      )
+      .sort((left, right) => {
+        const leftGroupOrder =
+          left.product.productGroup?.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const rightGroupOrder =
+          right.product.productGroup?.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        return (
+          leftGroupOrder - rightGroupOrder ||
+          (left.product.productGroup?.name ?? '').localeCompare(
+            right.product.productGroup?.name ?? '',
+          ) ||
+          left.product.sortOrder - right.product.sortOrder ||
+          left.product.name.localeCompare(right.product.name) ||
+          left.product.id.localeCompare(right.product.id)
+        );
+      });
   }
 
   createCustomer(data: {

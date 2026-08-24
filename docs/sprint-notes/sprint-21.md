@@ -105,9 +105,26 @@ The refreshed production dashboard was also accepted against current local data.
 
 The completed search slice passes the full API suite at 64 suites / 418 tests, the full web suite at 17 suites / 53 tests, both production builds and targeted dashboard lint.
 
+## Slice 3 — Add-on Grouping and Ordering
+
+Glacier now persists Event-owned customer-facing Product groups separately from catalogue Categories. Groups contain only presentation name, optional description and order. Products retain their existing `sortOrder` as their order inside a group and may remain ungrouped without becoming unavailable.
+
+OWNER operations can create and edit groups, reorder the complete Event group set, and assign/reorder the complete non-admission Product set transactionally. Every read and mutation resolves through Event → Organisation. Incomplete, duplicate or foreign ID sets are rejected before writes, preventing partial or cross-tenant ordering.
+
+The organiser Product workspace now supports:
+
+- drag-and-drop group and Product ordering;
+- keyboard-accessible up/down controls;
+- explicit Product group selectors; and
+- a clear boundary explaining that presentation does not change Rules, Session capacity or inventory.
+
+The public Add-ons response returns privacy-minimised group metadata and applies deterministic group, Product and name/ID fallbacks. The Add-ons step renders semantic group headings and preserves an `Other add-ons` section for existing ungrouped Products. Required Product minimums, Kanga Rule evaluation, per-Session Product capacity and finite Variant inventory remain unchanged.
+
+The additive migration was applied locally, bringing the development database to all 30 migrations. Browser acceptance created `Popular` and `Merchandise` for the Tenant Security Test Event, moved Kanga into `Popular`, moved Safety Pack into `Merchandise`, and verified the public Add-ons page rendered those headings and Products in the saved order while preserving current availability figures.
+
+Verification passes 65 API suites / 424 tests, 17 web suites / 54 tests, targeted changed-file lint and both production builds.
+
 ## Remaining Sprint 21 Work
 
-- Event-owned Product grouping and deterministic ordering;
-- accessible dashboard ordering controls;
-- grouped public Add-ons presentation; and
-- full closeout, browser and approved Stripe acceptance.
+- final closeout documentation and repository review; and
+- approved Stripe acceptance only if a further real provider mutation is judged necessary.

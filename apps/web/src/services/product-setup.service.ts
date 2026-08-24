@@ -40,8 +40,19 @@ export interface ProductAdministration {
   requiresSession: boolean;
   availableOnline: boolean;
   availablePos: boolean;
+  sortOrder: number;
+  productGroupId: string | null;
   variants: ProductVariantAdministration[];
   sessionProducts: SessionProductAdministration[];
+}
+
+export interface ProductGroupAdministration {
+  id: string;
+  eventId: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  products: ProductAdministration[];
 }
 
 export interface CreateProductAdministration {
@@ -128,4 +139,29 @@ export const productSetupService = {
     api.patch<ProductAdministration>(`/product/${productId}/status`, {
       status,
     }),
+
+  findGroups: (eventId: string) =>
+    api.get<ProductGroupAdministration[]>(
+      `/product-group?eventId=${encodeURIComponent(eventId)}`,
+    ),
+
+  createGroup: (data: {
+    eventId: string;
+    name: string;
+    description?: string;
+  }) => api.post<ProductGroupAdministration>("/product-group", data),
+
+  updateGroupOrder: (eventId: string, groupIds: string[]) =>
+    api.patch<ProductGroupAdministration[]>("/product-group/order", {
+      eventId,
+      groupIds,
+    }),
+
+  updateProductOrder: (
+    eventId: string,
+    groups: Array<{ groupId: string | null; productIds: string[] }>,
+  ) => api.patch<ProductGroupAdministration[]>("/product-group/product-order", {
+    eventId,
+    groups,
+  }),
 };

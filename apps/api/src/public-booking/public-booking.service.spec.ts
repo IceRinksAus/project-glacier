@@ -637,6 +637,15 @@ describe('PublicBookingService', () => {
             salesStart: true,
             salesEnd: true,
             eventId: true,
+            sortOrder: true,
+            productGroup: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                sortOrder: true,
+              },
+            },
             variants: {
               where: {
                 status: 'ACTIVE',
@@ -681,6 +690,59 @@ describe('PublicBookingService', () => {
         ...sessionProducts[0],
         remainingQuantity: 20,
       },
+    ]);
+  });
+
+  it('orders public Products by customer group and then Product order', async () => {
+    const base = {
+      ...sessionProducts[0],
+      capacityOverride: null,
+      product: {
+        ...sessionProducts[0].product,
+        capacityControlled: false,
+        capacity: null,
+        inventoryTracked: false,
+        inventoryQuantity: null,
+      },
+    };
+    prisma.sessionProduct.findMany.mockResolvedValue([
+      {
+        ...base,
+        id: 'session-product-hoodie',
+        productId: 'product-hoodie',
+        product: {
+          ...base.product,
+          id: 'product-hoodie',
+          name: 'Event Hoodie',
+          sortOrder: 0,
+          productGroup: {
+            id: 'group-merchandise',
+            name: 'Merchandise',
+            description: null,
+            sortOrder: 1,
+          },
+        },
+      },
+      {
+        ...base,
+        product: {
+          ...base.product,
+          sortOrder: 0,
+          productGroup: {
+            id: 'group-popular',
+            name: 'Popular',
+            description: null,
+            sortOrder: 0,
+          },
+        },
+      },
+    ]);
+
+    const result = await service.findSessionProducts('session-1');
+
+    expect(result.map(({ product }) => product.id)).toEqual([
+      'product-kanga',
+      'product-hoodie',
     ]);
   });
 

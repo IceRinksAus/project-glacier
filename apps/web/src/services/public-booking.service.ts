@@ -67,7 +67,16 @@ export interface PublicProduct {
   salesStart: string | null;
   salesEnd: string | null;
   eventId: string;
+  sortOrder: number;
+  productGroup: PublicProductGroup | null;
   variants: PublicProductVariant[];
+}
+
+export interface PublicProductGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  sortOrder: number;
 }
 
 export interface PublicProductVariant {

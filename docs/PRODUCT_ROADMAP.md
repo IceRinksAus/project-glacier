@@ -33,6 +33,7 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 - Stripe webhook processing
 - Reservation payment cancellation
 - Automatic late-success refunds
+- Event-owned customer Product groups and deterministic Add-on ordering
 
 ## Completed
 
@@ -55,6 +56,8 @@ A production-grade, multi-tenant ticketing and event-operations platform for Ice
 ✔ Customer Booking Flow Foundation
 
 ✔ Stripe Payments & Payment Hardening
+
+✔ Customer Add-on Grouping & Ordering
 
 ---
 

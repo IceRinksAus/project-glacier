@@ -157,4 +157,49 @@ describe("AddOnsStep Product availability", () => {
       115,
     );
   });
+
+  it("presents Products beneath organiser-ordered customer group headings", async () => {
+    getSessionProducts.mockResolvedValue([
+      {
+        ...kangaSessionProduct,
+        product: {
+          ...kangaSessionProduct.product,
+          sortOrder: 0,
+          productGroup: {
+            id: "group-popular",
+            name: "Popular",
+            description: "Most requested extras",
+            sortOrder: 0,
+          },
+        },
+      },
+      {
+        ...kangaSessionProduct,
+        id: "session-product-hoodie",
+        productId: "product-hoodie",
+        product: {
+          ...kangaSessionProduct.product,
+          id: "product-hoodie",
+          name: "Event Hoodie",
+          slug: "event-hoodie",
+          sortOrder: 0,
+          productGroup: {
+            id: "group-merchandise",
+            name: "Merchandise",
+            description: null,
+            sortOrder: 1,
+          },
+        },
+      },
+    ]);
+
+    render(<AddOnsStep sessionId="session-1" onChange={vi.fn()} />);
+
+    const headings = await screen.findAllByRole("heading", { level: 3 });
+    expect(headings.map((heading) => heading.textContent)).toEqual([
+      "Popular",
+      "Merchandise",
+    ]);
+    expect(screen.getByText("Most requested extras")).toBeVisible();
+  });
 });

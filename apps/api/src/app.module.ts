@@ -15,6 +15,7 @@ import { OrganizationModule } from './organization/organization.module';
 import { PaymentModule } from './payment/payment.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductModule } from './product/product.module';
+import { ProductGroupModule } from './product-group/product-group.module';
 import { ProductVariantModule } from './product-variant/product-variant.module';
 import { PublicBookingModule } from './public-booking/public-booking.module';
 import { RuleModule } from './rule/rule.module';
@@ -42,6 +43,7 @@ import { WaiverModule } from './waiver/waiver.module';
     SessionModule,
     CategoryModule,
     ProductModule,
+    ProductGroupModule,
     ProductVariantModule,
     SessionProductModule,
     StaffScannerModule,

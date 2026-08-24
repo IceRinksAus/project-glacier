@@ -7,6 +7,7 @@ import { ProductsWorkspace } from "./ProductsWorkspace";
 const {
   authState,
   findForEvent,
+  findGroups,
   createProduct,
   createVariant,
   assignToSession,
@@ -17,6 +18,7 @@ const {
 } = vi.hoisted(() => ({
   authState: { role: "OWNER" },
   findForEvent: vi.fn(),
+  findGroups: vi.fn(),
   createProduct: vi.fn(),
   createVariant: vi.fn(),
   assignToSession: vi.fn(),
@@ -35,6 +37,7 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/services/product-setup.service", () => ({
   productSetupService: {
     findForEvent,
+    findGroups,
     createProduct,
     createVariant,
     assignToSession,
@@ -66,6 +69,7 @@ describe("ProductsWorkspace", () => {
     vi.clearAllMocks();
     authState.role = "OWNER";
     findForEvent.mockResolvedValue([]);
+    findGroups.mockResolvedValue([]);
     getSessions.mockResolvedValue([activeSession]);
     findTicketTypes.mockResolvedValue([
       {

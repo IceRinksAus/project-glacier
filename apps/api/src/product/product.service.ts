@@ -178,6 +178,7 @@ export class ProductService {
       include: {
         event: true,
         category: true,
+        productGroup: true,
         variants: {
           orderBy: [
             {
@@ -219,6 +220,7 @@ export class ProductService {
       include: {
         event: true,
         category: true,
+        productGroup: true,
         variants: {
           orderBy: [
             {
@@ -428,6 +430,7 @@ export class ProductService {
       include: {
         event: true,
         category: true,
+        productGroup: true,
         variants: true,
         sessionProducts: true,
       },

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ProductOrganisation } from "@/components/products/ProductOrganisation";
 import {
   getAuthRoleSnapshot,
   getServerAuthRoleSnapshot,
@@ -15,6 +16,7 @@ import {
 } from "@/lib/auth";
 import {
   ProductAdministration,
+  ProductGroupAdministration,
   productSetupService,
 } from "@/services/product-setup.service";
 import { Session, sessionService } from "@/services/session.service";
@@ -62,6 +64,7 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
     getServerAuthRoleSnapshot,
   );
   const [products, setProducts] = useState<ProductAdministration[]>([]);
+  const [groups, setGroups] = useState<ProductGroupAdministration[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -84,12 +87,14 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   const [requiredTicketTypeIds, setRequiredTicketTypeIds] = useState<string[]>([]);
 
   const loadWorkspace = useCallback(async () => {
-    const [productResult, sessionResult, ticketTypeResult] = await Promise.all([
+    const [productResult, groupResult, sessionResult, ticketTypeResult] = await Promise.all([
       productSetupService.findForEvent(eventId),
+      productSetupService.findGroups(eventId),
       sessionService.getSessions(eventId),
       ticketTypeService.findForEvent(eventId),
     ]);
     setProducts(productResult);
+    setGroups(groupResult);
     setSessions(sessionResult.filter((session) => session.status === "ACTIVE"));
     setTicketTypes(ticketTypeResult.filter((ticketType) => ticketType.active));
   }, [eventId]);
@@ -292,6 +297,14 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      {role === "OWNER" ? (
+        <ProductOrganisation
+          eventId={eventId}
+          groups={groups}
+          products={products.filter((product) => product.productType !== "ADMISSION")}
+          onSaved={loadWorkspace}
+        />
+      ) : null}
       <section className="rounded-xl border bg-card p-6">
         <p className="text-sm font-medium text-muted-foreground">Catalogue</p>
         <h2 className="mt-2 text-2xl font-semibold">Products</h2>

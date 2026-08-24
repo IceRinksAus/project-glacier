@@ -35,6 +35,9 @@ interface ProductChoice {
   price: number;
   maximum: number | null;
   remainingQuantity: number | null;
+  groupId: string | null;
+  groupName: string;
+  groupDescription: string | null;
 }
 
 function formatCurrency(amount: number) {
@@ -66,6 +69,9 @@ function buildChoices(sessionProducts: PublicSessionProduct[]) {
           sessionProduct.remainingQuantity,
         ),
         remainingQuantity: sessionProduct.remainingQuantity,
+        groupId: product.productGroup?.id ?? null,
+        groupName: product.productGroup?.name ?? "Other add-ons",
+        groupDescription: product.productGroup?.description ?? null,
       }];
     }
 
@@ -86,6 +92,9 @@ function buildChoices(sessionProducts: PublicSessionProduct[]) {
         sessionProduct.remainingQuantity,
         variant.remainingQuantity,
       ),
+      groupId: product.productGroup?.id ?? null,
+      groupName: product.productGroup?.name ?? "Other add-ons",
+      groupDescription: product.productGroup?.description ?? null,
     }));
   });
 }
@@ -139,6 +148,31 @@ export function AddOnsStep({
   }, [sessionId]);
 
   const choices = useMemo(() => buildChoices(sessionProducts), [sessionProducts]);
+  const choiceGroups = useMemo(
+    () => Array.from(
+      choices.reduce((groups, choice) => {
+        const key = choice.groupId ?? "ungrouped";
+        const existing = groups.get(key);
+        if (existing) {
+          existing.choices.push(choice);
+        } else {
+          groups.set(key, {
+            key,
+            name: choice.groupName,
+            description: choice.groupDescription,
+            choices: [choice],
+          });
+        }
+        return groups;
+      }, new Map<string, {
+        key: string;
+        name: string;
+        description: string | null;
+        choices: ProductChoice[];
+      }>()).values(),
+    ),
+    [choices],
+  );
   const requiredQuantityBySlug = useMemo(
     () => new Map(
       requiredProducts.map((requiredProduct) => [
@@ -262,8 +296,19 @@ export function AddOnsStep({
       ) : null}
 
       {!isLoading && !error && choices.length > 0 ? (
-        <div className="mt-6 grid gap-3">
-          {choices.map((choice) => {
+        <div className="mt-6 space-y-8">
+          {choiceGroups.map((group) => (
+            <section key={group.key} aria-labelledby={`add-on-group-${group.key}`}>
+              <h3 id={`add-on-group-${group.key}`} className="text-xl font-semibold">
+                {group.name}
+              </h3>
+              {group.description ? (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {group.description}
+                </p>
+              ) : null}
+              <div className="mt-3 grid gap-3">
+          {group.choices.map((choice) => {
             const quantity = selectedQuantity(choice);
             const minimum = requiredMinimum(choice);
             const atMaximum =
@@ -276,7 +321,7 @@ export function AddOnsStep({
               >
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="font-semibold">{choice.name}</h3>
+                    <h4 className="font-semibold">{choice.name}</h4>
                     <span className="text-sm font-medium">
                       {formatCurrency(choice.price)}
                     </span>
@@ -329,6 +374,9 @@ export function AddOnsStep({
               </div>
             );
           })}
+              </div>
+            </section>
+          ))}
         </div>
       ) : null}
 
