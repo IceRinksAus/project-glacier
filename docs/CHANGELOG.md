@@ -21,6 +21,8 @@
 - Full API suite: 62 suites and 413 tests passed.
 - API production build: passed.
 - Web: 16 suites and 51 tests passed; targeted new-file lint and webpack production build passed.
+- Local audit migration applied; two historical missed-success Stripe test Payments each reconciled to one successful AUD 34 refund, retained expired Bookings and issued zero Tickets.
+- Authenticated browser acceptance passed for the Bookings register and responsive investigation page with no console warnings or errors.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.
 

@@ -72,9 +72,35 @@ The UI never offers `Mark paid`. When Stripe still reports PENDING, the page exp
 
 Web verification now passes 16 suites / 51 tests, targeted lint for every new Bookings file and the webpack production build with `/bookings` plus `/bookings/[bookingId]` routes.
 
+## Local Reconciliation Acceptance
+
+The additive reconciliation-attempt migration was applied successfully to the local PostgreSQL database on 24 August 2026, bringing the development database to all 29 migrations.
+
+After the updated API restarted, the scheduler found the two historical Sprint 20 mismatch Bookings and retrieved their authoritative Stripe state. Both were reconciled as provider successes and processed through the late-success compensation path.
+
+Database verification confirmed for each Booking:
+
+- Booking remains `EXPIRED` and `UNPAID`;
+- local Payment is `SUCCEEDED`;
+- exactly one `SUCCEEDED` AUD 34 refund exists with a provider reference; and
+- zero Tickets were issued.
+
+The records no longer match the scheduler's locally PENDING query, so the impossible per-minute cancellation retry has stopped. This is direct local/Stripe test-mode evidence of the Slice 1 recovery behavior, not only mocked test coverage.
+
+The API and both canonical web previews were restarted successfully on ports 3000, 3001 and 3002.
+
+Authenticated browser acceptance then verified:
+
+- the Bookings register loads current tenant Bookings with Booking, customer, Event, lifecycle, payment and total columns;
+- the recovered AUD 34 Booking opens its dedicated investigation page;
+- the provider reference is masked;
+- the page shows EXPIRED/UNPAID, provider SUCCEEDED, one successful AUD 34 refund and zero Tickets;
+- no reconciliation button appears after the terminal state has already been resolved;
+- the narrow responsive presentation has no horizontal page overflow; and
+- the browser console reports no warnings or errors.
+
 ## Remaining Sprint 21 Work
 
-- local migration application and browser operational acceptance;
 - Event-owned Product grouping and deterministic ordering;
 - accessible dashboard ordering controls;
 - grouped public Add-ons presentation; and
