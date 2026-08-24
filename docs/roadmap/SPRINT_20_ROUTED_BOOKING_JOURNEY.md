@@ -119,16 +119,22 @@ The browser-created unpaid acceptance reservation is expected to expire through 
 
 At this checkpoint:
 
-- 13 web suites pass;
-- 44 web tests pass;
+- 14 web suites pass;
+- 48 web tests pass;
 - the Next.js webpack production build passes;
 - all routed booking pages are present in the production route manifest;
 - `git diff --check` passes;
 - the unrelated user-owned pilot-readiness roadmap edit remains excluded.
 
+Route-focused coverage proves that:
+
+- direct Tickets navigation without a selected Session returns to Session;
+- an authoritative Event Rule rejection remains on Participants and displays the returned reason;
+- an authoritative reservation failure remains on Review and does not advance to Payment; and
+- client-side payment submission remains described as pending until the protected status endpoint reports both `CONFIRMED` and `PAID`.
+
 ## Remaining Sprint 20 Work
 
-- add route-focused automated tests for guards, Rule failures, reservation errors and payment-pending copy;
 - run payment-webhook, inventory-release, responsive and console-error browser acceptance;
 - complete endpoint, authentication, storage, payment and closeout documentation;
 - run full API/web regression, lint and dependency audits before closeout.
