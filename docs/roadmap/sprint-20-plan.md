@@ -202,16 +202,21 @@ Complete the existing Event **Website** tab as the durable branding editor.
 
 ## Routed Booking Journey
 
+### Approved implementation refinement — Date before Session
+
+On 24 August 2026, the customer sequence was refined within the approved mobile-first scope so multi-day Events do not present dozens of Session times at once. The public Event CTA now opens a dedicated Date page. Date values derive from eligible Session start times in the configured Event timezone; the following Session page displays only times on that date. Changing Date invalidates the selected Session and all dependent checkout state. Shared Session capacity and every existing server-authoritative commerce rule remain unchanged.
+
 The customer journey uses dedicated route segments or an equivalent nested routing structure that produces a real page transition for each step:
 
-1. Session
-2. Tickets
-3. Participants
-4. Add-ons
-5. Customer details
-6. Review
-7. Payment
-8. Confirmation
+1. Date
+2. Session
+3. Tickets
+4. Participants
+5. Add-ons
+6. Customer details
+7. Review
+8. Payment
+9. Confirmation
 
 The implementation should use a shared booking-flow layout/provider so client navigation retains in-progress non-authoritative selections without query-string encoding.
 
@@ -424,7 +429,7 @@ It must not become a general unauthenticated Booking-detail API.
 6. Complete the Website/Branding Workspace editor.
 7. Add the privacy-minimised public Event-by-slug contract and branded Event page.
 8. Extract the existing booking logic into shared routed-flow state and step components.
-9. Implement dedicated Session through Review pages without changing server authority.
+9. Implement dedicated Date through Review pages without changing server authority.
 10. Add protected public Booking status and truthful payment-processing flow.
 11. Implement authoritative Confirmation and Ticket/Waiver continuation.
 12. Run full regression, builds, lint and dependency audits.
@@ -447,4 +452,4 @@ Sprint 20 begins from:
 
 ## Definition of Done
 
-Sprint 20 is complete when an OWNER can create and later edit a controlled accessible Event brand; an ACTIVE Event has a branded public slug-based landing page; a customer can progress through dedicated Session, Ticket, Participant, Add-on, Customer, Review, Payment and Confirmation pages; required Products, finite inventory and totals remain authoritative; payment is never called confirmed before webhook-authoritative state; confirmation exposes appropriate Ticket and optional Waiver continuation; OWNER/MEMBER/public boundaries remain safe; the full regression baseline remains green; canonical `3001` and `3002` previews show the final current build; required architecture and residual-risk documentation is complete; and no deployment occurs.
+Sprint 20 is complete when an OWNER can create and later edit a controlled accessible Event brand; an ACTIVE Event has a branded public slug-based landing page; a customer can progress through dedicated Date, Session, Ticket, Participant, Add-on, Customer, Review, Payment and Confirmation pages; required Products, finite inventory and totals remain authoritative; payment is never called confirmed before webhook-authoritative state; confirmation exposes appropriate Ticket and optional Waiver continuation; OWNER/MEMBER/public boundaries remain safe; the full regression baseline remains green; canonical `3001` and `3002` previews show the final current build; required architecture and residual-risk documentation is complete; and no deployment occurs.

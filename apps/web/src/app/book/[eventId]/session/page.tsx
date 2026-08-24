@@ -1,22 +1,27 @@
 "use client";
 
-import { ArrowRight, CalendarDays, Clock } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 
 import { BookingJourneyShell } from "@/components/booking/BookingJourneyShell";
 import { useBookingJourney } from "@/components/booking/BookingJourneyProvider";
+import { getEventDateKey } from "@/components/booking/event-date";
 import { PublicEvent, PublicSession, publicBookingService } from "@/services/public-booking.service";
 
 export default function SessionPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const router = useRouter();
-  const { selectedSessionId, selectSession } = useBookingJourney();
+  const { selectedDateKey, selectedSessionId, selectSession } = useBookingJourney();
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [sessions, setSessions] = useState<PublicSession[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!selectedDateKey) {
+      router.replace(`/book/${eventId}/date`);
+      return;
+    }
     let active = true;
     Promise.all([
       publicBookingService.getEvent(eventId),
@@ -30,7 +35,7 @@ export default function SessionPage({ params }: { params: Promise<{ eventId: str
       })
       .catch(() => { if (active) setError("We couldn’t load the available Sessions."); });
     return () => { active = false; };
-  }, [eventId]);
+  }, [eventId, router, selectedDateKey]);
 
   const timezone = event?.timezone ?? "Australia/Melbourne";
   const formatDate = (value: string) => new Intl.DateTimeFormat("en-AU", {
@@ -39,20 +44,28 @@ export default function SessionPage({ params }: { params: Promise<{ eventId: str
   const formatTime = (value: string) => new Intl.DateTimeFormat("en-AU", {
     hour: "numeric", minute: "2-digit", timeZone: timezone,
   }).format(new Date(value));
+  const sessionsOnDate = useMemo(
+    () => sessions.filter(
+      (session) => getEventDateKey(session.startDate, timezone) === selectedDateKey,
+    ),
+    [selectedDateKey, sessions, timezone],
+  );
+
+  if (!selectedDateKey) return null;
 
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 1 of 8</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 2 of 9</p>
         <h1 className="mt-3 text-3xl font-bold">Choose your Session</h1>
-        <p className="mt-2 text-slate-600">{event ? event.name : "Select the time you would like to attend."}</p>
+        <p className="mt-2 text-slate-600">Select the time you would like to attend on your chosen date.</p>
 
         {error ? <p role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
         {!event && !error ? <p className="mt-8 text-sm text-slate-500">Loading Sessions…</p> : null}
-        {event && sessions.length === 0 ? <p className="mt-8 rounded-xl border border-dashed p-5 text-sm text-slate-600">There are currently no Sessions available for online booking.</p> : null}
+        {event && sessionsOnDate.length === 0 ? <p className="mt-8 rounded-xl border border-dashed p-5 text-sm text-slate-600">There are currently no Sessions available on this date.</p> : null}
 
         <div className="mt-8 grid gap-3">
-          {sessions.map((session) => {
+          {sessionsOnDate.map((session) => {
             const selected = selectedSessionId === session.id;
             return (
               <button
@@ -78,7 +91,14 @@ export default function SessionPage({ params }: { params: Promise<{ eventId: str
           })}
         </div>
 
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => router.push(`/book/${eventId}/date`)}
+            className="inline-flex items-center gap-2 rounded-xl border px-5 py-3 font-bold"
+          >
+            <ArrowLeft className="size-4" /> Back
+          </button>
           <button
             type="button"
             disabled={!selectedSessionId}

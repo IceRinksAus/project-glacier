@@ -19,6 +19,7 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
   const { eventId } = use(params);
   const router = useRouter();
   const {
+    selectedDateKey,
     selectedSessionId,
     ticketQuantities,
     participantData,
@@ -32,7 +33,7 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
 
   useEffect(() => {
     if (!selectedSessionId || totalTicketQuantity === 0) {
-      router.replace(`/book/${eventId}/${selectedSessionId ? "tickets" : "session"}`);
+      router.replace(`/book/${eventId}/${selectedSessionId ? "tickets" : selectedDateKey ? "session" : "date"}`);
       return;
     }
     let active = true;
@@ -40,7 +41,7 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
       .then((results) => { if (active) setTicketTypes(results); })
       .catch(() => { if (active) setError("We couldn’t load the participant form."); });
     return () => { active = false; };
-  }, [eventId, router, selectedSessionId, totalTicketQuantity]);
+  }, [eventId, router, selectedDateKey, selectedSessionId, totalTicketQuantity]);
 
   const slots = useMemo<ParticipantSlot[]>(() => ticketTypes.flatMap((ticketType) =>
     Array.from({ length: ticketQuantities[ticketType.id] ?? 0 }, (_, index) => ({
@@ -96,7 +97,7 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 3 of 8</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 4 of 9</p>
         <h1 className="mt-3 text-3xl font-bold">Participant details</h1>
         <p className="mt-2 text-slate-600">Tell us who will be attending. Ages are checked against the Event’s Ticket and Product rules.</p>
 

@@ -9,6 +9,7 @@ import { defaultEventBranding, eventFontFamilies } from "./event-branding";
 import { publicBookingService } from "@/services/public-booking.service";
 
 const steps = [
+  ["date", "Date"],
   ["session", "Session"],
   ["tickets", "Tickets"],
   ["participants", "Participants"],

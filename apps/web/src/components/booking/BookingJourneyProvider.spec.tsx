@@ -17,10 +17,13 @@ function JourneyHarness() {
   const journey = useBookingJourney();
   return (
     <div>
+      <span>Date: {journey.selectedDateKey ?? "none"}</span>
       <span>Session: {journey.selectedSessionId ?? "none"}</span>
       <span>Tickets: {journey.totalTicketQuantity}</span>
       <span>Participant: {journey.participantData["adult-0"]?.firstName ?? "none"}</span>
       <span>Customer: {journey.customerData.email || "none"}</span>
+      <button type="button" onClick={() => journey.selectDate("2027-09-01")}>Select first Date</button>
+      <button type="button" onClick={() => journey.selectDate("2027-09-02")}>Select another Date</button>
       <button type="button" onClick={() => journey.selectSession("session-1")}>Select first Session</button>
       <button type="button" onClick={() => journey.selectSession("session-2")}>Select another Session</button>
       <button type="button" onClick={() => journey.setTicketQuantity("adult", 2)}>Add Tickets</button>
@@ -49,14 +52,27 @@ describe("BookingJourneyProvider", () => {
       </BookingJourneyProvider>,
     );
 
+    await user.click(screen.getByRole("button", { name: "Select first Date" }));
     await user.click(screen.getByRole("button", { name: "Select first Session" }));
     await user.click(screen.getByRole("button", { name: "Add Tickets" }));
     await user.click(screen.getByRole("button", { name: "Add Participant" }));
     await user.click(screen.getByRole("button", { name: "Add Customer" }));
+    expect(screen.getByText("Date: 2027-09-01")).toBeInTheDocument();
     expect(screen.getByText("Session: session-1")).toBeInTheDocument();
     expect(screen.getByText("Tickets: 2")).toBeInTheDocument();
     expect(screen.getByText("Participant: Jamie")).toBeInTheDocument();
     expect(screen.getByText("Customer: jamie@example.com")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Select another Date" }));
+    expect(screen.getByText("Date: 2027-09-02")).toBeInTheDocument();
+    expect(screen.getByText("Session: none")).toBeInTheDocument();
+    expect(screen.getByText("Tickets: 0")).toBeInTheDocument();
+    expect(screen.getByText("Participant: none")).toBeInTheDocument();
+    expect(screen.getByText("Customer: jamie@example.com")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Select first Session" }));
+    await user.click(screen.getByRole("button", { name: "Add Tickets" }));
+    await user.click(screen.getByRole("button", { name: "Add Participant" }));
 
     await user.click(screen.getByRole("button", { name: "Select another Session" }));
     expect(screen.getByText("Session: session-2")).toBeInTheDocument();

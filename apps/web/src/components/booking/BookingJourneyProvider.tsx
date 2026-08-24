@@ -34,6 +34,7 @@ export interface BookingCustomerData {
 interface BookingJourneyState {
   eventSite: PublicEventSite | null;
   eventSiteLoaded: boolean;
+  selectedDateKey: string | null;
   selectedSessionId: string | null;
   ticketQuantities: Record<string, number>;
   participantData: Record<string, BookingParticipantData>;
@@ -44,6 +45,7 @@ interface BookingJourneyState {
   reservation: PublicBookingResponse | null;
   paymentSubmitted: boolean;
   bookingStatus: PublicBookingStatus | null;
+  selectDate: (dateKey: string) => void;
   selectSession: (sessionId: string) => void;
   setTicketQuantity: (ticketTypeId: string, quantity: number) => void;
   updateParticipant: (
@@ -80,6 +82,7 @@ export function BookingJourneyProvider({
     ? eventSiteResult.site
     : null;
   const eventSiteLoaded = eventSiteResult?.eventId === eventId;
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
   const [participantData, setParticipantData] = useState<
@@ -135,6 +138,7 @@ export function BookingJourneyProvider({
     () => ({
       eventSite,
       eventSiteLoaded,
+      selectedDateKey,
       selectedSessionId,
       ticketQuantities,
       participantData,
@@ -145,6 +149,20 @@ export function BookingJourneyProvider({
       reservation,
       paymentSubmitted,
       bookingStatus,
+      selectDate(dateKey) {
+        if (dateKey !== selectedDateKey) {
+          setSelectedDateKey(dateKey);
+          setSelectedSessionId(null);
+          setTicketQuantities({});
+          setParticipantData({});
+          setRulePreview(null);
+          setSelectedProducts([]);
+          setProductSubtotal(0);
+          setReservation(null);
+          setPaymentSubmitted(false);
+          setBookingStatus(null);
+        }
+      },
       selectSession(sessionId) {
         if (sessionId !== selectedSessionId) {
           setSelectedSessionId(sessionId);
@@ -199,6 +217,7 @@ export function BookingJourneyProvider({
       reservation,
       rulePreview,
       selectedProducts,
+      selectedDateKey,
       selectedSessionId,
       ticketQuantities,
       updateSelectedProducts,

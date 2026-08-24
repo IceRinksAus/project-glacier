@@ -7,7 +7,7 @@
 - Controlled Event branding during Event creation and in the Website workspace.
 - Tenant-owned FileAsset metadata, validated branding uploads and a development storage-provider boundary.
 - ACTIVE-only public Event pages with published logo, hero, colour, font and content identity.
-- Dedicated Session, Tickets, Participants, Add-ons, Details, Review, Payment and Confirmation routes.
+- Dedicated Date, Session, Tickets, Participants, Add-ons, Details, Review, Payment and Confirmation routes.
 - Credential-protected public Booking status recovery and authoritative Confirmation.
 - Private Ticket presentation and QR routes using separate possession credentials.
 

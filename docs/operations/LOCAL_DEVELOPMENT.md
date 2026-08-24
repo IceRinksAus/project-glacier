@@ -104,7 +104,7 @@ The API CORS configuration must permit both trusted local web origins when both 
 
 After changing source code while running a production preview, rebuild and restart the web process before acceptance testing. Development hot reload is not evidence that the canonical production preview contains the current checkpoint.
 
-The routed public journey begins at `/event/:eventSlug` and continues to `/book/:eventId/session`. A hard refresh before reservation creation intentionally restarts in-memory checkout state rather than persisting customer or participant information insecurely.
+The routed public journey begins at `/event/:eventSlug` and continues to `/book/:eventId/date`, followed by Session selection for that Event-timezone date. A hard refresh before reservation creation intentionally restarts in-memory checkout state rather than persisting customer or participant information insecurely.
 
 ## Secret Safety
 

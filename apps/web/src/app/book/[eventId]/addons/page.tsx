@@ -12,6 +12,7 @@ export default function AddOnsPage({ params }: { params: Promise<{ eventId: stri
   const { eventId } = use(params);
   const router = useRouter();
   const {
+    selectedDateKey,
     selectedSessionId,
     totalTicketQuantity,
     rulePreview,
@@ -21,9 +22,9 @@ export default function AddOnsPage({ params }: { params: Promise<{ eventId: stri
 
   useEffect(() => {
     if (!selectedSessionId || totalTicketQuantity === 0 || !rulePreview?.valid) {
-      router.replace(`/book/${eventId}/${selectedSessionId ? "participants" : "session"}`);
+      router.replace(`/book/${eventId}/${selectedSessionId ? "participants" : selectedDateKey ? "session" : "date"}`);
     }
-  }, [eventId, router, rulePreview, selectedSessionId, totalTicketQuantity]);
+  }, [eventId, router, rulePreview, selectedDateKey, selectedSessionId, totalTicketQuantity]);
 
   const requiredProducts = useMemo(
     () => rulePreview?.requiredProducts ?? [],

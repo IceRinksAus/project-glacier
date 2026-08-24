@@ -92,7 +92,7 @@ export default function PublicEventPage({
             {branding.heroDescription || event.description || "Choose your session and book your Event experience."}
           </p>
           <div className="mt-9">
-            <Link href={`/book/${event.id}/session`} className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4" style={{ backgroundColor: branding.accentColor, color: branding.textColor }}>
+            <Link href={`/book/${event.id}/date`} className="inline-flex items-center gap-2 rounded-xl px-6 py-3 font-bold shadow-lg transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4" style={{ backgroundColor: branding.accentColor, color: branding.textColor }}>
               Book tickets <ArrowRight className="size-4" />
             </Link>
           </div>

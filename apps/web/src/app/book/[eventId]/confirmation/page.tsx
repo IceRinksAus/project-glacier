@@ -24,7 +24,7 @@ export default function ConfirmationPage({ params }: { params: Promise<{ eventId
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
         <CheckCircle2 className="size-12 text-emerald-600" />
-        <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-slate-500">Step 8 of 8</p>
+        <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-slate-500">Step 9 of 9</p>
         <p className="mt-2 text-sm font-semibold uppercase tracking-widest text-emerald-700">Payment confirmed</p>
         <h1 className="mt-2 text-3xl font-bold">Your booking is confirmed</h1>
         <p className="mt-3 text-slate-600">Booking {bookingStatus.bookingNumber} for {bookingStatus.event.name} has been paid and your Tickets have been issued.</p>

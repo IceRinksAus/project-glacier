@@ -71,6 +71,7 @@ describe("routed public booking pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     journey = {
+      selectedDateKey: null,
       selectedSessionId: null,
       ticketQuantities: {},
       participantData: {},
@@ -90,16 +91,17 @@ describe("routed public booking pages", () => {
     };
   });
 
-  it("returns direct Ticket navigation to Session when its prerequisite is absent", async () => {
+  it("returns direct Ticket navigation to Date when its prerequisites are absent", async () => {
     await renderRoute(<TicketsPage params={params} />);
 
-    expect(mocks.replace).toHaveBeenCalledWith("/book/event-1/session");
+    expect(mocks.replace).toHaveBeenCalledWith("/book/event-1/date");
     expect(mocks.getTicketTypes).not.toHaveBeenCalled();
   });
 
   it("keeps the customer on Participants when authoritative Rules reject the party", async () => {
     const user = userEvent.setup();
     Object.assign(journey, {
+      selectedDateKey: "2027-07-01",
       selectedSessionId: "session-1",
       ticketQuantities: { adult: 1 },
       participantData: {
@@ -133,6 +135,7 @@ describe("routed public booking pages", () => {
   it("shows the authoritative reservation failure instead of advancing to Payment", async () => {
     const user = userEvent.setup();
     Object.assign(journey, {
+      selectedDateKey: "2027-07-01",
       selectedSessionId: "session-1",
       ticketQuantities: { adult: 1 },
       participantData: {

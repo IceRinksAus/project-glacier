@@ -215,6 +215,8 @@ Physical Staff Scanner mobile-device verification remains required before pilot 
 
 The next organiser UX pass should make Create Event the dedicated setup journey, while the Events area becomes the operational tracking surface for current Events. Configuration should remain available after creation but should not dominate routine Event management.
 
+The future Product catalogue UX should also add persisted customer-facing Product groups and organiser-controlled display order. Organisers should be able to reorder groups and Products through drag-and-drop with a keyboard-accessible alternative, allowing presentations such as Popular, Merchandise, Safety equipment and Skating aids. Public Add-ons must consume the same ordering while preserving required-Product minimums, Session assignment, reusable capacity and Variant inventory authority.
+
 The detailed Sprint 19 evidence and residual-risk record is in `sprint-notes/sprint-19.md`.
 
 ---

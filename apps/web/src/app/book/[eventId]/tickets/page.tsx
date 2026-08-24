@@ -11,13 +11,13 @@ import { PublicTicketType, publicBookingService } from "@/services/public-bookin
 export default function TicketsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const router = useRouter();
-  const { selectedSessionId, ticketQuantities, setTicketQuantity, totalTicketQuantity } = useBookingJourney();
+  const { selectedDateKey, selectedSessionId, ticketQuantities, setTicketQuantity, totalTicketQuantity } = useBookingJourney();
   const [ticketTypes, setTicketTypes] = useState<PublicTicketType[]>([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!selectedSessionId) {
-      router.replace(`/book/${eventId}/session`);
+      router.replace(`/book/${eventId}/${selectedDateKey ? "session" : "date"}`);
       return;
     }
     let active = true;
@@ -25,7 +25,7 @@ export default function TicketsPage({ params }: { params: Promise<{ eventId: str
       .then((results) => { if (active) setTicketTypes(results); })
       .catch(() => { if (active) setError("We couldn’t load the available Ticket Types."); });
     return () => { active = false; };
-  }, [eventId, router, selectedSessionId]);
+  }, [eventId, router, selectedDateKey, selectedSessionId]);
 
   const subtotal = useMemo(() => ticketTypes.reduce(
     (total, ticketType) => total + ticketType.price * (ticketQuantities[ticketType.id] ?? 0), 0,
@@ -35,7 +35,7 @@ export default function TicketsPage({ params }: { params: Promise<{ eventId: str
   return (
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
-        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 2 of 8</p>
+        <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 3 of 9</p>
         <h1 className="mt-3 text-3xl font-bold">Choose your Tickets</h1>
         <p className="mt-2 text-slate-600">All Ticket Types draw from the shared capacity of your selected Session.</p>
 
