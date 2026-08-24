@@ -14,6 +14,7 @@ import {
 import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ProductsWorkspace } from "@/components/products/ProductsWorkspace";
+import { EventReportsWorkspace } from "@/components/reporting/EventReportsWorkspace";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
 import { TicketTypesWorkspace } from "@/components/ticket-types/TicketTypesWorkspace";
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
@@ -132,12 +133,17 @@ export default function EventWorkspacePage({
               />
             ) : null}
 
+            {activeTab === "Reports" ? (
+              <EventReportsWorkspace eventId={event.id} />
+            ) : null}
+
             {activeTab !== "Overview" &&
             activeTab !== "Sessions" &&
             activeTab !== "Ticket Types" &&
             activeTab !== "Products" &&
             activeTab !== "Waiver" &&
             activeTab !== "Website" &&
+            activeTab !== "Reports" &&
             activeTab !== "Settings" ? (
               <div className="rounded-xl border bg-card p-6">
                 <h2 className="text-lg font-semibold">{activeTab}</h2>

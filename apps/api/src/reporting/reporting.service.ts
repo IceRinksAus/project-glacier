@@ -305,8 +305,10 @@ export class ReportingService {
     const admissions = issuedTickets.filter(
       ({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null,
     ).length;
-    const pendingPaymentBookings = bookings.filter(({ payments }) =>
-      payments.some(({ status }) => status === 'PENDING'),
+    const paymentExceptionBookings = bookings.filter(
+      ({ payments, paymentReconciliationAttempts }) =>
+        payments.some(({ status }) => status === 'PENDING') ||
+        paymentReconciliationAttempts[0]?.succeeded === false,
     );
 
     const sessionRows = sessions.map((session) => {
@@ -385,8 +387,8 @@ export class ReportingService {
             payments.map(({ status }) => status),
           ),
         ),
-        exceptionCount: pendingPaymentBookings.length,
-        exceptions: pendingPaymentBookings.slice(0, 25).map((booking) => ({
+        exceptionCount: paymentExceptionBookings.length,
+        exceptions: paymentExceptionBookings.slice(0, 25).map((booking) => ({
           bookingId: booking.id,
           bookingNumber: booking.bookingNumber,
           latestReconciliation:

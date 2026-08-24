@@ -292,6 +292,35 @@ describe('ReportingService', () => {
     );
   });
 
+  it('surfaces a failed latest reconciliation without a pending Payment', async () => {
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        id: 'booking-reconciliation',
+        bookingNumber: 'PG-RECON',
+        sessionId: 'session-1',
+        status: 'CONFIRMED',
+        total: 20,
+        items: [{ quantity: 1 }],
+        tickets: [],
+        payments: [{ status: 'SUCCEEDED', amount: 20, refunds: [] }],
+        paymentReconciliationAttempts: [
+          {
+            succeeded: false,
+            outcome: 'PROVIDER_UNAVAILABLE',
+            attemptedAt: new Date('2027-08-01T00:00:00.000Z'),
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.getEventReport('org-1', 'event-1', {});
+
+    expect(result.payments.exceptionCount).toBe(1);
+    expect(result.payments.exceptions[0]).toEqual(
+      expect.objectContaining({ bookingNumber: 'PG-RECON' }),
+    );
+  });
+
   it('rejects invalid dates before querying Sessions', async () => {
     await expect(
       service.getEventReport('org-1', 'event-1', { date: '2027-02-30' }),

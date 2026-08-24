@@ -42,12 +42,23 @@ The Dashboard now provides an organisation-wide operational overview and links i
 
 The read is capped at 100 Events, 5,000 Sessions and 50,000 minimal Booking rows. These explicit pilot bounds prevent unbounded API responses; pagination and stored aggregates remain later-scale work rather than hidden Sprint 22 scope.
 
+## Slice 3 — Event Reports Workspace
+
+The existing Event Workspace Reports tab now presents the authoritative Event report rather than a future-work placeholder. It includes commercial, Ticket and attendance summaries; Payment exceptions linked to the existing Booking investigation screen; and a deterministic Session utilisation table.
+
+Organisers can filter by an exact Event-local date, a specific Session, or both. The interface displays the effective reporting window and Event timezone. Session rows distinguish shared admission capacity from Product inventory and show capacity, reserved attendance, confirmed attendance, remaining capacity, utilisation and actual admissions.
+
+Payment exceptions now include both locally pending Payments and Bookings whose latest reconciliation attempt failed, including cases where the persisted Payment is no longer pending. This prevents a failed investigation signal from disappearing merely because another Payment state exists.
+
+The workspace clearly labels its figures as operational Payment reporting rather than accounting, settlement, payout or tax records. It does not introduce a generic report builder, export workflow or second Payment operations system.
+
 ## Verification to Date
 
-- Complete API suite: 67 suites / 434 tests passed.
-- Complete web suite: 19 suites / 56 tests passed.
+- Complete API suite: 67 suites / 435 tests passed.
+- Complete web suite: 20 suites / 58 tests passed.
 - API production build: passed.
 - Focused tests cover empty Events, mixed Booking states, successful Payments/refunds, late-success net effect, pending exceptions, issued/admitted Tickets, Session utilisation, invalid dates, Melbourne-local day boundaries and cross-tenant denial.
 - No schema migration or financial mutation was required.
 - Organisation reporting focused checks: 10 tests passed; API production build passed.
 - Dashboard and Events page focused checks: 2 tests passed; web lint has no errors and the webpack production build passed.
+- Event Reports focused checks cover summary values, Session utilisation, exception drill-down and combined date/Session filters.
