@@ -19,6 +19,7 @@ import { ProductGroupModule } from './product-group/product-group.module';
 import { ProductVariantModule } from './product-variant/product-variant.module';
 import { PublicBookingModule } from './public-booking/public-booking.module';
 import { RuleModule } from './rule/rule.module';
+import { ReportingModule } from './reporting/reporting.module';
 import { SessionModule } from './session/session.module';
 import { SessionProductModule } from './session-product/session-product.module';
 import { StaffScannerModule } from './staff-scanner/staff-scanner.module';
@@ -48,6 +49,7 @@ import { WaiverModule } from './waiver/waiver.module';
     SessionProductModule,
     StaffScannerModule,
     RuleModule,
+    ReportingModule,
     PaymentModule,
     TicketModule,
     AuthModule,

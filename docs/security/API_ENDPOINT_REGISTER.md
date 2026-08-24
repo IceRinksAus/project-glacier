@@ -83,6 +83,12 @@ Status values:
 | GET    | `/customer/:id` | Operator | JWT OWNER/MEMBER           | Customer → Booking → Event → Organisation | Param string | PROTECTED | Tenant-scoped detail with nested Bookings filtered.                                        |
 | POST   | `/customer`     | Legacy   | N/A                        | N/A                                       | N/A          | PROTECTED | Removed; dedicated public Customer route remains authoritative.                            |
 
+## Reporting
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Control |
+| ------ | ----- | -------- | -------------------------- | ----------- | ---------- | ------ | ------- |
+| GET | `/reporting/events/:eventId` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Read-only authoritative operational metrics; bounded Session/exception rows; no customer details or provider credentials. |
+
 ## Ticket and Gate Operations
 
 | Method | Route                     | Audience        | Authentication/role target    | Tenant path                             | Validation              | Status    | Sprint 17 action                                                                          |
