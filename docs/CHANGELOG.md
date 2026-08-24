@@ -2,7 +2,7 @@
 
 # Sprint 21 – Payment Operations, Recovery & Add-on Organisation
 
-## In Progress
+## Complete
 
 - Locked the Sprint 21 delivery contract around payment reconciliation, organiser investigation and customer-facing Add-on grouping/order.
 - Added authoritative provider Payment retrieval before expired-reservation cancellation.
@@ -28,6 +28,7 @@
 - Local audit migration applied; two historical missed-success Stripe test Payments each reconciled to one successful AUD 34 refund, retained expired Bookings and issued zero Tickets.
 - Authenticated browser acceptance passed for the Bookings register, exact email lookup, Event/Session narrowing and responsive investigation page.
 - Organiser/public browser acceptance passed for persisted Popular/Merchandise ordering, Kanga/Safety Pack assignment and grouped public Add-ons rendering.
+- Web production audit reports zero vulnerabilities; API production audit retains four inherited Prisma/`deepmerge-ts` high-severity advisories with no fix available.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.
 

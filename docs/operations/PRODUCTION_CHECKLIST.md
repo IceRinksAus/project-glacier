@@ -36,7 +36,9 @@
 - verify no Ticket issuance before eligible payment confirmation
 - verify no Ticket issuance for expired late payments
 - verify operator refund permissions before enabling manual refunds
-- add payment / refund audit logging
+- verify reconciliation-attempt and refund audit retention
+- alert on repeated provider retrieval, cancellation or refund failures
+- verify organiser payment investigation remains OWNER-only and provider references remain masked
 - add payment monitoring and alerting
 - document payment incident response
 - confirm PCI DSS scope and provider responsibilities
@@ -51,6 +53,7 @@
 - load testing
 - webhook observability
 - payment-provider outage handling
+- reconciliation retry and escalation runbook ownership
 - scanner offline/retry strategy
 
 ## Staff Scanner and Gate Operations

@@ -75,6 +75,16 @@ Event
 
 This branch is intentionally independent of Booking and Ticket identity.
 
+Customer Product groups form optional Event-owned presentation metadata:
+
+```text
+Event
+  └─ ProductGroup
+       └─ Product (optional presentation assignment)
+```
+
+This branch does not replace Product Rules, Session assignment, capacity or inventory.
+
 ---
 
 ## Security
@@ -495,3 +505,9 @@ Payment / PaymentRefund
 ↓
 
 Customer
+
+### Customer Add-on Presentation
+
+`ProductGroup` is Event-owned presentation metadata. It is intentionally separate from catalogue Category, Rule evaluation, Session Product assignment, capacity and inventory. Groups define customer headings and their order; Product `sortOrder` defines order within a group. Ungrouped Products remain sellable through a deterministic fallback section.
+
+OWNER ordering writes validate the complete Event-owned group/Product set and update transactionally. The public Add-ons response exposes only the group fields needed for presentation and continues to derive required minimums and availability from the existing Rule, Session capacity and Product/Variant inventory systems.

@@ -310,6 +310,12 @@ Provider retrieval, cancellation or refund failures remain retryable on a later 
 
 The normal path remains signed webhook delivery. Scheduled reconciliation is a recovery control for missed or divergent provider/local state, not a replacement source of payment truth.
 
+### Organiser Investigation and Manual Reconciliation
+
+An OWNER may inspect a tenant-scoped Booking payment timeline containing Booking lifecycle, masked Payment attempts, refunds, Ticket issuance and attributable reconciliation history. Cross-tenant and unknown Booking identifiers share the same not-found boundary.
+
+The sole recovery action is **Reconcile payment**. It retrieves provider truth through `PaymentService` and then applies the same terminal-state rules used by scheduled reconciliation and verified webhook completion. It never accepts a browser or organiser assertion that a Booking is paid. A provider-pending result causes no local state mutation. Every attempt is append-only and attributable to the acting User.
+
 ### Late Provider Success
 
 If the provider succeeds after the Booking can no longer be fulfilled:

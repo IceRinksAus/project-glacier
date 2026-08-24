@@ -92,6 +92,22 @@ PaymentIntent creation should occur through Glacier's public payment endpoint ra
 
 The Stripe CLI may be used to inspect or exercise test PaymentIntents during development.
 
+## Payment Reconciliation Operations
+
+Signed Stripe webhooks remain Glacier's normal payment-completion path. The expired-reservation scheduler is a recovery control: it retrieves provider truth before attempting cancellation and safely closes provider-cancelled or failed Payments. A provider success discovered after Booking expiry remains recorded as a successful charge, but the Booking stays expired, no Ticket is issued and Glacier requests the existing idempotent late-success refund.
+
+For an organiser investigation:
+
+1. Find the Booking through the dashboard Bookings register using customer name, email, Booking number, Event or Session.
+2. Open the Booking investigation page and compare Booking, Payment, refund and Ticket state.
+3. Use **Reconcile payment** only when a locally pending Payment is shown. This re-reads provider truth; it is not a manual “mark paid” action.
+4. If the provider remains pending, wait for normal provider/webhook processing and retry later. Do not edit database payment state.
+5. Escalate repeated provider retrieval/refund failures with the Booking number, reconciliation timestamp and bounded error shown in Glacier. Do not copy secrets, client secrets or raw provider payloads into support notes.
+
+Every manual reconciliation attempt records the Organisation, Event, Booking, acting User, trigger, outcome, provider status and bounded failure context. Provider references remain masked in the organiser UI.
+
+When testing missed-webhook recovery, verify all four outcomes together: the Booking lifecycle, local Payment state, refund count/status and Ticket count. Re-running reconciliation must not create a duplicate refund or Ticket.
+
 ## Local Ports
 
 Current canonical local preview contract:

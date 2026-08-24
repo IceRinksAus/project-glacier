@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress from 24 August 2026. Scope is controlled by `docs/roadmap/sprint-21-plan.md`.
+Completed on 24 August 2026. Scope remained controlled by `docs/roadmap/sprint-21-plan.md`; no locked non-goal was introduced.
 
 ## Slice 1 — Automatic Payment Reconciliation
 
@@ -124,7 +124,20 @@ The additive migration was applied locally, bringing the development database to
 
 Verification passes 65 API suites / 424 tests, 17 web suites / 54 tests, targeted changed-file lint and both production builds.
 
-## Remaining Sprint 21 Work
+## Closeout
 
-- final closeout documentation and repository review; and
-- approved Stripe acceptance only if a further real provider mutation is judged necessary.
+Sprint 21 meets its completion definition:
+
+- provider/local Payment divergence is detected and safely resolved without browser authority;
+- authorised organisers can find, understand and request safe reconciliation without database access;
+- reconciliation is attributable, bounded and cannot become a manual `mark paid` path;
+- customer Add-ons follow persisted organiser grouping/order without weakening Rules, capacity or inventory; and
+- the original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain exceeded.
+
+Final verification is 65 API suites / 424 tests and 17 web suites / 54 tests, with API and webpack web production builds passing, changed-file lint passing, 30 local migrations current and authenticated browser acceptance complete on both organiser and customer previews.
+
+The production-dependency audit reports zero web vulnerabilities. The API retains four high-severity `deepmerge-ts` advisories inherited through Prisma; npm reports no fix available. This matches the documented pre-existing dependency risk and was not introduced or concealed by Sprint 21.
+
+No additional Stripe mutation was performed at closeout. The already-completed acceptance used authoritative Stripe test-mode state for two historical missed-success PaymentIntents and proved exactly one successful refund and zero Tickets for each. Repeating a charge/refund would add no new acceptance coverage.
+
+No deployment or production data mutation was performed. The separate pilot-readiness roadmap draft remains outside the Sprint 21 commit sequence.
