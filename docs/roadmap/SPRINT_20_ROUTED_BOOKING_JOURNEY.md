@@ -113,6 +113,16 @@ Verified behavior:
 - custom logo, colour and font selections are resolved once by the shared booking layout;
 - missing or unavailable custom branding falls back safely without blocking booking.
 
+Desktop and responsive acceptance after the branding checkpoint additionally verified:
+
+- the live `tenant-security-test` Event carries its name and Glacier fallback theme into the shared booking header;
+- the configured theme variables control the booking background, surface, text and active progress state;
+- all eight progress steps remain present on desktop and mobile;
+- at a 390 × 844 viewport, the page itself has no horizontal overflow;
+- the progress list owns its intentional horizontal scrolling on narrow screens;
+- Session selection, Continue and Ticket quantity controls remain visible and operable at the mobile viewport; and
+- no browser warnings or errors were recorded during Event, Session and Ticket navigation.
+
 The browser-created unpaid acceptance reservation is expected to expire through the normal reservation-expiry mechanism.
 
 ## Verification Baseline
@@ -133,8 +143,13 @@ Route-focused coverage proves that:
 - an authoritative reservation failure remains on Review and does not advance to Payment; and
 - client-side payment submission remains described as pending until the protected status endpoint reports both `CONFIRMED` and `PAID`.
 
+Focused operational verification additionally runs the signed-webhook, Payment, reservation-expiry and inventory suites together. The current checkpoint passes 6 suites and 88 tests covering invalid webhook signatures, missing secrets, processing/failure/cancellation/success transitions, idempotent duplicate success, Ticket issuance only after eligible authoritative success, late-success refund, expiry cleanup and retry, shared Session capacity, reusable Product capacity and independent Product Variant inventory.
+
+A real Stripe test-mode browser payment was not claimed during this checkpoint because local authoritative completion requires a genuine Stripe-signed delivery through the configured CLI/webhook secret. That remains an environment acceptance step whenever local Stripe forwarding is available; automated evidence does not impersonate an external signature.
+
 ## Remaining Sprint 20 Work
 
-- run payment-webhook, inventory-release, responsive and console-error browser acceptance;
+- add the customer-first Date step before Session selection for multi-day Events;
+- run a real Stripe test-mode payment/webhook acceptance when configured local forwarding is available;
 - complete endpoint, authentication, storage, payment and closeout documentation;
 - run full API/web regression, lint and dependency audits before closeout.

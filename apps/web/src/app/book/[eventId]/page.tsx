@@ -216,22 +216,34 @@ export default function PublicBookingPage({ params }: PublicBookingPageProps) {
   }, [participantData, participantSlots]);
 
   useEffect(() => {
+    let isCurrent = true;
+
     if (reservation) {
-      setIsEvaluatingRules(false);
-      setRuleEvaluationError(null);
-      return;
+      const reset = window.setTimeout(() => {
+        if (!isCurrent) return;
+        setIsEvaluatingRules(false);
+        setRuleEvaluationError(null);
+      }, 0);
+      return () => {
+        isCurrent = false;
+        window.clearTimeout(reset);
+      };
     }
 
     if (!selectedSession || !participantsComplete) {
-      setRulePreview(null);
-      setIsEvaluatingRules(false);
-      setRuleEvaluationError(null);
-      return;
+      const reset = window.setTimeout(() => {
+        if (!isCurrent) return;
+        setRulePreview(null);
+        setIsEvaluatingRules(false);
+        setRuleEvaluationError(null);
+      }, 0);
+      return () => {
+        isCurrent = false;
+        window.clearTimeout(reset);
+      };
     }
 
     const sessionId = selectedSession.id;
-
-    let isCurrent = true;
 
     async function evaluateBookingRules() {
       try {
@@ -319,7 +331,10 @@ export default function PublicBookingPage({ params }: PublicBookingPageProps) {
     [ticketQuantities, ticketTypes],
   );
 
-  const requiredProducts = rulePreview?.requiredProducts ?? [];
+  const requiredProducts = useMemo(
+    () => rulePreview?.requiredProducts ?? [],
+    [rulePreview],
+  );
 
   const requiredProductsSatisfied = useMemo(
     () =>

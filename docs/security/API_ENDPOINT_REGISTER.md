@@ -40,6 +40,9 @@ Status values:
 | POST   | `/event`                    | Operator | JWT OWNER                  | JWT Organisation                  | Strict complete setup DTO    | PROTECTED | Creates DRAFT only; validates Australian timezone, venue, activity and gate policy.               |
 | PATCH  | `/event/:id/status`         | Operator | JWT OWNER                  | Event → Organisation              | Strict DTO                   | PROTECTED | ACTIVE requires current server-side Event, Session, Ticket Type and conditional Waiver readiness. |
 | PATCH  | `/event/:id/entry-policy`   | Operator | JWT OWNER                  | Event → Organisation              | Strict bounded DTO           | PROTECTED | Configures Event-wide scanner opening lead and closing grace from 0–240 minutes.                  |
+| PATCH  | `/event/:id/branding`       | Operator | JWT OWNER                  | Event → Organisation              | Strict controlled theme DTO  | PROTECTED | Updates colours, allowlisted fonts, text and owned asset references; MEMBER cannot mutate.        |
+| POST   | `/event/:id/branding/assets` | Operator | JWT OWNER                 | FileAsset → Event → Organisation  | Multipart; purpose, signature, MIME, size and dimensions | PROTECTED | Stores only PNG/JPEG/WebP Event logo or hero assets through the storage-provider boundary. |
+| GET    | `/event/:id/branding/assets/:assetId` | Operator | JWT OWNER/MEMBER | FileAsset → Event → Organisation | Param strings | PROTECTED | Tenant-scoped private preview with `nosniff`; SCANNER denied. |
 | DELETE | `/event/:id`                | Operator | JWT OWNER                  | Event → Organisation              | Param string                 | PROTECTED | Retain dependency/business checks.                                                                |
 | POST   | `/category`                 | Operator | JWT OWNER                  | Category → Event → Organisation   | Strict DTO                   | PROTECTED | Event ownership proven before create.                                                             |
 | GET    | `/category`                 | Operator | JWT OWNER/MEMBER           | Category → Event → Organisation   | None                         | PROTECTED | Tenant-scoped list.                                                                               |
@@ -107,6 +110,8 @@ Status values:
 | Method | Route                                    | Audience | Authentication              | Validation                    | Status | Sprint 17 action                                            |
 | ------ | ---------------------------------------- | -------- | --------------------------- | ----------------------------- | ------ | ----------------------------------------------------------- |
 | GET    | `/public/events/:eventId`                | Customer | None                        | Param string                  | PUBLIC | ACTIVE-only response minimisation retained.                 |
+| GET    | `/public/event-sites/:eventSlug`          | Customer | None                        | Param string                  | PUBLIC | ACTIVE-only slug lookup; returns public Event and validated theme fields only. |
+| GET    | `/public/event-sites/:eventSlug/assets/:assetId` | Customer | None                  | Event slug + asset ID         | PUBLIC | Serves only an asset explicitly referenced by that ACTIVE Event's published branding; `nosniff` enabled. |
 | GET    | `/public/events/:eventId/sessions`       | Customer | None                        | Param string                  | PUBLIC | Availability and response minimisation retained.            |
 | GET    | `/public/events/:eventId/ticket-types`   | Customer | None                        | Param string                  | PUBLIC | Availability and response minimisation retained.            |
 | POST   | `/public/events/:eventId/evaluate-rules` | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; 1–50 participants.                |
@@ -114,6 +119,14 @@ Status values:
 | POST   | `/public/customers`                      | Customer | None                        | Strict bounded DTO            | PUBLIC | Global strict validation and email validation.              |
 | POST   | `/public/bookings`                       | Customer | None                        | Strict bounded nested DTO     | PUBLIC | Global strict validation; nullable Product Variant selections are parent-validated and inventory-protected. |
 | POST   | `/public/bookings/:bookingId/payments`   | Customer | Booking public-access token | Strict 64-character token DTO | PUBLIC | Global strict validation and hash-only server verification. |
+| POST   | `/public/bookings/:bookingId/status`     | Customer | Booking public-access token | Strict 64-character token DTO | PUBLIC | Credential remains in body; `no-store`; Tickets withheld until CONFIRMED and PAID. |
+
+## Public Ticket Presentation
+
+| Method | Route                       | Audience          | Authentication                | Validation                  | Status | Sprint 20 action |
+| ------ | --------------------------- | ----------------- | ----------------------------- | --------------------------- | ------ | ---------------- |
+| GET    | `/ticket/token/:token`      | Credential holder | High-entropy possession token | Strict 64-character format  | PUBLIC | Presentation-only response; does not admit or mutate Ticket state. |
+| GET    | `/ticket/token/:token/qr`   | Credential holder | High-entropy possession token | Strict 64-character format  | PUBLIC | Private, non-cacheable PNG for the same possession credential. |
 
 ## Public Waivers
 

@@ -25,7 +25,10 @@ export default function AddOnsPage({ params }: { params: Promise<{ eventId: stri
     }
   }, [eventId, router, rulePreview, selectedSessionId, totalTicketQuantity]);
 
-  const requiredProducts = rulePreview?.requiredProducts ?? [];
+  const requiredProducts = useMemo(
+    () => rulePreview?.requiredProducts ?? [],
+    [rulePreview],
+  );
   const requiredProductsSatisfied = useMemo(
     () => requiredProducts.every((requiredProduct) =>
       selectedProducts.some((product) =>

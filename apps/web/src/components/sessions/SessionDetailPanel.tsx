@@ -110,23 +110,25 @@ export function SessionDetailPanel({
 
   useEffect(() => {
     if (!sessionId) {
-      setSession(null);
-      setError("");
-      setIsEditing(false);
+      const reset = window.setTimeout(() => {
+        setSession(null);
+        setError("");
+        setIsEditing(false);
 
-      setIsConfirmingCancellation(
-        false,
-      );
+        setIsConfirmingCancellation(
+          false,
+        );
 
-      setCancellationError("");
+        setCancellationError("");
 
-      setIsConfirmingDeletion(
-        false,
-      );
+        setIsConfirmingDeletion(
+          false,
+        );
 
-      setDeletionError("");
+        setDeletionError("");
+      }, 0);
 
-      return;
+      return () => window.clearTimeout(reset);
     }
 
     const currentSessionId =

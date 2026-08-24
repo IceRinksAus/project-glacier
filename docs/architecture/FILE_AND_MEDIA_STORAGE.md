@@ -848,6 +848,22 @@ Likely trigger phases include:
 
 This avoids prematurely implementing infrastructure while ensuring those modules do not create incompatible storage patterns.
 
+### Sprint 20 Event-branding implementation
+
+Sprint 20 introduced the first bounded implementation of this architecture for `EVENT_LOGO` and `EVENT_HERO` assets:
+
+- PostgreSQL stores `FileAsset` ownership, purpose, safe display metadata, MIME type, byte size, dimensions, SHA-256 checksum, provider/key, status and creator attribution;
+- `FileStorageProvider` separates metadata and validation from binary persistence;
+- the development provider stores files below a configured local root rather than in PostgreSQL;
+- uploads require authenticated OWNER authority and authoritative Event → Organisation ownership;
+- PNG, JPEG and WebP signatures are checked from file bytes; SVG and arbitrary remote URLs remain excluded;
+- uploads are limited to 5 MiB and bounded image dimensions;
+- public delivery succeeds only when the asset is the logo or hero reference of the requested ACTIVE Event;
+- private operator preview remains tenant-scoped for OWNER and MEMBER; and
+- delivery responses set an authoritative MIME type, checksum ETag and `X-Content-Type-Options: nosniff`.
+
+This is a development foundation, not production object storage. Production remains blocked until the managed Australian-region provider, private bucket policy, encryption, signed/direct upload approach, malware controls, lifecycle rules, monitoring, backup/restore treatment and CDN/caching decision are implemented and evidenced.
+
 ---
 
 ## Future Capabilities

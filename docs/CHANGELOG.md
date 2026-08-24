@@ -1,5 +1,34 @@
 # Changelog
 
+# Sprint 20 – Public Event Site, Branding & Routed Booking
+
+## Added
+
+- Controlled Event branding during Event creation and in the Website workspace.
+- Tenant-owned FileAsset metadata, validated branding uploads and a development storage-provider boundary.
+- ACTIVE-only public Event pages with published logo, hero, colour, font and content identity.
+- Dedicated Session, Tickets, Participants, Add-ons, Details, Review, Payment and Confirmation routes.
+- Credential-protected public Booking status recovery and authoritative Confirmation.
+- Private Ticket presentation and QR routes using separate possession credentials.
+
+## Preserved
+
+- Shared Session admission capacity across every Ticket Type.
+- Rule-authoritative required Products, including Young Child Kanga requirements.
+- Per-Session reusable Product capacity and independent finite Product Variant inventory.
+- Serializable reservation creation, 15-minute holds, expiry release and Stripe webhook authority.
+- OWNER/MEMBER/SCANNER tenant and role boundaries.
+
+## Verification
+
+- API: 61 suites and 399 tests passed; production build passed.
+- Web: 14 suites and 48 tests passed; full lint passed with one documented legacy navigation warning; webpack production build passed.
+- Focused webhook, payment, expiry and inventory verification: 6 suites and 88 tests passed.
+- Responsive browser acceptance passed at desktop and 390 × 844 with no browser warnings or errors.
+- Web production audit reported zero known vulnerabilities.
+- API production audit retained four high-severity `deepmerge-ts` findings inherited through Prisma; npm reports no fix available.
+- No deployment was performed.
+
 # Sprint 19 – Organiser Event Creation & Setup
 
 ## Added

@@ -7,12 +7,19 @@ cd ~/Documents/project-glacier/apps/api
 npm run start:dev
 ```
 
-## Start Public Web
+## Start Web Application
 
 ```bash
 cd ~/Documents/project-glacier/apps/web
 npm run dev
 ```
+
+The Next.js application serves both the organiser dashboard and public customer routes. The canonical handoff uses:
+
+- dashboard: `http://localhost:3002`
+- public Event and booking experience: `http://localhost:3001`
+
+During stable preview verification, build the web application and run it on `3002`. A lightweight local reverse proxy may expose the same current build on `3001` and redirect its root to the fictional active Event used for acceptance. This proxy is a local convenience only; it is not deployment architecture.
 
 ## Prisma
 
@@ -87,12 +94,17 @@ The Stripe CLI may be used to inspect or exercise test PaymentIntents during dev
 
 ## Local Ports
 
-Current local defaults:
+Current canonical local preview contract:
 
 - API: `http://localhost:3000`
-- Web: `http://localhost:3001`
+- Public customer experience: `http://localhost:3001`
+- Organiser dashboard: `http://localhost:3002`
 
-The API CORS configuration permits the local web application origin.
+The API CORS configuration must permit both trusted local web origins when both previews are used.
+
+After changing source code while running a production preview, rebuild and restart the web process before acceptance testing. Development hot reload is not evidence that the canonical production preview contains the current checkpoint.
+
+The routed public journey begins at `/event/:eventSlug` and continues to `/book/:eventId/session`. A hard refresh before reservation creation intentionally restarts in-memory checkout state rather than persisting customer or participant information insecurely.
 
 ## Secret Safety
 

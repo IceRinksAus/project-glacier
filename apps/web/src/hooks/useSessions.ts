@@ -49,7 +49,12 @@ export function useSessions(
   );
 
   useEffect(() => {
-    void loadSessions();
+    const start = window.setTimeout(
+      () => void loadSessions(),
+      0,
+    );
+
+    return () => window.clearTimeout(start);
   }, [loadSessions]);
 
   return {

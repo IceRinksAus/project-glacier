@@ -39,10 +39,15 @@ export function ReservationCountdown({
   );
 
   useEffect(() => {
-    setRemainingSeconds(
-      getRemainingSeconds(
-        reservedUntil,
-      ),
+    const reset = window.setTimeout(
+      () => {
+        setRemainingSeconds(
+          getRemainingSeconds(
+            reservedUntil,
+          ),
+        );
+      },
+      0,
     );
 
     const interval =
@@ -66,6 +71,7 @@ export function ReservationCountdown({
       }, 1000);
 
     return () => {
+      window.clearTimeout(reset);
       window.clearInterval(
         interval,
       );

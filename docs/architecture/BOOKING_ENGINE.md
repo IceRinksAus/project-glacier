@@ -47,8 +47,11 @@ Current public routes include:
 - `POST /public/customers`
 - `POST /public/bookings`
 - `POST /public/bookings/:bookingId/payments`
+- `POST /public/bookings/:bookingId/status`
 
 Public endpoints return narrow customer-safe data only.
+
+The status operation is a credential-protected read expressed as `POST` so the Booking access token remains in the request body rather than appearing in URLs, browser history or access logs. Responses use `Cache-Control: no-store`. Unknown Booking IDs and incorrect credentials share the same not-found behavior.
 
 The public frontend uses a separate public API client and does not depend on operator authentication behaviour.
 
@@ -276,6 +279,7 @@ For a valid `RESERVED` Booking:
 7. Glacier records provider success.
 8. Glacier atomically confirms the Booking only if it is still eligible.
 9. Tickets are issued only after successful Booking confirmation.
+10. The customer browser polls the protected Booking status and renders Confirmation only when both Booking and payment state are authoritative.
 
 Provider success is necessary but not sufficient for fulfilment.
 
@@ -317,6 +321,19 @@ This compensating transaction preserves the historical truth of both the charge 
 Public payment initiation requires the Booking's high-entropy `publicAccessToken`.
 
 The token is customer-scoped and is separate from operator JWT authentication.
+
+The raw token is returned once at reservation creation and only its SHA-256 hash is persisted. The routed browser journey retains the credential in memory and does not put it in route parameters or general-purpose persistent browser storage.
+
+### Customer Confirmation and Tickets
+
+Client-side Stripe submission moves the browser to a truthful processing state; it does not confirm the Booking. `POST /public/bookings/:bookingId/status` with the Booking credential may return status, payment state, reservation expiry and privacy-minimised Event information. Ticket numbers and Ticket possession credentials are withheld unless the Booking is simultaneously `CONFIRMED` and `PAID`.
+
+Each issued Ticket uses a separate high-entropy possession credential:
+
+- `GET /ticket/token/:token` returns presentation-only Ticket, participant, Event and Session information;
+- `GET /ticket/token/:token/qr` returns the corresponding PNG with `Cache-Control: private, no-store`.
+
+These public presentation operations do not check a Ticket in. Admission remains an authenticated Staff Scanner action.
 
 ### Idempotency
 
