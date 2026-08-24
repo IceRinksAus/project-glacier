@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation-complete and locally verified on 24 August 2026. The application has not been deployed. A final real Stripe test-mode browser payment remains an explicit external-environment acceptance item and requires action-time approval before Glacier submits the test transaction.
+Complete and locally verified on 24 August 2026. The application has not been deployed.
 
 ## Outcome
 
@@ -120,7 +120,23 @@ Verified behavior includes:
 - intentional progress-only horizontal scrolling; and
 - no browser warnings or errors during the final Date/Session route acceptance.
 
-A real Stripe test-mode browser payment was not silently manufactured. The local Stripe CLI, test API key and webhook-secret format are configured, so this can be run with explicit approval and a live forwarding process. Until then, automated signed-webhook and state-transition evidence is the repeatable verification record.
+A real Stripe test-mode payment was completed after explicit approval:
+
+- Booking `PG-1787557409087-1501`;
+- one Adult Ticket at $24 and one Small Hoodie Variant at $50;
+- authoritative total $74;
+- live reservation countdown and inventory hold;
+- Stripe `payment_intent.created` and `payment_intent.succeeded` delivered through the signed local listener;
+- webhook responses returned HTTP 201;
+- Booking reached PAID/CONFIRMED only after the successful signed event;
+- Ticket `TKT-1787557475861-B41BC9` was issued;
+- published Waiver continuation appeared;
+- the private Ticket route rendered its 511 × 511 QR; and
+- Small Hoodie remaining inventory moved from 50 to 49.
+
+The browser recorded no application errors. Stripe emitted the expected warning that localhost test integration uses HTTP while live Stripe.js requires HTTPS.
+
+The API log review also found two older expired local acceptance Bookings whose local Payment rows remain PENDING while Stripe reports their PaymentIntents as succeeded. The expiry scheduler therefore retries an impossible cancellation every minute. This did not affect the successful Sprint 20 transaction, and automated coverage already proves the intended late-success refund path. Production still needs monitored provider/local reconciliation so missed or historical webhook divergence becomes a resolved incident rather than an indefinite retry loop.
 
 ## Security and Privacy Boundaries
 
@@ -149,7 +165,7 @@ The next suitable Product-catalogue/UX slice should add persisted customer-facin
 
 ## Remaining Production and Pilot Gates
 
-- real Stripe test-mode end-to-end delivery through the local or pilot webhook endpoint;
+- monitored reconciliation for provider/local Payment-state divergence and missed historical webhooks;
 - managed Australian-region object storage and full media-control evidence;
 - deployment-edge rate limiting, monitoring and abuse evidence;
 - managed secrets, TLS, logs, alerting, backups and restore proof;

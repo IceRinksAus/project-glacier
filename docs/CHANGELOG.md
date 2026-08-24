@@ -25,9 +25,14 @@
 - Web: 14 suites and 48 tests passed; full lint passed with one documented legacy navigation warning; webpack production build passed.
 - Focused webhook, payment, expiry and inventory verification: 6 suites and 88 tests passed.
 - Responsive browser acceptance passed at desktop and 390 × 844 with no browser warnings or errors.
+- A $74 Stripe test-mode Booking completed through the signed webhook, issued its Ticket and QR, exposed the Waiver continuation and reduced the selected Hoodie Variant from 50 to 49 remaining.
 - Web production audit reported zero known vulnerabilities.
 - API production audit retained four high-severity `deepmerge-ts` findings inherited through Prisma; npm reports no fix available.
 - No deployment was performed.
+
+## Residual Operational Risk
+
+- Two older expired local acceptance Bookings have PENDING local Payment rows while Stripe reports succeeded PaymentIntents. The expiry scheduler retries cancellation and Stripe rejects it as already succeeded. Production requires monitored provider/local reconciliation so missed webhook divergence is resolved rather than retried indefinitely.
 
 # Sprint 19 – Organiser Event Creation & Setup
 

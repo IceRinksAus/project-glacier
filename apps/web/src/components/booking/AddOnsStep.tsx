@@ -215,7 +215,7 @@ export function AddOnsStep({
   return (
     <section className="rounded-2xl border bg-card p-8">
       <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-        Step 4
+        Step 5 of 9
       </p>
       <h2 className="mt-2 text-2xl font-semibold">Add-ons</h2>
       <p className="mt-2 text-muted-foreground">

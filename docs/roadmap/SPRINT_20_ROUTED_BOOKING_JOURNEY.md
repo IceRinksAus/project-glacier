@@ -161,8 +161,11 @@ Route-focused coverage proves that:
 
 Focused operational verification additionally runs the signed-webhook, Payment, reservation-expiry and inventory suites together. The current checkpoint passes 6 suites and 88 tests covering invalid webhook signatures, missing secrets, processing/failure/cancellation/success transitions, idempotent duplicate success, Ticket issuance only after eligible authoritative success, late-success refund, expiry cleanup and retry, shared Session capacity, reusable Product capacity and independent Product Variant inventory.
 
-A real Stripe test-mode browser payment was not claimed during this checkpoint because local authoritative completion requires a genuine Stripe-signed delivery through the configured CLI/webhook secret. That remains an environment acceptance step whenever local Stripe forwarding is available; automated evidence does not impersonate an external signature.
+A real Stripe test-mode browser payment was subsequently completed through the configured Stripe CLI listener. Booking `PG-1787557409087-1501` reserved one Adult Ticket and one Small Hoodie Variant for $74. Stripe emitted `payment_intent.succeeded`, the signed webhook received HTTP 201, Glacier moved the Booking to PAID/CONFIRMED, issued Ticket `TKT-1787557475861-B41BC9`, exposed the published Waiver continuation and rendered the private 511 × 511 Ticket QR. The Small Hoodie Variant moved from 50 configured units to 49 remaining. No application console errors occurred; Stripe emitted its expected localhost HTTP/test warning only.
 
-## Remaining Sprint 20 Work
+API logs also exposed a pre-existing operational reconciliation gap: two older expired local acceptance Bookings retain PENDING Payment rows even though Stripe reports their PaymentIntents as succeeded, causing the expiry scheduler to retry an impossible cancellation every minute. The current successful Booking is unaffected and the existing late-success path is covered by tests, but production readiness requires monitoring and reconciliation for provider/local state divergence rather than infinite cancellation retries.
 
-- run a real Stripe test-mode payment/webhook acceptance when configured local forwarding is available;
+## Remaining Production Gates
+
+- implement monitored reconciliation for provider/local Payment state divergence;
+- complete the cross-platform and infrastructure gates listed in the Sprint 20 closeout note.
