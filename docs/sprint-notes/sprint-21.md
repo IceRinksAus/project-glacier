@@ -54,9 +54,26 @@ Every manual attempt records Organisation, Event, Booking, optional Payment, act
 
 The schema migration and generated client validate, the API production build passes and the complete API suite now passes 62 suites / 413 tests.
 
+## Organiser Dashboard Presentation
+
+The platform Bookings destination now opens a real tenant-scoped register rather than an empty navigation destination. It shows Booking number, customer, Event, lifecycle state, payment summary, total and creation time, with a path into the operational investigation.
+
+The dedicated Booking investigation page presents:
+
+- Booking, payment and Ticket summary cards;
+- customer, Event, Session and lifecycle timestamps;
+- masked Payment attempts and bounded failure information;
+- refunds;
+- issued Tickets;
+- attributable reconciliation history; and
+- the single `Reconcile payment` control when a locally pending Payment exists.
+
+The UI never offers `Mark paid`. When Stripe still reports PENDING, the page explicitly states that no local state was changed.
+
+Web verification now passes 16 suites / 51 tests, targeted lint for every new Bookings file and the webpack production build with `/bookings` plus `/bookings/[bookingId]` routes.
+
 ## Remaining Sprint 21 Work
 
-- dashboard presentation for organiser Booking/payment investigation;
 - local migration application and browser operational acceptance;
 - Event-owned Product grouping and deterministic ordering;
 - accessible dashboard ordering controls;

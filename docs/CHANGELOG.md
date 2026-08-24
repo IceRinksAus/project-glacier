@@ -12,12 +12,15 @@
 - Added OWNER-only, tenant-scoped Booking payment investigation and reconciliation endpoints.
 - Added append-only attributable reconciliation attempts and masked provider-reference presentation.
 - Kept manual reconciliation read-authoritative: a provider-pending Payment is neither cancelled nor marked paid.
+- Added the dashboard Bookings register and dedicated payment-investigation workspace.
+- Presented lifecycle, masked Payment, refund, Ticket and attributable reconciliation history with one controlled recovery action.
 
 ## Current Verification
 
 - Focused Payment and reservation suite: 6 suites and 61 tests passed.
 - Full API suite: 62 suites and 413 tests passed.
 - API production build: passed.
+- Web: 16 suites and 51 tests passed; targeted new-file lint and webpack production build passed.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.
 
