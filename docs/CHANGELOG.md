@@ -1,5 +1,28 @@
 # Changelog
 
+# Sprint 22 – Operational Dashboard and Core Event Reporting
+
+## Complete
+
+- Added OWNER/MEMBER tenant-safe Organisation and Event reporting endpoints.
+- Defined gross successful Payments, successful refunds, net collected, confirmed Bookings, issued Tickets, admissions and shared Session utilisation from authoritative persisted states.
+- Replaced the Dashboard placeholder with a live operational Organisation overview.
+- Turned Events into a routine tracking destination while keeping creation isolated at `/events/new`.
+- Implemented the Event Reports tab with exact Event-local date and Session filters, an effective window, commercial/attendance cards and Session utilisation rows.
+- Linked pending-Payment and failed-latest-reconciliation exceptions to existing Booking investigation.
+- Excluded customer, participant, possession-token and Payment-credential data from reporting responses.
+- Preserved Product inventory/capacity separately from rink admission capacity.
+- Labelled reporting as operational rather than accounting, settlement, payout or tax reporting.
+
+## Verification
+
+- Full API suite: 67 suites / 435 tests passed; production build passed.
+- Full web suite: 20 suites / 58 tests passed; lint has no errors and webpack production build passed.
+- Authenticated Dashboard, Events and Event Reports acceptance passed against known local records.
+- Desktop and 390 × 844 responsive acceptance passed without page-level horizontal overflow.
+- All 30 local Prisma migrations are applied; Sprint 22 introduced no migration.
+- No financial, Booking, Ticket, admission, inventory, deployment or production mutation was performed.
+
 # Sprint 21 – Payment Operations, Recovery & Add-on Organisation
 
 ## Complete

@@ -120,6 +120,20 @@ The API CORS configuration must permit both trusted local web origins when both 
 
 After changing source code while running a production preview, rebuild and restart the web process before acceptance testing. Development hot reload is not evidence that the canonical production preview contains the current checkpoint.
 
+## Reporting Acceptance
+
+For local Sprint 22 acceptance, sign in to the organiser preview at `http://localhost:3002` as an OWNER or MEMBER, then verify:
+
+1. Dashboard totals load from local records and current/upcoming Event links open the correct Event.
+2. Events displays lifecycle, Session count, confirmed Bookings, admissions, capacity utilisation and next Session.
+3. An Event's Reports tab displays gross, successful refunds, net, confirmed Bookings, average Booking value, issued Tickets, admissions and attendance rate.
+4. Exact Event-local date and Session filters reduce the Session rows and expose their effective reporting window.
+5. Payment exceptions link to the existing Booking investigation page.
+6. Session admission capacity remains distinct from Product inventory/capacity.
+7. The report is labelled operational rather than accounting or settlement reporting.
+
+Use fictional local records only. Do not create a real charge or refund solely to verify this read-only surface.
+
 The routed public journey begins at `/event/:eventSlug` and continues to `/book/:eventId/date`, followed by Session selection for that Event-timezone date. A hard refresh before reservation creation intentionally restarts in-memory checkout state rather than persisting customer or participant information insecurely.
 
 ## Secret Safety

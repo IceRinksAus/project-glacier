@@ -55,6 +55,9 @@
 - payment-provider outage handling
 - reconciliation retry and escalation runbook ownership
 - scanner offline/retry strategy
+- monitor Organisation and Event report latency and error rate
+- alert when reporting query caps are approached so partial pilot-scale projections are not mistaken for complete large-scale results
+- reconcile operational net-collected figures against authoritative Payment/refund investigation and Stripe settlement procedures before financial use
 
 ## Staff Scanner and Gate Operations
 
