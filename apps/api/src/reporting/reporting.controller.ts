@@ -17,6 +17,11 @@ interface AuthenticatedUser {
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
 
+  @Get('organization')
+  getOrganizationSummary(@CurrentUser() user: AuthenticatedUser) {
+    return this.reportingService.getOrganizationSummary(user.organizationId);
+  }
+
   @Get('events/:eventId')
   getEventReport(
     @Param('eventId') eventId: string,

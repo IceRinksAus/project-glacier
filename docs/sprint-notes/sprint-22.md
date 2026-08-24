@@ -25,9 +25,29 @@ Event-local date filtering selects Sessions by their start date in the Event tim
 
 The endpoint is bounded to 500 deterministic Session rows and 25 exception links. It accepts only strict date and Session filters, requires OWNER or MEMBER, resolves Event ownership through the authenticated Organisation and gives the same not-found boundary for foreign and unknown Events.
 
+## Slice 2 — Organisation Operations View
+
+The second checkpoint adds `GET /reporting/organization` and replaces the dashboard placeholder and basic Event list with authenticated operational views.
+
+The Organisation summary uses the authenticated Organisation ID and bounded, minimal selects across Events, Sessions and Bookings. It does not load or return customer names, participant details, contact details, Ticket credentials or Payment provider credentials. The summary provides:
+
+- current and upcoming Event counts;
+- Event-local Sessions occurring today and the next scheduled Session;
+- confirmed Booking, issued Ticket and admission counts;
+- gross collected, successful refunds and net collected;
+- pending-Payment exception counts; and
+- per-Event Session capacity utilisation using reserved plus confirmed Ticket quantities.
+
+The Dashboard now provides an organisation-wide operational overview and links into Events requiring attention. The Events page now acts as a tracking workspace, showing lifecycle, operational volumes, capacity utilisation, next Session and Payment exceptions. OWNER-only Event creation remains available, while Event configuration continues within the existing Event workspace and creation wizard.
+
+The read is capped at 100 Events, 5,000 Sessions and 50,000 minimal Booking rows. These explicit pilot bounds prevent unbounded API responses; pagination and stored aggregates remain later-scale work rather than hidden Sprint 22 scope.
+
 ## Verification to Date
 
-- Complete API suite: 67 suites / 431 tests passed.
+- Complete API suite: 67 suites / 434 tests passed.
+- Complete web suite: 19 suites / 56 tests passed.
 - API production build: passed.
 - Focused tests cover empty Events, mixed Booking states, successful Payments/refunds, late-success net effect, pending exceptions, issued/admitted Tickets, Session utilisation, invalid dates, Melbourne-local day boundaries and cross-tenant denial.
 - No schema migration or financial mutation was required.
+- Organisation reporting focused checks: 10 tests passed; API production build passed.
+- Dashboard and Events page focused checks: 2 tests passed; web lint has no errors and the webpack production build passed.

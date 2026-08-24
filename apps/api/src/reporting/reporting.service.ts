@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { fromZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { EventReportQueryDto } from './dto/event-report-query.dto';
@@ -11,6 +11,194 @@ import { EventReportQueryDto } from './dto/event-report-query.dto';
 @Injectable()
 export class ReportingService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getOrganizationSummary(
+    organizationId: string,
+    now: Date = new Date(),
+  ) {
+    const events = await this.prisma.event.findMany({
+      where: { organizationId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        status: true,
+        startDate: true,
+        endDate: true,
+        timezone: true,
+      },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      take: 100,
+    });
+    const eventIds = events.map(({ id }) => id);
+    const sessions = eventIds.length
+      ? await this.prisma.session.findMany({
+          where: { eventId: { in: eventIds } },
+          select: {
+            id: true,
+            eventId: true,
+            name: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            capacity: true,
+          },
+          orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+          take: 5000,
+        })
+      : [];
+    const bookings = eventIds.length
+      ? await this.prisma.booking.findMany({
+          where: { eventId: { in: eventIds } },
+          select: {
+            eventId: true,
+            sessionId: true,
+            status: true,
+            items: { select: { quantity: true } },
+            tickets: {
+              select: { status: true, checkedInAt: true },
+            },
+            payments: {
+              select: {
+                status: true,
+                amount: true,
+                refunds: { select: { status: true, amount: true } },
+              },
+            },
+          },
+          take: 50000,
+        })
+      : [];
+
+    const eventRows = events.map((event) => {
+      const eventSessions = sessions.filter(
+        ({ eventId }) => eventId === event.id,
+      );
+      const eventBookings = bookings.filter(
+        ({ eventId }) => eventId === event.id,
+      );
+      const confirmed = eventBookings.filter(
+        ({ status }) => status === 'CONFIRMED',
+      );
+      const tickets = confirmed.flatMap(({ tickets }) => tickets);
+      const admissions = tickets.filter(
+        ({ status, checkedInAt }) =>
+          status === 'SCANNED' || checkedInAt !== null,
+      ).length;
+      const successfulPayments = eventBookings.flatMap(({ payments }) =>
+        payments.filter(({ status }) => status === 'SUCCEEDED'),
+      );
+      const grossCollected = this.sum(
+        successfulPayments.map(({ amount }) => Number(amount)),
+      );
+      const refunded = this.sum(
+        successfulPayments.flatMap(({ refunds }) =>
+          refunds
+            .filter(({ status }) => status === 'SUCCEEDED')
+            .map(({ amount }) => Number(amount)),
+        ),
+      );
+      const reservedAttendance = this.ticketQuantity(
+        eventBookings.filter(({ status }) =>
+          ['RESERVED', 'CONFIRMED'].includes(status),
+        ),
+      );
+      const totalCapacity = eventSessions.reduce(
+        (total, session) => total + session.capacity,
+        0,
+      );
+      const timezone = event.timezone || 'Australia/Melbourne';
+      const today = formatInTimeZone(now, timezone, 'yyyy-MM-dd');
+      const todaySessions = eventSessions.filter(
+        ({ startDate }) =>
+          formatInTimeZone(startDate, timezone, 'yyyy-MM-dd') === today,
+      );
+      const nextSession = eventSessions.find(
+        ({ startDate }) => startDate >= now,
+      );
+
+      return {
+        event: { ...event, timezone },
+        lifecycle:
+          now < event.startDate
+            ? 'UPCOMING'
+            : now > event.endDate
+              ? 'COMPLETED'
+              : 'CURRENT',
+        sessions: {
+          total: eventSessions.length,
+          today: todaySessions.length,
+          next: nextSession
+            ? {
+                id: nextSession.id,
+                name: nextSession.name,
+                startDate: nextSession.startDate,
+              }
+            : null,
+          totalCapacity,
+          reservedAttendance,
+          utilisationPercent:
+            totalCapacity > 0
+              ? Number(
+                  ((reservedAttendance / totalCapacity) * 100).toFixed(1),
+                )
+              : 0,
+        },
+        bookings: { confirmed: confirmed.length },
+        tickets: { issued: tickets.length, admissions },
+        commercial: {
+          grossCollected,
+          refunded,
+          netCollected: Number((grossCollected - refunded).toFixed(2)),
+        },
+        paymentExceptionCount: eventBookings.filter(({ payments }) =>
+          payments.some(({ status }) => status === 'PENDING'),
+        ).length,
+      };
+    });
+
+    return {
+      generatedAt: now,
+      totals: {
+        events: eventRows.length,
+        currentEvents: eventRows.filter(({ lifecycle }) => lifecycle === 'CURRENT')
+          .length,
+        upcomingEvents: eventRows.filter(
+          ({ lifecycle }) => lifecycle === 'UPCOMING',
+        ).length,
+        sessionsToday: eventRows.reduce(
+          (total, row) => total + row.sessions.today,
+          0,
+        ),
+        confirmedBookings: eventRows.reduce(
+          (total, row) => total + row.bookings.confirmed,
+          0,
+        ),
+        ticketsIssued: eventRows.reduce(
+          (total, row) => total + row.tickets.issued,
+          0,
+        ),
+        admissions: eventRows.reduce(
+          (total, row) => total + row.tickets.admissions,
+          0,
+        ),
+        grossCollected: this.sum(
+          eventRows.map(({ commercial }) => commercial.grossCollected),
+        ),
+        refunded: this.sum(
+          eventRows.map(({ commercial }) => commercial.refunded),
+        ),
+        netCollected: this.sum(
+          eventRows.map(({ commercial }) => commercial.netCollected),
+        ),
+        paymentExceptions: eventRows.reduce(
+          (total, row) => total + row.paymentExceptionCount,
+          0,
+        ),
+      },
+      events: eventRows,
+    };
+  }
 
   async getEventReport(
     organizationId: string,

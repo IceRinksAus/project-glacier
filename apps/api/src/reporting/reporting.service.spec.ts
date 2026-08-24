@@ -7,7 +7,7 @@ import { ReportingService } from './reporting.service';
 describe('ReportingService', () => {
   let service: ReportingService;
   const prisma = {
-    event: { findFirst: jest.fn() },
+    event: { findFirst: jest.fn(), findMany: jest.fn() },
     session: { findMany: jest.fn() },
     booking: { findMany: jest.fn() },
   };
@@ -40,6 +40,110 @@ describe('ReportingService', () => {
       },
     ]);
     prisma.booking.findMany.mockResolvedValue([]);
+    prisma.event.findMany.mockResolvedValue([]);
+  });
+
+  it('returns a safe empty Organisation summary', async () => {
+    const now = new Date('2027-09-01T00:00:00.000Z');
+    const result = await service.getOrganizationSummary('org-1', now);
+
+    expect(prisma.event.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { organizationId: 'org-1' } }),
+    );
+    expect(prisma.session.findMany).not.toHaveBeenCalled();
+    expect(prisma.booking.findMany).not.toHaveBeenCalled();
+    expect(result.totals).toEqual({
+      events: 0,
+      currentEvents: 0,
+      upcomingEvents: 0,
+      sessionsToday: 0,
+      confirmedBookings: 0,
+      ticketsIssued: 0,
+      admissions: 0,
+      grossCollected: 0,
+      refunded: 0,
+      netCollected: 0,
+      paymentExceptions: 0,
+    });
+  });
+
+  it('summarises Event-local operations and commercial totals', async () => {
+    const now = new Date('2027-08-31T23:00:00.000Z');
+    prisma.event.findMany.mockResolvedValue([
+      {
+        id: 'event-1',
+        name: 'Winter Festival',
+        slug: 'winter-festival',
+        status: 'ACTIVE',
+        startDate: new Date('2027-08-31T14:00:00.000Z'),
+        endDate: new Date('2027-09-05T13:59:59.999Z'),
+        timezone: 'Australia/Melbourne',
+      },
+    ]);
+    prisma.session.findMany.mockResolvedValue([
+      {
+        id: 'session-1',
+        eventId: 'event-1',
+        name: 'Morning skate',
+        status: 'ACTIVE',
+        startDate: new Date('2027-09-01T00:30:00.000Z'),
+        endDate: new Date('2027-09-01T01:30:00.000Z'),
+        capacity: 10,
+      },
+    ]);
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        eventId: 'event-1',
+        sessionId: 'session-1',
+        status: 'CONFIRMED',
+        items: [{ quantity: 2 }],
+        tickets: [
+          { status: 'SCANNED', checkedInAt: now },
+          { status: 'ACTIVE', checkedInAt: null },
+        ],
+        payments: [
+          {
+            status: 'SUCCEEDED',
+            amount: 80,
+            refunds: [{ status: 'SUCCEEDED', amount: 10 }],
+          },
+        ],
+      },
+      {
+        eventId: 'event-1',
+        sessionId: 'session-1',
+        status: 'RESERVED',
+        items: [{ quantity: 1 }],
+        tickets: [],
+        payments: [{ status: 'PENDING', amount: 20, refunds: [] }],
+      },
+    ]);
+
+    const result = await service.getOrganizationSummary('org-1', now);
+
+    expect(result.totals).toEqual(
+      expect.objectContaining({
+        currentEvents: 1,
+        sessionsToday: 1,
+        confirmedBookings: 1,
+        ticketsIssued: 2,
+        admissions: 1,
+        grossCollected: 80,
+        refunded: 10,
+        netCollected: 70,
+        paymentExceptions: 1,
+      }),
+    );
+    expect(result.events[0]).toEqual(
+      expect.objectContaining({
+        lifecycle: 'CURRENT',
+        sessions: expect.objectContaining({
+          today: 1,
+          reservedAttendance: 3,
+          utilisationPercent: 30,
+        }),
+      }),
+    );
   });
 
   it('returns safe zero metrics for an Event without Bookings', async () => {

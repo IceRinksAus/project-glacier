@@ -88,6 +88,7 @@ Status values:
 | Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Control |
 | ------ | ----- | -------- | -------------------------- | ----------- | ---------- | ------ | ------- |
 | GET | `/reporting/events/:eventId` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Read-only authoritative operational metrics; bounded Session/exception rows; no customer details or provider credentials. |
+| GET | `/reporting/organization` | Operator | JWT OWNER/MEMBER | Authenticated Organisation | None | PROTECTED | Bounded cross-Event operational summary; minimal Booking/Payment/Ticket fields; no customer or participant details. |
 
 ## Ticket and Gate Operations
 

@@ -6,7 +6,10 @@ import { ReportingService } from './reporting.service';
 
 describe('ReportingController', () => {
   let controller: ReportingController;
-  const service = { getEventReport: jest.fn() };
+  const service = {
+    getEventReport: jest.fn(),
+    getOrganizationSummary: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -31,6 +34,18 @@ describe('ReportingController', () => {
       'organization-1',
       'event-1',
       query,
+    );
+  });
+
+  it('uses trusted Organisation context for the summary', async () => {
+    service.getOrganizationSummary.mockResolvedValue({});
+
+    await controller.getOrganizationSummary({
+      organizationId: 'organization-1',
+    });
+
+    expect(service.getOrganizationSummary).toHaveBeenCalledWith(
+      'organization-1',
     );
   });
 
