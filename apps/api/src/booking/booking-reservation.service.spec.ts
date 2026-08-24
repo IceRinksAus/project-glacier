@@ -11,7 +11,7 @@ describe('BookingReservationService', () => {
   };
 
   const paymentService = {
-    cancelPendingPaymentForBooking:
+    resolvePendingPaymentForExpiredBooking:
       jest.fn(),
   };
 
@@ -86,24 +86,24 @@ describe('BookingReservationService', () => {
       },
     ]);
 
-    paymentService.cancelPendingPaymentForBooking.mockResolvedValue({
+    paymentService.resolvePendingPaymentForExpiredBooking.mockResolvedValue({
       cancelled: true,
     });
 
     await service.expireReservations();
 
     expect(
-      paymentService.cancelPendingPaymentForBooking,
+      paymentService.resolvePendingPaymentForExpiredBooking,
     ).toHaveBeenCalledTimes(2);
 
     expect(
-      paymentService.cancelPendingPaymentForBooking,
+      paymentService.resolvePendingPaymentForExpiredBooking,
     ).toHaveBeenCalledWith(
       'booking-1',
     );
 
     expect(
-      paymentService.cancelPendingPaymentForBooking,
+      paymentService.resolvePendingPaymentForExpiredBooking,
     ).toHaveBeenCalledWith(
       'booking-2',
     );
@@ -119,7 +119,7 @@ describe('BookingReservationService', () => {
       },
     ]);
 
-    paymentService.cancelPendingPaymentForBooking
+    paymentService.resolvePendingPaymentForExpiredBooking
       .mockRejectedValueOnce(
         new Error(
           'Stripe unavailable',
@@ -134,7 +134,7 @@ describe('BookingReservationService', () => {
     ).resolves.toBeUndefined();
 
     expect(
-      paymentService.cancelPendingPaymentForBooking,
+      paymentService.resolvePendingPaymentForExpiredBooking,
     ).toHaveBeenCalledTimes(2);
   });
 
@@ -149,14 +149,14 @@ describe('BookingReservationService', () => {
       },
     ]);
 
-    paymentService.cancelPendingPaymentForBooking.mockResolvedValue({
+    paymentService.resolvePendingPaymentForExpiredBooking.mockResolvedValue({
       cancelled: true,
     });
 
     await service.expireReservations();
 
     expect(
-      paymentService.cancelPendingPaymentForBooking,
+      paymentService.resolvePendingPaymentForExpiredBooking,
     ).toHaveBeenCalledWith(
       'already-expired-booking',
     );

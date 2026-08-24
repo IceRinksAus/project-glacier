@@ -36,6 +36,18 @@ export interface CancelPaymentResult {
   status: ProviderPaymentStatus;
 }
 
+export interface RetrievePaymentRequest {
+  paymentReference: string;
+}
+
+export interface RetrievePaymentResult {
+  provider: string;
+  paymentReference: string;
+  status: ProviderPaymentStatus;
+  failureCode?: string;
+  failureMessage?: string;
+}
+
 export interface RefundPaymentRequest {
   paymentReference: string;
   amount: number;
@@ -63,6 +75,10 @@ export interface PaymentProvider {
   createPayment(
     request: CreatePaymentRequest,
   ): Promise<CreatePaymentResult>;
+
+  retrievePayment(
+    request: RetrievePaymentRequest,
+  ): Promise<RetrievePaymentResult>;
 
   cancelPayment(
     request: CancelPaymentRequest,

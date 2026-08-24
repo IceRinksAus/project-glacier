@@ -300,9 +300,15 @@ The Booking summary continues to track its own payment state separately.
 
 `BookingReservationService` expires overdue reservations and then looks for expired Bookings with unresolved `PENDING` Payments.
 
-Those provider payments are cancelled where possible.
+Before cancellation, Glacier retrieves the payment's current provider state through the `PaymentProvider` boundary.
 
-Cancellation failures remain retryable on a later scheduler run.
+- A provider-pending payment proceeds to idempotent cancellation.
+- A provider-cancelled or failed payment is closed locally through `PaymentService`.
+- A missed provider success is processed through the same completion path as a verified webhook. Because an expired Booking cannot be fulfilled, that path records the successful charge and creates the existing idempotent late-success refund without issuing Tickets.
+
+Provider retrieval, cancellation or refund failures remain retryable on a later scheduler run. One failure does not stop cleanup of other expired Bookings. Terminally reconciled Payments leave the scheduler's pending query, preventing an impossible cancellation from being retried indefinitely.
+
+The normal path remains signed webhook delivery. Scheduled reconciliation is a recovery control for missed or divergent provider/local state, not a replacement source of payment truth.
 
 ### Late Provider Success
 

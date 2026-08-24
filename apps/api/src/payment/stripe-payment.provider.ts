@@ -14,6 +14,8 @@ import type {
   ProviderRefundStatus,
   RefundPaymentRequest,
   RefundPaymentResult,
+  RetrievePaymentRequest,
+  RetrievePaymentResult,
 } from './payment-provider.interface';
 
 @Injectable()
@@ -117,6 +119,35 @@ export class StripePaymentProvider
         this.mapStripeStatus(
           paymentIntent.status,
         ),
+    };
+  }
+
+  async retrievePayment(
+    request: RetrievePaymentRequest,
+  ): Promise<RetrievePaymentResult> {
+    const paymentIntent =
+      await this.stripe.paymentIntents.retrieve(
+        request.paymentReference,
+      );
+
+    return {
+      provider: 'STRIPE',
+      paymentReference:
+        paymentIntent.id,
+      status:
+        paymentIntent.status ===
+          'requires_payment_method' &&
+        paymentIntent.last_payment_error
+          ? 'FAILED'
+          : this.mapStripeStatus(
+              paymentIntent.status,
+            ),
+      failureCode:
+        paymentIntent.last_payment_error
+          ?.code ?? undefined,
+      failureMessage:
+        paymentIntent.last_payment_error
+          ?.message ?? undefined,
     };
   }
 

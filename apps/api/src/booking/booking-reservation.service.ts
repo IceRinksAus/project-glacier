@@ -81,13 +81,20 @@ export class BookingReservationService {
     ) {
       try {
         const result =
-          await this.paymentService.cancelPendingPaymentForBooking(
+          await this.paymentService.resolvePendingPaymentForExpiredBooking(
             booking.id,
           );
 
         if (result.cancelled) {
           this.logger.log(
             `Cancelled pending payment for expired booking ${booking.id}`,
+          );
+        } else if (
+          'reconciled' in result &&
+          result.reconciled
+        ) {
+          this.logger.warn(
+            `Reconciled ${result.providerStatus} provider payment for expired booking ${booking.id}`,
           );
         }
       } catch (error) {
@@ -104,7 +111,7 @@ export class BookingReservationService {
             : 'Unknown payment cancellation error';
 
         this.logger.error(
-          `Unable to cancel pending payment for expired booking ${booking.id}: ${message}`,
+          `Unable to resolve pending payment for expired booking ${booking.id}: ${message}`,
         );
       }
     }

@@ -170,7 +170,7 @@ export class PaymentService {
     return providerResult;
   }
 
-  async cancelPendingPaymentForBooking(
+  async resolvePendingPaymentForExpiredBooking(
     bookingId: string,
   ) {
     const payment =
@@ -197,6 +197,42 @@ export class PaymentService {
         cancelled: false,
         reason:
           'MISSING_PROVIDER_REFERENCE',
+      } as const;
+    }
+
+    /*
+     * Re-read provider truth before cancellation. A webhook may
+     * have been missed while the provider successfully collected
+     * payment. Feeding that state through the existing completion
+     * path preserves Glacier's idempotent late-success refund rule.
+     */
+    const providerPayment =
+      await this.paymentProvider.retrievePayment({
+        paymentReference:
+          payment.providerReference,
+      });
+
+    if (providerPayment.status !== 'PENDING') {
+      const reconciliation =
+        await this.completePaymentFromProviderEvent({
+          provider:
+            providerPayment.provider,
+          paymentReference:
+            providerPayment.paymentReference,
+          status:
+            providerPayment.status,
+          failureCode:
+            providerPayment.failureCode,
+          failureMessage:
+            providerPayment.failureMessage,
+        });
+
+      return {
+        cancelled: false,
+        reconciled: true,
+        providerStatus:
+          providerPayment.status,
+        reconciliation,
       } as const;
     }
 

@@ -10,6 +10,9 @@ const mockCreatePaymentIntent =
 const mockCancelPaymentIntent =
   jest.fn();
 
+const mockRetrievePaymentIntent =
+  jest.fn();
+
 const mockCreateRefund =
   jest.fn();
 
@@ -26,6 +29,8 @@ jest.mock(
                 mockCreatePaymentIntent,
               cancel:
                 mockCancelPaymentIntent,
+              retrieve:
+                mockRetrievePaymentIntent,
             },
             refunds: {
               create:
@@ -291,6 +296,71 @@ describe('StripePaymentProvider', () => {
       paymentReference:
         'pi_cancel_me',
       status: 'CANCELLED',
+    });
+  });
+
+  it('should retrieve and map authoritative Stripe PaymentIntent state', async () => {
+    mockRetrievePaymentIntent.mockResolvedValue({
+      id: 'pi_reconcile_1',
+      status: 'succeeded',
+      last_payment_error: null,
+    });
+
+    const provider =
+      new StripePaymentProvider();
+
+    const result =
+      await provider.retrievePayment({
+        paymentReference:
+          'pi_reconcile_1',
+      });
+
+    expect(
+      mockRetrievePaymentIntent,
+    ).toHaveBeenCalledWith(
+      'pi_reconcile_1',
+    );
+
+    expect(result).toEqual({
+      provider: 'STRIPE',
+      paymentReference:
+        'pi_reconcile_1',
+      status: 'SUCCEEDED',
+      failureCode: undefined,
+      failureMessage: undefined,
+    });
+  });
+
+  it('should map a failed Stripe payment attempt during retrieval', async () => {
+    mockRetrievePaymentIntent.mockResolvedValue({
+      id: 'pi_failed_1',
+      status:
+        'requires_payment_method',
+      last_payment_error: {
+        code: 'card_declined',
+        message:
+          'Your card was declined.',
+      },
+    });
+
+    const provider =
+      new StripePaymentProvider();
+
+    const result =
+      await provider.retrievePayment({
+        paymentReference:
+          'pi_failed_1',
+      });
+
+    expect(result).toEqual({
+      provider: 'STRIPE',
+      paymentReference:
+        'pi_failed_1',
+      status: 'FAILED',
+      failureCode:
+        'card_declined',
+      failureMessage:
+        'Your card was declined.',
     });
   });
 

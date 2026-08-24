@@ -1,5 +1,23 @@
 # Changelog
 
+# Sprint 21 – Payment Operations, Recovery & Add-on Organisation
+
+## In Progress
+
+- Locked the Sprint 21 delivery contract around payment reconciliation, organiser investigation and customer-facing Add-on grouping/order.
+- Added authoritative provider Payment retrieval before expired-reservation cancellation.
+- Routed missed provider success through the existing idempotent late-success refund path without Ticket issuance.
+- Reconciled provider FAILED and CANCELLED states locally so terminal Payments stop indefinite scheduler retries.
+- Preserved retry behavior for temporary provider retrieval and cancellation failures.
+
+## Current Verification
+
+- Focused Payment and reservation suite: 6 suites and 61 tests passed.
+- Full API suite: 61 suites and 405 tests passed.
+- API production build: passed.
+- Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
+- No deployment or real Stripe mutation was performed.
+
 # Sprint 20 – Public Event Site, Branding & Routed Booking
 
 ## Added

@@ -8,6 +8,8 @@ import {
   PaymentProvider,
   RefundPaymentRequest,
   RefundPaymentResult,
+  RetrievePaymentRequest,
+  RetrievePaymentResult,
 } from './payment-provider.interface';
 
 @Injectable()
@@ -22,6 +24,17 @@ export class MockPaymentProvider
       paymentReference:
         `mock_${request.bookingId}_${Date.now()}`,
       status: 'SUCCEEDED',
+    };
+  }
+
+  async retrievePayment(
+    request: RetrievePaymentRequest,
+  ): Promise<RetrievePaymentResult> {
+    return {
+      provider: 'MOCK',
+      paymentReference:
+        request.paymentReference,
+      status: 'PENDING',
     };
   }
 

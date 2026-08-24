@@ -24,6 +24,7 @@ describe('PaymentService late-success refund', () => {
 
   const paymentProvider = {
     createPayment: jest.fn(),
+    retrievePayment: jest.fn(),
     cancelPayment: jest.fn(),
     refundPayment: jest.fn(),
   };

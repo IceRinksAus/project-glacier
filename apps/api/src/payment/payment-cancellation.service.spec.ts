@@ -16,10 +16,15 @@ describe('PaymentService cancellation', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
     },
+    paymentRefund: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
   };
 
   const paymentProvider = {
     createPayment: jest.fn(),
+    retrievePayment: jest.fn(),
     cancelPayment: jest.fn(),
     refundPayment: jest.fn(),
   };
@@ -51,6 +56,13 @@ describe('PaymentService cancellation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    paymentProvider.retrievePayment.mockResolvedValue({
+      provider: 'STRIPE',
+      paymentReference:
+        'pi_pending_1',
+      status: 'PENDING',
+    });
+
     service = new PaymentService(
       prisma as never,
       paymentProvider,
@@ -64,7 +76,7 @@ describe('PaymentService cancellation', () => {
     );
 
     const result =
-      await service.cancelPendingPaymentForBooking(
+      await service.resolvePendingPaymentForExpiredBooking(
         'booking-1',
       );
 
@@ -73,6 +85,10 @@ describe('PaymentService cancellation', () => {
       reason:
         'NO_PENDING_PAYMENT',
     });
+
+    expect(
+      paymentProvider.retrievePayment,
+    ).not.toHaveBeenCalled();
 
     expect(
       paymentProvider.cancelPayment,
@@ -90,7 +106,7 @@ describe('PaymentService cancellation', () => {
     });
 
     const result =
-      await service.cancelPendingPaymentForBooking(
+      await service.resolvePendingPaymentForExpiredBooking(
         'booking-1',
       );
 
@@ -101,9 +117,169 @@ describe('PaymentService cancellation', () => {
     });
 
     expect(
+      paymentProvider.retrievePayment,
+    ).not.toHaveBeenCalled();
+
+    expect(
       paymentProvider.cancelPayment,
     ).not.toHaveBeenCalled();
   });
+
+  it('should reconcile a missed provider success instead of retrying cancellation', async () => {
+    prisma.payment.findFirst
+      .mockResolvedValueOnce(
+        pendingPayment,
+      )
+      .mockResolvedValueOnce({
+        ...pendingPayment,
+        booking: {
+          id: 'booking-1',
+          status: 'EXPIRED',
+          paymentStatus: 'UNPAID',
+        },
+      });
+
+    paymentProvider.retrievePayment.mockResolvedValue({
+      provider: 'STRIPE',
+      paymentReference:
+        'pi_pending_1',
+      status: 'SUCCEEDED',
+    });
+
+    prisma.payment.update.mockResolvedValue({});
+    prisma.booking.updateMany.mockResolvedValue({
+      count: 0,
+    });
+    prisma.paymentRefund.findUnique.mockResolvedValue(
+      null,
+    );
+    prisma.paymentRefund.create.mockResolvedValue({
+      id: 'refund-1',
+      providerReference:
+        're_reconciled_1',
+      status: 'SUCCEEDED',
+    });
+
+    paymentProvider.refundPayment.mockResolvedValue({
+      provider: 'STRIPE',
+      refundReference:
+        're_reconciled_1',
+      paymentReference:
+        'pi_pending_1',
+      status: 'SUCCEEDED',
+    });
+
+    const result =
+      await service.resolvePendingPaymentForExpiredBooking(
+        'booking-1',
+      );
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        cancelled: false,
+        reconciled: true,
+        providerStatus:
+          'SUCCEEDED',
+      }),
+    );
+
+    expect(
+      paymentProvider.cancelPayment,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      paymentProvider.refundPayment,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      ticketService.issueTicketsForBooking,
+    ).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      providerStatus:
+        'CANCELLED' as const,
+      timestampField:
+        'cancelledAt',
+    },
+    {
+      providerStatus:
+        'FAILED' as const,
+      timestampField: 'failedAt',
+    },
+  ])(
+    'should reconcile provider $providerStatus without attempting cancellation',
+    async ({
+      providerStatus,
+      timestampField,
+    }) => {
+      prisma.payment.findFirst
+        .mockResolvedValueOnce(
+          pendingPayment,
+        )
+        .mockResolvedValueOnce({
+          ...pendingPayment,
+          booking: {
+            id: 'booking-1',
+            status: 'EXPIRED',
+            paymentStatus:
+              'UNPAID',
+          },
+        });
+
+      paymentProvider.retrievePayment.mockResolvedValue({
+        provider: 'STRIPE',
+        paymentReference:
+          'pi_pending_1',
+        status: providerStatus,
+        failureCode:
+          providerStatus === 'FAILED'
+            ? 'card_declined'
+            : undefined,
+        failureMessage:
+          providerStatus === 'FAILED'
+            ? 'Card declined'
+            : undefined,
+      });
+
+      prisma.payment.update.mockResolvedValue({});
+
+      const result =
+        await service.resolvePendingPaymentForExpiredBooking(
+          'booking-1',
+        );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          cancelled: false,
+          reconciled: true,
+          providerStatus,
+        }),
+      );
+
+      expect(
+        prisma.payment.update,
+      ).toHaveBeenCalledWith({
+        where: {
+          id: 'payment-1',
+        },
+        data: expect.objectContaining({
+          status: providerStatus,
+          [timestampField]:
+            expect.any(Date),
+        }),
+      });
+
+      expect(
+        paymentProvider.cancelPayment,
+      ).not.toHaveBeenCalled();
+
+      expect(
+        paymentProvider.refundPayment,
+      ).not.toHaveBeenCalled();
+    },
+  );
 
   it('should cancel the pending provider payment using a stable idempotency key', async () => {
     prisma.payment.findFirst.mockResolvedValue(
@@ -122,7 +298,7 @@ describe('PaymentService cancellation', () => {
     });
 
     const result =
-      await service.cancelPendingPaymentForBooking(
+      await service.resolvePendingPaymentForExpiredBooking(
         'booking-1',
       );
 
@@ -170,7 +346,7 @@ describe('PaymentService cancellation', () => {
     });
 
     const result =
-      await service.cancelPendingPaymentForBooking(
+      await service.resolvePendingPaymentForExpiredBooking(
         'booking-1',
       );
 
@@ -197,12 +373,40 @@ describe('PaymentService cancellation', () => {
     );
 
     await expect(
-      service.cancelPendingPaymentForBooking(
+      service.resolvePendingPaymentForExpiredBooking(
         'booking-1',
       ),
     ).rejects.toThrow(
       'Stripe temporarily unavailable',
     );
+
+    expect(
+      prisma.payment.updateMany,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should propagate provider retrieval errors so reconciliation can retry later', async () => {
+    prisma.payment.findFirst.mockResolvedValue(
+      pendingPayment,
+    );
+
+    paymentProvider.retrievePayment.mockRejectedValue(
+      new Error(
+        'Stripe retrieval unavailable',
+      ),
+    );
+
+    await expect(
+      service.resolvePendingPaymentForExpiredBooking(
+        'booking-1',
+      ),
+    ).rejects.toThrow(
+      'Stripe retrieval unavailable',
+    );
+
+    expect(
+      paymentProvider.cancelPayment,
+    ).not.toHaveBeenCalled();
 
     expect(
       prisma.payment.updateMany,
