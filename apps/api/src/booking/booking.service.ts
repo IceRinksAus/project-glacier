@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { BookingValidationService } from '../booking-validation/booking-validation.service';
+import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
 
@@ -17,7 +18,18 @@ export class BookingService {
     private readonly prisma: PrismaService,
     private readonly ruleEvaluationService: RuleEvaluationService,
     private readonly bookingValidationService: BookingValidationService,
+    private readonly paymentService: PaymentService,
   ) {}
+
+  private summarizeProviderReference(
+    providerReference: string | null,
+  ) {
+    if (!providerReference) {
+      return null;
+    }
+
+    return `••••${providerReference.slice(-8)}`;
+  }
 
   private async createWithCapacityProtection<T>(
     operation: (transaction: Prisma.TransactionClient) => Promise<T>,
@@ -113,6 +125,262 @@ export class BookingService {
     }
 
     return booking;
+  }
+
+  async findPaymentInvestigation(
+    organizationId: string,
+    id: string,
+  ) {
+    const booking =
+      await this.prisma.booking.findFirst({
+        where: {
+          id,
+          event: {
+            organizationId,
+          },
+        },
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          paymentStatus: true,
+          total: true,
+          reservedUntil: true,
+          confirmedAt: true,
+          paidAt: true,
+          expiredAt: true,
+          createdAt: true,
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          event: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          session: {
+            select: {
+              id: true,
+              name: true,
+              startDate: true,
+              endDate: true,
+            },
+          },
+          tickets: {
+            select: {
+              ticketNumber: true,
+              status: true,
+              issuedAt: true,
+            },
+            orderBy: {
+              issuedAt: 'asc',
+            },
+          },
+          payments: {
+            select: {
+              id: true,
+              provider: true,
+              providerReference: true,
+              amount: true,
+              currency: true,
+              status: true,
+              failureCode: true,
+              failureMessage: true,
+              succeededAt: true,
+              failedAt: true,
+              cancelledAt: true,
+              createdAt: true,
+              updatedAt: true,
+              refunds: {
+                select: {
+                  id: true,
+                  amount: true,
+                  currency: true,
+                  status: true,
+                  reason: true,
+                  succeededAt: true,
+                  failedAt: true,
+                  cancelledAt: true,
+                  createdAt: true,
+                },
+                orderBy: {
+                  createdAt: 'desc',
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+          paymentReconciliationAttempts: {
+            select: {
+              id: true,
+              trigger: true,
+              outcome: true,
+              providerStatus: true,
+              succeeded: true,
+              errorMessage: true,
+              attemptedAt: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              attemptedAt: 'desc',
+            },
+          },
+        },
+      });
+
+    if (!booking) {
+      throw new NotFoundException(
+        'Booking not found',
+      );
+    }
+
+    const payments = booking.payments.map(
+      (payment) => ({
+        ...payment,
+        providerReference:
+          undefined,
+        providerReferenceSummary:
+          this.summarizeProviderReference(
+            payment.providerReference,
+          ),
+      }),
+    );
+
+    return {
+      ...booking,
+      total: booking.total.toNumber(),
+      payments: payments.map(
+        ({ providerReference: _reference, ...payment }) => ({
+          ...payment,
+          amount: payment.amount.toNumber(),
+          refunds: payment.refunds.map(
+            (refund) => ({
+              ...refund,
+              amount:
+                refund.amount.toNumber(),
+            }),
+          ),
+        }),
+      ),
+      requiresReconciliation:
+        payments.some(
+          (payment) =>
+            payment.status ===
+            'PENDING',
+        ),
+    };
+  }
+
+  async reconcilePayment(
+    organizationId: string,
+    userId: string,
+    id: string,
+  ) {
+    const booking =
+      await this.prisma.booking.findFirst({
+        where: {
+          id,
+          event: {
+            organizationId,
+          },
+        },
+        select: {
+          id: true,
+          eventId: true,
+          payments: {
+            where: {
+              status: 'PENDING',
+            },
+            select: {
+              id: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            take: 1,
+          },
+        },
+      });
+
+    if (!booking) {
+      throw new NotFoundException(
+        'Booking not found',
+      );
+    }
+
+    const paymentId =
+      booking.payments[0]?.id ?? null;
+
+    try {
+      const result =
+        await this.paymentService.reconcilePendingPaymentForBooking(
+          booking.id,
+        );
+
+      const outcome = result.reconciled
+        ? `RECONCILED_${result.providerStatus}`
+        : result.reason;
+
+      await this.prisma.paymentReconciliationAttempt.create({
+        data: {
+          organizationId,
+          eventId: booking.eventId,
+          bookingId: booking.id,
+          paymentId:
+            result.paymentId ?? paymentId,
+          userId,
+          trigger: 'MANUAL',
+          outcome,
+          providerStatus:
+            'providerStatus' in result
+              ? result.providerStatus
+              : null,
+          succeeded: result.reconciled,
+        },
+      });
+
+      return {
+        result,
+        investigation:
+          await this.findPaymentInvestigation(
+            organizationId,
+            booking.id,
+          ),
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message.slice(0, 500)
+          : 'Unknown reconciliation error';
+
+      await this.prisma.paymentReconciliationAttempt.create({
+        data: {
+          organizationId,
+          eventId: booking.eventId,
+          bookingId: booking.id,
+          paymentId,
+          userId,
+          trigger: 'MANUAL',
+          outcome: 'ERROR',
+          succeeded: false,
+          errorMessage,
+        },
+      });
+
+      throw error;
+    }
   }
 
   async create(data: CreateBookingDto) {

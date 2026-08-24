@@ -114,6 +114,9 @@ describe('BookingService', () => {
     sessionProduct: {
       findMany: jest.fn(),
     },
+    paymentReconciliationAttempt: {
+      create: jest.fn(),
+    },
   };
 
   const ruleEvaluationService = {
@@ -122,6 +125,11 @@ describe('BookingService', () => {
 
   const bookingValidationService = {
     validateBooking: jest.fn(),
+  };
+
+  const paymentService = {
+    reconcilePendingPaymentForBooking:
+      jest.fn(),
   };
 
   beforeEach(() => {
@@ -180,6 +188,7 @@ describe('BookingService', () => {
       prisma as never,
       ruleEvaluationService as never,
       bookingValidationService as never,
+      paymentService as never,
     );
   });
 

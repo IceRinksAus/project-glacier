@@ -412,4 +412,33 @@ describe('PaymentService cancellation', () => {
       prisma.payment.updateMany,
     ).not.toHaveBeenCalled();
   });
+
+  it('should inspect but not cancel a provider-pending payment during manual reconciliation', async () => {
+    prisma.payment.findFirst.mockResolvedValue(
+      pendingPayment,
+    );
+
+    const result =
+      await service.reconcilePendingPaymentForBooking(
+        'booking-1',
+      );
+
+    expect(result).toEqual({
+      reconciled: false,
+      reason: 'PROVIDER_PENDING',
+      paymentId: 'payment-1',
+      providerStatus: 'PENDING',
+    });
+
+    expect(
+      paymentProvider.retrievePayment,
+    ).toHaveBeenCalledWith({
+      paymentReference:
+        'pi_pending_1',
+    });
+
+    expect(
+      paymentProvider.cancelPayment,
+    ).not.toHaveBeenCalled();
+  });
 });

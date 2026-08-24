@@ -33,16 +33,31 @@ The normal successful path remains Stripe's verified signed webhook. Reconciliat
 ## Verification to Date
 
 - Focused Payment/provider/reservation tests: 6 suites and 61 tests passed.
-- Complete API suite: 61 suites and 405 tests passed.
+- Focused Booking/payment operations tests: 6 suites and 76 tests passed.
+- Complete API suite: 62 suites and 413 tests passed.
 - API production build: passed.
 - Tests cover provider retrieval, pending cancellation, missed success/refund, no Ticket issuance, FAILED and CANCELLED closure, and retry after provider outage.
 - No database migration, browser payment or real Stripe mutation was required for this slice.
 
+## Slice 2 — Organiser Payment Investigation Foundation
+
+The backend now defines two OWNER-only, tenant-scoped operations:
+
+- `GET /booking/:id/payment-investigation`; and
+- `POST /booking/:id/payment-reconciliation`.
+
+The investigation response supplies the Booking lifecycle, customer and Event context, Session, Ticket issuance, Payment attempts, refunds and reconciliation history needed for customer-service investigation. Full provider references are never returned; the response exposes only a masked suffix.
+
+The manual action is deliberately **Reconcile payment**, not **Mark paid**. It re-reads provider truth through `PaymentService`. A still-pending provider Payment is reported without cancellation or local status mutation. Terminal provider state uses the same completion, Ticket and late-refund rules as the automated path.
+
+Every manual attempt records Organisation, Event, Booking, optional Payment, acting User, trigger, outcome, provider status, success state, bounded error detail and timestamp. Cross-tenant Booking IDs receive the same not-found result as unknown IDs.
+
+The schema migration and generated client validate, the API production build passes and the complete API suite now passes 62 suites / 413 tests.
+
 ## Remaining Sprint 21 Work
 
-- reconciliation auditability and operational evidence;
-- tenant-safe organiser Booking/payment investigation;
-- the single safe organiser reconciliation action;
+- dashboard presentation for organiser Booking/payment investigation;
+- local migration application and browser operational acceptance;
 - Event-owned Product grouping and deterministic ordering;
 - accessible dashboard ordering controls;
 - grouped public Add-ons presentation; and

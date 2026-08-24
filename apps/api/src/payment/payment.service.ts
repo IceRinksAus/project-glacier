@@ -276,6 +276,78 @@ export class PaymentService {
     } as const;
   }
 
+  async reconcilePendingPaymentForBooking(
+    bookingId: string,
+  ) {
+    const payment =
+      await this.prisma.payment.findFirst({
+        where: {
+          bookingId,
+          status: 'PENDING',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+    if (!payment) {
+      return {
+        reconciled: false,
+        reason:
+          'NO_PENDING_PAYMENT',
+        paymentId: null,
+      } as const;
+    }
+
+    if (!payment.providerReference) {
+      return {
+        reconciled: false,
+        reason:
+          'MISSING_PROVIDER_REFERENCE',
+        paymentId: payment.id,
+      } as const;
+    }
+
+    const providerPayment =
+      await this.paymentProvider.retrievePayment({
+        paymentReference:
+          payment.providerReference,
+      });
+
+    if (providerPayment.status === 'PENDING') {
+      return {
+        reconciled: false,
+        reason:
+          'PROVIDER_PENDING',
+        paymentId: payment.id,
+        providerStatus:
+          providerPayment.status,
+      } as const;
+    }
+
+    const reconciliation =
+      await this.completePaymentFromProviderEvent({
+        provider:
+          providerPayment.provider,
+        paymentReference:
+          providerPayment.paymentReference,
+        status:
+          providerPayment.status,
+        failureCode:
+          providerPayment.failureCode,
+        failureMessage:
+          providerPayment.failureMessage,
+      });
+
+    return {
+      reconciled: true,
+      paymentId: payment.id,
+      providerStatus:
+        providerPayment.status,
+      reconciliation,
+    } as const;
+  }
+
   private async refundLateSuccessfulPayment(
     payment: {
       id: string;

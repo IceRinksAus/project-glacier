@@ -9,11 +9,14 @@
 - Routed missed provider success through the existing idempotent late-success refund path without Ticket issuance.
 - Reconciled provider FAILED and CANCELLED states locally so terminal Payments stop indefinite scheduler retries.
 - Preserved retry behavior for temporary provider retrieval and cancellation failures.
+- Added OWNER-only, tenant-scoped Booking payment investigation and reconciliation endpoints.
+- Added append-only attributable reconciliation attempts and masked provider-reference presentation.
+- Kept manual reconciliation read-authoritative: a provider-pending Payment is neither cancelled nor marked paid.
 
 ## Current Verification
 
 - Focused Payment and reservation suite: 6 suites and 61 tests passed.
-- Full API suite: 61 suites and 405 tests passed.
+- Full API suite: 62 suites and 413 tests passed.
 - API production build: passed.
 - Original 45-suite / 236-test regression floor and Sprint 20's 61-suite / 399-test baseline remain preserved.
 - No deployment or real Stripe mutation was performed.

@@ -29,10 +29,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  events             Event[]
-  users              UserOrganization[]
-  ticketScanAttempts TicketScanAttempt[]
-  fileAssets         FileAsset[]
+  events                        Event[]
+  users                         UserOrganization[]
+  ticketScanAttempts            TicketScanAttempt[]
+  fileAssets                    FileAsset[]
+  paymentReconciliationAttempts PaymentReconciliationAttempt[]
 }
 
 model User {
@@ -45,11 +46,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eventRoles              EventUser[]
-  organizations           UserOrganization[]
-  publishedWaiverVersions WaiverVersion[]
-  ticketScanAttempts      TicketScanAttempt[]
-  createdFileAssets       FileAsset[]
+  eventRoles                    EventUser[]
+  organizations                 UserOrganization[]
+  publishedWaiverVersions       WaiverVersion[]
+  ticketScanAttempts            TicketScanAttempt[]
+  createdFileAssets             FileAsset[]
+  paymentReconciliationAttempts PaymentReconciliationAttempt[]
 }
 
 model UserOrganization {
@@ -103,10 +105,11 @@ model Event {
 
   rules Rule[]
 
-  waiver             EventWaiver?
-  branding           EventBranding?
-  fileAssets         FileAsset[]
-  ticketScanAttempts TicketScanAttempt[]
+  waiver                        EventWaiver?
+  branding                      EventBranding?
+  fileAssets                    FileAsset[]
+  ticketScanAttempts            TicketScanAttempt[]
+  paymentReconciliationAttempts PaymentReconciliationAttempt[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
@@ -455,11 +458,12 @@ model Booking {
   sessionId String?
   session   Session? @relation(fields: [sessionId], references: [id])
 
-  items        BookingItem[]
-  participants BookingParticipant[]
-  products     BookingProduct[]
-  tickets      Ticket[]
-  payments     Payment[]
+  items                         BookingItem[]
+  participants                  BookingParticipant[]
+  products                      BookingProduct[]
+  tickets                       Ticket[]
+  payments                      Payment[]
+  paymentReconciliationAttempts PaymentReconciliationAttempt[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -566,7 +570,8 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refunds PaymentRefund[]
+  refunds                PaymentRefund[]
+  reconciliationAttempts PaymentReconciliationAttempt[]
 
   @@index([bookingId])
   @@index([provider, providerReference])
@@ -611,6 +616,38 @@ model PaymentRefund {
   @@index([paymentId])
   @@index([status])
   @@index([provider, providerReference])
+}
+
+model PaymentReconciliationAttempt {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  trigger        String         @default("MANUAL")
+  outcome        String
+  providerStatus PaymentStatus?
+  succeeded      Boolean
+  errorMessage   String?
+  attemptedAt    DateTime       @default(now())
+
+  @@index([organizationId, attemptedAt])
+  @@index([eventId, attemptedAt])
+  @@index([bookingId, attemptedAt])
+  @@index([paymentId, attemptedAt])
+  @@index([userId, attemptedAt])
 }
 
 model EventUser {
