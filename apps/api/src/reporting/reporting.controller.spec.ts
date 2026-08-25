@@ -9,6 +9,8 @@ describe('ReportingController', () => {
   const service = {
     getEventReport: jest.fn(),
     getOrganizationSummary: jest.fn(),
+    getTicketTypeSales: jest.fn(),
+    getSessionSales: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -54,5 +56,13 @@ describe('ReportingController', () => {
       'OWNER',
       'MEMBER',
     ]);
+  });
+
+  it('uses trusted Organisation context for detailed sales reports', async () => {
+    const query = { sessionId: 'session-1' };
+    await controller.getTicketTypeSales('event-1', { organizationId: 'org-1' }, query);
+    await controller.getSessionSales('event-1', { organizationId: 'org-1' }, query);
+    expect(service.getTicketTypeSales).toHaveBeenCalledWith('org-1', 'event-1', query);
+    expect(service.getSessionSales).toHaveBeenCalledWith('org-1', 'event-1', query);
   });
 });

@@ -10,6 +10,7 @@ describe('ReportingService', () => {
     event: { findFirst: jest.fn(), findMany: jest.fn() },
     session: { findMany: jest.fn() },
     booking: { findMany: jest.fn() },
+    ticketType: { findMany: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -41,6 +42,57 @@ describe('ReportingService', () => {
     ]);
     prisma.booking.findMany.mockResolvedValue([]);
     prisma.event.findMany.mockResolvedValue([]);
+    prisma.ticketType.findMany.mockResolvedValue([]);
+  });
+
+  it('reports Ticket Type units and gross item sales without allocating refunds', async () => {
+    prisma.ticketType.findMany.mockResolvedValue([
+      { id: 'adult', name: 'Adult', active: true },
+      { id: 'child', name: 'Child', active: true },
+    ]);
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        items: [
+          { ticketTypeId: 'adult', quantity: 2, totalPrice: 50 },
+          { ticketTypeId: 'child', quantity: 1, totalPrice: 15 },
+        ],
+        tickets: [
+          { status: 'SCANNED', checkedInAt: new Date(), participant: { ticketTypeId: 'adult' } },
+          { status: 'ACTIVE', checkedInAt: null, participant: { ticketTypeId: 'adult' } },
+          { status: 'ACTIVE', checkedInAt: null, participant: { ticketTypeId: 'child' } },
+        ],
+      },
+    ]);
+
+    const result = await service.getTicketTypeSales('org-1', 'event-1', {});
+
+    expect(result.totals).toEqual({ unitsSold: 3, grossItemSales: 65, ticketsIssued: 3, admissions: 1 });
+    expect(result.rows[0]).toEqual(expect.objectContaining({ id: 'adult', unitsSold: 2, grossItemSales: 50, unitSharePercent: 66.7 }));
+    expect(result.refundAllocation).toBe('UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL');
+  });
+
+  it('reports attributable Session collection, refunds and capacity truth', async () => {
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        sessionId: 'session-1', status: 'CONFIRMED', total: 80,
+        items: [{ quantity: 2 }],
+        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
+        payments: [{ status: 'SUCCEEDED', amount: 80, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+      },
+      {
+        sessionId: 'session-1', status: 'RESERVED', total: 20,
+        items: [{ quantity: 1 }], tickets: [], payments: [],
+      },
+    ]);
+
+    const result = await service.getSessionSales('org-1', 'event-1', {});
+
+    expect(result.rows[0]).toEqual(expect.objectContaining({
+      confirmedBookings: 1, confirmedBookingValue: 80,
+      grossCollected: 80, refunded: 10, netCollected: 70,
+      ticketUnits: 2, ticketsIssued: 2, admissions: 1,
+      reservedAttendance: 3, remainingCapacity: 7, utilisationPercent: 30,
+    }));
   });
 
   it('returns a safe empty Organisation summary', async () => {

@@ -89,6 +89,8 @@ Status values:
 | ------ | ----- | -------- | -------------------------- | ----------- | ---------- | ------ | ------- |
 | GET | `/reporting/events/:eventId` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Read-only authoritative operational metrics; bounded Session/exception rows; no customer details or provider credentials. |
 | GET | `/reporting/organization` | Operator | JWT OWNER/MEMBER | Authenticated Organisation | None | PROTECTED | Bounded cross-Event operational summary; minimal Booking/Payment/Ticket fields; no customer or participant details. |
+| GET | `/reporting/events/:eventId/ticket-types` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Confirmed Ticket units and gross item sales; refunds explicitly unallocated; no customer/participant details. |
+| GET | `/reporting/events/:eventId/sessions` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Session-attributable confirmed value, collection/refund/net, Tickets, admissions and capacity utilisation. |
 
 ## Event Groups
 

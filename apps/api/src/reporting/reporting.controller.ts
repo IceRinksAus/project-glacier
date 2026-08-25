@@ -34,4 +34,14 @@ export class ReportingController {
       query,
     );
   }
+
+  @Get('events/:eventId/ticket-types')
+  getTicketTypeSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
+    return this.reportingService.getTicketTypeSales(user.organizationId, eventId, query);
+  }
+
+  @Get('events/:eventId/sessions')
+  getSessionSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
+    return this.reportingService.getSessionSales(user.organizationId, eventId, query);
+  }
 }

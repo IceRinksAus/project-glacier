@@ -19,7 +19,7 @@ The organiser Reports destination now provides the Event Group management surfac
 ## Verification to Date
 
 - Event Group focused suite: 2 suites / 9 tests passed.
-- Complete API suite: 69 suites / 444 tests passed.
+- Complete API suite: 69 suites / 447 tests passed.
 - API production build: passed.
 - Prisma schema formatting, generation and validation: passed.
 - Additive Event Group migration applied locally; all 31 migrations are current.
@@ -28,3 +28,15 @@ The organiser Reports destination now provides the Event Group management surfac
 - Complete web suite: 21 suites / 60 tests passed.
 - Web lint: no new errors; one documented inherited internal-navigation warning remains.
 - Web webpack production build: passed and includes the `/reports` route.
+
+## Slice 2 — Detailed Sales Read Model
+
+The first detailed report endpoints add Sales by Ticket Type and Sales by Session using the same OWNER/MEMBER, tenant-scoped and Event-timezone filter boundary established in Sprint 22.
+
+Sales by Ticket Type returns confirmed units, gross persisted Booking Item sales, unit share, issued Tickets and admissions. It explicitly marks refunds as unallocated because PaymentRefund does not identify a Ticket Type or Booking line. Cancelled, expired and reserved Bookings cannot become confirmed Ticket Type sales.
+
+Sales by Session returns confirmed Booking count/value, successful collection, successful refunds, net collected, confirmed Ticket units, issued Tickets, admissions and reserved/remaining/utilised admission capacity. Payment and refund values are attributable at Session level through the Booking's Session relationship.
+
+Both reads support the existing exact Event-local date and Session filters, deterministic ordering and bounded rows. They return no customer or participant identity, Ticket credentials or Payment-provider credentials.
+
+Focused detailed reporting verification: 2 reporting suites / 14 tests passed; API production build passed. New checks reconcile Ticket Type quantities/gross sales, preserve the unallocated-refund boundary and prove Session collection/refund/net plus shared-capacity semantics.

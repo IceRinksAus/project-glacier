@@ -399,6 +399,118 @@ export class ReportingService {
     };
   }
 
+  async getTicketTypeSales(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const { event, sessions } = await this.detailedScope(organizationId, eventId, query);
+    const sessionIds = sessions.map(({ id }) => id);
+    const [ticketTypes, bookings] = await Promise.all([
+      this.prisma.ticketType.findMany({
+        where: { eventId },
+        select: { id: true, name: true, active: true },
+        orderBy: [{ name: 'asc' }, { id: 'asc' }],
+        take: 500,
+      }),
+      sessionIds.length
+        ? this.prisma.booking.findMany({
+            where: { eventId, sessionId: { in: sessionIds }, status: 'CONFIRMED' },
+            select: {
+              items: { select: { ticketTypeId: true, quantity: true, totalPrice: true } },
+              tickets: { select: { status: true, checkedInAt: true, participant: { select: { ticketTypeId: true } } } },
+            },
+            take: 50000,
+          })
+        : Promise.resolve([]),
+    ]);
+    const totalUnits = bookings.flatMap(({ items }) => items).reduce((sum, item) => sum + item.quantity, 0);
+    const rows = ticketTypes.map((ticketType) => {
+      const items = bookings.flatMap(({ items }) => items).filter(({ ticketTypeId }) => ticketTypeId === ticketType.id);
+      const tickets = bookings.flatMap(({ tickets }) => tickets).filter(({ participant }) => participant.ticketTypeId === ticketType.id);
+      const unitsSold = items.reduce((sum, item) => sum + item.quantity, 0);
+      return {
+        ...ticketType,
+        unitsSold,
+        grossItemSales: this.sum(items.map(({ totalPrice }) => Number(totalPrice))),
+        unitSharePercent: totalUnits > 0 ? Number(((unitsSold / totalUnits) * 100).toFixed(1)) : 0,
+        ticketsIssued: tickets.length,
+        admissions: tickets.filter(({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null).length,
+      };
+    });
+    return {
+      event,
+      filter: { date: query.date ?? null, sessionId: query.sessionId ?? null },
+      totals: {
+        unitsSold: totalUnits,
+        grossItemSales: this.sum(rows.map(({ grossItemSales }) => grossItemSales)),
+        ticketsIssued: rows.reduce((sum, row) => sum + row.ticketsIssued, 0),
+        admissions: rows.reduce((sum, row) => sum + row.admissions, 0),
+      },
+      refundAllocation: 'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL',
+      rows,
+    };
+  }
+
+  async getSessionSales(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const { event, sessions } = await this.detailedScope(organizationId, eventId, query);
+    const sessionIds = sessions.map(({ id }) => id);
+    const bookings = sessionIds.length
+      ? await this.prisma.booking.findMany({
+          where: { eventId, sessionId: { in: sessionIds } },
+          select: {
+            sessionId: true, status: true, total: true,
+            items: { select: { quantity: true } },
+            tickets: { select: { status: true, checkedInAt: true } },
+            payments: { select: { status: true, amount: true, refunds: { select: { status: true, amount: true } } } },
+          },
+          take: 50000,
+        })
+      : [];
+    const rows = sessions.map((session) => {
+      const scoped = bookings.filter(({ sessionId }) => sessionId === session.id);
+      const confirmed = scoped.filter(({ status }) => status === 'CONFIRMED');
+      const successful = scoped.flatMap(({ payments }) => payments.filter(({ status }) => status === 'SUCCEEDED'));
+      const grossCollected = this.sum(successful.map(({ amount }) => Number(amount)));
+      const refunded = this.sum(successful.flatMap(({ refunds }) => refunds.filter(({ status }) => status === 'SUCCEEDED').map(({ amount }) => Number(amount))));
+      const reserved = this.ticketQuantity(scoped.filter(({ status }) => ['RESERVED', 'CONFIRMED'].includes(status)));
+      const tickets = confirmed.flatMap(({ tickets }) => tickets);
+      return {
+        ...session,
+        confirmedBookings: confirmed.length,
+        confirmedBookingValue: this.sum(confirmed.map(({ total }) => Number(total))),
+        grossCollected,
+        refunded,
+        netCollected: Number((grossCollected - refunded).toFixed(2)),
+        ticketUnits: this.ticketQuantity(confirmed),
+        ticketsIssued: tickets.length,
+        admissions: tickets.filter(({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null).length,
+        reservedAttendance: reserved,
+        remainingCapacity: Math.max(session.capacity - reserved, 0),
+        utilisationPercent: session.capacity > 0 ? Number(((reserved / session.capacity) * 100).toFixed(1)) : 0,
+      };
+    });
+    return { event, filter: { date: query.date ?? null, sessionId: query.sessionId ?? null }, rows };
+  }
+
+  private async detailedScope(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const event = await this.prisma.event.findFirst({
+      where: { id: eventId, organizationId },
+      select: { id: true, name: true, timezone: true },
+    });
+    if (!event) throw new NotFoundException('Event not found.');
+    const timezone = event.timezone || 'Australia/Melbourne';
+    const dateWindow = query.date ? this.eventDateWindow(query.date, timezone) : null;
+    const sessions = await this.prisma.session.findMany({
+      where: {
+        eventId,
+        ...(query.sessionId ? { id: query.sessionId } : {}),
+        ...(dateWindow ? { startDate: { gte: dateWindow.start, lt: dateWindow.end } } : {}),
+      },
+      select: { id: true, name: true, status: true, startDate: true, endDate: true, capacity: true },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      take: 500,
+    });
+    if (query.sessionId && sessions.length === 0) throw new NotFoundException('Session not found for this Event and filter.');
+    return { event: { ...event, timezone }, sessions };
+  }
+
   private eventDateWindow(date: string, timezone: string) {
     const parsed = new Date(`${date}T00:00:00.000Z`);
     if (
