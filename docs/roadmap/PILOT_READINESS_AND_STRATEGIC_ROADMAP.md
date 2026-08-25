@@ -87,9 +87,9 @@ Ice Rinks Australia must confirm:
 - cancellation and refund eligibility;
 - rescheduling and Session-change policy;
 - Ticket invalidation, replacement and audit consequences;
-- which MEMBER actions require OWNER authority;
+- OWNER, MANAGER and STAFF authority plus Event/site scope;
 - treatment of Payment/refund failures and retries;
-- whether walk-up sales are mandatory for the first pilot; and
+- walk-up payment methods and selling-Session operation; and
 - event-day escalation and fallback ownership.
 
 These decisions must precede implementation so Glacier does not encode an accidental operating policy.
@@ -98,9 +98,27 @@ These decisions must precede implementation so Glacier does not encode an accide
 
 Lookup and investigation exist, but the pilot needs the minimum approved mutation workflows for refunds, cancellation and rescheduling. Every sensitive action requires tenant scope, explicit permissions, durable audit evidence, deterministic Ticket consequences and safe failure handling.
 
-## 4.3 Walk-up sales decision
+Partial attendee cancellation/refund is required: one Ticket within a multi-Ticket Booking can be cancelled and refunded while all other Tickets remain valid. Refund calculation must use the persisted original entitlement value and release only the capacity/inventory actually cancelled.
 
-If mandatory, Glacier needs a deliberately narrow staff flow covering Session, Ticket Types, required Products, participant details, payment, Ticket issuance and optional Waiver handoff. This must not expand into a general retail POS programme before pilot.
+Tickets are non-refundable by default, with that position clearly disclosed before purchase. MANAGER/OWNER discretionary exceptions remain available with reason/audit evidence. Customers may also purchase a Flexible Ticket entitlement giving covered Tickets defined change/refund rights for an additional fee. Coverage, fee, rights, deadline, price-difference treatment and accepted policy version must be snapshotted at purchase rather than inferred from later settings.
+
+Through secure Booking access, customers may request change/refund for covered Tickets. Straightforward eligible Session changes may complete automatically after authoritative Rule, Product, inventory, capacity, cut-off and price checks. Customer refund requests require MANAGER/OWNER confirmation during the pilot. Staff can perform the equivalent dashboard workflows; discretionary exceptions always require MANAGER/OWNER approval.
+
+Flexible Ticket terms use Organisation defaults with deliberate Event overrides. The effective fee, rights, limits and policy version are snapshotted at purchase, so later configuration changes affect only future purchases.
+
+The existing OWNER/MEMBER boundary must evolve to OWNER, MANAGER and STAFF access levels. MANAGER is the trusted site/operational role authorised for refunds, cancellations and rescheduling within assigned scope; STAFF handles POS, scanning, lookup and preparation without high-risk financial authority. OWNER retains Organisation governance. Role and Event/site scope must be modelled separately.
+
+## 4.3 Walk-up sales
+
+Walk-up Ticket sales are confirmed as mandatory and historically represent approximately 50% of sales. Glacier therefore needs a pilot-operational staff flow using the same Ticket Types, Products, Rules, pricing, capacity and inventory as online booking.
+
+The POS must prominently show an active selling Session, support manual Session retention/change and permit deliberate sale to future Sessions. Optional configurable automatic advancement may be added as a convenience, but it must never switch an in-progress sale. Full till-style visual productisation may follow in a dedicated UX Sprint, while the core commerce workflow must be operational before browser acceptance.
+
+Walk-up sales must accept EFTPOS and cash. EFTPOS must be provider-neutral: the universal baseline supports any suitable standalone terminal through deliberate staff confirmation, while a stable adapter boundary permits optional provider integrations later. Payment methods remain separately persisted/reconciled, standalone terminal payments are never misrepresented as Stripe, and raw card data must never enter Glacier.
+
+Initial integration candidates are Stripe Terminal, Linkly-connected bank terminals and Square. Selection is deferred until a current Australian capability, hardware, cost, compliance and operational comparison is completed; none should become a core-platform dependency.
+
+The POS must also support merchandise-only sales from the same Event Product/Variant catalogue. These sales enforce finite inventory and reconcile by payment method, but do not consume admission capacity, require participant details or issue Tickets. Session-capacity Products remain Session-bound.
 
 ## 4.4 Production environment and reliability
 
@@ -130,9 +148,9 @@ These phases are outcome-based. A phase may span more than one Sprint. Sprint sc
 
 ### Scope
 
-- approve cancellation, refund, rescheduling and Ticket-consequence policies;
-- define OWNER and MEMBER authority for sensitive actions;
-- decide whether walk-up sales are a pilot blocker;
+- approve default non-refundable, discretionary exception and Flexible Ticket policies, including cancellation, rescheduling and Ticket consequences;
+- define OWNER, MANAGER and STAFF authority plus Event/site assignment scope;
+- select pilot EFTPOS hardware/provider and lock selling-Session mode/configuration;
 - define Payment exception and failed-refund escalation;
 - nominate operational, technical, privacy and incident owners;
 - select the pilot Event profile, devices, payment mode and expected scale;
@@ -144,7 +162,7 @@ These phases are outcome-based. A phase may span more than one Sprint. Sprint sc
 - Pilot Operating Policy;
 - permission/action matrix;
 - pilot scenario and volume profile;
-- walk-up decision record;
+- walk-up operating-scope decision record;
 - support/escalation ownership matrix; and
 - locked scopes for implementation Sprints.
 
@@ -158,13 +176,13 @@ No unresolved policy question can materially change customer-service, POS, Ticke
 
 ### Scope
 
-- controlled refund/cancellation workflow where approved;
-- controlled Booking reschedule/Session change where approved;
+- controlled default-policy, discretionary and Flexible Ticket refund/cancellation workflows;
+- secure customer request plus controlled staff Booking/Ticket reschedule workflows;
 - deterministic Ticket invalidation/reissue;
 - append-only audit evidence and reason capture;
-- role enforcement and tenant-safe service boundaries;
+- OWNER/MANAGER/STAFF enforcement, assignment scope and tenant-safe service boundaries;
 - Payment-provider failure, retry and idempotency handling;
-- minimum walk-up flow only if Phase 1 makes it mandatory; and
+- minimum shared-catalogue walk-up flow; and
 - focused organiser UX changes supported by UAT evidence.
 
 ### Excluded
@@ -294,9 +312,11 @@ Reached only after pilot findings are resolved and Glacier has repeatable deploy
 | Event setup and branding | Implemented foundation | Clean setup UAT, managed media | 3–4 |
 | Staff Scanner | Implemented foundation | Device, concurrency, network sign-off | 4 |
 | Booking and Customer lookup | Implemented | Support runbook and UAT | 2–4 |
-| Refund/cancellation | Policy/mutation gap | Approved controlled workflow | 1–2 |
+| Refund/cancellation | Default non-refundable, discretionary and partial entitlement paths confirmed | Manager-authorised workflow and approved terms | 1–2 |
+| Flexible Tickets | Entitlement and customer/staff workflow confirmed; implementation/terms gap | Purchase-time rights, secure requests, automatic eligible changes and approved refunds | 1–2 |
+| Access levels | OWNER/MEMBER currently too coarse | OWNER/MANAGER/STAFF with safe migration and scoped authority | 1–2 |
 | Rescheduling | Policy/mutation gap | Approved controlled workflow | 1–2 |
-| Walk-up sales | Decision outstanding | Decision, then minimum flow if required | 1–2 |
+| Walk-up sales | Mandatory core channel; implementation gap | Shared-catalogue operational POS and browser acceptance | 1–2 |
 | Reporting and Event Groups | Implemented beyond minimum | Group/export reconciliation | 4 |
 | Production deployment | Not evidenced | Controlled deployed environment | 3 |
 | Logs, monitoring and alerts | Design/checklist only | Working alerts and ownership | 3 |
@@ -362,11 +382,11 @@ The next work is **Phase 1 — Pilot Policy and Operational Scope Lock**.
 
 It should begin with a short decision workshop and produce a written operating-policy record before another implementation Sprint is locked. The highest-impact questions are:
 
-1. Must the first pilot support walk-up sales inside Glacier?
-2. Which refund, cancellation and rescheduling actions must staff perform?
-3. Which actions require OWNER approval?
-4. What happens to Tickets and capacity after each action?
-5. What pilot Event, devices, staff roles, expected volume and fallback procedures will be used?
+1. Which EFTPOS hardware/provider will be selected for physical pilot testing after the provider-neutral baseline exists?
+2. Should the pilot use manual selling-Session control, optional automatic advancement, or automatic advancement by default?
+3. How should existing MEMBER users migrate to STAFF or MANAGER, and how should Manager site/Event assignment work?
+4. What pilot Event, devices, staff roles, expected volume and fallback procedures will be used?
+5. Which named people own operations, Payments, technical incidents and privacy/security escalation?
 
 After approval, Phase 2 and Phase 3 can proceed in parallel where dependencies allow: operational workflows on one track and production/security foundations on the other. Phase 4 recombines them in one complete rehearsal.
 
