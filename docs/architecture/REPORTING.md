@@ -44,6 +44,10 @@ Booking pace uses Booking `createdAt` in the Event timezone for Bookings that ar
 
 Saved Event Group comparison aggregates only Events attached to a tenant-owned Group. The current commerce foundation is AUD-only, so Group totals are explicitly labelled AUD. Each Event retains its own timezone and Event-local duration. Absolute totals are paired with normalised context including revenue per Session, revenue per capacity place, attendance rate, capacity utilisation, Product attach rate and contribution to Group net collection. These measures are not presented as a universal Event ranking.
 
-Admission-state and further benchmark reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
+CSV exports for Ticket Type, Session, Event-local date, Product/Variant, sales-pace and saved Event Group comparison reports invoke the same server report methods and filters as the browser views. Files are UTF-8 with a byte-order mark, stable columns, human-readable filenames, ISO timestamps where relevant and repeated Event timezone/filter context. Every cell is quoted and values beginning with spreadsheet formula-control characters are prefixed safely. Responses are private/no-store and contain aggregate operational data only.
+
+Browser print mode reuses the already loaded authoritative report, adds scope and generation context, and removes navigation, filter and editing controls. It supports browser print and Save as PDF; production-quality generated PDF and XLSX remain explicitly deferred to Sprint 24.
+
+Admission-state and further benchmark reporting remain planned, together with production XLSX and generated PDF. Future export formats must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.

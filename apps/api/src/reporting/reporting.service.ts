@@ -855,6 +855,52 @@ export class ReportingService {
     };
   }
 
+  async getEventCsv(organizationId: string, eventId: string, reportType: string, query: EventReportQueryDto) {
+    const supported = ['ticket-types', 'sessions', 'dates', 'products', 'sales-pace'];
+    if (!supported.includes(reportType)) throw new BadRequestException('Unsupported Event report export type.');
+    const result = reportType === 'ticket-types'
+      ? await this.getTicketTypeSales(organizationId, eventId, query)
+      : reportType === 'sessions'
+        ? await this.getSessionSales(organizationId, eventId, query)
+        : reportType === 'dates'
+          ? await this.getDateSales(organizationId, eventId, query)
+          : reportType === 'products'
+            ? await this.getProductSales(organizationId, eventId, query)
+            : await this.getSalesPace(organizationId, eventId, query);
+    const context = [result.event.name, result.event.timezone, query.date ?? 'Full Event', query.sessionId ?? 'All Sessions'];
+    let headers: string[];
+    let rows: unknown[][];
+    if (reportType === 'ticket-types') {
+      const typed = result as Awaited<ReturnType<ReportingService['getTicketTypeSales']>>;
+      headers = ['Event', 'Event timezone', 'Date filter', 'Session filter', 'Ticket Type', 'Status', 'Units sold', 'Gross Ticket sales AUD', 'Unit share percent', 'Tickets issued', 'Admissions', 'Refund allocation'];
+      rows = typed.rows.map((row) => [...context, row.name, row.active ? 'ACTIVE' : 'INACTIVE', row.unitsSold, row.grossItemSales, row.unitSharePercent, row.ticketsIssued, row.admissions, typed.refundAllocation]);
+    } else if (reportType === 'sessions') {
+      const typed = result as Awaited<ReturnType<ReportingService['getSessionSales']>>;
+      headers = ['Event', 'Event timezone', 'Date filter', 'Session filter', 'Session', 'Start ISO', 'Status', 'Confirmed bookings', 'Confirmed Booking value AUD', 'Gross collected AUD', 'Refunded AUD', 'Net collected AUD', 'Ticket units', 'Tickets issued', 'Admissions', 'Capacity', 'Reserved attendance', 'Remaining capacity', 'Utilisation percent'];
+      rows = typed.rows.map((row) => [...context, row.name, row.startDate.toISOString(), row.status, row.confirmedBookings, row.confirmedBookingValue, row.grossCollected, row.refunded, row.netCollected, row.ticketUnits, row.ticketsIssued, row.admissions, row.capacity, row.reservedAttendance, row.remainingCapacity, row.utilisationPercent]);
+    } else if (reportType === 'dates') {
+      const typed = result as Awaited<ReturnType<ReportingService['getDateSales']>>;
+      headers = ['Event', 'Event timezone', 'Date filter', 'Session filter', 'Event-local Session date', 'Sessions', 'Confirmed bookings', 'Ticket units', 'Gross Booking value AUD', 'Gross collected AUD', 'Refunded AUD', 'Net collected AUD', 'Tickets issued', 'Admissions', 'Capacity', 'Reserved attendance', 'Remaining capacity', 'Utilisation percent'];
+      rows = typed.rows.map((row) => [...context, row.date, row.sessionCount, row.confirmedBookings, row.ticketUnits, row.grossBookingValue, row.grossCollected, row.refunded, row.netCollected, row.ticketsIssued, row.admissions, row.capacity, row.reservedAttendance, row.remainingCapacity, row.utilisationPercent]);
+    } else if (reportType === 'products') {
+      const typed = result as Awaited<ReturnType<ReportingService['getProductSales']>>;
+      headers = ['Event', 'Event timezone', 'Date filter', 'Session filter', 'Product', 'Product Group', 'Demand type', 'Product status', 'Variant', 'Variant status', 'Units sold', 'Gross Product sales AUD', 'Attach rate percent', 'Inventory scope', 'Inventory quantity', 'Inventory committed', 'Inventory remaining', 'Sell-through percent', 'Peak Session', 'Capacity limit', 'Capacity reserved', 'Capacity remaining', 'Capacity utilisation percent', 'Refund allocation'];
+      rows = typed.rows.flatMap((row) => (row.variants.length ? row.variants : [null]).map((variant) => [...context, row.name, row.group?.name ?? '', row.requiredByRule ? 'REQUIRED_BY_ACTIVE_RULE' : 'DISCRETIONARY', row.status, variant?.name ?? '', variant?.status ?? '', variant?.unitsSold ?? row.unitsSold, variant?.grossItemSales ?? row.grossItemSales, row.attachRatePercent, typed.definitions.inventoryScope, variant ? variant.inventoryQuantity : row.inventory.quantity, variant ? variant.inventoryCommitted : row.inventory.committed, variant ? variant.inventoryRemaining : row.inventory.remaining, variant ? variant.sellThroughPercent : row.inventory.sellThroughPercent, row.capacity.peakSession?.sessionName ?? '', row.capacity.peakSession?.limit ?? '', row.capacity.peakSession?.reserved ?? '', row.capacity.peakSession?.remaining ?? '', row.capacity.peakSession?.utilisationPercent ?? '', typed.definitions.refundAllocation]));
+    } else {
+      const typed = result as Awaited<ReturnType<ReportingService['getSalesPace']>>;
+      headers = ['Event', 'Event timezone', 'Date filter', 'Session filter', 'Lead-time bucket', 'Confirmed bookings', 'Ticket units', 'Gross Booking value AUD', 'Cumulative bookings', 'Cumulative Ticket units', 'Bucket basis'];
+      rows = typed.rows.map((row) => [...context, row.label, row.confirmedBookings, row.ticketUnits, row.grossBookingValue, row.cumulativeBookings, row.cumulativeTicketUnits, typed.basis]);
+    }
+    return { filename: this.csvFilename(result.event.name, reportType), content: this.csvBuffer(headers, rows.length ? rows : [[...context, ...Array(headers.length - context.length).fill('')]]) };
+  }
+
+  async getEventGroupComparisonCsv(organizationId: string, groupId: string) {
+    const report = await this.getEventGroupComparison(organizationId, groupId);
+    const headers = ['Event Group', 'Group type', 'Currency', 'Event', 'Event timezone', 'Duration days', 'Sessions', 'Confirmed bookings', 'Ticket units', 'Net collected AUD', 'Contribution to Group net percent', 'Revenue per Session AUD', 'Revenue per capacity place AUD', 'Tickets per Booking', 'Attendance rate percent', 'Capacity utilisation percent', 'Unused capacity', 'Product attach rate percent', 'Product revenue per admission AUD', 'Refund rate percent', 'Payment exceptions'];
+    const rows = report.rows.map((row) => [report.group.name, report.group.type, report.currency, row.event.name, row.event.timezone, row.durationDays, row.sessions, row.confirmedBookings, row.ticketUnits, row.netCollected, row.contributionToGroupNetPercent, row.revenuePerSession, row.revenuePerCapacityPlace, row.ticketsPerBooking, row.attendanceRatePercent, row.capacityUtilisationPercent, row.unusedCapacity, row.productAttachRatePercent, row.productRevenuePerAdmission, row.refundRatePercent, row.paymentExceptionCount]);
+    return { filename: this.csvFilename(report.group.name, 'event-comparison'), content: this.csvBuffer(headers, rows.length ? rows : [[report.group.name, report.group.type, report.currency, ...Array(headers.length - 3).fill('')]]) };
+  }
+
   private async detailedScope(organizationId: string, eventId: string, query: EventReportQueryDto) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, organizationId },
@@ -904,6 +950,22 @@ export class ReportingService {
     const start = formatInTimeZone(startDate, timezone, 'yyyy-MM-dd');
     const end = formatInTimeZone(endDate, timezone, 'yyyy-MM-dd');
     return Math.max(this.calendarDayDifference(start, end) + 1, 1);
+  }
+
+  private csvFilename(name: string, reportType: string) {
+    const safeName = name.normalize('NFKD').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'report';
+    return `${safeName}-${reportType}-${new Date().toISOString().slice(0, 10)}.csv`;
+  }
+
+  private csvBuffer(headers: string[], rows: unknown[][]) {
+    const csv = [headers, ...rows].map((row) => row.map((cell) => this.csvCell(cell)).join(',')).join('\r\n');
+    return Buffer.from(`\uFEFF${csv}\r\n`, 'utf8');
+  }
+
+  private csvCell(value: unknown) {
+    let text = value === null || value === undefined ? '' : String(value);
+    if (/^[=+\-@]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
   }
 
   private ticketQuantity(

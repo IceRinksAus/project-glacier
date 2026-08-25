@@ -162,6 +162,10 @@ function eventReportPath(eventId: string, suffix = "", filters: { date?: string;
   return `/reporting/events/${eventId}${suffix}${queryString ? `?${queryString}` : ""}`;
 }
 
+function eventExportPath(eventId: string, reportType: string, filters: { date?: string; sessionId?: string } = {}) {
+  return eventReportPath(eventId, `/exports/${reportType}`, filters);
+}
+
 export const reportingService = {
   getOrganizationSummary: () => api.get<OrganizationReport>("/reporting/organization"),
   getEventReport: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
@@ -178,4 +182,8 @@ export const reportingService = {
     api.get<SalesPaceReport>(eventReportPath(eventId, "/sales-pace", filters)),
   getEventGroupComparison: (groupId: string) =>
     api.get<EventGroupComparisonReport>(`/reporting/event-groups/${groupId}/comparison`),
+  downloadEventCsv: (eventId: string, reportType: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.download(eventExportPath(eventId, reportType, filters)),
+  downloadEventGroupComparisonCsv: (groupId: string) =>
+    api.download(`/reporting/event-groups/${groupId}/exports/comparison.csv`),
 };

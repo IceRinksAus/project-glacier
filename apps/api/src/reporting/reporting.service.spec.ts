@@ -217,6 +217,25 @@ describe('ReportingService', () => {
     await expect(service.getEventGroupComparison('org-1', 'foreign-group')).rejects.toThrow(NotFoundException);
   });
 
+  it('exports the authoritative filtered report as formula-safe UTF-8 CSV', async () => {
+    prisma.ticketType.findMany.mockResolvedValue([{ id: 'adult', name: '=HYPERLINK("bad")', active: true }]);
+    prisma.booking.findMany.mockResolvedValue([]);
+
+    const file = await service.getEventCsv('org-1', 'event-1', 'ticket-types', { date: '2027-09-01', sessionId: 'session-1' });
+    const csv = file.content.toString('utf8');
+
+    expect(file.filename).toMatch(/^winter-festival-ticket-types-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(csv.startsWith('\uFEFF')).toBe(true);
+    expect(csv).toContain('"Event timezone"');
+    expect(csv).toContain('"Australia/Melbourne"');
+    expect(csv).toContain('"\'=HYPERLINK(""bad"")"');
+    expect(csv).toContain('"UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL"');
+  });
+
+  it('rejects unsupported Event export types before reading report data', async () => {
+    await expect(service.getEventCsv('org-1', 'event-1', 'profit', {})).rejects.toThrow(BadRequestException);
+  });
+
   it('returns a safe empty Organisation summary', async () => {
     const now = new Date('2027-09-01T00:00:00.000Z');
     const result = await service.getOrganizationSummary('org-1', now);

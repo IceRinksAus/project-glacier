@@ -4,17 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EventReportsWorkspace } from "./EventReportsWorkspace";
 
-const { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace, getSessions } = vi.hoisted(() => ({
+const { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace, downloadEventCsv, getSessions } = vi.hoisted(() => ({
   getEventReport: vi.fn(),
   getTicketTypeSales: vi.fn(),
   getSessionSales: vi.fn(),
   getProductSales: vi.fn(),
   getDateSales: vi.fn(),
   getSalesPace: vi.fn(),
+  downloadEventCsv: vi.fn(),
   getSessions: vi.fn(),
 }));
 
-vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace } }));
+vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace, downloadEventCsv } }));
 vi.mock("@/services/session.service", () => ({ sessionService: { getSessions } }));
 
 const report = {
@@ -80,6 +81,11 @@ describe("EventReportsWorkspace", () => {
     getProductSales.mockReset().mockResolvedValue(productSalesReport);
     getDateSales.mockReset().mockResolvedValue(dateSalesReport);
     getSalesPace.mockReset().mockResolvedValue(salesPaceReport);
+    downloadEventCsv.mockReset().mockResolvedValue({ blob: new Blob(["csv"]), filename: "report.csv" });
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:report") });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    window.print = vi.fn();
     getSessions.mockReset().mockResolvedValue([{ id: "session-1", eventId: "event-1", name: "Morning skate", startDate: "2027-09-01T00:30:00.000Z", endDate: "2027-09-01T01:30:00.000Z", capacity: 150, status: "ACTIVE", salesStart: null, salesEnd: null }]);
   });
 
@@ -174,5 +180,18 @@ describe("EventReportsWorkspace", () => {
     expect(screen.getByText(/confirmation time is not used/)).toBeVisible();
     expect(screen.getByText(/not website traffic, abandonment or conversion/)).toBeVisible();
     expect(getSalesPace).toHaveBeenLastCalledWith("event-1", {});
+  });
+
+  it("exports the selected detailed report with the active filters and offers print", async () => {
+    const user = userEvent.setup();
+    render(<EventReportsWorkspace eventId="event-1" />);
+    await screen.findByText("$200.00");
+    await user.type(screen.getByLabelText("Event-local date"), "2027-09-01");
+    await user.selectOptions(screen.getByLabelText("Report"), "DATES");
+    await screen.findByRole("heading", { name: "Sales by Event date" });
+    await user.click(screen.getByRole("button", { name: "Export CSV" }));
+    await waitFor(() => expect(downloadEventCsv).toHaveBeenCalledWith("event-1", "dates", { date: "2027-09-01", sessionId: undefined }));
+    await user.click(screen.getByRole("button", { name: "Print / Save PDF" }));
+    expect(window.print).toHaveBeenCalled();
   });
 });

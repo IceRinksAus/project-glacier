@@ -1,3 +1,4 @@
+import { StreamableFile } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ROLES_KEY } from '../auth/decorators/roles.decorator';
@@ -15,6 +16,8 @@ describe('ReportingController', () => {
     getDateSales: jest.fn(),
     getSalesPace: jest.fn(),
     getEventGroupComparison: jest.fn(),
+    getEventCsv: jest.fn(),
+    getEventGroupComparisonCsv: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -79,5 +82,16 @@ describe('ReportingController', () => {
   it('uses trusted Organisation context for Event Group comparisons', async () => {
     await controller.getEventGroupComparison('group-1', { organizationId: 'org-1' });
     expect(service.getEventGroupComparison).toHaveBeenCalledWith('org-1', 'group-1');
+  });
+
+  it('sets safe download headers for Event CSV exports', async () => {
+    const response = { set: jest.fn() };
+    service.getEventCsv.mockResolvedValue({ filename: 'event-sessions-2027-09-01.csv', content: Buffer.from('csv') });
+
+    const result = await controller.exportEventReport('event-1', 'sessions', { organizationId: 'org-1' }, { date: '2027-09-01' }, response as never);
+
+    expect(service.getEventCsv).toHaveBeenCalledWith('org-1', 'event-1', 'sessions', { date: '2027-09-01' });
+    expect(response.set).toHaveBeenCalledWith(expect.objectContaining({ 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'private, no-store' }));
+    expect(result).toBeInstanceOf(StreamableFile);
   });
 });

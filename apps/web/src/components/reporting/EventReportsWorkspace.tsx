@@ -23,6 +23,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
   const [sessionId, setSessionId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
 
   function load(filters: { date?: string; sessionId?: string } = {}, view = reportView) {
     setIsLoading(true);
@@ -72,12 +73,24 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
     load();
   }
 
+  async function exportCsv() {
+    const exportType = { TICKET_TYPES: "ticket-types", SESSIONS: "sessions", PRODUCTS: "products", DATES: "dates", SALES_PACE: "sales-pace" }[reportView as Exclude<ReportView, "OVERVIEW">];
+    if (!exportType) return;
+    setIsExporting(true); setError("");
+    try {
+      const file = await reportingService.downloadEventCsv(eventId, exportType, { date: date || undefined, sessionId: sessionId || undefined });
+      downloadFile(file.blob, file.filename);
+    } catch (requestError) { setError(requestError instanceof Error ? requestError.message : "Unable to export this report."); }
+    finally { setIsExporting(false); }
+  }
+
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border bg-card p-6 shadow-sm">
+      <section className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
         <h2 className="text-2xl font-semibold tracking-tight">Event reports</h2>
         <p className="mt-1 text-sm text-muted-foreground">Authoritative operational performance from Bookings, Payments, refunds, Tickets and Sessions.</p>
-        <form onSubmit={applyFilters} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_2fr_auto_auto] xl:items-end">
+        <div className="mt-4 hidden text-sm print:block"><p>Report: {reportLabel(reportView)}</p><p>Scope: {date || "Full Event"}{sessionId ? " · selected Session" : " · all Sessions"} · {report?.event.timezone ?? "Australia/Melbourne"}</p><p>Generated: {new Date().toLocaleString("en-AU")}</p></div>
+        <form onSubmit={applyFilters} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_2fr_auto_auto] xl:items-end print:hidden">
           <label className="text-sm font-medium">Report<select aria-label="Report" value={reportView} onChange={(event) => changeReportView(event.target.value as ReportView)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Event overview</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="DATES">Sales by Event date</option><option value="SALES_PACE">Booking pace</option><option value="PRODUCTS">Product and Variant sales</option></select></label>
           <label className="text-sm font-medium">Event-local date<input aria-label="Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal" /></label>
           <label className="text-sm font-medium">Session<select aria-label="Session" value={sessionId} onChange={(event) => setSessionId(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="">All Sessions</option>{sessions.map((session) => <option key={session.id} value={session.id}>{session.name} — {localDateTime(session.startDate, report?.event.timezone)}</option>)}</select></label>
@@ -86,6 +99,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
         </form>
         {reportView === "OVERVIEW" && report ? <p className="mt-4 text-xs text-muted-foreground">Effective window: {localDateTime(report.filter.startsAt, report.event.timezone)} to {localDateTime(report.filter.endsAt, report.event.timezone)} ({report.event.timezone})</p> : null}
         {reportView !== "OVERVIEW" ? <p className="mt-4 text-xs text-muted-foreground">Reporting scope: {date || "Full Event"}{sessionId ? " · selected Session" : " · all Sessions"} ({report?.event.timezone ?? "Australia/Melbourne"})</p> : null}
+        <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button type="button" variant="outline" disabled={reportView === "OVERVIEW" || isExporting} onClick={exportCsv}>{isExporting ? "Preparing CSV..." : "Export CSV"}</Button><Button type="button" variant="outline" onClick={() => window.print()}>Print / Save PDF</Button>{reportView === "OVERVIEW" ? <span className="self-center text-xs text-muted-foreground">Choose a detailed report to export CSV.</span> : null}</div>
       </section>
 
       {isLoading ? <StateCard>Loading report...</StateCard> : null}
@@ -192,3 +206,5 @@ function Th({ children }: { children: React.ReactNode }) { return <th className=
 function Td({ children }: { children: React.ReactNode }) { return <td className="px-5 py-4">{children}</td>; }
 function localDateTime(value: string, timezone = "Australia/Melbourne") { return new Intl.DateTimeFormat("en-AU", { timeZone: timezone, dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
 function localDate(value: string) { return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00.000Z`)); }
+function reportLabel(view: ReportView) { return { OVERVIEW: "Event overview", TICKET_TYPES: "Sales by Ticket Type", SESSIONS: "Sales by Session", PRODUCTS: "Product and Variant sales", DATES: "Sales by Event date", SALES_PACE: "Booking pace" }[view]; }
+function downloadFile(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url); }

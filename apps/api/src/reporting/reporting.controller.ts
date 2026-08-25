@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -63,5 +64,33 @@ export class ReportingController {
   @Get('event-groups/:groupId/comparison')
   getEventGroupComparison(@Param('groupId') groupId: string, @CurrentUser() user: AuthenticatedUser) {
     return this.reportingService.getEventGroupComparison(user.organizationId, groupId);
+  }
+
+  @Get('events/:eventId/exports/:reportType')
+  async exportEventReport(
+    @Param('eventId') eventId: string,
+    @Param('reportType') reportType: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.reportingService.getEventCsv(user.organizationId, eventId, reportType, query);
+    response.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Cache-Control': 'private, no-store',
+    });
+    return new StreamableFile(file.content);
+  }
+
+  @Get('event-groups/:groupId/exports/comparison.csv')
+  async exportEventGroupComparison(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.reportingService.getEventGroupComparisonCsv(user.organizationId, groupId);
+    response.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${file.filename}"`, 'Cache-Control': 'private, no-store' });
+    return new StreamableFile(file.content);
   }
 }

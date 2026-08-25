@@ -4,13 +4,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ReportsPage from "./page";
 
-const { getAll, create, update, replaceEvents, getEvents, getEventGroupComparison } = vi.hoisted(() => ({
-  getAll: vi.fn(), create: vi.fn(), update: vi.fn(), replaceEvents: vi.fn(), getEvents: vi.fn(), getEventGroupComparison: vi.fn(),
+const { getAll, create, update, replaceEvents, getEvents, getEventGroupComparison, downloadEventGroupComparisonCsv } = vi.hoisted(() => ({
+  getAll: vi.fn(), create: vi.fn(), update: vi.fn(), replaceEvents: vi.fn(), getEvents: vi.fn(), getEventGroupComparison: vi.fn(), downloadEventGroupComparisonCsv: vi.fn(),
 }));
 
 vi.mock("@/services/event-group.service", () => ({ eventGroupService: { getAll, create, update, replaceEvents } }));
 vi.mock("@/services/event.service", () => ({ eventService: { getEvents } }));
-vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventGroupComparison } }));
+vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventGroupComparison, downloadEventGroupComparisonCsv } }));
 vi.mock("@/lib/auth", () => ({ subscribeAuthSession: () => () => undefined, getAuthRoleSnapshot: () => "OWNER", getServerAuthRoleSnapshot: () => "OWNER" }));
 vi.mock("@/components/layout/PlatformShell", () => ({ PlatformShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 
@@ -33,6 +33,11 @@ describe("ReportsPage Event Groups", () => {
     replaceEvents.mockReset().mockResolvedValue(group);
     update.mockReset().mockResolvedValue(group);
     getEventGroupComparison.mockReset().mockResolvedValue(comparison);
+    downloadEventGroupComparisonCsv.mockReset().mockResolvedValue({ blob: new Blob(["csv"]), filename: "comparison.csv" });
+    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:report") });
+    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    window.print = vi.fn();
   });
 
   it("lets an OWNER create a controlled Event Group", async () => {
@@ -67,5 +72,7 @@ describe("ReportsPage Event Groups", () => {
     expect(screen.getByText(/Each Event retains its own timezone/)).toBeVisible();
     expect(screen.getByText(/not a universal ranking/)).toBeVisible();
     expect(getEventGroupComparison).toHaveBeenCalledWith("group-1");
+    await user.click(screen.getByRole("button", { name: "Export CSV" }));
+    await waitFor(() => expect(downloadEventGroupComparisonCsv).toHaveBeenCalledWith("group-1"));
   });
 });

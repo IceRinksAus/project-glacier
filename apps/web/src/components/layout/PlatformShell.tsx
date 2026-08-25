@@ -12,13 +12,13 @@ export function PlatformShell({
 }: PlatformShellProps) {
   return (
     <div className="flex min-h-screen bg-muted/30">
-      <PlatformSidebar />
+      <div className="print:hidden"><PlatformSidebar /></div>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <PlatformTopBar />
+        <div className="print:hidden"><PlatformTopBar /></div>
 
-        <main className="flex-1 p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-7xl">
+        <main className="flex-1 p-6 print:p-0 lg:p-8">
+          <div className="mx-auto w-full max-w-7xl print:max-w-none">
             {children}
           </div>
         </main>

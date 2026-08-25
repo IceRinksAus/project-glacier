@@ -84,3 +84,13 @@ Each Event row combines absolute performance with normalised context: revenue pe
 The current comparison contract aggregates AUD only and states that every Event retains its own timezone. The organiser interface explains that normalised measures provide context rather than a universal ranking and repeats the operational-versus-accounting boundary. It returns aggregate records only and no customer or participant identity.
 
 Event Group comparison verification: focused API reporting suites 2 / 20 tests passed; complete API suite 69 / 453 tests passed; API production build passed. Reports-page focused pattern 9 suites / 25 tests passed; complete web suite 21 / 66 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.
+
+## Slice 7 — CSV Export and Print-Ready Reporting
+
+Detailed Event and saved Event Group comparison reports now export server-authoritative CSV from the same report methods and active Event-local date/Session filters used by the browser. Supported Event exports cover Ticket Type, Session, Event-local date, Product/Variant and booking pace. The comparison export uses saved tenant-owned Group membership.
+
+CSV output uses UTF-8 with a byte-order mark, stable human-readable columns, ISO Session timestamps where relevant, AUD labels, repeated Event timezone/filter context and safe filenames containing the report type and generation date. Every cell is quoted and spreadsheet-control prefixes (`=`, `+`, `-`, `@`) are neutralised to prevent formula injection. Empty reports retain headers and reporting context. Downloads are private/no-store and include no customer or participant identity.
+
+Detailed report and Group comparison interfaces provide Export CSV and Print / Save PDF controls. Print mode uses the same loaded result, adds report scope and generation context, removes dashboard navigation, filters and Event Group editing controls, and preserves the operational/reporting limitations. This is print-ready browser output; production-quality generated PDF and XLSX remain within the locked Sprint 24 boundary.
+
+Export verification: focused API reporting suites 2 / 23 tests passed; complete API suite 69 / 456 tests passed; API production build passed. Focused export interface suites 2 / 11 tests passed; complete web suite 21 / 67 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.

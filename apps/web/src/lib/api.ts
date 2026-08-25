@@ -71,6 +71,15 @@ async function requestBlob(path: string) {
   return response.blob();
 }
 
+async function requestDownload(path: string) {
+  const token = getAccessToken();
+  const response = await fetch(`${API_URL}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (!response.ok) throw new Error(`Unable to export report (${response.status})`);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? "glacier-report.csv";
+  return { blob: await response.blob(), filename };
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
 
@@ -84,6 +93,7 @@ export const api = {
     request<T>(path, { method: "POST", body }),
 
   blob: (path: string) => requestBlob(path),
+  download: (path: string) => requestDownload(path),
 
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, {
