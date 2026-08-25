@@ -7,6 +7,14 @@ export const ORGANIZATION_ROLES = [
 
 export type OrganizationRole = (typeof ORGANIZATION_ROLES)[number];
 
+export const TEAM_ASSIGNABLE_ROLES = [
+  'MANAGER',
+  'STAFF',
+  'SCANNER',
+] as const satisfies readonly OrganizationRole[];
+
+export type TeamAssignableRole = (typeof TEAM_ASSIGNABLE_ROLES)[number];
+
 export const OPERATOR_ROLES = [
   'OWNER',
   'MANAGER',

@@ -59,6 +59,15 @@ describe('organization role policy', () => {
     await expect(validate(dto)).resolves.toEqual([]);
   });
 
+  it('does not allow ordinary team management to grant OWNER authority', async () => {
+    const dto = Object.assign(new AddOrganizationUserDto(), {
+      userId: 'user-1',
+      role: 'OWNER',
+    });
+
+    await expect(validate(dto)).resolves.toHaveLength(1);
+  });
+
   it('rejects unknown organization roles', async () => {
     const dto = Object.assign(new AddOrganizationUserDto(), {
       userId: 'user-1',

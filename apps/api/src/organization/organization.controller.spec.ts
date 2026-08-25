@@ -7,9 +7,12 @@ describe('OrganizationController', () => {
   let controller: OrganizationController;
   const serviceMock = {
     findCurrent: jest.fn(),
+    listTeam: jest.fn(),
+    updateTeamAccess: jest.fn(),
     addUser: jest.fn(),
   };
   const user = {
+    userId: 'owner-1',
     organizationId: 'organization-1',
   };
 
@@ -41,14 +44,40 @@ describe('OrganizationController', () => {
 
     await controller.addUser(
       'organization-1',
-      { userId: 'user-1', role: 'MEMBER' },
+      { userId: 'user-1', role: 'STAFF' },
       user,
     );
 
     expect(serviceMock.addUser).toHaveBeenCalledWith(
       'organization-1',
       'organization-1',
-      { userId: 'user-1', role: 'MEMBER' },
+      'owner-1',
+      { userId: 'user-1', role: 'STAFF' },
+    );
+  });
+
+  it('uses trusted actor and organization context for access updates', async () => {
+    serviceMock.updateTeamAccess.mockResolvedValue({ id: 'membership-1' });
+
+    await controller.updateTeamAccess(
+      'user-1',
+      {
+        role: 'MANAGER',
+        accessScope: 'ASSIGNED_EVENTS',
+        eventIds: ['event-1'],
+      },
+      user,
+    );
+
+    expect(serviceMock.updateTeamAccess).toHaveBeenCalledWith(
+      'organization-1',
+      'owner-1',
+      'user-1',
+      {
+        role: 'MANAGER',
+        accessScope: 'ASSIGNED_EVENTS',
+        eventIds: ['event-1'],
+      },
     );
   });
 });

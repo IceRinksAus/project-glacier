@@ -1,7 +1,7 @@
 import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
 
-import { ORGANIZATION_ROLES } from '../../auth/roles/organization-role';
-import type { OrganizationRole } from '../../auth/roles/organization-role';
+import { TEAM_ASSIGNABLE_ROLES } from '../../auth/roles/organization-role';
+import type { TeamAssignableRole } from '../../auth/roles/organization-role';
 
 export class AddOrganizationUserDto {
   @IsString()
@@ -9,6 +9,6 @@ export class AddOrganizationUserDto {
   @MaxLength(100)
   userId: string;
 
-  @IsIn(ORGANIZATION_ROLES)
-  role: OrganizationRole;
+  @IsIn(TEAM_ASSIGNABLE_ROLES)
+  role: TeamAssignableRole;
 }
