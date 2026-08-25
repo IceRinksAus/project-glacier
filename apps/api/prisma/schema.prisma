@@ -34,6 +34,7 @@ model Organization {
   ticketScanAttempts            TicketScanAttempt[]
   fileAssets                    FileAsset[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
+  eventGroups                   EventGroup[]
 }
 
 model User {
@@ -52,6 +53,42 @@ model User {
   ticketScanAttempts            TicketScanAttempt[]
   createdFileAssets             FileAsset[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
+}
+
+model EventGroup {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  type        String  @default("CUSTOM")
+  status      String  @default("ACTIVE")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  events EventGroupEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+}
+
+model EventGroupEvent {
+  id        String @id @default(cuid())
+  sortOrder Int    @default(0)
+
+  eventGroupId String
+  eventGroup   EventGroup @relation(fields: [eventGroupId], references: [id], onDelete: Cascade)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventGroupId, eventId])
+  @@index([eventId])
+  @@index([eventGroupId, sortOrder])
 }
 
 model UserOrganization {
@@ -111,6 +148,7 @@ model Event {
   fileAssets                    FileAsset[]
   ticketScanAttempts            TicketScanAttempt[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
+  eventGroupMemberships         EventGroupEvent[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)

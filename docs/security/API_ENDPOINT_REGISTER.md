@@ -90,6 +90,16 @@ Status values:
 | GET | `/reporting/events/:eventId` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Read-only authoritative operational metrics; bounded Session/exception rows; no customer details or provider credentials. |
 | GET | `/reporting/organization` | Operator | JWT OWNER/MEMBER | Authenticated Organisation | None | PROTECTED | Bounded cross-Event operational summary; minimal Booking/Payment/Ticket fields; no customer or participant details. |
 
+## Event Groups
+
+| Method | Route | Audience | Authentication/role target | Tenant path | Validation | Status | Control |
+| ------ | ----- | -------- | -------------------------- | ----------- | ---------- | ------ | ------- |
+| GET | `/event-group` | Operator | JWT OWNER/MEMBER | Authenticated Organisation | None | PROTECTED | Bounded Group list with ordered, presentation-safe Event fields. |
+| GET | `/event-group/:id` | Operator | JWT OWNER/MEMBER | Group → Organisation | Param string | PROTECTED | Foreign and unknown Groups share the same not-found boundary. |
+| POST | `/event-group` | Operator | JWT OWNER | Authenticated Organisation | Strict name/type DTO | PROTECTED | Organisation ID comes only from authenticated context; controlled Group types. |
+| PATCH | `/event-group/:id` | Operator | JWT OWNER | Group → Organisation | Strict update DTO | PROTECTED | Controlled rename, description, type and ACTIVE/ARCHIVED lifecycle. |
+| PUT | `/event-group/:id/events` | Operator | JWT OWNER | Group and every Event → Organisation | Unique bounded Event ID array | PROTECTED | Ordered membership is replaced transactionally; any foreign/unknown Event rejects the entire change. |
+
 ## Ticket and Gate Operations
 
 | Method | Route                     | Audience        | Authentication/role target    | Tenant path                             | Validation              | Status    | Sprint 17 action                                                                          |
