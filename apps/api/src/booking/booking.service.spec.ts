@@ -6,6 +6,13 @@ import { BookingService } from './booking.service';
 describe('BookingService', () => {
   let service: BookingService;
 
+  const ownerAccess = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
+  };
+
   const customer = {
     id: 'customer-1',
     firstName: 'Jamie',
@@ -128,8 +135,7 @@ describe('BookingService', () => {
   };
 
   const paymentService = {
-    reconcilePendingPaymentForBooking:
-      jest.fn(),
+    reconcilePendingPaymentForBooking: jest.fn(),
   };
 
   beforeEach(() => {
@@ -189,6 +195,11 @@ describe('BookingService', () => {
       ruleEvaluationService as never,
       bookingValidationService as never,
       paymentService as never,
+      {
+        eventWhere: ({ organizationId }: typeof ownerAccess) => ({
+          organizationId,
+        }),
+      } as never,
     );
   });
 
@@ -197,7 +208,7 @@ describe('BookingService', () => {
   });
 
   it('should list bookings with related booking data', async () => {
-    await service.findAll('organization-1');
+    await service.findAll(ownerAccess);
 
     expect(prisma.booking.findMany).toHaveBeenCalledWith({
       where: {
@@ -232,7 +243,7 @@ describe('BookingService', () => {
   });
 
   it('should find a booking by id', async () => {
-    const result = await service.findOne('organization-1', 'booking-1');
+    const result = await service.findOne(ownerAccess, 'booking-1');
 
     expect(prisma.booking.findFirst).toHaveBeenCalledWith({
       where: {
@@ -270,7 +281,7 @@ describe('BookingService', () => {
     prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.findOne('organization-1', 'missing-booking'),
+      service.findOne(ownerAccess, 'missing-booking'),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -683,12 +694,9 @@ describe('BookingService', () => {
   it('creates bookings in a serializable capacity transaction', async () => {
     await service.create(createBookingDto);
 
-    expect(prisma.$transaction).toHaveBeenCalledWith(
-      expect.any(Function),
-      {
-        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-      },
-    );
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
   });
 
   it('should consolidate participants into ticket booking items', async () => {

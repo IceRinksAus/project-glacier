@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { AccessControlService } from '../access-control/access-control.service';
 import { ReportingService } from './reporting.service';
 
 describe('ReportingService', () => {
@@ -22,6 +23,14 @@ describe('ReportingService', () => {
       providers: [
         ReportingService,
         { provide: PrismaService, useValue: prisma },
+        {
+          provide: AccessControlService,
+          useValue: {
+            eventWhere: (access: { organizationId: string }) => ({
+              organizationId: access.organizationId,
+            }),
+          },
+        },
       ],
     }).compile();
     service = module.get(ReportingService);
@@ -63,127 +72,327 @@ describe('ReportingService', () => {
           { ticketTypeId: 'child', quantity: 1, totalPrice: 15 },
         ],
         tickets: [
-          { status: 'SCANNED', checkedInAt: new Date(), participant: { ticketTypeId: 'adult' } },
-          { status: 'ACTIVE', checkedInAt: null, participant: { ticketTypeId: 'adult' } },
-          { status: 'ACTIVE', checkedInAt: null, participant: { ticketTypeId: 'child' } },
+          {
+            status: 'SCANNED',
+            checkedInAt: new Date(),
+            participant: { ticketTypeId: 'adult' },
+          },
+          {
+            status: 'ACTIVE',
+            checkedInAt: null,
+            participant: { ticketTypeId: 'adult' },
+          },
+          {
+            status: 'ACTIVE',
+            checkedInAt: null,
+            participant: { ticketTypeId: 'child' },
+          },
         ],
       },
     ]);
 
     const result = await service.getTicketTypeSales('org-1', 'event-1', {});
 
-    expect(result.totals).toEqual({ unitsSold: 3, grossItemSales: 65, ticketsIssued: 3, admissions: 1 });
-    expect(result.rows[0]).toEqual(expect.objectContaining({ id: 'adult', unitsSold: 2, grossItemSales: 50, unitSharePercent: 66.7 }));
-    expect(result.refundAllocation).toBe('UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL');
+    expect(result.totals).toEqual({
+      unitsSold: 3,
+      grossItemSales: 65,
+      ticketsIssued: 3,
+      admissions: 1,
+    });
+    expect(result.rows[0]).toEqual(
+      expect.objectContaining({
+        id: 'adult',
+        unitsSold: 2,
+        grossItemSales: 50,
+        unitSharePercent: 66.7,
+      }),
+    );
+    expect(result.refundAllocation).toBe(
+      'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL',
+    );
   });
 
   it('reports attributable Session collection, refunds and capacity truth', async () => {
     prisma.booking.findMany.mockResolvedValue([
       {
-        sessionId: 'session-1', status: 'CONFIRMED', total: 80,
+        sessionId: 'session-1',
+        status: 'CONFIRMED',
+        total: 80,
         items: [{ quantity: 2 }],
-        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
-        payments: [{ status: 'SUCCEEDED', amount: 80, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+        tickets: [
+          { status: 'SCANNED', checkedInAt: new Date() },
+          { status: 'ACTIVE', checkedInAt: null },
+        ],
+        payments: [
+          {
+            status: 'SUCCEEDED',
+            amount: 80,
+            refunds: [{ status: 'SUCCEEDED', amount: 10 }],
+          },
+        ],
       },
       {
-        sessionId: 'session-1', status: 'RESERVED', total: 20,
-        items: [{ quantity: 1 }], tickets: [], payments: [],
+        sessionId: 'session-1',
+        status: 'RESERVED',
+        total: 20,
+        items: [{ quantity: 1 }],
+        tickets: [],
+        payments: [],
       },
     ]);
 
     const result = await service.getSessionSales('org-1', 'event-1', {});
 
-    expect(result.rows[0]).toEqual(expect.objectContaining({
-      confirmedBookings: 1, confirmedBookingValue: 80,
-      grossCollected: 80, refunded: 10, netCollected: 70,
-      ticketUnits: 2, ticketsIssued: 2, admissions: 1,
-      reservedAttendance: 3, remainingCapacity: 7, utilisationPercent: 30,
-    }));
+    expect(result.rows[0]).toEqual(
+      expect.objectContaining({
+        confirmedBookings: 1,
+        confirmedBookingValue: 80,
+        grossCollected: 80,
+        refunded: 10,
+        netCollected: 70,
+        ticketUnits: 2,
+        ticketsIssued: 2,
+        admissions: 1,
+        reservedAttendance: 3,
+        remainingCapacity: 7,
+        utilisationPercent: 30,
+      }),
+    );
   });
 
   it('reports Product sales, finite inventory and reusable Session capacity separately', async () => {
     prisma.product.findMany.mockResolvedValue([
       {
-        id: 'kanga', name: 'Kanga', slug: 'kanga', status: 'ACTIVE',
-        inventoryTracked: false, inventoryQuantity: null,
-        capacityControlled: true, capacity: 30,
+        id: 'kanga',
+        name: 'Kanga',
+        slug: 'kanga',
+        status: 'ACTIVE',
+        inventoryTracked: false,
+        inventoryQuantity: null,
+        capacityControlled: true,
+        capacity: 30,
         productGroup: { id: 'group-1', name: 'Skating aids', sortOrder: 0 },
         variants: [],
         sessionProducts: [{ sessionId: 'session-1', capacityOverride: 20 }],
       },
       {
-        id: 'hoodie', name: 'Hoodie', slug: 'hoodie', status: 'ACTIVE',
-        inventoryTracked: false, inventoryQuantity: null,
-        capacityControlled: false, capacity: null, productGroup: null,
+        id: 'hoodie',
+        name: 'Hoodie',
+        slug: 'hoodie',
+        status: 'ACTIVE',
+        inventoryTracked: false,
+        inventoryQuantity: null,
+        capacityControlled: false,
+        capacity: null,
+        productGroup: null,
         sessionProducts: [],
-        variants: [{ id: 'small', name: 'Small', status: 'ACTIVE', inventoryTracked: true, inventoryQuantity: 50, sortOrder: 0 }],
+        variants: [
+          {
+            id: 'small',
+            name: 'Small',
+            status: 'ACTIVE',
+            inventoryTracked: true,
+            inventoryQuantity: 50,
+            sortOrder: 0,
+          },
+        ],
       },
     ]);
-    prisma.rule.findMany.mockResolvedValue([{ actions: { type: 'REQUIRE_PRODUCT', productSlug: 'kanga' } }]);
+    prisma.rule.findMany.mockResolvedValue([
+      { actions: { type: 'REQUIRE_PRODUCT', productSlug: 'kanga' } },
+    ]);
     prisma.booking.findMany
       .mockResolvedValueOnce([
-        { id: 'booking-1', sessionId: 'session-1', products: [
-          { productId: 'kanga', productVariantId: null, quantity: 2, unitPrice: 5 },
-          { productId: 'hoodie', productVariantId: 'small', quantity: 1, unitPrice: 60 },
-        ] },
+        {
+          id: 'booking-1',
+          sessionId: 'session-1',
+          products: [
+            {
+              productId: 'kanga',
+              productVariantId: null,
+              quantity: 2,
+              unitPrice: 5,
+            },
+            {
+              productId: 'hoodie',
+              productVariantId: 'small',
+              quantity: 1,
+              unitPrice: 60,
+            },
+          ],
+        },
       ])
       .mockResolvedValueOnce([
-        { sessionId: 'session-1', products: [
-          { productId: 'kanga', productVariantId: null, quantity: 3 },
-          { productId: 'hoodie', productVariantId: 'small', quantity: 4 },
-        ] },
+        {
+          sessionId: 'session-1',
+          products: [
+            { productId: 'kanga', productVariantId: null, quantity: 3 },
+            { productId: 'hoodie', productVariantId: 'small', quantity: 4 },
+          ],
+        },
       ]);
 
     const result = await service.getProductSales('org-1', 'event-1', {});
 
-    expect(result.totals).toEqual({ confirmedBookings: 1, bookingsWithProducts: 1, attachRatePercent: 100, unitsSold: 3, grossItemSales: 70 });
-    expect(result.rows[0]).toEqual(expect.objectContaining({ id: 'kanga', requiredByRule: true, unitsSold: 2, grossItemSales: 10 }));
-    expect(result.rows[0].capacity.peakSession).toEqual(expect.objectContaining({ limit: 20, reserved: 3, remaining: 17, utilisationPercent: 15 }));
-    expect(result.rows[1].variants[0]).toEqual(expect.objectContaining({ unitsSold: 1, inventoryCommitted: 4, inventoryRemaining: 46, sellThroughPercent: 8 }));
-    expect(result.definitions.inventoryScope).toBe('EVENT_CURRENT_RESERVED_AND_CONFIRMED');
+    expect(result.totals).toEqual({
+      confirmedBookings: 1,
+      bookingsWithProducts: 1,
+      attachRatePercent: 100,
+      unitsSold: 3,
+      grossItemSales: 70,
+    });
+    expect(result.rows[0]).toEqual(
+      expect.objectContaining({
+        id: 'kanga',
+        requiredByRule: true,
+        unitsSold: 2,
+        grossItemSales: 10,
+      }),
+    );
+    expect(result.rows[0].capacity.peakSession).toEqual(
+      expect.objectContaining({
+        limit: 20,
+        reserved: 3,
+        remaining: 17,
+        utilisationPercent: 15,
+      }),
+    );
+    expect(result.rows[1].variants[0]).toEqual(
+      expect.objectContaining({
+        unitsSold: 1,
+        inventoryCommitted: 4,
+        inventoryRemaining: 46,
+        sellThroughPercent: 8,
+      }),
+    );
+    expect(result.definitions.inventoryScope).toBe(
+      'EVENT_CURRENT_RESERVED_AND_CONFIRMED',
+    );
   });
 
   it('groups commercial, attendance and capacity results by Event-local Session date', async () => {
     prisma.booking.findMany.mockResolvedValue([
       {
-        sessionId: 'session-1', status: 'CONFIRMED', total: 80,
+        sessionId: 'session-1',
+        status: 'CONFIRMED',
+        total: 80,
         items: [{ quantity: 2 }],
-        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
-        payments: [{ status: 'SUCCEEDED', amount: 80, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+        tickets: [
+          { status: 'SCANNED', checkedInAt: new Date() },
+          { status: 'ACTIVE', checkedInAt: null },
+        ],
+        payments: [
+          {
+            status: 'SUCCEEDED',
+            amount: 80,
+            refunds: [{ status: 'SUCCEEDED', amount: 10 }],
+          },
+        ],
       },
-      { sessionId: 'session-1', status: 'RESERVED', total: 20, items: [{ quantity: 1 }], tickets: [], payments: [] },
+      {
+        sessionId: 'session-1',
+        status: 'RESERVED',
+        total: 20,
+        items: [{ quantity: 1 }],
+        tickets: [],
+        payments: [],
+      },
     ]);
 
     const result = await service.getDateSales('org-1', 'event-1', {});
 
-    expect(result.rows).toEqual([expect.objectContaining({
-      date: '2027-09-01', sessionCount: 1, confirmedBookings: 1, ticketUnits: 2,
-      grossBookingValue: 80, grossCollected: 80, refunded: 10, netCollected: 70,
-      ticketsIssued: 2, admissions: 1, capacity: 10, reservedAttendance: 3,
-      remainingCapacity: 7, utilisationPercent: 30,
-    })]);
+    expect(result.rows).toEqual([
+      expect.objectContaining({
+        date: '2027-09-01',
+        sessionCount: 1,
+        confirmedBookings: 1,
+        ticketUnits: 2,
+        grossBookingValue: 80,
+        grossCollected: 80,
+        refunded: 10,
+        netCollected: 70,
+        ticketsIssued: 2,
+        admissions: 1,
+        capacity: 10,
+        reservedAttendance: 3,
+        remainingCapacity: 7,
+        utilisationPercent: 30,
+      }),
+    ]);
   });
 
   it('aligns confirmed demand by Event-local days between Booking creation and Session date', async () => {
     prisma.booking.findMany.mockResolvedValue([
-      { sessionId: 'session-1', createdAt: new Date('2027-08-23T14:30:00.000Z'), confirmedAt: new Date('2027-08-23T14:35:00.000Z'), total: 50, items: [{ quantity: 2 }] },
-      { sessionId: 'session-1', createdAt: new Date('2027-08-31T15:00:00.000Z'), confirmedAt: new Date('2027-08-31T15:05:00.000Z'), total: 20, items: [{ quantity: 1 }] },
+      {
+        sessionId: 'session-1',
+        createdAt: new Date('2027-08-23T14:30:00.000Z'),
+        confirmedAt: new Date('2027-08-23T14:35:00.000Z'),
+        total: 50,
+        items: [{ quantity: 2 }],
+      },
+      {
+        sessionId: 'session-1',
+        createdAt: new Date('2027-08-31T15:00:00.000Z'),
+        confirmedAt: new Date('2027-08-31T15:05:00.000Z'),
+        total: 20,
+        items: [{ quantity: 1 }],
+      },
     ]);
 
     const result = await service.getSalesPace('org-1', 'event-1', {});
 
-    expect(result.basis).toBe('BOOKING_CREATED_AT_FOR_CURRENTLY_CONFIRMED_BOOKINGS');
-    expect(result.totals).toEqual({ confirmedBookings: 2, ticketUnits: 3, grossBookingValue: 70 });
-    expect(result.rows.find(({ key }) => key === '8_TO_14')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 2 }));
-    expect(result.rows.find(({ key }) => key === 'SAME_DAY')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 1, cumulativeTicketUnits: 3 }));
+    expect(result.basis).toBe(
+      'BOOKING_CREATED_AT_FOR_CURRENTLY_CONFIRMED_BOOKINGS',
+    );
+    expect(result.totals).toEqual({
+      confirmedBookings: 2,
+      ticketUnits: 3,
+      grossBookingValue: 70,
+    });
+    expect(result.rows.find(({ key }) => key === '8_TO_14')).toEqual(
+      expect.objectContaining({ confirmedBookings: 1, ticketUnits: 2 }),
+    );
+    expect(result.rows.find(({ key }) => key === 'SAME_DAY')).toEqual(
+      expect.objectContaining({
+        confirmedBookings: 1,
+        ticketUnits: 1,
+        cumulativeTicketUnits: 3,
+      }),
+    );
   });
 
   it('compares Event Group totals with absolute and normalised measures', async () => {
     prisma.eventGroup.findFirst.mockResolvedValue({
-      id: 'group-1', name: 'Winter Tour', description: 'Two cities', type: 'TOUR', status: 'ACTIVE',
+      id: 'group-1',
+      name: 'Winter Tour',
+      description: 'Two cities',
+      type: 'TOUR',
+      status: 'ACTIVE',
       events: [
-        { sortOrder: 0, event: { id: 'event-1', name: 'Melbourne', slug: 'melbourne', status: 'ACTIVE', startDate: new Date('2027-09-01T00:00:00.000Z'), endDate: new Date('2027-09-02T00:00:00.000Z'), timezone: 'Australia/Melbourne' } },
-        { sortOrder: 1, event: { id: 'event-2', name: 'Sydney', slug: 'sydney', status: 'ACTIVE', startDate: new Date('2027-09-08T00:00:00.000Z'), endDate: new Date('2027-09-08T12:00:00.000Z'), timezone: 'Australia/Sydney' } },
+        {
+          sortOrder: 0,
+          event: {
+            id: 'event-1',
+            name: 'Melbourne',
+            slug: 'melbourne',
+            status: 'ACTIVE',
+            startDate: new Date('2027-09-01T00:00:00.000Z'),
+            endDate: new Date('2027-09-02T00:00:00.000Z'),
+            timezone: 'Australia/Melbourne',
+          },
+        },
+        {
+          sortOrder: 1,
+          event: {
+            id: 'event-2',
+            name: 'Sydney',
+            slug: 'sydney',
+            status: 'ACTIVE',
+            startDate: new Date('2027-09-08T00:00:00.000Z'),
+            endDate: new Date('2027-09-08T12:00:00.000Z'),
+            timezone: 'Australia/Sydney',
+          },
+        },
       ],
     });
     prisma.session.findMany.mockResolvedValue([
@@ -192,14 +401,29 @@ describe('ReportingService', () => {
     ]);
     prisma.booking.findMany.mockResolvedValue([
       {
-        eventId: 'event-1', status: 'CONFIRMED', total: 100,
-        items: [{ quantity: 2 }], products: [{ quantity: 1, unitPrice: 20 }],
-        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
-        payments: [{ status: 'SUCCEEDED', amount: 100, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+        eventId: 'event-1',
+        status: 'CONFIRMED',
+        total: 100,
+        items: [{ quantity: 2 }],
+        products: [{ quantity: 1, unitPrice: 20 }],
+        tickets: [
+          { status: 'SCANNED', checkedInAt: new Date() },
+          { status: 'ACTIVE', checkedInAt: null },
+        ],
+        payments: [
+          {
+            status: 'SUCCEEDED',
+            amount: 100,
+            refunds: [{ status: 'SUCCEEDED', amount: 10 }],
+          },
+        ],
       },
       {
-        eventId: 'event-2', status: 'CONFIRMED', total: 60,
-        items: [{ quantity: 1 }], products: [],
+        eventId: 'event-2',
+        status: 'CONFIRMED',
+        total: 60,
+        items: [{ quantity: 1 }],
+        products: [],
         tickets: [{ status: 'SCANNED', checkedInAt: new Date() }],
         payments: [{ status: 'SUCCEEDED', amount: 60, refunds: [] }],
       },
@@ -207,24 +431,60 @@ describe('ReportingService', () => {
 
     const result = await service.getEventGroupComparison('org-1', 'group-1');
 
-    expect(result.totals).toEqual(expect.objectContaining({ events: 2, sessions: 2, confirmedBookings: 2, ticketUnits: 3, totalCapacity: 150, grossCollected: 160, refunded: 10, netCollected: 150, attendanceRatePercent: 66.7 }));
-    expect(result.rows[0]).toEqual(expect.objectContaining({ revenuePerSession: 90, revenuePerCapacityPlace: 0.9, productAttachRatePercent: 100, contributionToGroupNetPercent: 60 }));
-    expect(result.rows[1]).toEqual(expect.objectContaining({ revenuePerSession: 60, revenuePerCapacityPlace: 1.2, contributionToGroupNetPercent: 40 }));
-    expect(result.timezoneSemantics).toBe('EACH_EVENT_RETAINS_ITS_OWN_TIMEZONE');
+    expect(result.totals).toEqual(
+      expect.objectContaining({
+        events: 2,
+        sessions: 2,
+        confirmedBookings: 2,
+        ticketUnits: 3,
+        totalCapacity: 150,
+        grossCollected: 160,
+        refunded: 10,
+        netCollected: 150,
+        attendanceRatePercent: 66.7,
+      }),
+    );
+    expect(result.rows[0]).toEqual(
+      expect.objectContaining({
+        revenuePerSession: 90,
+        revenuePerCapacityPlace: 0.9,
+        productAttachRatePercent: 100,
+        contributionToGroupNetPercent: 60,
+      }),
+    );
+    expect(result.rows[1]).toEqual(
+      expect.objectContaining({
+        revenuePerSession: 60,
+        revenuePerCapacityPlace: 1.2,
+        contributionToGroupNetPercent: 40,
+      }),
+    );
+    expect(result.timezoneSemantics).toBe(
+      'EACH_EVENT_RETAINS_ITS_OWN_TIMEZONE',
+    );
   });
 
   it('does not reveal an Event Group owned by another Organisation', async () => {
-    await expect(service.getEventGroupComparison('org-1', 'foreign-group')).rejects.toThrow(NotFoundException);
+    await expect(
+      service.getEventGroupComparison('org-1', 'foreign-group'),
+    ).rejects.toThrow(NotFoundException);
   });
 
   it('exports the authoritative filtered report as formula-safe UTF-8 CSV', async () => {
-    prisma.ticketType.findMany.mockResolvedValue([{ id: 'adult', name: '=HYPERLINK("bad")', active: true }]);
+    prisma.ticketType.findMany.mockResolvedValue([
+      { id: 'adult', name: '=HYPERLINK("bad")', active: true },
+    ]);
     prisma.booking.findMany.mockResolvedValue([]);
 
-    const file = await service.getEventCsv('org-1', 'event-1', 'ticket-types', { date: '2027-09-01', sessionId: 'session-1' });
+    const file = await service.getEventCsv('org-1', 'event-1', 'ticket-types', {
+      date: '2027-09-01',
+      sessionId: 'session-1',
+    });
     const csv = file.content.toString('utf8');
 
-    expect(file.filename).toMatch(/^winter-festival-ticket-types-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(file.filename).toMatch(
+      /^winter-festival-ticket-types-\d{4}-\d{2}-\d{2}\.csv$/,
+    );
     expect(csv.startsWith('\uFEFF')).toBe(true);
     expect(csv).toContain('"Event timezone"');
     expect(csv).toContain('"Australia/Melbourne"');
@@ -233,12 +493,22 @@ describe('ReportingService', () => {
   });
 
   it('rejects unsupported Event export types before reading report data', async () => {
-    await expect(service.getEventCsv('org-1', 'event-1', 'profit', {})).rejects.toThrow(BadRequestException);
+    await expect(
+      service.getEventCsv('org-1', 'event-1', 'profit', {}),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('returns a safe empty Organisation summary', async () => {
     const now = new Date('2027-09-01T00:00:00.000Z');
-    const result = await service.getOrganizationSummary('org-1', now);
+    const result = await service.getOrganizationSummary(
+      {
+        userId: 'user-1',
+        organizationId: 'org-1',
+        role: 'OWNER',
+        accessScope: 'ALL_EVENTS',
+      },
+      now,
+    );
 
     expect(prisma.event.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { organizationId: 'org-1' } }),
@@ -312,7 +582,15 @@ describe('ReportingService', () => {
       },
     ]);
 
-    const result = await service.getOrganizationSummary('org-1', now);
+    const result = await service.getOrganizationSummary(
+      {
+        userId: 'user-1',
+        organizationId: 'org-1',
+        role: 'OWNER',
+        accessScope: 'ALL_EVENTS',
+      },
+      now,
+    );
 
     expect(result.totals).toEqual(
       expect.objectContaining({

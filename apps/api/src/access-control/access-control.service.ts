@@ -57,4 +57,43 @@ export class AccessControlService {
       throw new NotFoundException('Event not found');
     }
   }
+
+  async assertEventGroupAccess(
+    eventGroupId: string,
+    access: AuthenticatedAccessContext,
+  ): Promise<void> {
+    const group = await this.prisma.eventGroup.findFirst({
+      where: {
+        id: eventGroupId,
+        organizationId: access.organizationId,
+      },
+      select: {
+        events: {
+          select: {
+            eventId: true,
+          },
+        },
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Event Group not found');
+    }
+
+    const eventIds = group.events.map(({ eventId }) => eventId);
+
+    if (eventIds.length === 0) {
+      return;
+    }
+
+    const accessibleCount = await this.prisma.event.count({
+      where: this.eventWhere(access, {
+        id: { in: eventIds },
+      }),
+    });
+
+    if (accessibleCount !== eventIds.length) {
+      throw new NotFoundException('Event Group not found');
+    }
+  }
 }

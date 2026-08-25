@@ -10,14 +10,15 @@ describe('BookingController', () => {
   const serviceMock = {
     findAll: jest.fn(),
     findOne: jest.fn(),
-    findPaymentInvestigation:
-      jest.fn(),
+    findPaymentInvestigation: jest.fn(),
     reconcilePayment: jest.fn(),
     search: jest.fn(),
   };
   const user = {
     userId: 'user-1',
     organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
   };
 
   beforeEach(async () => {
@@ -40,14 +41,9 @@ describe('BookingController', () => {
       id: 'booking-1',
     });
 
-    await controller.findPaymentInvestigation(
-      'booking-1',
-      user,
-    );
+    await controller.findPaymentInvestigation('booking-1', user);
 
-    expect(
-      serviceMock.findPaymentInvestigation,
-    ).toHaveBeenCalledWith(
+    expect(serviceMock.findPaymentInvestigation).toHaveBeenCalledWith(
       'organization-1',
       'booking-1',
     );
@@ -56,14 +52,9 @@ describe('BookingController', () => {
   it('uses trusted user and organization context for payment reconciliation', async () => {
     serviceMock.reconcilePayment.mockResolvedValue({});
 
-    await controller.reconcilePayment(
-      'booking-1',
-      user,
-    );
+    await controller.reconcilePayment('booking-1', user);
 
-    expect(
-      serviceMock.reconcilePayment,
-    ).toHaveBeenCalledWith(
+    expect(serviceMock.reconcilePayment).toHaveBeenCalledWith(
       'organization-1',
       'user-1',
       'booking-1',
@@ -72,18 +63,12 @@ describe('BookingController', () => {
 
   it('restricts payment operations to OWNER', () => {
     expect(
-      Reflect.getMetadata(
-        ROLES_KEY,
-        controller.findPaymentInvestigation,
-      ),
+      Reflect.getMetadata(ROLES_KEY, controller.findPaymentInvestigation),
     ).toEqual(['OWNER']);
 
-    expect(
-      Reflect.getMetadata(
-        ROLES_KEY,
-        controller.reconcilePayment,
-      ),
-    ).toEqual(['OWNER']);
+    expect(Reflect.getMetadata(ROLES_KEY, controller.reconcilePayment)).toEqual(
+      ['OWNER'],
+    );
   });
 
   it('should be defined', () => {
@@ -95,7 +80,7 @@ describe('BookingController', () => {
 
     await controller.findAll(user);
 
-    expect(serviceMock.findAll).toHaveBeenCalledWith('organization-1');
+    expect(serviceMock.findAll).toHaveBeenCalledWith(user);
   });
 
   it('uses trusted organization context for bounded Booking search', async () => {
@@ -109,17 +94,9 @@ describe('BookingController', () => {
       items: [],
     });
 
-    await controller.search(
-      user,
-      query,
-    );
+    await controller.search(user, query);
 
-    expect(
-      serviceMock.search,
-    ).toHaveBeenCalledWith(
-      'organization-1',
-      query,
-    );
+    expect(serviceMock.search).toHaveBeenCalledWith(user, query);
   });
 
   it('uses trusted organization context for Booking detail', async () => {
@@ -127,9 +104,6 @@ describe('BookingController', () => {
 
     await controller.findOne('booking-1', user);
 
-    expect(serviceMock.findOne).toHaveBeenCalledWith(
-      'organization-1',
-      'booking-1',
-    );
+    expect(serviceMock.findOne).toHaveBeenCalledWith(user, 'booking-1');
   });
 });

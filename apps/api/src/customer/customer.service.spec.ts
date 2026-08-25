@@ -2,9 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomerService } from './customer.service';
+import { AccessControlService } from '../access-control/access-control.service';
 
 describe('CustomerService', () => {
   let service: CustomerService;
+
+  const ownerAccess = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
+  };
 
   const prismaMock = {
     customer: {
@@ -18,6 +26,14 @@ describe('CustomerService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CustomerService,
+        {
+          provide: AccessControlService,
+          useValue: {
+            eventWhere: ({ organizationId }: typeof ownerAccess) => ({
+              organizationId,
+            }),
+          },
+        },
         {
           provide: PrismaService,
           useValue: prismaMock,
@@ -35,7 +51,7 @@ describe('CustomerService', () => {
   it('lists only customers with Bookings in the authenticated organization', async () => {
     prismaMock.customer.findMany.mockResolvedValue([]);
 
-    await service.findAll('organization-1');
+    await service.findAll(ownerAccess);
 
     expect(prismaMock.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -64,7 +80,7 @@ describe('CustomerService', () => {
   it('tenant-scopes Customer detail and nested Bookings', async () => {
     prismaMock.customer.findFirst.mockResolvedValue(null);
 
-    await service.findOne('organization-1', 'customer-2');
+    await service.findOne(ownerAccess, 'customer-2');
 
     expect(prismaMock.customer.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({

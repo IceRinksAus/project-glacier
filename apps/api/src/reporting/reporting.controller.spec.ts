@@ -2,6 +2,7 @@ import { StreamableFile } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ROLES_KEY } from '../auth/decorators/roles.decorator';
+import { AccessControlService } from '../access-control/access-control.service';
 import { ReportingController } from './reporting.controller';
 import { ReportingService } from './reporting.service';
 
@@ -19,12 +20,25 @@ describe('ReportingController', () => {
     getEventCsv: jest.fn(),
     getEventGroupComparisonCsv: jest.fn(),
   };
+  const accessControl = {
+    assertEventAccess: jest.fn(),
+    assertEventGroupAccess: jest.fn(),
+  };
+  const user = (organizationId: string) => ({
+    userId: 'user-1',
+    organizationId,
+    role: 'MANAGER' as const,
+    accessScope: 'ALL_EVENTS' as const,
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReportingController],
-      providers: [{ provide: ReportingService, useValue: service }],
+      providers: [
+        { provide: ReportingService, useValue: service },
+        { provide: AccessControlService, useValue: accessControl },
+      ],
     }).compile();
     controller = module.get(ReportingController);
   });
@@ -33,11 +47,7 @@ describe('ReportingController', () => {
     const query = { date: '2027-09-01' };
     service.getEventReport.mockResolvedValue({});
 
-    await controller.getEventReport(
-      'event-1',
-      { organizationId: 'organization-1' },
-      query,
-    );
+    await controller.getEventReport('event-1', user('organization-1'), query);
 
     expect(service.getEventReport).toHaveBeenCalledWith(
       'organization-1',
@@ -49,12 +59,10 @@ describe('ReportingController', () => {
   it('uses trusted Organisation context for the summary', async () => {
     service.getOrganizationSummary.mockResolvedValue({});
 
-    await controller.getOrganizationSummary({
-      organizationId: 'organization-1',
-    });
+    await controller.getOrganizationSummary(user('organization-1'));
 
     expect(service.getOrganizationSummary).toHaveBeenCalledWith(
-      'organization-1',
+      user('organization-1'),
     );
   });
 
@@ -68,31 +76,11 @@ describe('ReportingController', () => {
 
   it('uses trusted Organisation context for detailed sales reports', async () => {
     const query = { sessionId: 'session-1' };
-    await controller.getTicketTypeSales(
-      'event-1',
-      { organizationId: 'org-1' },
-      query,
-    );
-    await controller.getSessionSales(
-      'event-1',
-      { organizationId: 'org-1' },
-      query,
-    );
-    await controller.getProductSales(
-      'event-1',
-      { organizationId: 'org-1' },
-      query,
-    );
-    await controller.getDateSales(
-      'event-1',
-      { organizationId: 'org-1' },
-      query,
-    );
-    await controller.getSalesPace(
-      'event-1',
-      { organizationId: 'org-1' },
-      query,
-    );
+    await controller.getTicketTypeSales('event-1', user('org-1'), query);
+    await controller.getSessionSales('event-1', user('org-1'), query);
+    await controller.getProductSales('event-1', user('org-1'), query);
+    await controller.getDateSales('event-1', user('org-1'), query);
+    await controller.getSalesPace('event-1', user('org-1'), query);
     expect(service.getTicketTypeSales).toHaveBeenCalledWith(
       'org-1',
       'event-1',
@@ -121,9 +109,7 @@ describe('ReportingController', () => {
   });
 
   it('uses trusted Organisation context for Event Group comparisons', async () => {
-    await controller.getEventGroupComparison('group-1', {
-      organizationId: 'org-1',
-    });
+    await controller.getEventGroupComparison('group-1', user('org-1'));
     expect(service.getEventGroupComparison).toHaveBeenCalledWith(
       'org-1',
       'group-1',
@@ -140,7 +126,7 @@ describe('ReportingController', () => {
     const result = await controller.exportEventReport(
       'event-1',
       'sessions',
-      { organizationId: 'org-1' },
+      user('org-1'),
       { date: '2027-09-01' },
       response as never,
     );

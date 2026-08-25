@@ -10,6 +10,10 @@ describe('AccessControlService', () => {
   const prismaMock = {
     event: {
       findFirst: jest.fn(),
+      count: jest.fn(),
+    },
+    eventGroup: {
+      findFirst: jest.fn(),
     },
   };
 
@@ -67,5 +71,27 @@ describe('AccessControlService', () => {
     await expect(
       service.assertEventAccess('foreign-event', assignedStaff),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('allows an Event Group only when every member Event is accessible', async () => {
+    prismaMock.eventGroup.findFirst.mockResolvedValue({
+      events: [{ eventId: 'event-1' }, { eventId: 'event-2' }],
+    });
+    prismaMock.event.count.mockResolvedValue(2);
+
+    await expect(
+      service.assertEventGroupAccess('group-1', assignedStaff),
+    ).resolves.toBeUndefined();
+  });
+
+  it('does not reveal an Event Group containing an inaccessible Event', async () => {
+    prismaMock.eventGroup.findFirst.mockResolvedValue({
+      events: [{ eventId: 'event-1' }, { eventId: 'event-2' }],
+    });
+    prismaMock.event.count.mockResolvedValue(1);
+
+    await expect(
+      service.assertEventGroupAccess('group-1', assignedStaff),
+    ).rejects.toThrow('Event Group not found');
   });
 });

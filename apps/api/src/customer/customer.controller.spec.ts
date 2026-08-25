@@ -11,7 +11,10 @@ describe('CustomerController', () => {
     findOne: jest.fn(),
   };
   const user = {
+    userId: 'user-1',
     organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
   };
 
   beforeEach(async () => {
@@ -38,7 +41,7 @@ describe('CustomerController', () => {
 
     await controller.findAll(user);
 
-    expect(serviceMock.findAll).toHaveBeenCalledWith('organization-1');
+    expect(serviceMock.findAll).toHaveBeenCalledWith(user);
   });
 
   it('uses trusted organization context for Customer detail', async () => {
@@ -46,9 +49,6 @@ describe('CustomerController', () => {
 
     await controller.findOne('customer-1', user);
 
-    expect(serviceMock.findOne).toHaveBeenCalledWith(
-      'organization-1',
-      'customer-1',
-    );
+    expect(serviceMock.findOne).toHaveBeenCalledWith(user, 'customer-1');
   });
 });

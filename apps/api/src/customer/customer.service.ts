@@ -1,27 +1,31 @@
 import { Injectable } from '@nestjs/common';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CustomerService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
-  findAll(organizationId: string) {
+  findAll(access: AuthenticatedAccessContext) {
+    const eventWhere = this.accessControl.eventWhere(access);
     return this.prisma.customer.findMany({
       where: {
         bookings: {
           some: {
-            event: {
-              organizationId,
-            },
+            event: eventWhere,
           },
         },
       },
       include: {
         bookings: {
           where: {
-            event: {
-              organizationId,
-            },
+            event: eventWhere,
           },
         },
       },
@@ -31,24 +35,21 @@ export class CustomerService {
     });
   }
 
-  findOne(organizationId: string, id: string) {
+  findOne(access: AuthenticatedAccessContext, id: string) {
+    const eventWhere = this.accessControl.eventWhere(access);
     return this.prisma.customer.findFirst({
       where: {
         id,
         bookings: {
           some: {
-            event: {
-              organizationId,
-            },
+            event: eventWhere,
           },
         },
       },
       include: {
         bookings: {
           where: {
-            event: {
-              organizationId,
-            },
+            event: eventWhere,
           },
           include: {
             event: true,

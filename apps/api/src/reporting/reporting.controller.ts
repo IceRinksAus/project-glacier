@@ -10,6 +10,10 @@ import {
 import type { Response } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
@@ -17,27 +21,29 @@ import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { EventReportQueryDto } from './dto/event-report-query.dto';
 import { ReportingService } from './reporting.service';
 
-interface AuthenticatedUser {
-  organizationId: string;
-}
+type AuthenticatedUser = AuthenticatedAccessContext;
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...OPERATOR_ROLES)
 @Controller('reporting')
 export class ReportingController {
-  constructor(private readonly reportingService: ReportingService) {}
+  constructor(
+    private readonly reportingService: ReportingService,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
   @Get('organization')
   getOrganizationSummary(@CurrentUser() user: AuthenticatedUser) {
-    return this.reportingService.getOrganizationSummary(user.organizationId);
+    return this.reportingService.getOrganizationSummary(user);
   }
 
   @Get('events/:eventId')
-  getEventReport(
+  async getEventReport(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getEventReport(
       user.organizationId,
       eventId,
@@ -46,11 +52,12 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/ticket-types')
-  getTicketTypeSales(
+  async getTicketTypeSales(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getTicketTypeSales(
       user.organizationId,
       eventId,
@@ -59,11 +66,12 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/sessions')
-  getSessionSales(
+  async getSessionSales(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getSessionSales(
       user.organizationId,
       eventId,
@@ -72,11 +80,12 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/products')
-  getProductSales(
+  async getProductSales(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getProductSales(
       user.organizationId,
       eventId,
@@ -85,11 +94,12 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/dates')
-  getDateSales(
+  async getDateSales(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getDateSales(
       user.organizationId,
       eventId,
@@ -98,11 +108,12 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/sales-pace')
-  getSalesPace(
+  async getSalesPace(
     @Param('eventId') eventId: string,
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: EventReportQueryDto,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     return this.reportingService.getSalesPace(
       user.organizationId,
       eventId,
@@ -111,10 +122,11 @@ export class ReportingController {
   }
 
   @Get('event-groups/:groupId/comparison')
-  getEventGroupComparison(
+  async getEventGroupComparison(
     @Param('groupId') groupId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    await this.accessControl.assertEventGroupAccess(groupId, user);
     return this.reportingService.getEventGroupComparison(
       user.organizationId,
       groupId,
@@ -129,6 +141,7 @@ export class ReportingController {
     @Query() query: EventReportQueryDto,
     @Res({ passthrough: true }) response: Response,
   ) {
+    await this.accessControl.assertEventAccess(eventId, user);
     const file = await this.reportingService.getEventCsv(
       user.organizationId,
       eventId,
@@ -149,6 +162,7 @@ export class ReportingController {
     @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ) {
+    await this.accessControl.assertEventGroupAccess(groupId, user);
     const file = await this.reportingService.getEventGroupComparisonCsv(
       user.organizationId,
       groupId,

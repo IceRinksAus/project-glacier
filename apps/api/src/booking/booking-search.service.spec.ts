@@ -4,6 +4,12 @@ import { BookingService } from './booking.service';
 import { SearchBookingsQueryDto } from './dto/search-bookings-query.dto';
 
 describe('BookingService search', () => {
+  const ownerAccess = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
+  };
   const prisma = {
     $transaction: jest.fn(),
     booking: {
@@ -22,6 +28,11 @@ describe('BookingService search', () => {
       {} as never,
       {} as never,
       {} as never,
+      {
+        eventWhere: ({ organizationId }: typeof ownerAccess) => ({
+          organizationId,
+        }),
+      } as never,
     );
   });
 
@@ -31,18 +42,15 @@ describe('BookingService search', () => {
       [
         {
           id: 'booking-1',
-          bookingNumber:
-            'PG-1234',
+          bookingNumber: 'PG-1234',
           status: 'CONFIRMED',
           paymentStatus: 'PAID',
-          total:
-            new Prisma.Decimal(74),
+          total: new Prisma.Decimal(74),
           createdAt: new Date(),
           customer: {
             firstName: 'Jamie',
             lastName: 'Stoller',
-            email:
-              'jamie@example.com',
+            email: 'jamie@example.com',
           },
           event: {
             id: 'event-1',
@@ -57,40 +65,24 @@ describe('BookingService search', () => {
       ],
     ]);
 
-    const query = Object.assign(
-      new SearchBookingsQueryDto(),
-      {
-        search:
-          'Jamie PG-1234',
-        eventId: 'event-1',
-        sessionId:
-          'session-1',
-        bookingStatus:
-          'CONFIRMED' as const,
-        paymentStatus:
-          'PAID' as const,
-        sortBy:
-          'sessionStart' as const,
-        sortDirection:
-          'asc' as const,
-        page: 2,
-        pageSize: 10,
-      },
-    );
+    const query = Object.assign(new SearchBookingsQueryDto(), {
+      search: 'Jamie PG-1234',
+      eventId: 'event-1',
+      sessionId: 'session-1',
+      bookingStatus: 'CONFIRMED' as const,
+      paymentStatus: 'PAID' as const,
+      sortBy: 'sessionStart' as const,
+      sortDirection: 'asc' as const,
+      page: 2,
+      pageSize: 10,
+    });
 
-    const result =
-      await service.search(
-        'organization-1',
-        query,
-      );
+    const result = await service.search(ownerAccess, query);
 
-    expect(
-      prisma.booking.count,
-    ).toHaveBeenCalledWith({
+    expect(prisma.booking.count).toHaveBeenCalledWith({
       where: expect.objectContaining({
         event: {
-          organizationId:
-            'organization-1',
+          organizationId: 'organization-1',
         },
         eventId: 'event-1',
         sessionId: 'session-1',
@@ -104,9 +96,7 @@ describe('BookingService search', () => {
       }),
     });
 
-    expect(
-      prisma.booking.findMany,
-    ).toHaveBeenCalledWith(
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         skip: 10,
         take: 10,
@@ -123,9 +113,7 @@ describe('BookingService search', () => {
       }),
     );
 
-    expect(result.items[0].total).toBe(
-      74,
-    );
+    expect(result.items[0].total).toBe(74);
     expect(result.pagination).toEqual({
       page: 2,
       pageSize: 10,
@@ -135,23 +123,14 @@ describe('BookingService search', () => {
   });
 
   it('uses deterministic customer-name sorting and bounded defaults', async () => {
-    prisma.$transaction.mockResolvedValue([
-      0,
-      [],
-    ]);
+    prisma.$transaction.mockResolvedValue([0, []]);
 
-    const query =
-      new SearchBookingsQueryDto();
+    const query = new SearchBookingsQueryDto();
     query.sortBy = 'customerName';
 
-    await service.search(
-      'organization-1',
-      query,
-    );
+    await service.search(ownerAccess, query);
 
-    expect(
-      prisma.booking.findMany,
-    ).toHaveBeenCalledWith(
+    expect(prisma.booking.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         skip: 0,
         take: 25,

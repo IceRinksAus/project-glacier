@@ -1,16 +1,14 @@
 import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedAccessContext } from '../access-control/access-control.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { BookingService } from './booking.service';
 import { SearchBookingsQueryDto } from './dto/search-bookings-query.dto';
 
-interface AuthenticatedUser {
-  userId: string;
-  organizationId: string;
-}
+type AuthenticatedUser = AuthenticatedAccessContext;
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('booking')
@@ -19,7 +17,7 @@ export class BookingController {
 
   @Get()
   findAll(@CurrentUser() user: AuthenticatedUser) {
-    return this.bookingService.findAll(user.organizationId);
+    return this.bookingService.findAll(user);
   }
 
   @Get('search')
@@ -27,15 +25,12 @@ export class BookingController {
     @CurrentUser() user: AuthenticatedUser,
     @Query() query: SearchBookingsQueryDto,
   ) {
-    return this.bookingService.search(
-      user.organizationId,
-      query,
-    );
+    return this.bookingService.search(user, query);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.bookingService.findOne(user.organizationId, id);
+    return this.bookingService.findOne(user, id);
   }
 
   @Roles('OWNER')

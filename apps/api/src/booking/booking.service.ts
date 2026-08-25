@@ -6,6 +6,10 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { BookingValidationService } from '../booking-validation/booking-validation.service';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
@@ -20,11 +24,10 @@ export class BookingService {
     private readonly ruleEvaluationService: RuleEvaluationService,
     private readonly bookingValidationService: BookingValidationService,
     private readonly paymentService: PaymentService,
+    private readonly accessControl: AccessControlService,
   ) {}
 
-  private summarizeProviderReference(
-    providerReference: string | null,
-  ) {
+  private summarizeProviderReference(providerReference: string | null) {
     if (!providerReference) {
       return null;
     }
@@ -58,12 +61,10 @@ export class BookingService {
     throw new BadRequestException('Unable to reserve booking capacity.');
   }
 
-  findAll(organizationId: string) {
+  findAll(access: AuthenticatedAccessContext) {
     return this.prisma.booking.findMany({
       where: {
-        event: {
-          organizationId,
-        },
+        event: this.accessControl.eventWhere(access),
       },
       include: {
         customer: true,
@@ -92,20 +93,15 @@ export class BookingService {
   }
 
   async search(
-    organizationId: string,
+    access: AuthenticatedAccessContext,
     query: SearchBookingsQueryDto,
   ) {
     const searchTerms = query.search
-      ? query.search
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 5)
+      ? query.search.split(/\s+/).filter(Boolean).slice(0, 5)
       : [];
 
     const where: Prisma.BookingWhereInput = {
-      event: {
-        organizationId,
-      },
+      event: this.accessControl.eventWhere(access),
       ...(query.eventId
         ? {
             eventId: query.eventId,
@@ -118,63 +114,57 @@ export class BookingService {
         : {}),
       ...(query.bookingStatus
         ? {
-            status:
-              query.bookingStatus,
+            status: query.bookingStatus,
           }
         : {}),
       ...(query.paymentStatus
         ? {
-            paymentStatus:
-              query.paymentStatus,
+            paymentStatus: query.paymentStatus,
           }
         : {}),
       ...(searchTerms.length > 0
         ? {
-            AND: searchTerms.map(
-              (term) => ({
-                OR: [
-                  {
-                    bookingNumber: {
+            AND: searchTerms.map((term) => ({
+              OR: [
+                {
+                  bookingNumber: {
+                    contains: term,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  customer: {
+                    firstName: {
                       contains: term,
                       mode: 'insensitive',
                     },
                   },
-                  {
-                    customer: {
-                      firstName: {
-                        contains: term,
-                        mode: 'insensitive',
-                      },
+                },
+                {
+                  customer: {
+                    lastName: {
+                      contains: term,
+                      mode: 'insensitive',
                     },
                   },
-                  {
-                    customer: {
-                      lastName: {
-                        contains: term,
-                        mode: 'insensitive',
-                      },
+                },
+                {
+                  customer: {
+                    email: {
+                      contains: term,
+                      mode: 'insensitive',
                     },
                   },
-                  {
-                    customer: {
-                      email: {
-                        contains: term,
-                        mode: 'insensitive',
-                      },
-                    },
-                  },
-                ],
-              }),
-            ),
+                },
+              ],
+            })),
           }
         : {}),
     };
 
-    const direction =
-      query.sortDirection;
+    const direction = query.sortDirection;
     const orderBy: Prisma.BookingOrderByWithRelationInput[] =
-      query.sortBy ===
-      'sessionStart'
+      query.sortBy === 'sessionStart'
         ? [
             {
               session: {
@@ -185,8 +175,7 @@ export class BookingService {
               id: direction,
             },
           ]
-        : query.sortBy ===
-            'customerName'
+        : query.sortBy === 'customerName'
           ? [
               {
                 customer: {
@@ -204,89 +193,74 @@ export class BookingService {
             ]
           : [
               {
-                [query.sortBy]:
-                  direction,
+                [query.sortBy]: direction,
               },
               {
                 id: direction,
               },
             ];
 
-    const skip =
-      (query.page - 1) *
-      query.pageSize;
+    const skip = (query.page - 1) * query.pageSize;
 
-    const [totalItems, items] =
-      await this.prisma.$transaction([
-        this.prisma.booking.count({
-          where,
-        }),
-        this.prisma.booking.findMany({
-          where,
-          select: {
-            id: true,
-            bookingNumber: true,
-            status: true,
-            paymentStatus: true,
-            total: true,
-            createdAt: true,
-            customer: {
-              select: {
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            event: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            session: {
-              select: {
-                id: true,
-                name: true,
-                startDate: true,
-              },
+    const [totalItems, items] = await this.prisma.$transaction([
+      this.prisma.booking.count({
+        where,
+      }),
+      this.prisma.booking.findMany({
+        where,
+        select: {
+          id: true,
+          bookingNumber: true,
+          status: true,
+          paymentStatus: true,
+          total: true,
+          createdAt: true,
+          customer: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
             },
           },
-          orderBy,
-          skip,
-          take: query.pageSize,
-        }),
-      ]);
+          event: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          session: {
+            select: {
+              id: true,
+              name: true,
+              startDate: true,
+            },
+          },
+        },
+        orderBy,
+        skip,
+        take: query.pageSize,
+      }),
+    ]);
 
     return {
-      items: items.map(
-        (booking) => ({
-          ...booking,
-          total:
-            booking.total.toNumber(),
-        }),
-      ),
+      items: items.map((booking) => ({
+        ...booking,
+        total: booking.total.toNumber(),
+      })),
       pagination: {
         page: query.page,
         pageSize: query.pageSize,
         totalItems,
-        totalPages: Math.max(
-          1,
-          Math.ceil(
-            totalItems /
-              query.pageSize,
-          ),
-        ),
+        totalPages: Math.max(1, Math.ceil(totalItems / query.pageSize)),
       },
     };
   }
 
-  async findOne(organizationId: string, id: string) {
+  async findOne(access: AuthenticatedAccessContext, id: string) {
     const booking = await this.prisma.booking.findFirst({
       where: {
         id,
-        event: {
-          organizationId,
-        },
+        event: this.accessControl.eventWhere(access),
       },
       include: {
         customer: true,
@@ -317,136 +291,126 @@ export class BookingService {
     return booking;
   }
 
-  async findPaymentInvestigation(
-    organizationId: string,
-    id: string,
-  ) {
-    const booking =
-      await this.prisma.booking.findFirst({
-        where: {
-          id,
-          event: {
-            organizationId,
+  async findPaymentInvestigation(organizationId: string, id: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id,
+        event: {
+          organizationId,
+        },
+      },
+      select: {
+        id: true,
+        bookingNumber: true,
+        status: true,
+        paymentStatus: true,
+        total: true,
+        reservedUntil: true,
+        confirmedAt: true,
+        paidAt: true,
+        expiredAt: true,
+        createdAt: true,
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
           },
         },
-        select: {
-          id: true,
-          bookingNumber: true,
-          status: true,
-          paymentStatus: true,
-          total: true,
-          reservedUntil: true,
-          confirmedAt: true,
-          paidAt: true,
-          expiredAt: true,
-          createdAt: true,
-          customer: {
-            select: {
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          event: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          session: {
-            select: {
-              id: true,
-              name: true,
-              startDate: true,
-              endDate: true,
-            },
-          },
-          tickets: {
-            select: {
-              ticketNumber: true,
-              status: true,
-              issuedAt: true,
-            },
-            orderBy: {
-              issuedAt: 'asc',
-            },
-          },
-          payments: {
-            select: {
-              id: true,
-              provider: true,
-              providerReference: true,
-              amount: true,
-              currency: true,
-              status: true,
-              failureCode: true,
-              failureMessage: true,
-              succeededAt: true,
-              failedAt: true,
-              cancelledAt: true,
-              createdAt: true,
-              updatedAt: true,
-              refunds: {
-                select: {
-                  id: true,
-                  amount: true,
-                  currency: true,
-                  status: true,
-                  reason: true,
-                  succeededAt: true,
-                  failedAt: true,
-                  cancelledAt: true,
-                  createdAt: true,
-                },
-                orderBy: {
-                  createdAt: 'desc',
-                },
-              },
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-          },
-          paymentReconciliationAttempts: {
-            select: {
-              id: true,
-              trigger: true,
-              outcome: true,
-              providerStatus: true,
-              succeeded: true,
-              errorMessage: true,
-              attemptedAt: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-            orderBy: {
-              attemptedAt: 'desc',
-            },
+        event: {
+          select: {
+            id: true,
+            name: true,
           },
         },
-      });
+        session: {
+          select: {
+            id: true,
+            name: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        tickets: {
+          select: {
+            ticketNumber: true,
+            status: true,
+            issuedAt: true,
+          },
+          orderBy: {
+            issuedAt: 'asc',
+          },
+        },
+        payments: {
+          select: {
+            id: true,
+            provider: true,
+            providerReference: true,
+            amount: true,
+            currency: true,
+            status: true,
+            failureCode: true,
+            failureMessage: true,
+            succeededAt: true,
+            failedAt: true,
+            cancelledAt: true,
+            createdAt: true,
+            updatedAt: true,
+            refunds: {
+              select: {
+                id: true,
+                amount: true,
+                currency: true,
+                status: true,
+                reason: true,
+                succeededAt: true,
+                failedAt: true,
+                cancelledAt: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: 'desc',
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        paymentReconciliationAttempts: {
+          select: {
+            id: true,
+            trigger: true,
+            outcome: true,
+            providerStatus: true,
+            succeeded: true,
+            errorMessage: true,
+            attemptedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            attemptedAt: 'desc',
+          },
+        },
+      },
+    });
 
     if (!booking) {
-      throw new NotFoundException(
-        'Booking not found',
-      );
+      throw new NotFoundException('Booking not found');
     }
 
-    const payments = booking.payments.map(
-      (payment) => ({
-        ...payment,
-        providerReference:
-          undefined,
-        providerReferenceSummary:
-          this.summarizeProviderReference(
-            payment.providerReference,
-          ),
-      }),
-    );
+    const payments = booking.payments.map((payment) => ({
+      ...payment,
+      providerReference: undefined,
+      providerReferenceSummary: this.summarizeProviderReference(
+        payment.providerReference,
+      ),
+    }));
 
     return {
       ...booking,
@@ -455,69 +419,53 @@ export class BookingService {
         ({ providerReference: _reference, ...payment }) => ({
           ...payment,
           amount: payment.amount.toNumber(),
-          refunds: payment.refunds.map(
-            (refund) => ({
-              ...refund,
-              amount:
-                refund.amount.toNumber(),
-            }),
-          ),
+          refunds: payment.refunds.map((refund) => ({
+            ...refund,
+            amount: refund.amount.toNumber(),
+          })),
         }),
       ),
-      requiresReconciliation:
-        payments.some(
-          (payment) =>
-            payment.status ===
-            'PENDING',
-        ),
+      requiresReconciliation: payments.some(
+        (payment) => payment.status === 'PENDING',
+      ),
     };
   }
 
-  async reconcilePayment(
-    organizationId: string,
-    userId: string,
-    id: string,
-  ) {
-    const booking =
-      await this.prisma.booking.findFirst({
-        where: {
-          id,
-          event: {
-            organizationId,
-          },
+  async reconcilePayment(organizationId: string, userId: string, id: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        id,
+        event: {
+          organizationId,
         },
-        select: {
-          id: true,
-          eventId: true,
-          payments: {
-            where: {
-              status: 'PENDING',
-            },
-            select: {
-              id: true,
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-            take: 1,
+      },
+      select: {
+        id: true,
+        eventId: true,
+        payments: {
+          where: {
+            status: 'PENDING',
           },
+          select: {
+            id: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
         },
-      });
+      },
+    });
 
     if (!booking) {
-      throw new NotFoundException(
-        'Booking not found',
-      );
+      throw new NotFoundException('Booking not found');
     }
 
-    const paymentId =
-      booking.payments[0]?.id ?? null;
+    const paymentId = booking.payments[0]?.id ?? null;
 
     try {
       const result =
-        await this.paymentService.reconcilePendingPaymentForBooking(
-          booking.id,
-        );
+        await this.paymentService.reconcilePendingPaymentForBooking(booking.id);
 
       const outcome = result.reconciled
         ? `RECONCILED_${result.providerStatus}`
@@ -528,26 +476,22 @@ export class BookingService {
           organizationId,
           eventId: booking.eventId,
           bookingId: booking.id,
-          paymentId:
-            result.paymentId ?? paymentId,
+          paymentId: result.paymentId ?? paymentId,
           userId,
           trigger: 'MANUAL',
           outcome,
           providerStatus:
-            'providerStatus' in result
-              ? result.providerStatus
-              : null,
+            'providerStatus' in result ? result.providerStatus : null,
           succeeded: result.reconciled,
         },
       });
 
       return {
         result,
-        investigation:
-          await this.findPaymentInvestigation(
-            organizationId,
-            booking.id,
-          ),
+        investigation: await this.findPaymentInvestigation(
+          organizationId,
+          booking.id,
+        ),
       };
     } catch (error) {
       const errorMessage =
@@ -1179,7 +1123,10 @@ export class BookingService {
               }
             }
 
-            if (product.inventoryTracked && product.inventoryQuantity !== null) {
+            if (
+              product.inventoryTracked &&
+              product.inventoryQuantity !== null
+            ) {
               const committed = await transaction.bookingProduct.aggregate({
                 where: {
                   productId,
@@ -1262,8 +1209,7 @@ export class BookingService {
                 });
 
                 const remainingInventory =
-                  variant.inventoryQuantity -
-                  (committed._sum.quantity ?? 0);
+                  variant.inventoryQuantity - (committed._sum.quantity ?? 0);
 
                 if (selection.quantity > remainingInventory) {
                   throw new BadRequestException(
