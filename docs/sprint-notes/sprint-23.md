@@ -52,3 +52,15 @@ Sales by Session combines confirmed Booking demand, confirmed Booking value, suc
 Wide operational tables scroll within their own report card rather than expanding the page. Empty results, loading failures and the operational-versus-accounting limitation remain explicit.
 
 Detailed Event Reports web verification: focused suite 1 / 4 tests passed; complete web suite 21 / 62 tests passed; production build passed. Web lint reports no errors and only the documented inherited internal-navigation warning in `src/lib/api.ts`.
+
+## Slice 4 — Product and Product Variant Reporting
+
+The Product report adds confirmed Product and Variant units, persisted gross item sales, Booking attach rate, active-Rule identification and organiser-defined Product Group context. It uses the same tenant-safe Event-local date and Session filter contract as the other detailed reports and returns no customer or participant identity.
+
+Finite inventory is reported as a current Event-wide operational position using reserved and confirmed Booking Product commitments. Variant stock such as individual hoodie sizes is calculated independently. This is explicitly not labelled a stock-movement history because Glacier does not yet persist receipts, adjustments, damage or reconciliations.
+
+Reusable capacity-controlled Products such as Kangas are reported independently for each matching Session, honouring any Session capacity override. The interface presents the highest-utilisation matching Session as the operational peak and explicitly states that Product capacity does not consume or change rink admission capacity.
+
+Successful refunds remain unallocated at Product and Variant level because PaymentRefund has no Booking Product line relationship. The report therefore presents authoritative gross Product sales rather than fabricated category-level net sales.
+
+Product reporting verification: focused API reporting suites 2 / 15 tests passed; complete API suite 69 / 448 tests passed; API production build passed. Focused Event Reports web suite 1 / 5 tests passed; complete web suite 21 / 63 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.

@@ -24,7 +24,7 @@ An Event report defaults to the full Event range. An exact-date filter converts 
 
 ## Access and Privacy
 
-`GET /reporting/organization` and `GET /reporting/events/:eventId` require an authenticated OWNER or MEMBER. Tenant scope comes only from the authenticated Organisation. A foreign Event and an unknown Event produce the same not-found boundary.
+All `/reporting` routes require an authenticated OWNER or MEMBER. Tenant scope comes only from the authenticated Organisation. A foreign Event and an unknown Event produce the same not-found boundary.
 
 Reporting responses exclude customer and participant details, contact information, possession tokens, client secrets, raw provider payloads and full provider references. SCANNER has no reporting role.
 
@@ -36,8 +36,10 @@ The Organisation summary is capped at 100 Events, 5,000 Sessions and 50,000 mini
 
 Production operations should monitor report latency, errors, cap utilisation and disagreement between report figures and authoritative investigation records. Approaching a cap must trigger engineering review rather than silently presenting the result as complete. Payment-provider settlement reconciliation remains a separate production control.
 
-## Planned Detailed Reports and Exports
+## Detailed Category Reports and Exports
 
-Future reporting may group sales and operations by Ticket Type, Session, Event-local date, Product, Product Variant and admission state, with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
+Detailed reads currently group sales and operations by Ticket Type, Session, Product and Product Variant. Event-local date and Session filters reuse the same scope contract as the Event overview. Product reporting distinguishes confirmed units/gross item sales from current Event-wide inventory commitments and per-Session reusable capacity. Active `REQUIRE_PRODUCT` Rules identify required products separately from discretionary Add-ons.
+
+Event-local date, admission-state and comparison reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.

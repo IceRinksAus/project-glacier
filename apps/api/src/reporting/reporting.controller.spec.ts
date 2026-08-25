@@ -11,6 +11,7 @@ describe('ReportingController', () => {
     getOrganizationSummary: jest.fn(),
     getTicketTypeSales: jest.fn(),
     getSessionSales: jest.fn(),
+    getProductSales: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -62,7 +63,9 @@ describe('ReportingController', () => {
     const query = { sessionId: 'session-1' };
     await controller.getTicketTypeSales('event-1', { organizationId: 'org-1' }, query);
     await controller.getSessionSales('event-1', { organizationId: 'org-1' }, query);
+    await controller.getProductSales('event-1', { organizationId: 'org-1' }, query);
     expect(service.getTicketTypeSales).toHaveBeenCalledWith('org-1', 'event-1', query);
     expect(service.getSessionSales).toHaveBeenCalledWith('org-1', 'event-1', query);
+    expect(service.getProductSales).toHaveBeenCalledWith('org-1', 'event-1', query);
   });
 });

@@ -88,6 +88,28 @@ export interface SessionSalesReport {
   }>;
 }
 
+export interface ProductSalesReport {
+  event: { id: string; name: string; timezone: string };
+  filter: { date: string | null; sessionId: string | null };
+  definitions: { inventoryScope: string; refundAllocation: string };
+  totals: { confirmedBookings: number; bookingsWithProducts: number; attachRatePercent: number; unitsSold: number; grossItemSales: number };
+  rows: Array<{
+    id: string; name: string; slug: string; status: string;
+    group: { id: string; name: string; sortOrder: number } | null;
+    requiredByRule: boolean;
+    unitsSold: number; grossItemSales: number; bookingCount: number; attachRatePercent: number;
+    inventory: { tracked: boolean; quantity: number | null; committed: number | null; remaining: number | null; sellThroughPercent: number | null };
+    capacity: {
+      controlled: boolean; defaultLimit: number | null;
+      peakSession: { sessionId: string; sessionName: string; startDate: string; limit: number | null; reserved: number; remaining: number | null; utilisationPercent: number } | null;
+    };
+    variants: Array<{
+      id: string; name: string; status: string; inventoryTracked: boolean; inventoryQuantity: number | null;
+      unitsSold: number; grossItemSales: number; inventoryCommitted: number | null; inventoryRemaining: number | null; sellThroughPercent: number | null;
+    }>;
+  }>;
+}
+
 function eventReportPath(eventId: string, suffix = "", filters: { date?: string; sessionId?: string } = {}) {
   const query = new URLSearchParams();
   if (filters.date) query.set("date", filters.date);
@@ -104,4 +126,6 @@ export const reportingService = {
     api.get<TicketTypeSalesReport>(eventReportPath(eventId, "/ticket-types", filters)),
   getSessionSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
     api.get<SessionSalesReport>(eventReportPath(eventId, "/sessions", filters)),
+  getProductSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<ProductSalesReport>(eventReportPath(eventId, "/products", filters)),
 };

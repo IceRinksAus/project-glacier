@@ -11,6 +11,8 @@ describe('ReportingService', () => {
     session: { findMany: jest.fn() },
     booking: { findMany: jest.fn() },
     ticketType: { findMany: jest.fn() },
+    product: { findMany: jest.fn() },
+    rule: { findMany: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -43,6 +45,8 @@ describe('ReportingService', () => {
     prisma.booking.findMany.mockResolvedValue([]);
     prisma.event.findMany.mockResolvedValue([]);
     prisma.ticketType.findMany.mockResolvedValue([]);
+    prisma.product.findMany.mockResolvedValue([]);
+    prisma.rule.findMany.mockResolvedValue([]);
   });
 
   it('reports Ticket Type units and gross item sales without allocating refunds', async () => {
@@ -93,6 +97,48 @@ describe('ReportingService', () => {
       ticketUnits: 2, ticketsIssued: 2, admissions: 1,
       reservedAttendance: 3, remainingCapacity: 7, utilisationPercent: 30,
     }));
+  });
+
+  it('reports Product sales, finite inventory and reusable Session capacity separately', async () => {
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: 'kanga', name: 'Kanga', slug: 'kanga', status: 'ACTIVE',
+        inventoryTracked: false, inventoryQuantity: null,
+        capacityControlled: true, capacity: 30,
+        productGroup: { id: 'group-1', name: 'Skating aids', sortOrder: 0 },
+        variants: [],
+        sessionProducts: [{ sessionId: 'session-1', capacityOverride: 20 }],
+      },
+      {
+        id: 'hoodie', name: 'Hoodie', slug: 'hoodie', status: 'ACTIVE',
+        inventoryTracked: false, inventoryQuantity: null,
+        capacityControlled: false, capacity: null, productGroup: null,
+        sessionProducts: [],
+        variants: [{ id: 'small', name: 'Small', status: 'ACTIVE', inventoryTracked: true, inventoryQuantity: 50, sortOrder: 0 }],
+      },
+    ]);
+    prisma.rule.findMany.mockResolvedValue([{ actions: { type: 'REQUIRE_PRODUCT', productSlug: 'kanga' } }]);
+    prisma.booking.findMany
+      .mockResolvedValueOnce([
+        { id: 'booking-1', sessionId: 'session-1', products: [
+          { productId: 'kanga', productVariantId: null, quantity: 2, unitPrice: 5 },
+          { productId: 'hoodie', productVariantId: 'small', quantity: 1, unitPrice: 60 },
+        ] },
+      ])
+      .mockResolvedValueOnce([
+        { sessionId: 'session-1', products: [
+          { productId: 'kanga', productVariantId: null, quantity: 3 },
+          { productId: 'hoodie', productVariantId: 'small', quantity: 4 },
+        ] },
+      ]);
+
+    const result = await service.getProductSales('org-1', 'event-1', {});
+
+    expect(result.totals).toEqual({ confirmedBookings: 1, bookingsWithProducts: 1, attachRatePercent: 100, unitsSold: 3, grossItemSales: 70 });
+    expect(result.rows[0]).toEqual(expect.objectContaining({ id: 'kanga', requiredByRule: true, unitsSold: 2, grossItemSales: 10 }));
+    expect(result.rows[0].capacity.peakSession).toEqual(expect.objectContaining({ limit: 20, reserved: 3, remaining: 17, utilisationPercent: 15 }));
+    expect(result.rows[1].variants[0]).toEqual(expect.objectContaining({ unitsSold: 1, inventoryCommitted: 4, inventoryRemaining: 46, sellThroughPercent: 8 }));
+    expect(result.definitions.inventoryScope).toBe('EVENT_CURRENT_RESERVED_AND_CONFIRMED');
   });
 
   it('returns a safe empty Organisation summary', async () => {

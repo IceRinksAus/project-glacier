@@ -489,6 +489,151 @@ export class ReportingService {
     return { event, filter: { date: query.date ?? null, sessionId: query.sessionId ?? null }, rows };
   }
 
+  async getProductSales(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const { event, sessions } = await this.detailedScope(organizationId, eventId, query);
+    const sessionIds = sessions.map(({ id }) => id);
+    const [products, scopedBookings, committedBookings, rules] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { eventId },
+        select: {
+          id: true, name: true, slug: true, status: true,
+          inventoryTracked: true, inventoryQuantity: true,
+          capacityControlled: true, capacity: true,
+          productGroup: { select: { id: true, name: true, sortOrder: true } },
+          variants: {
+            select: { id: true, name: true, status: true, inventoryTracked: true, inventoryQuantity: true, sortOrder: true },
+            orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
+          },
+          sessionProducts: {
+            where: { sessionId: { in: sessionIds }, active: true },
+            select: { sessionId: true, capacityOverride: true },
+          },
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
+        take: 1000,
+      }),
+      sessionIds.length
+        ? this.prisma.booking.findMany({
+            where: { eventId, sessionId: { in: sessionIds }, status: 'CONFIRMED' },
+            select: { id: true, sessionId: true, products: { select: { productId: true, productVariantId: true, quantity: true, unitPrice: true } } },
+            take: 50000,
+          })
+        : Promise.resolve([]),
+      this.prisma.booking.findMany({
+        where: { eventId, status: { in: ['RESERVED', 'CONFIRMED'] } },
+        select: { sessionId: true, products: { select: { productId: true, productVariantId: true, quantity: true } } },
+        take: 50000,
+      }),
+      this.prisma.rule.findMany({
+        where: { eventId, status: 'ACTIVE' },
+        select: { actions: true },
+        take: 1000,
+      }),
+    ]);
+
+    const requiredSlugs = new Set(
+      rules.flatMap(({ actions }) => {
+        if (!actions || typeof actions !== 'object' || Array.isArray(actions)) return [];
+        const action = actions as Record<string, unknown>;
+        return action.type === 'REQUIRE_PRODUCT' && typeof action.productSlug === 'string'
+          ? [action.productSlug]
+          : [];
+      }),
+    );
+    const scopedLines = scopedBookings.flatMap((booking) =>
+      booking.products.map((line) => ({ ...line, bookingId: booking.id, sessionId: booking.sessionId })),
+    );
+    const committedLines = committedBookings.flatMap((booking) =>
+      booking.products.map((line) => ({ ...line, sessionId: booking.sessionId })),
+    );
+
+    const rows = products.map((product) => {
+      const sold = scopedLines.filter(({ productId }) => productId === product.id);
+      const committed = committedLines.filter(({ productId }) => productId === product.id);
+      const unitsSold = sold.reduce((total, line) => total + line.quantity, 0);
+      const inventoryCommitted = committed.reduce((total, line) => total + line.quantity, 0);
+      const bookingCount = new Set(sold.map(({ bookingId }) => bookingId)).size;
+      const capacitySessions = product.capacityControlled
+        ? product.sessionProducts.map((assignment) => {
+            const session = sessions.find(({ id }) => id === assignment.sessionId)!;
+            const limit = assignment.capacityOverride ?? product.capacity;
+            const reserved = committed
+              .filter(({ sessionId }) => sessionId === assignment.sessionId)
+              .reduce((total, line) => total + line.quantity, 0);
+            return {
+              sessionId: session.id,
+              sessionName: session.name,
+              startDate: session.startDate,
+              limit,
+              reserved,
+              remaining: limit === null ? null : Math.max(limit - reserved, 0),
+              utilisationPercent: limit && limit > 0 ? Number(((reserved / limit) * 100).toFixed(1)) : 0,
+            };
+          })
+        : [];
+      const peakSession = [...capacitySessions].sort((a, b) =>
+        b.utilisationPercent - a.utilisationPercent || a.startDate.getTime() - b.startDate.getTime(),
+      )[0] ?? null;
+      const variants = product.variants.map((variant) => {
+        const variantSold = sold.filter(({ productVariantId }) => productVariantId === variant.id);
+        const variantCommitted = committed.filter(({ productVariantId }) => productVariantId === variant.id);
+        const variantUnits = variantSold.reduce((total, line) => total + line.quantity, 0);
+        const currentCommitted = variantCommitted.reduce((total, line) => total + line.quantity, 0);
+        return {
+          ...variant,
+          unitsSold: variantUnits,
+          grossItemSales: this.sum(variantSold.map((line) => Number(line.unitPrice) * line.quantity)),
+          inventoryCommitted: variant.inventoryTracked ? currentCommitted : null,
+          inventoryRemaining: variant.inventoryTracked && variant.inventoryQuantity !== null
+            ? Math.max(variant.inventoryQuantity - currentCommitted, 0)
+            : null,
+          sellThroughPercent: variant.inventoryTracked && variant.inventoryQuantity && variant.inventoryQuantity > 0
+            ? Number(((currentCommitted / variant.inventoryQuantity) * 100).toFixed(1))
+            : null,
+        };
+      });
+      return {
+        id: product.id,
+        name: product.name,
+        slug: product.slug,
+        status: product.status,
+        group: product.productGroup,
+        requiredByRule: requiredSlugs.has(product.slug),
+        unitsSold,
+        grossItemSales: this.sum(sold.map((line) => Number(line.unitPrice) * line.quantity)),
+        bookingCount,
+        attachRatePercent: scopedBookings.length > 0 ? Number(((bookingCount / scopedBookings.length) * 100).toFixed(1)) : 0,
+        inventory: {
+          tracked: product.inventoryTracked,
+          quantity: product.inventoryQuantity,
+          committed: product.inventoryTracked ? inventoryCommitted : null,
+          remaining: product.inventoryTracked && product.inventoryQuantity !== null
+            ? Math.max(product.inventoryQuantity - inventoryCommitted, 0)
+            : null,
+          sellThroughPercent: product.inventoryTracked && product.inventoryQuantity && product.inventoryQuantity > 0
+            ? Number(((inventoryCommitted / product.inventoryQuantity) * 100).toFixed(1))
+            : null,
+        },
+        capacity: { controlled: product.capacityControlled, defaultLimit: product.capacity, peakSession },
+        variants,
+      };
+    });
+    const bookingsWithProducts = new Set(scopedLines.map(({ bookingId }) => bookingId)).size;
+    return {
+      event,
+      filter: { date: query.date ?? null, sessionId: query.sessionId ?? null },
+      definitions: { inventoryScope: 'EVENT_CURRENT_RESERVED_AND_CONFIRMED', refundAllocation: 'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL' },
+      totals: {
+        confirmedBookings: scopedBookings.length,
+        bookingsWithProducts,
+        attachRatePercent: scopedBookings.length > 0 ? Number(((bookingsWithProducts / scopedBookings.length) * 100).toFixed(1)) : 0,
+        unitsSold: rows.reduce((total, row) => total + row.unitsSold, 0),
+        grossItemSales: this.sum(rows.map(({ grossItemSales }) => grossItemSales)),
+      },
+      rows,
+    };
+  }
+
   private async detailedScope(organizationId: string, eventId: string, query: EventReportQueryDto) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, organizationId },

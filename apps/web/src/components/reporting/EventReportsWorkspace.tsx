@@ -4,16 +4,17 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { EventReport, reportingService, SessionSalesReport, TicketTypeSalesReport } from "@/services/reporting.service";
+import { EventReport, ProductSalesReport, reportingService, SessionSalesReport, TicketTypeSalesReport } from "@/services/reporting.service";
 import { Session, sessionService } from "@/services/session.service";
 
 const money = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
-type ReportView = "OVERVIEW" | "TICKET_TYPES" | "SESSIONS";
+type ReportView = "OVERVIEW" | "TICKET_TYPES" | "SESSIONS" | "PRODUCTS";
 
 export function EventReportsWorkspace({ eventId }: { eventId: string }) {
   const [report, setReport] = useState<EventReport | null>(null);
   const [ticketTypeReport, setTicketTypeReport] = useState<TicketTypeSalesReport | null>(null);
   const [sessionReport, setSessionReport] = useState<SessionSalesReport | null>(null);
+  const [productReport, setProductReport] = useState<ProductSalesReport | null>(null);
   const [reportView, setReportView] = useState<ReportView>("OVERVIEW");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [date, setDate] = useState("");
@@ -28,6 +29,8 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
       ? reportingService.getTicketTypeSales(eventId, filters).then(setTicketTypeReport)
       : view === "SESSIONS"
         ? reportingService.getSessionSales(eventId, filters).then(setSessionReport)
+        : view === "PRODUCTS"
+          ? reportingService.getProductSales(eventId, filters).then(setProductReport)
         : reportingService.getEventReport(eventId, filters).then(setReport);
     request
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Unable to load this Event report."))
@@ -69,7 +72,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
         <h2 className="text-2xl font-semibold tracking-tight">Event reports</h2>
         <p className="mt-1 text-sm text-muted-foreground">Authoritative operational performance from Bookings, Payments, refunds, Tickets and Sessions.</p>
         <form onSubmit={applyFilters} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_2fr_auto_auto] xl:items-end">
-          <label className="text-sm font-medium">Report<select aria-label="Report" value={reportView} onChange={(event) => changeReportView(event.target.value as ReportView)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Event overview</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option></select></label>
+          <label className="text-sm font-medium">Report<select aria-label="Report" value={reportView} onChange={(event) => changeReportView(event.target.value as ReportView)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Event overview</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="PRODUCTS">Product and Variant sales</option></select></label>
           <label className="text-sm font-medium">Event-local date<input aria-label="Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal" /></label>
           <label className="text-sm font-medium">Session<select aria-label="Session" value={sessionId} onChange={(event) => setSessionId(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="">All Sessions</option>{sessions.map((session) => <option key={session.id} value={session.id}>{session.name} — {localDateTime(session.startDate, report?.event.timezone)}</option>)}</select></label>
           <Button type="submit">Apply filters</Button>
@@ -135,6 +138,21 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
           {sessionReport.rows.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No Sessions match the selected filters.</p> : null}
         </section>
         <p className="text-xs text-muted-foreground">Session capacity is shared across Ticket Types. These figures are operational Payment reporting and are not accounting, settlement, payout or tax records.</p>
+      </> : null}
+
+      {reportView === "PRODUCTS" && productReport && !isLoading ? <>
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Product units sold" value={productReport.totals.unitsSold} />
+          <Metric label="Gross Product sales" value={money.format(productReport.totals.grossItemSales)} />
+          <Metric label="Bookings with Products" value={productReport.totals.bookingsWithProducts} />
+          <Metric label="Product attach rate" value={`${productReport.totals.attachRatePercent}%`} />
+        </section>
+        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="p-6"><h3 className="text-lg font-semibold">Product and Variant sales</h3><p className="mt-1 text-sm text-muted-foreground">Product demand, finite inventory and reusable Session capacity remain separate operational measures.</p></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[1300px] text-left text-sm"><thead className="border-y bg-muted/40 text-muted-foreground"><tr><Th>Product</Th><Th>Demand type</Th><Th>Units sold</Th><Th>Gross Product sales</Th><Th>Attach rate</Th><Th>Current inventory</Th><Th>Reusable capacity peak</Th></tr></thead><tbody>{productReport.rows.map((row) => <tr key={row.id} className="border-b align-top last:border-0"><td className="px-5 py-4"><p className="font-medium">{row.name}</p><p className="mt-1 text-xs text-muted-foreground">{row.group?.name ?? "Ungrouped"} · {row.status}</p>{row.variants.length > 0 ? <div className="mt-3 space-y-2">{row.variants.map((variant) => <div key={variant.id} className="rounded-md bg-muted/40 p-2 text-xs"><span className="font-medium">{variant.name}</span> · {variant.unitsSold} sold · {money.format(variant.grossItemSales)}{variant.inventoryTracked ? ` · ${variant.inventoryRemaining ?? 0} of ${variant.inventoryQuantity ?? 0} remaining (${variant.sellThroughPercent ?? 0}% committed)` : ""}</div>)}</div> : null}</td><Td>{row.requiredByRule ? "Required by active Rule" : "Discretionary Add-on"}</Td><Td>{row.unitsSold}</Td><Td>{money.format(row.grossItemSales)}</Td><Td>{row.attachRatePercent}%</Td><Td>{row.inventory.tracked ? <><p>{row.inventory.remaining} of {row.inventory.quantity} remaining</p><p className="mt-1 text-xs text-muted-foreground">{row.inventory.sellThroughPercent ?? 0}% committed</p></> : "Not inventory tracked"}</Td><Td>{row.capacity.controlled ? row.capacity.peakSession ? <><p>{row.capacity.peakSession.sessionName}</p><p className="mt-1 text-xs text-muted-foreground">{row.capacity.peakSession.reserved} of {row.capacity.peakSession.limit ?? "unconfigured"} reserved · {row.capacity.peakSession.utilisationPercent}%</p></> : "No matching Sessions" : "Not capacity controlled"}</Td></tr>)}</tbody></table></div>
+          {productReport.rows.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No Products match this Event.</p> : null}
+        </section>
+        <p className="text-xs text-muted-foreground">Inventory remaining is the current Event-wide quantity after reserved and confirmed commitments, not a historical stock-movement ledger. Reusable capacity is measured independently per Session and does not reduce rink admission capacity. Refunds remain unallocated at Product and Variant level.</p>
       </> : null}
     </div>
   );

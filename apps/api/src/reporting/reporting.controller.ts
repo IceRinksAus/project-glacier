@@ -44,4 +44,9 @@ export class ReportingController {
   getSessionSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
     return this.reportingService.getSessionSales(user.organizationId, eventId, query);
   }
+
+  @Get('events/:eventId/products')
+  getProductSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
+    return this.reportingService.getProductSales(user.organizationId, eventId, query);
+  }
 }
