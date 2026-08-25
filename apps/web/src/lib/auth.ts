@@ -1,6 +1,18 @@
 const ACCESS_TOKEN_KEY = "glacier_access_token";
 const USER_KEY = "glacier_user";
 
+export interface AuthUser {
+  id?: string;
+  email?: string;
+  name?: string;
+  role?: string;
+  accessScope?: string;
+  organizationId?: string;
+}
+
+let cachedUserRaw: string | null | undefined;
+let cachedUser: AuthUser | null = null;
+
 export function getAccessToken() {
   if (typeof window === "undefined") {
     return null;
@@ -11,21 +23,32 @@ export function getAccessToken() {
 
 export function setAuthSession(accessToken: string, user: unknown) {
   localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  const serializedUser = JSON.stringify(user);
+  localStorage.setItem(USER_KEY, serializedUser);
+  cachedUserRaw = serializedUser;
+  cachedUser = user as AuthUser;
 }
 
 export function clearAuthSession() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  cachedUserRaw = null;
+  cachedUser = null;
 }
 
-export function getAuthUser(): { role?: string } | null {
+export function getAuthUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
+
+  const rawUser = localStorage.getItem(USER_KEY);
+  if (rawUser === cachedUserRaw) return cachedUser;
+
   try {
-    return JSON.parse(localStorage.getItem(USER_KEY) ?? "null") as {
-      role?: string;
-    } | null;
+    cachedUserRaw = rawUser;
+    cachedUser = JSON.parse(rawUser ?? "null") as AuthUser | null;
+    return cachedUser;
   } catch {
+    cachedUserRaw = rawUser;
+    cachedUser = null;
     return null;
   }
 }
@@ -39,5 +62,13 @@ export function getAuthRoleSnapshot() {
 }
 
 export function getServerAuthRoleSnapshot() {
+  return null;
+}
+
+export function getAuthUserSnapshot() {
+  return getAuthUser();
+}
+
+export function getServerAuthUserSnapshot() {
   return null;
 }
