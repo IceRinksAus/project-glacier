@@ -59,7 +59,7 @@ describe('OrganizationService', () => {
     await expect(
       service.addUser('organization-1', 'organization-2', {
         userId: 'user-1',
-        role: 'MEMBER',
+        role: 'STAFF',
       }),
     ).rejects.toThrow(NotFoundException);
     expect(prismaMock.userOrganization.create).not.toHaveBeenCalled();
@@ -71,7 +71,7 @@ describe('OrganizationService', () => {
     await expect(
       service.addUser('organization-1', 'organization-1', {
         userId: 'missing-user',
-        role: 'MEMBER',
+        role: 'STAFF',
       }),
     ).rejects.toThrow('User not found');
   });
@@ -81,19 +81,20 @@ describe('OrganizationService', () => {
     prismaMock.userOrganization.create.mockResolvedValue({
       organizationId: 'organization-1',
       userId: 'user-1',
-      role: 'MEMBER',
+      role: 'STAFF',
     });
 
     await service.addUser('organization-1', 'organization-1', {
       userId: 'user-1',
-      role: 'MEMBER',
+      role: 'STAFF',
     });
 
     expect(prismaMock.userOrganization.create).toHaveBeenCalledWith({
       data: {
         organizationId: 'organization-1',
         userId: 'user-1',
-        role: 'MEMBER',
+        role: 'STAFF',
+        accessScope: 'ALL_EVENTS',
       },
     });
   });

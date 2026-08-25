@@ -6,6 +6,18 @@ datasource db {
   provider = "postgresql"
 }
 
+enum OrganizationRole {
+  OWNER
+  MANAGER
+  STAFF
+  SCANNER
+}
+
+enum OrganizationAccessScope {
+  ALL_EVENTS
+  ASSIGNED_EVENTS
+}
+
 model Organization {
   id     String @id @default(cuid())
   name   String
@@ -48,6 +60,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   eventRoles                    EventUser[]
+  eventAccess                   UserEventAccess[]
   organizations                 UserOrganization[]
   publishedWaiverVersions       WaiverVersion[]
   ticketScanAttempts            TicketScanAttempt[]
@@ -92,11 +105,12 @@ model EventGroupEvent {
 }
 
 model UserOrganization {
-  id             String   @id @default(cuid())
+  id             String                  @id @default(cuid())
   userId         String
   organizationId String
-  role           String   @default("MEMBER")
-  createdAt      DateTime @default(now())
+  role           OrganizationRole        @default(STAFF)
+  accessScope    OrganizationAccessScope @default(ALL_EVENTS)
+  createdAt      DateTime                @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
   user         User         @relation(fields: [userId], references: [id])
@@ -127,7 +141,8 @@ model Event {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
-  team EventUser[]
+  team       EventUser[]
+  userAccess UserEventAccess[]
 
   ticketTypes TicketType[]
 
@@ -723,6 +738,19 @@ model EventUser {
   user  User  @relation(fields: [userId], references: [id])
 
   @@unique([eventId, userId])
+}
+
+model UserEventAccess {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
 }
 
 model Ticket {

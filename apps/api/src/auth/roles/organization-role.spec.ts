@@ -4,15 +4,39 @@ import { AddOrganizationUserDto } from '../../organization/dto/add-organization-
 import { CreateUserDto } from '../../user/dto/create-user.dto';
 import {
   OPERATOR_ROLES,
+  MANAGEMENT_ROLES,
   ORGANIZATION_ROLES,
   SCANNER_ROLES,
+  defaultAccessScopeForRole,
 } from './organization-role';
 
 describe('organization role policy', () => {
   it('keeps SCANNER outside ordinary operator roles', () => {
-    expect(ORGANIZATION_ROLES).toEqual(['OWNER', 'MEMBER', 'SCANNER']);
-    expect(OPERATOR_ROLES).toEqual(['OWNER', 'MEMBER']);
-    expect(SCANNER_ROLES).toEqual(['OWNER', 'MEMBER', 'SCANNER']);
+    expect(ORGANIZATION_ROLES).toEqual([
+      'OWNER',
+      'MANAGER',
+      'STAFF',
+      'SCANNER',
+    ]);
+    expect(OPERATOR_ROLES).toEqual(['OWNER', 'MANAGER', 'STAFF']);
+    expect(MANAGEMENT_ROLES).toEqual(['OWNER', 'MANAGER']);
+    expect(SCANNER_ROLES).toEqual(['OWNER', 'MANAGER', 'STAFF', 'SCANNER']);
+  });
+
+  it('does not accept the migrated legacy MEMBER role', async () => {
+    const dto = Object.assign(new AddOrganizationUserDto(), {
+      userId: 'user-1',
+      role: 'MEMBER',
+    });
+
+    await expect(validate(dto)).resolves.toHaveLength(1);
+  });
+
+  it('defaults dedicated scanner accounts to assigned Event scope', () => {
+    expect(defaultAccessScopeForRole('SCANNER')).toBe('ASSIGNED_EVENTS');
+    expect(defaultAccessScopeForRole('STAFF')).toBe('ALL_EVENTS');
+    expect(defaultAccessScopeForRole('MANAGER')).toBe('ALL_EVENTS');
+    expect(defaultAccessScopeForRole('OWNER')).toBe('ALL_EVENTS');
   });
 
   it('allows creation of a narrowly scoped SCANNER user', async () => {

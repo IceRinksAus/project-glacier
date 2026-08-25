@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { defaultAccessScopeForRole } from '../auth/roles/organization-role';
 import { AddOrganizationUserDto } from './dto/add-organization-user.dto';
 
 @Injectable()
@@ -61,6 +62,7 @@ export class OrganizationService {
         organizationId: authenticatedOrganizationId,
         userId: data.userId,
         role: data.role,
+        accessScope: defaultAccessScopeForRole(data.role),
       },
     });
   }

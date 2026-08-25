@@ -26,7 +26,7 @@ export class RolesGuard implements CanActivate {
     if (!user?.role) return false;
 
     // Older operator read routes predate explicit role metadata. They remain
-    // available to OWNER/MEMBER, but SCANNER requires an explicit opt-in.
+    // available to OWNER/MANAGER/STAFF, but SCANNER requires an explicit opt-in.
     if (!requiredRoles) return user.role !== 'SCANNER';
 
     return requiredRoles.includes(user.role);

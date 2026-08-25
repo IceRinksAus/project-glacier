@@ -79,14 +79,14 @@ describe('UserService', () => {
     });
     transactionMock.userOrganization.create.mockResolvedValue({
       organizationId: 'organization-1',
-      role: 'MEMBER',
+      role: 'STAFF',
     });
 
     await service.create('organization-1', {
       email: 'member@example.com',
       name: 'Member User',
       password: 'secure-password',
-      role: 'MEMBER',
+      role: 'STAFF',
     });
 
     expect(prismaMock.organization.findUnique).toHaveBeenCalledWith({
@@ -98,7 +98,8 @@ describe('UserService', () => {
       data: {
         userId: 'user-1',
         organizationId: 'organization-1',
-        role: 'MEMBER',
+        role: 'STAFF',
+        accessScope: 'ALL_EVENTS',
       },
     });
   });

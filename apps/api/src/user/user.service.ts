@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { defaultAccessScopeForRole } from '../auth/roles/organization-role';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
@@ -81,6 +82,7 @@ export class UserService {
           userId: user.id,
           organizationId,
           role: createUserDto.role,
+          accessScope: defaultAccessScopeForRole(createUserDto.role),
         },
       });
 

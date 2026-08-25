@@ -17,10 +17,11 @@ describe('RolesGuard', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('allows OWNER and MEMBER on legacy operator reads', () => {
+  it('allows OWNER, MANAGER and STAFF on legacy operator reads', () => {
     reflector.getAllAndOverride.mockReturnValue(undefined);
     expect(guard.canActivate(context('OWNER'))).toBe(true);
-    expect(guard.canActivate(context('MEMBER'))).toBe(true);
+    expect(guard.canActivate(context('MANAGER'))).toBe(true);
+    expect(guard.canActivate(context('STAFF'))).toBe(true);
   });
 
   it('denies SCANNER unless the route explicitly opts in', () => {
@@ -29,13 +30,18 @@ describe('RolesGuard', () => {
   });
 
   it('allows SCANNER on the explicit scanner role policy', () => {
-    reflector.getAllAndOverride.mockReturnValue(['OWNER', 'MEMBER', 'SCANNER']);
+    reflector.getAllAndOverride.mockReturnValue([
+      'OWNER',
+      'MANAGER',
+      'STAFF',
+      'SCANNER',
+    ]);
     expect(guard.canActivate(context('SCANNER'))).toBe(true);
   });
 
   it('denies missing users and roles outside the declared policy', () => {
     reflector.getAllAndOverride.mockReturnValue(['OWNER']);
     expect(guard.canActivate(context())).toBe(false);
-    expect(guard.canActivate(context('MEMBER'))).toBe(false);
+    expect(guard.canActivate(context('STAFF'))).toBe(false);
   });
 });
