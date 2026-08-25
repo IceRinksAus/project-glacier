@@ -11,19 +11,24 @@ import {
 import type { Response } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { TicketService } from './ticket.service';
 
-interface AuthenticatedUser {
-  organizationId: string;
-}
+type AuthenticatedUser = AuthenticatedAccessContext;
 
 @Controller('ticket')
 export class TicketController {
-  constructor(private readonly ticketService: TicketService) {}
+  constructor(
+    private readonly ticketService: TicketService,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
   @Get('token/:token')
   getTicketByToken(@Param('token') token: string) {
@@ -41,20 +46,22 @@ export class TicketController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...OPERATOR_ROLES)
   @Get('validate/:token')
-  validateTicket(
+  async validateTicket(
     @Param('token') token: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    await this.accessControl.assertTicketAccessByToken(token, user);
     return this.ticketService.validateTicket(user.organizationId, token);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...OPERATOR_ROLES)
   @Post('scan/:token')
-  checkInTicket(
+  async checkInTicket(
     @Param('token') token: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    await this.accessControl.assertTicketAccessByToken(token, user);
     return this.ticketService.checkInTicket(user.organizationId, token);
   }
 
@@ -67,6 +74,7 @@ export class TicketController {
     @CurrentUser() user: AuthenticatedUser,
     @Res() response: Response,
   ) {
+    await this.accessControl.assertTicketAccessById(id, user);
     const qrCode = await this.ticketService.generateQrCode(
       user.organizationId,
       id,
@@ -83,10 +91,11 @@ export class TicketController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(...OPERATOR_ROLES)
   @Get(':id')
-  getTicketById(
+  async getTicketById(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    await this.accessControl.assertTicketAccessById(id, user);
     return this.ticketService.getTicketById(user.organizationId, id);
   }
 }

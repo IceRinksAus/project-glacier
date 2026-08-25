@@ -11,7 +11,12 @@ describe('StaffScannerController', () => {
     lookup: jest.fn(),
     admit: jest.fn(),
   };
-  const user = { userId: 'user-1', organizationId: 'organization-1' };
+  const user = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'SCANNER' as const,
+    accessScope: 'ASSIGNED_EVENTS' as const,
+  };
   const input = { token: 'a'.repeat(64), mode: TicketScanMode.TICKET_LOOKUP };
   let controller: StaffScannerController;
 
@@ -28,25 +33,13 @@ describe('StaffScannerController', () => {
     await controller.findEvents(user);
     await controller.getContext('event-1', user);
     await controller.lookup('event-1', input, user);
-    expect(service.findActiveEvents).toHaveBeenCalledWith('organization-1');
-    expect(service.getEventContext).toHaveBeenCalledWith(
-      'organization-1',
-      'event-1',
-    );
-    expect(service.lookup).toHaveBeenCalledWith(
-      'organization-1',
-      'event-1',
-      input,
-    );
+    expect(service.findActiveEvents).toHaveBeenCalledWith(user);
+    expect(service.getEventContext).toHaveBeenCalledWith(user, 'event-1');
+    expect(service.lookup).toHaveBeenCalledWith(user, 'event-1', input);
   });
 
   it('supplies actor identity and mode for attributable admission', async () => {
     await controller.admit('event-1', input, user);
-    expect(service.admit).toHaveBeenCalledWith(
-      'organization-1',
-      'user-1',
-      'event-1',
-      input,
-    );
+    expect(service.admit).toHaveBeenCalledWith(user, 'event-1', input);
   });
 });

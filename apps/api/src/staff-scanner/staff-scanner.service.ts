@@ -1,12 +1,11 @@
-import {
-  Prisma,
-  TicketScanAttemptResult,
-  TicketScanMode,
-  TicketStatus,
-} from '@prisma/client';
+import { Prisma, TicketScanAttemptResult, TicketStatus } from '@prisma/client';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { ScannerTicketDto } from './dto/scanner-ticket.dto';
 import { ScannerClock } from './scanner-clock';
 import { ScannerTicketResult } from './staff-scanner.types';
@@ -32,11 +31,12 @@ export class StaffScannerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: ScannerClock,
+    private readonly accessControl: AccessControlService,
   ) {}
 
-  findActiveEvents(organizationId: string) {
+  findActiveEvents(access: AuthenticatedAccessContext) {
     return this.prisma.event.findMany({
-      where: { organizationId, status: 'ACTIVE' },
+      where: this.accessControl.eventWhere(access, { status: 'ACTIVE' }),
       orderBy: { startDate: 'asc' },
       select: {
         id: true,
@@ -51,9 +51,12 @@ export class StaffScannerService {
     });
   }
 
-  async getEventContext(organizationId: string, eventId: string) {
+  async getEventContext(access: AuthenticatedAccessContext, eventId: string) {
     const event = await this.prisma.event.findFirst({
-      where: { id: eventId, organizationId, status: 'ACTIVE' },
+      where: this.accessControl.eventWhere(access, {
+        id: eventId,
+        status: 'ACTIVE',
+      }),
       select: {
         id: true,
         name: true,
@@ -71,27 +74,26 @@ export class StaffScannerService {
   }
 
   async lookup(
-    organizationId: string,
+    access: AuthenticatedAccessContext,
     eventId: string,
     input: ScannerTicketDto,
   ) {
-    const event = await this.getEventContext(organizationId, eventId);
-    const ticket = await this.findTicket(organizationId, input.token);
+    const event = await this.getEventContext(access, eventId);
+    const ticket = await this.findTicket(access.organizationId, input.token);
     return this.buildResult(event, ticket, eventId, this.clock.now());
   }
 
   async admit(
-    organizationId: string,
-    userId: string,
+    access: AuthenticatedAccessContext,
     eventId: string,
     input: ScannerTicketDto,
   ) {
-    const event = await this.getEventContext(organizationId, eventId);
+    const event = await this.getEventContext(access, eventId);
     const now = this.clock.now();
 
     return this.prisma.$transaction(async (transaction) => {
       const ticket = await this.findTicket(
-        organizationId,
+        access.organizationId,
         input.token,
         transaction,
       );
@@ -99,9 +101,9 @@ export class StaffScannerService {
 
       if (result.result !== ScannerTicketResult.READY_TO_ADMIT || !ticket) {
         await this.recordAttempt(transaction, {
-          organizationId,
+          organizationId: access.organizationId,
           eventId,
-          userId,
+          userId: access.userId,
           ticketId: ticket?.booking.eventId === eventId ? ticket.id : null,
           mode: input.mode,
           result: this.toAttemptResult(result.result),
@@ -118,15 +120,15 @@ export class StaffScannerService {
 
       if (updated.count !== 1) {
         const current = await this.findTicket(
-          organizationId,
+          access.organizationId,
           input.token,
           transaction,
         );
         const concurrentResult = this.buildResult(event, current, eventId, now);
         await this.recordAttempt(transaction, {
-          organizationId,
+          organizationId: access.organizationId,
           eventId,
-          userId,
+          userId: access.userId,
           ticketId: current?.id ?? ticket.id,
           mode: input.mode,
           result: this.toAttemptResult(concurrentResult.result),
@@ -137,9 +139,9 @@ export class StaffScannerService {
       }
 
       await this.recordAttempt(transaction, {
-        organizationId,
+        organizationId: access.organizationId,
         eventId,
-        userId,
+        userId: access.userId,
         ticketId: ticket.id,
         mode: input.mode,
         result: TicketScanAttemptResult.ENTRY_GRANTED,

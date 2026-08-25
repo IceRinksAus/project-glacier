@@ -94,4 +94,35 @@ describe('AccessControlService', () => {
       service.assertEventGroupAccess('group-1', assignedStaff),
     ).rejects.toThrow('Event Group not found');
   });
+
+  it('requires the Ticket to belong to an assigned Event', async () => {
+    prismaMock.event.findFirst.mockResolvedValue({ id: 'event-1' });
+
+    await service.assertTicketAccessByToken('secure-token', assignedStaff);
+
+    expect(prismaMock.event.findFirst).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        AND: expect.arrayContaining([
+          expect.objectContaining({
+            bookings: {
+              some: {
+                tickets: {
+                  some: { secureToken: 'secure-token' },
+                },
+              },
+            },
+          }),
+        ]),
+      }),
+      select: { id: true },
+    });
+  });
+
+  it('does not reveal a Ticket from an inaccessible Event', async () => {
+    prismaMock.event.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.assertTicketAccessById('ticket-1', assignedStaff),
+    ).rejects.toThrow('Ticket not found');
+  });
 });

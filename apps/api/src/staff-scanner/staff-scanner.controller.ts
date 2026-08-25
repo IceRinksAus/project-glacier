@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { AuthenticatedAccessContext } from '../access-control/access-control.service';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { SCANNER_ROLES } from '../auth/roles/organization-role';
@@ -8,10 +9,7 @@ import { RolesGuard } from '../auth/roles/roles.guard';
 import { ScannerTicketDto } from './dto/scanner-ticket.dto';
 import { StaffScannerService } from './staff-scanner.service';
 
-interface ScannerUser {
-  userId: string;
-  organizationId: string;
-}
+type ScannerUser = AuthenticatedAccessContext;
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...SCANNER_ROLES)
@@ -21,7 +19,7 @@ export class StaffScannerController {
 
   @Get('events')
   findEvents(@CurrentUser() user: ScannerUser) {
-    return this.service.findActiveEvents(user.organizationId);
+    return this.service.findActiveEvents(user);
   }
 
   @Get('events/:eventId/context')
@@ -29,7 +27,7 @@ export class StaffScannerController {
     @Param('eventId') eventId: string,
     @CurrentUser() user: ScannerUser,
   ) {
-    return this.service.getEventContext(user.organizationId, eventId);
+    return this.service.getEventContext(user, eventId);
   }
 
   @Post('events/:eventId/validate')
@@ -38,7 +36,7 @@ export class StaffScannerController {
     @Body() input: ScannerTicketDto,
     @CurrentUser() user: ScannerUser,
   ) {
-    return this.service.lookup(user.organizationId, eventId, input);
+    return this.service.lookup(user, eventId, input);
   }
 
   @Post('events/:eventId/admit')
@@ -47,6 +45,6 @@ export class StaffScannerController {
     @Body() input: ScannerTicketDto,
     @CurrentUser() user: ScannerUser,
   ) {
-    return this.service.admit(user.organizationId, user.userId, eventId, input);
+    return this.service.admit(user, eventId, input);
   }
 }

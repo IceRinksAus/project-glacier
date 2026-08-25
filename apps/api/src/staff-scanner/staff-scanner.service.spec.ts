@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ScannerClock } from './scanner-clock';
+import { AccessControlService } from '../access-control/access-control.service';
 import { StaffScannerService } from './staff-scanner.service';
 import { ScannerTicketResult } from './staff-scanner.types';
 
@@ -51,6 +52,12 @@ describe('StaffScannerService', () => {
   };
   const clockMock = { now: jest.fn(() => now) };
   let service: StaffScannerService;
+  const scannerAccess = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'SCANNER' as const,
+    accessScope: 'ASSIGNED_EVENTS' as const,
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -67,6 +74,15 @@ describe('StaffScannerService', () => {
         StaffScannerService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: ScannerClock, useValue: clockMock },
+        {
+          provide: AccessControlService,
+          useValue: {
+            eventWhere: (
+              access: typeof scannerAccess,
+              where: Record<string, unknown> = {},
+            ) => ({ organizationId: access.organizationId, ...where }),
+          },
+        },
       ],
     }).compile();
     service = module.get(StaffScannerService);
@@ -76,7 +92,7 @@ describe('StaffScannerService', () => {
 
   it('lists only active Events in the authenticated organization', async () => {
     prismaMock.event.findMany.mockResolvedValue([event]);
-    await service.findActiveEvents('organization-1');
+    await service.findActiveEvents(scannerAccess);
     expect(prismaMock.event.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { organizationId: 'organization-1', status: 'ACTIVE' },
@@ -85,7 +101,7 @@ describe('StaffScannerService', () => {
   });
 
   it('performs read-only lookup without admission or audit writes', async () => {
-    const result = await service.lookup('organization-1', 'event-1', input);
+    const result = await service.lookup(scannerAccess, 'event-1', input);
     expect(result).toMatchObject({
       result: ScannerTicketResult.READY_TO_ADMIT,
       participantName: 'Alex Test',
@@ -98,7 +114,7 @@ describe('StaffScannerService', () => {
 
   it('reports too early using the injected server clock', async () => {
     clockMock.now.mockReturnValueOnce(new Date('2027-08-31T23:59:59.999Z'));
-    const result = await service.lookup('organization-1', 'event-1', input);
+    const result = await service.lookup(scannerAccess, 'event-1', input);
     expect(result.result).toBe(ScannerTicketResult.NOT_YET_VALID);
   });
 
@@ -107,17 +123,12 @@ describe('StaffScannerService', () => {
       ...ticket,
       booking: { ...ticket.booking, eventId: 'event-2' },
     });
-    const result = await service.lookup('organization-1', 'event-1', input);
+    const result = await service.lookup(scannerAccess, 'event-1', input);
     expect(result).toEqual({ result: ScannerTicketResult.INVALID_FOR_EVENT });
   });
 
   it('atomically admits an eligible Ticket and records attributable evidence', async () => {
-    const result = await service.admit(
-      'organization-1',
-      'user-1',
-      'event-1',
-      input,
-    );
+    const result = await service.admit(scannerAccess, 'event-1', input);
     expect(transactionMock.ticket.updateMany).toHaveBeenCalledWith({
       where: { id: 'ticket-1', status: 'ACTIVE' },
       data: { status: 'SCANNED', checkedInAt: now },
@@ -147,12 +158,7 @@ describe('StaffScannerService', () => {
         checkedInAt: now,
       });
 
-    const result = await service.admit(
-      'organization-1',
-      'user-1',
-      'event-1',
-      input,
-    );
+    const result = await service.admit(scannerAccess, 'event-1', input);
 
     expect(result.result).toBe(ScannerTicketResult.ALREADY_SCANNED);
     expect(transactionMock.ticketScanAttempt.create).toHaveBeenCalledWith({
@@ -162,7 +168,7 @@ describe('StaffScannerService', () => {
 
   it('fails closed and audits an admission outside the entry window', async () => {
     clockMock.now.mockReturnValueOnce(new Date('2027-09-01T01:30:00.001Z'));
-    const result = await service.admit('organization-1', 'user-1', 'event-1', {
+    const result = await service.admit(scannerAccess, 'event-1', {
       ...input,
       mode: TicketScanMode.TICKET_LOOKUP,
     });

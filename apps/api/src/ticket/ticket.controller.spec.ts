@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { TicketController } from './ticket.controller';
 import { TicketService } from './ticket.service';
+import { AccessControlService } from '../access-control/access-control.service';
 
 describe('TicketController', () => {
   let controller: TicketController;
@@ -16,7 +17,14 @@ describe('TicketController', () => {
     getTicketById: jest.fn(),
   };
   const user = {
+    userId: 'user-1',
     organizationId: 'organization-1',
+    role: 'STAFF' as const,
+    accessScope: 'ASSIGNED_EVENTS' as const,
+  };
+  const accessControlMock = {
+    assertTicketAccessByToken: jest.fn(),
+    assertTicketAccessById: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -27,6 +35,10 @@ describe('TicketController', () => {
         {
           provide: TicketService,
           useValue: serviceMock,
+        },
+        {
+          provide: AccessControlService,
+          useValue: accessControlMock,
         },
       ],
     }).compile();
@@ -62,6 +74,11 @@ describe('TicketController', () => {
 
     await controller.validateTicket('a'.repeat(64), user);
 
+    expect(accessControlMock.assertTicketAccessByToken).toHaveBeenCalledWith(
+      'a'.repeat(64),
+      user,
+    );
+
     expect(serviceMock.validateTicket).toHaveBeenCalledWith(
       'organization-1',
       'a'.repeat(64),
@@ -72,6 +89,11 @@ describe('TicketController', () => {
     serviceMock.checkInTicket.mockResolvedValue({ result: 'ENTRY_GRANTED' });
 
     await controller.checkInTicket('a'.repeat(64), user);
+
+    expect(accessControlMock.assertTicketAccessByToken).toHaveBeenCalledWith(
+      'a'.repeat(64),
+      user,
+    );
 
     expect(serviceMock.checkInTicket).toHaveBeenCalledWith(
       'organization-1',

@@ -96,4 +96,40 @@ export class AccessControlService {
       throw new NotFoundException('Event Group not found');
     }
   }
+
+  async assertTicketAccessById(
+    ticketId: string,
+    access: AuthenticatedAccessContext,
+  ): Promise<void> {
+    await this.assertEventContainingTicket({ id: ticketId }, access);
+  }
+
+  async assertTicketAccessByToken(
+    token: string,
+    access: AuthenticatedAccessContext,
+  ): Promise<void> {
+    await this.assertEventContainingTicket({ secureToken: token }, access);
+  }
+
+  private async assertEventContainingTicket(
+    ticketWhere: Prisma.TicketWhereInput,
+    access: AuthenticatedAccessContext,
+  ): Promise<void> {
+    const event = await this.prisma.event.findFirst({
+      where: this.eventWhere(access, {
+        bookings: {
+          some: {
+            tickets: {
+              some: ticketWhere,
+            },
+          },
+        },
+      }),
+      select: { id: true },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Ticket not found');
+    }
+  }
 }
