@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
+import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { TicketService } from './ticket.service';
 
 interface AuthenticatedUser {
@@ -38,7 +39,7 @@ export class TicketController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('OWNER', 'MEMBER')
+  @Roles(...OPERATOR_ROLES)
   @Get('validate/:token')
   validateTicket(
     @Param('token') token: string,
@@ -48,7 +49,7 @@ export class TicketController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('OWNER', 'MEMBER')
+  @Roles(...OPERATOR_ROLES)
   @Post('scan/:token')
   checkInTicket(
     @Param('token') token: string,
@@ -58,7 +59,7 @@ export class TicketController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('OWNER', 'MEMBER')
+  @Roles(...OPERATOR_ROLES)
   @Get(':id/qr')
   @Header('Content-Type', 'image/png')
   async getTicketQrCode(
@@ -80,7 +81,7 @@ export class TicketController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('OWNER', 'MEMBER')
+  @Roles(...OPERATOR_ROLES)
   @Get(':id')
   getTicketById(
     @Param('id') id: string,

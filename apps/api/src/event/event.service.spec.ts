@@ -11,10 +11,18 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { AccessControlService } from '../access-control/access-control.service';
 import { EventService } from './event.service';
 
 describe('EventService', () => {
   let service: EventService;
+
+  const ownerAccess = {
+    userId: 'user-1',
+    organizationId: 'organization-1',
+    role: 'OWNER' as const,
+    accessScope: 'ALL_EVENTS' as const,
+  };
 
   const prismaMock = {
     event: {
@@ -33,6 +41,17 @@ describe('EventService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventService,
+        {
+          provide: AccessControlService,
+          useValue: {
+            eventWhere: jest.fn(
+              (access: { organizationId: string }, where = {}) => ({
+                organizationId: access.organizationId,
+                ...where,
+              }),
+            ),
+          },
+        },
         {
           provide: PrismaService,
           useValue: prismaMock,
@@ -216,9 +235,7 @@ describe('EventService', () => {
   it('reports authoritative readiness with No Waiver as not required', async () => {
     prismaMock.event.findFirst.mockResolvedValue(readyEvent);
 
-    await expect(
-      service.getReadiness('event-1', 'organization-1'),
-    ).resolves.toEqual(
+    await expect(service.getReadiness('event-1', ownerAccess)).resolves.toEqual(
       expect.objectContaining({
         eventId: 'event-1',
         readyToActivate: true,
@@ -238,7 +255,7 @@ describe('EventService', () => {
       waiver: { id: 'waiver-1', versions: [] },
     });
 
-    const readiness = await service.getReadiness('event-1', 'organization-1');
+    const readiness = await service.getReadiness('event-1', ownerAccess);
 
     expect(readiness.readyToActivate).toBe(false);
     expect(readiness.items).toEqual(

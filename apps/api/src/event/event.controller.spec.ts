@@ -45,6 +45,7 @@ describe('EventController', () => {
         userId: 'user-1',
         email: 'owner@example.com',
         role: 'OWNER',
+        accessScope: 'ALL_EVENTS',
         organizationId: 'organization-1',
       },
       data,
@@ -60,13 +61,17 @@ describe('EventController', () => {
     await controller.getReadiness('event-1', {
       userId: 'user-1',
       email: 'member@example.com',
-      role: 'MEMBER',
+      role: 'STAFF',
+      accessScope: 'ASSIGNED_EVENTS',
       organizationId: 'organization-1',
     });
 
-    expect(serviceMock.getReadiness).toHaveBeenCalledWith(
-      'event-1',
-      'organization-1',
-    );
+    expect(serviceMock.getReadiness).toHaveBeenCalledWith('event-1', {
+      userId: 'user-1',
+      email: 'member@example.com',
+      role: 'STAFF',
+      accessScope: 'ASSIGNED_EVENTS',
+      organizationId: 'organization-1',
+    });
   });
 });

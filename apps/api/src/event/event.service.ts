@@ -7,6 +7,10 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  AccessControlService,
+  AuthenticatedAccessContext,
+} from '../access-control/access-control.service';
 import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventReadiness, EventReadinessItem } from './event-readiness.types';
@@ -37,13 +41,14 @@ type EventWithReadiness = Prisma.EventGetPayload<{
 
 @Injectable()
 export class EventService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly accessControl: AccessControlService,
+  ) {}
 
-  findAll(organizationId: string) {
+  findAll(access: AuthenticatedAccessContext) {
     return this.prisma.event.findMany({
-      where: {
-        organizationId,
-      },
+      where: this.accessControl.eventWhere(access),
       include: {
         branding: {
           include: {
@@ -69,12 +74,9 @@ export class EventService {
     });
   }
 
-  async findOne(id: string, organizationId: string) {
+  async findOne(id: string, access: AuthenticatedAccessContext) {
     const event = await this.prisma.event.findFirst({
-      where: {
-        id,
-        organizationId,
-      },
+      where: this.accessControl.eventWhere(access, { id }),
       include: {
         branding: {
           include: {
@@ -223,10 +225,10 @@ export class EventService {
 
   async getReadiness(
     id: string,
-    organizationId: string,
+    access: AuthenticatedAccessContext,
   ): Promise<EventReadiness> {
     const event = await this.prisma.event.findFirst({
-      where: { id, organizationId },
+      where: this.accessControl.eventWhere(access, { id }),
       include: readinessInclude,
     });
 

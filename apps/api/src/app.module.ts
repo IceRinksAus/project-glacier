@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AccessControlModule } from './access-control/access-control.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
 import { BookingValidationModule } from './booking-validation/booking-validation.module';
@@ -35,6 +36,7 @@ import { WaiverModule } from './waiver/waiver.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    AccessControlModule,
     OrganizationModule,
     PrismaModule,
     UserModule,

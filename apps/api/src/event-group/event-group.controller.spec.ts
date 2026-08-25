@@ -29,10 +29,11 @@ describe('EventGroupController', () => {
     expect(service.findAll).toHaveBeenCalledWith('org-1');
   });
 
-  it('allows OWNER and MEMBER reads at the controller boundary', () => {
+  it('allows OWNER, MANAGER and STAFF reads at the controller boundary', () => {
     expect(Reflect.getMetadata(ROLES_KEY, EventGroupController)).toEqual([
       'OWNER',
-      'MEMBER',
+      'MANAGER',
+      'STAFF',
     ]);
   });
 

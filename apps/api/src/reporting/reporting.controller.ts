@@ -1,10 +1,19 @@
-import { Controller, Get, Param, Query, Res, StreamableFile, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
+import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { EventReportQueryDto } from './dto/event-report-query.dto';
 import { ReportingService } from './reporting.service';
 
@@ -13,7 +22,7 @@ interface AuthenticatedUser {
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('OWNER', 'MEMBER')
+@Roles(...OPERATOR_ROLES)
 @Controller('reporting')
 export class ReportingController {
   constructor(private readonly reportingService: ReportingService) {}
@@ -37,33 +46,79 @@ export class ReportingController {
   }
 
   @Get('events/:eventId/ticket-types')
-  getTicketTypeSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
-    return this.reportingService.getTicketTypeSales(user.organizationId, eventId, query);
+  getTicketTypeSales(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+  ) {
+    return this.reportingService.getTicketTypeSales(
+      user.organizationId,
+      eventId,
+      query,
+    );
   }
 
   @Get('events/:eventId/sessions')
-  getSessionSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
-    return this.reportingService.getSessionSales(user.organizationId, eventId, query);
+  getSessionSales(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+  ) {
+    return this.reportingService.getSessionSales(
+      user.organizationId,
+      eventId,
+      query,
+    );
   }
 
   @Get('events/:eventId/products')
-  getProductSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
-    return this.reportingService.getProductSales(user.organizationId, eventId, query);
+  getProductSales(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+  ) {
+    return this.reportingService.getProductSales(
+      user.organizationId,
+      eventId,
+      query,
+    );
   }
 
   @Get('events/:eventId/dates')
-  getDateSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
-    return this.reportingService.getDateSales(user.organizationId, eventId, query);
+  getDateSales(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+  ) {
+    return this.reportingService.getDateSales(
+      user.organizationId,
+      eventId,
+      query,
+    );
   }
 
   @Get('events/:eventId/sales-pace')
-  getSalesPace(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
-    return this.reportingService.getSalesPace(user.organizationId, eventId, query);
+  getSalesPace(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: EventReportQueryDto,
+  ) {
+    return this.reportingService.getSalesPace(
+      user.organizationId,
+      eventId,
+      query,
+    );
   }
 
   @Get('event-groups/:groupId/comparison')
-  getEventGroupComparison(@Param('groupId') groupId: string, @CurrentUser() user: AuthenticatedUser) {
-    return this.reportingService.getEventGroupComparison(user.organizationId, groupId);
+  getEventGroupComparison(
+    @Param('groupId') groupId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.reportingService.getEventGroupComparison(
+      user.organizationId,
+      groupId,
+    );
   }
 
   @Get('events/:eventId/exports/:reportType')
@@ -74,7 +129,12 @@ export class ReportingController {
     @Query() query: EventReportQueryDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.reportingService.getEventCsv(user.organizationId, eventId, reportType, query);
+    const file = await this.reportingService.getEventCsv(
+      user.organizationId,
+      eventId,
+      reportType,
+      query,
+    );
     response.set({
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${file.filename}"`,
@@ -89,8 +149,15 @@ export class ReportingController {
     @CurrentUser() user: AuthenticatedUser,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const file = await this.reportingService.getEventGroupComparisonCsv(user.organizationId, groupId);
-    response.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${file.filename}"`, 'Cache-Control': 'private, no-store' });
+    const file = await this.reportingService.getEventGroupComparisonCsv(
+      user.organizationId,
+      groupId,
+    );
+    response.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Cache-Control': 'private, no-store',
+    });
     return new StreamableFile(file.content);
   }
 }

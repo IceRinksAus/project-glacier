@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
@@ -51,6 +48,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       role: primaryOrganization?.role ?? null,
+      accessScope: primaryOrganization?.accessScope ?? null,
       organizationId: primaryOrganization?.organizationId ?? null,
     };
 
@@ -65,6 +63,7 @@ export class AuthService {
         isActive: user.isActive,
         organizationId: primaryOrganization?.organizationId ?? null,
         role: primaryOrganization?.role ?? null,
+        accessScope: primaryOrganization?.accessScope ?? null,
       },
     };
   }
