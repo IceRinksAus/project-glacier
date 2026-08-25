@@ -110,6 +110,29 @@ export interface ProductSalesReport {
   }>;
 }
 
+export interface DateSalesReport {
+  event: { id: string; name: string; timezone: string };
+  filter: { date: string | null; sessionId: string | null };
+  rows: Array<{
+    date: string; sessionCount: number; confirmedBookings: number; ticketUnits: number;
+    grossBookingValue: number; grossCollected: number; refunded: number; netCollected: number;
+    ticketsIssued: number; admissions: number; capacity: number; reservedAttendance: number;
+    remainingCapacity: number; utilisationPercent: number;
+  }>;
+}
+
+export interface SalesPaceReport {
+  event: { id: string; name: string; timezone: string };
+  filter: { date: string | null; sessionId: string | null };
+  basis: string;
+  confirmationDisclosure: string;
+  totals: { confirmedBookings: number; ticketUnits: number; grossBookingValue: number };
+  rows: Array<{
+    key: string; label: string; confirmedBookings: number; ticketUnits: number; grossBookingValue: number;
+    cumulativeBookings: number; cumulativeTicketUnits: number;
+  }>;
+}
+
 function eventReportPath(eventId: string, suffix = "", filters: { date?: string; sessionId?: string } = {}) {
   const query = new URLSearchParams();
   if (filters.date) query.set("date", filters.date);
@@ -128,4 +151,8 @@ export const reportingService = {
     api.get<SessionSalesReport>(eventReportPath(eventId, "/sessions", filters)),
   getProductSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
     api.get<ProductSalesReport>(eventReportPath(eventId, "/products", filters)),
+  getDateSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<DateSalesReport>(eventReportPath(eventId, "/dates", filters)),
+  getSalesPace: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<SalesPaceReport>(eventReportPath(eventId, "/sales-pace", filters)),
 };

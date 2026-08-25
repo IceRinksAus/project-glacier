@@ -634,6 +634,113 @@ export class ReportingService {
     };
   }
 
+  async getDateSales(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const { event, sessions } = await this.detailedScope(organizationId, eventId, query);
+    const sessionIds = sessions.map(({ id }) => id);
+    const bookings = sessionIds.length
+      ? await this.prisma.booking.findMany({
+          where: { eventId, sessionId: { in: sessionIds } },
+          select: {
+            sessionId: true, status: true, total: true,
+            items: { select: { quantity: true } },
+            tickets: { select: { status: true, checkedInAt: true } },
+            payments: { select: { status: true, amount: true, refunds: { select: { status: true, amount: true } } } },
+          },
+          take: 50000,
+        })
+      : [];
+    const dates = [...new Set(sessions.map(({ startDate }) => formatInTimeZone(startDate, event.timezone, 'yyyy-MM-dd')))].sort();
+    const rows = dates.map((date) => {
+      const dateSessions = sessions.filter(({ startDate }) => formatInTimeZone(startDate, event.timezone, 'yyyy-MM-dd') === date);
+      const dateSessionIds = new Set(dateSessions.map(({ id }) => id));
+      const scoped = bookings.filter(({ sessionId }) => sessionId && dateSessionIds.has(sessionId));
+      const confirmed = scoped.filter(({ status }) => status === 'CONFIRMED');
+      const successful = scoped.flatMap(({ payments }) => payments.filter(({ status }) => status === 'SUCCEEDED'));
+      const grossCollected = this.sum(successful.map(({ amount }) => Number(amount)));
+      const refunded = this.sum(successful.flatMap(({ refunds }) => refunds.filter(({ status }) => status === 'SUCCEEDED').map(({ amount }) => Number(amount))));
+      const tickets = confirmed.flatMap(({ tickets }) => tickets);
+      const reservedAttendance = this.ticketQuantity(scoped.filter(({ status }) => ['RESERVED', 'CONFIRMED'].includes(status)));
+      const capacity = dateSessions.reduce((total, session) => total + session.capacity, 0);
+      return {
+        date,
+        sessionCount: dateSessions.length,
+        confirmedBookings: confirmed.length,
+        ticketUnits: this.ticketQuantity(confirmed),
+        grossBookingValue: this.sum(confirmed.map(({ total }) => Number(total))),
+        grossCollected,
+        refunded,
+        netCollected: Number((grossCollected - refunded).toFixed(2)),
+        ticketsIssued: tickets.length,
+        admissions: tickets.filter(({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null).length,
+        capacity,
+        reservedAttendance,
+        remainingCapacity: Math.max(capacity - reservedAttendance, 0),
+        utilisationPercent: capacity > 0 ? Number(((reservedAttendance / capacity) * 100).toFixed(1)) : 0,
+      };
+    });
+    return { event, filter: { date: query.date ?? null, sessionId: query.sessionId ?? null }, rows };
+  }
+
+  async getSalesPace(organizationId: string, eventId: string, query: EventReportQueryDto) {
+    const { event, sessions } = await this.detailedScope(organizationId, eventId, query);
+    const sessionIds = sessions.map(({ id }) => id);
+    const bookings = sessionIds.length
+      ? await this.prisma.booking.findMany({
+          where: { eventId, sessionId: { in: sessionIds }, status: 'CONFIRMED' },
+          select: { sessionId: true, createdAt: true, confirmedAt: true, total: true, items: { select: { quantity: true } } },
+          take: 50000,
+        })
+      : [];
+    const sessionMap = new Map(sessions.map((session) => [session.id, session]));
+    const buckets = [
+      { key: '61_PLUS', label: '61+ days before', minimum: 61, maximum: Number.POSITIVE_INFINITY },
+      { key: '31_TO_60', label: '31–60 days before', minimum: 31, maximum: 60 },
+      { key: '15_TO_30', label: '15–30 days before', minimum: 15, maximum: 30 },
+      { key: '8_TO_14', label: '8–14 days before', minimum: 8, maximum: 14 },
+      { key: '4_TO_7', label: '4–7 days before', minimum: 4, maximum: 7 },
+      { key: '2_TO_3', label: '2–3 days before', minimum: 2, maximum: 3 },
+      { key: '1_DAY', label: '1 day before', minimum: 1, maximum: 1 },
+      { key: 'SAME_DAY', label: 'Same day', minimum: 0, maximum: 0 },
+      { key: 'AFTER_SESSION', label: 'After Session date', minimum: Number.NEGATIVE_INFINITY, maximum: -1 },
+    ];
+    const observations = bookings.map((booking) => {
+      const session = sessionMap.get(booking.sessionId!);
+      const sessionDate = formatInTimeZone(session!.startDate, event.timezone, 'yyyy-MM-dd');
+      const bookingDate = formatInTimeZone(booking.createdAt, event.timezone, 'yyyy-MM-dd');
+      return {
+        daysBefore: this.calendarDayDifference(bookingDate, sessionDate),
+        ticketUnits: booking.items.reduce((total, item) => total + item.quantity, 0),
+        value: Number(booking.total),
+        confirmedAt: booking.confirmedAt,
+      };
+    });
+    let cumulativeTickets = 0;
+    let cumulativeBookings = 0;
+    const rows = buckets.map((bucket) => {
+      const matches = observations.filter(({ daysBefore }) => daysBefore >= bucket.minimum && daysBefore <= bucket.maximum);
+      const ticketUnits = matches.reduce((total, observation) => total + observation.ticketUnits, 0);
+      cumulativeTickets += ticketUnits;
+      cumulativeBookings += matches.length;
+      return {
+        key: bucket.key,
+        label: bucket.label,
+        confirmedBookings: matches.length,
+        ticketUnits,
+        grossBookingValue: this.sum(matches.map(({ value }) => value)),
+        cumulativeBookings,
+        cumulativeTicketUnits: cumulativeTickets,
+      };
+    });
+    return {
+      event,
+      filter: { date: query.date ?? null, sessionId: query.sessionId ?? null },
+      basis: 'BOOKING_CREATED_AT_FOR_CURRENTLY_CONFIRMED_BOOKINGS',
+      confirmationDisclosure: 'CONFIRMED_AT_IS_NOT_USED_FOR_BUCKET_ASSIGNMENT',
+      totals: { confirmedBookings: bookings.length, ticketUnits: observations.reduce((total, observation) => total + observation.ticketUnits, 0), grossBookingValue: this.sum(observations.map(({ value }) => value)) },
+      rows,
+    };
+  }
+
   private async detailedScope(organizationId: string, eventId: string, query: EventReportQueryDto) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, organizationId },
@@ -671,6 +778,12 @@ export class ReportingService {
       start: fromZonedTime(`${date}T00:00:00`, timezone),
       end: fromZonedTime(`${nextDate}T00:00:00`, timezone),
     };
+  }
+
+  private calendarDayDifference(fromDate: string, toDate: string) {
+    const from = new Date(`${fromDate}T00:00:00.000Z`);
+    const to = new Date(`${toDate}T00:00:00.000Z`);
+    return Math.round((to.getTime() - from.getTime()) / 86_400_000);
   }
 
   private ticketQuantity(

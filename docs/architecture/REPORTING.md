@@ -38,8 +38,10 @@ Production operations should monitor report latency, errors, cap utilisation and
 
 ## Detailed Category Reports and Exports
 
-Detailed reads currently group sales and operations by Ticket Type, Session, Product and Product Variant. Event-local date and Session filters reuse the same scope contract as the Event overview. Product reporting distinguishes confirmed units/gross item sales from current Event-wide inventory commitments and per-Session reusable capacity. Active `REQUIRE_PRODUCT` Rules identify required products separately from discretionary Add-ons.
+Detailed reads currently group sales and operations by Ticket Type, Session, Event-local Session date, Product and Product Variant. Event-local date and Session filters reuse the same scope contract as the Event overview. Product reporting distinguishes confirmed units/gross item sales from current Event-wide inventory commitments and per-Session reusable capacity. Active `REQUIRE_PRODUCT` Rules identify required products separately from discretionary Add-ons.
 
-Event-local date, admission-state and comparison reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
+Booking pace uses Booking `createdAt` in the Event timezone for Bookings that are currently `CONFIRMED`, aligned to each selected Session's local calendar date. It does not use `confirmedAt` for bucket assignment and is not a website conversion, abandonment or marketing-attribution report.
+
+Admission-state and comparison reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.

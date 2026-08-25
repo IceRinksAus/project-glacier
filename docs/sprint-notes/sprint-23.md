@@ -64,3 +64,13 @@ Reusable capacity-controlled Products such as Kangas are reported independently 
 Successful refunds remain unallocated at Product and Variant level because PaymentRefund has no Booking Product line relationship. The report therefore presents authoritative gross Product sales rather than fabricated category-level net sales.
 
 Product reporting verification: focused API reporting suites 2 / 15 tests passed; complete API suite 69 / 448 tests passed; API production build passed. Focused Event Reports web suite 1 / 5 tests passed; complete web suite 21 / 63 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.
+
+## Slice 5 — Sales by Event Date and Booking Pace
+
+Sales by Event date groups Sessions by their start date in the Event timezone and reconciles confirmed Booking/Ticket demand, persisted gross Booking value, successful collection, successful refunds, net collection, issued Tickets, admissions and shared admission capacity. Payments and refunds remain attached to the selected Session Bookings regardless of transaction timestamp.
+
+Booking pace aligns currently confirmed demand by Event-local calendar days between Booking creation and the selected Session date. Stable lead-time buckets run from 61+ days before through same-day demand, with an explicit post-Session anomaly bucket. Each row includes period and cumulative Booking/Ticket demand so organisers can judge campaign timing from persisted commerce evidence.
+
+The report explicitly discloses that `createdAt`, not `confirmedAt`, determines a Booking's pace bucket. It does not claim website traffic, checkout abandonment, conversion or marketing attribution because Glacier does not currently persist those privacy-reviewed data sources.
+
+Date and pace verification: focused API reporting suites 2 / 17 tests passed; complete API suite 69 / 450 tests passed; API production build passed. Focused Event Reports web suite 1 / 7 tests passed; complete web suite 21 / 65 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.

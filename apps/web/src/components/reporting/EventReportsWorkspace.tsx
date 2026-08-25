@@ -4,17 +4,19 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { EventReport, ProductSalesReport, reportingService, SessionSalesReport, TicketTypeSalesReport } from "@/services/reporting.service";
+import { DateSalesReport, EventReport, ProductSalesReport, reportingService, SalesPaceReport, SessionSalesReport, TicketTypeSalesReport } from "@/services/reporting.service";
 import { Session, sessionService } from "@/services/session.service";
 
 const money = new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" });
-type ReportView = "OVERVIEW" | "TICKET_TYPES" | "SESSIONS" | "PRODUCTS";
+type ReportView = "OVERVIEW" | "TICKET_TYPES" | "SESSIONS" | "PRODUCTS" | "DATES" | "SALES_PACE";
 
 export function EventReportsWorkspace({ eventId }: { eventId: string }) {
   const [report, setReport] = useState<EventReport | null>(null);
   const [ticketTypeReport, setTicketTypeReport] = useState<TicketTypeSalesReport | null>(null);
   const [sessionReport, setSessionReport] = useState<SessionSalesReport | null>(null);
   const [productReport, setProductReport] = useState<ProductSalesReport | null>(null);
+  const [dateReport, setDateReport] = useState<DateSalesReport | null>(null);
+  const [salesPaceReport, setSalesPaceReport] = useState<SalesPaceReport | null>(null);
   const [reportView, setReportView] = useState<ReportView>("OVERVIEW");
   const [sessions, setSessions] = useState<Session[]>([]);
   const [date, setDate] = useState("");
@@ -31,6 +33,10 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
         ? reportingService.getSessionSales(eventId, filters).then(setSessionReport)
         : view === "PRODUCTS"
           ? reportingService.getProductSales(eventId, filters).then(setProductReport)
+          : view === "DATES"
+            ? reportingService.getDateSales(eventId, filters).then(setDateReport)
+            : view === "SALES_PACE"
+              ? reportingService.getSalesPace(eventId, filters).then(setSalesPaceReport)
         : reportingService.getEventReport(eventId, filters).then(setReport);
     request
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Unable to load this Event report."))
@@ -72,7 +78,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
         <h2 className="text-2xl font-semibold tracking-tight">Event reports</h2>
         <p className="mt-1 text-sm text-muted-foreground">Authoritative operational performance from Bookings, Payments, refunds, Tickets and Sessions.</p>
         <form onSubmit={applyFilters} className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-[1.5fr_1fr_2fr_auto_auto] xl:items-end">
-          <label className="text-sm font-medium">Report<select aria-label="Report" value={reportView} onChange={(event) => changeReportView(event.target.value as ReportView)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Event overview</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="PRODUCTS">Product and Variant sales</option></select></label>
+          <label className="text-sm font-medium">Report<select aria-label="Report" value={reportView} onChange={(event) => changeReportView(event.target.value as ReportView)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Event overview</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="DATES">Sales by Event date</option><option value="SALES_PACE">Booking pace</option><option value="PRODUCTS">Product and Variant sales</option></select></label>
           <label className="text-sm font-medium">Event-local date<input aria-label="Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal" /></label>
           <label className="text-sm font-medium">Session<select aria-label="Session" value={sessionId} onChange={(event) => setSessionId(event.target.value)} className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"><option value="">All Sessions</option>{sessions.map((session) => <option key={session.id} value={session.id}>{session.name} — {localDateTime(session.startDate, report?.event.timezone)}</option>)}</select></label>
           <Button type="submit">Apply filters</Button>
@@ -154,6 +160,28 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
         </section>
         <p className="text-xs text-muted-foreground">Inventory remaining is the current Event-wide quantity after reserved and confirmed commitments, not a historical stock-movement ledger. Reusable capacity is measured independently per Session and does not reduce rink admission capacity. Refunds remain unallocated at Product and Variant level.</p>
       </> : null}
+
+      {reportView === "DATES" && dateReport && !isLoading ? <>
+        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="p-6"><h3 className="text-lg font-semibold">Sales by Event date</h3><p className="mt-1 text-sm text-muted-foreground">Commercial performance, attendance and capacity grouped by the Session date in {dateReport.event.timezone}.</p></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[1450px] text-left text-sm"><thead className="border-y bg-muted/40 text-muted-foreground"><tr><Th>Event date</Th><Th>Sessions</Th><Th>Confirmed bookings</Th><Th>Ticket units</Th><Th>Booking value</Th><Th>Gross collected</Th><Th>Refunded</Th><Th>Net collected</Th><Th>Issued</Th><Th>Admissions</Th><Th>Capacity</Th><Th>Reserved</Th><Th>Remaining</Th><Th>Utilisation</Th></tr></thead><tbody>{dateReport.rows.map((row) => <tr key={row.date} className="border-b last:border-0"><td className="px-5 py-4 font-medium">{localDate(row.date)}</td><Td>{row.sessionCount}</Td><Td>{row.confirmedBookings}</Td><Td>{row.ticketUnits}</Td><Td>{money.format(row.grossBookingValue)}</Td><Td>{money.format(row.grossCollected)}</Td><Td>{money.format(row.refunded)}</Td><Td>{money.format(row.netCollected)}</Td><Td>{row.ticketsIssued}</Td><Td>{row.admissions}</Td><Td>{row.capacity}</Td><Td>{row.reservedAttendance}</Td><Td>{row.remainingCapacity}</Td><Td>{row.utilisationPercent}%</Td></tr>)}</tbody></table></div>
+          {dateReport.rows.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No Event dates match the selected filters.</p> : null}
+        </section>
+        <p className="text-xs text-muted-foreground">Dates follow Session start time in the Event timezone. Payments and refunds remain attached to those selected Bookings regardless of transaction date. This is operational reporting, not an accounting record.</p>
+      </> : null}
+
+      {reportView === "SALES_PACE" && salesPaceReport && !isLoading ? <>
+        <section className="grid gap-4 sm:grid-cols-3">
+          <Metric label="Confirmed bookings" value={salesPaceReport.totals.confirmedBookings} />
+          <Metric label="Confirmed Ticket units" value={salesPaceReport.totals.ticketUnits} />
+          <Metric label="Gross Booking value" value={money.format(salesPaceReport.totals.grossBookingValue)} />
+        </section>
+        <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+          <div className="p-6"><h3 className="text-lg font-semibold">Booking pace</h3><p className="mt-1 text-sm text-muted-foreground">See when currently confirmed demand was created relative to each Session’s Event-local date.</p></div>
+          <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="border-y bg-muted/40 text-muted-foreground"><tr><Th>Lead time</Th><Th>Confirmed bookings</Th><Th>Ticket units</Th><Th>Gross Booking value</Th><Th>Cumulative bookings</Th><Th>Cumulative Ticket units</Th></tr></thead><tbody>{salesPaceReport.rows.map((row) => <tr key={row.key} className="border-b last:border-0"><td className="px-5 py-4 font-medium">{row.label}</td><Td>{row.confirmedBookings}</Td><Td>{row.ticketUnits}</Td><Td>{money.format(row.grossBookingValue)}</Td><Td>{row.cumulativeBookings}</Td><Td>{row.cumulativeTicketUnits}</Td></tr>)}</tbody></table></div>
+        </section>
+        <p className="text-xs text-muted-foreground">Buckets use Booking creation date for Bookings that are currently confirmed; confirmation time is not used to assign the bucket. This measures sales timing from persisted Bookings, not website traffic, abandonment or conversion.</p>
+      </> : null}
     </div>
   );
 }
@@ -163,3 +191,4 @@ function StateCard({ children, error = false }: { children: React.ReactNode; err
 function Th({ children }: { children: React.ReactNode }) { return <th className="px-5 py-3 font-medium">{children}</th>; }
 function Td({ children }: { children: React.ReactNode }) { return <td className="px-5 py-4">{children}</td>; }
 function localDateTime(value: string, timezone = "Australia/Melbourne") { return new Intl.DateTimeFormat("en-AU", { timeZone: timezone, dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
+function localDate(value: string) { return new Intl.DateTimeFormat("en-AU", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00.000Z`)); }

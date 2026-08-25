@@ -141,6 +141,41 @@ describe('ReportingService', () => {
     expect(result.definitions.inventoryScope).toBe('EVENT_CURRENT_RESERVED_AND_CONFIRMED');
   });
 
+  it('groups commercial, attendance and capacity results by Event-local Session date', async () => {
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        sessionId: 'session-1', status: 'CONFIRMED', total: 80,
+        items: [{ quantity: 2 }],
+        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
+        payments: [{ status: 'SUCCEEDED', amount: 80, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+      },
+      { sessionId: 'session-1', status: 'RESERVED', total: 20, items: [{ quantity: 1 }], tickets: [], payments: [] },
+    ]);
+
+    const result = await service.getDateSales('org-1', 'event-1', {});
+
+    expect(result.rows).toEqual([expect.objectContaining({
+      date: '2027-09-01', sessionCount: 1, confirmedBookings: 1, ticketUnits: 2,
+      grossBookingValue: 80, grossCollected: 80, refunded: 10, netCollected: 70,
+      ticketsIssued: 2, admissions: 1, capacity: 10, reservedAttendance: 3,
+      remainingCapacity: 7, utilisationPercent: 30,
+    })]);
+  });
+
+  it('aligns confirmed demand by Event-local days between Booking creation and Session date', async () => {
+    prisma.booking.findMany.mockResolvedValue([
+      { sessionId: 'session-1', createdAt: new Date('2027-08-23T14:30:00.000Z'), confirmedAt: new Date('2027-08-23T14:35:00.000Z'), total: 50, items: [{ quantity: 2 }] },
+      { sessionId: 'session-1', createdAt: new Date('2027-08-31T15:00:00.000Z'), confirmedAt: new Date('2027-08-31T15:05:00.000Z'), total: 20, items: [{ quantity: 1 }] },
+    ]);
+
+    const result = await service.getSalesPace('org-1', 'event-1', {});
+
+    expect(result.basis).toBe('BOOKING_CREATED_AT_FOR_CURRENTLY_CONFIRMED_BOOKINGS');
+    expect(result.totals).toEqual({ confirmedBookings: 2, ticketUnits: 3, grossBookingValue: 70 });
+    expect(result.rows.find(({ key }) => key === '8_TO_14')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 2 }));
+    expect(result.rows.find(({ key }) => key === 'SAME_DAY')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 1, cumulativeTicketUnits: 3 }));
+  });
+
   it('returns a safe empty Organisation summary', async () => {
     const now = new Date('2027-09-01T00:00:00.000Z');
     const result = await service.getOrganizationSummary('org-1', now);

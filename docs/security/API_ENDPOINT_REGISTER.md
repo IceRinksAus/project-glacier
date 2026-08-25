@@ -92,6 +92,8 @@ Status values:
 | GET | `/reporting/events/:eventId/ticket-types` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Confirmed Ticket units and gross item sales; refunds explicitly unallocated; no customer/participant details. |
 | GET | `/reporting/events/:eventId/sessions` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Session-attributable confirmed value, collection/refund/net, Tickets, admissions and capacity utilisation. |
 | GET | `/reporting/events/:eventId/products` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Confirmed Product/Variant units and gross item sales; Event-wide current inventory and per-Session reusable capacity are explicitly separate; refunds unallocated. |
+| GET | `/reporting/events/:eventId/dates` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Session-date grouping in Event timezone with confirmed demand, collection/refund/net, attendance and shared admission capacity. |
+| GET | `/reporting/events/:eventId/sales-pace` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Currently confirmed demand bucketed by Event-local calendar days from Booking creation to Session date; not conversion analytics. |
 
 ## Event Groups
 

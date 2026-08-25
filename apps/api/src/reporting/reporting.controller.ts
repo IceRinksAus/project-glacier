@@ -49,4 +49,14 @@ export class ReportingController {
   getProductSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
     return this.reportingService.getProductSales(user.organizationId, eventId, query);
   }
+
+  @Get('events/:eventId/dates')
+  getDateSales(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
+    return this.reportingService.getDateSales(user.organizationId, eventId, query);
+  }
+
+  @Get('events/:eventId/sales-pace')
+  getSalesPace(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
+    return this.reportingService.getSalesPace(user.organizationId, eventId, query);
+  }
 }

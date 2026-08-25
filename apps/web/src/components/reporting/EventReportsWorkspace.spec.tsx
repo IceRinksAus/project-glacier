@@ -4,15 +4,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EventReportsWorkspace } from "./EventReportsWorkspace";
 
-const { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getSessions } = vi.hoisted(() => ({
+const { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace, getSessions } = vi.hoisted(() => ({
   getEventReport: vi.fn(),
   getTicketTypeSales: vi.fn(),
   getSessionSales: vi.fn(),
   getProductSales: vi.fn(),
+  getDateSales: vi.fn(),
+  getSalesPace: vi.fn(),
   getSessions: vi.fn(),
 }));
 
-vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventReport, getTicketTypeSales, getSessionSales, getProductSales } }));
+vi.mock("@/services/reporting.service", () => ({ reportingService: { getEventReport, getTicketTypeSales, getSessionSales, getProductSales, getDateSales, getSalesPace } }));
 vi.mock("@/services/session.service", () => ({ sessionService: { getSessions } }));
 
 const report = {
@@ -58,12 +60,26 @@ const productSalesReport = {
   }],
 };
 
+const dateSalesReport = {
+  event: { id: "event-1", name: "Winter Festival", timezone: "Australia/Melbourne" }, filter: { date: null, sessionId: null },
+  rows: [{ date: "2027-09-01", sessionCount: 2, confirmedBookings: 4, ticketUnits: 6, grossBookingValue: 220, grossCollected: 220, refunded: 20, netCollected: 200, ticketsIssued: 6, admissions: 3, capacity: 300, reservedAttendance: 60, remainingCapacity: 240, utilisationPercent: 20 }],
+};
+
+const salesPaceReport = {
+  event: { id: "event-1", name: "Winter Festival", timezone: "Australia/Melbourne" }, filter: { date: null, sessionId: null },
+  basis: "BOOKING_CREATED_AT_FOR_CURRENTLY_CONFIRMED_BOOKINGS", confirmationDisclosure: "CONFIRMED_AT_IS_NOT_USED_FOR_BUCKET_ASSIGNMENT",
+  totals: { confirmedBookings: 4, ticketUnits: 6, grossBookingValue: 220 },
+  rows: [{ key: "8_TO_14", label: "8–14 days before", confirmedBookings: 2, ticketUnits: 4, grossBookingValue: 160, cumulativeBookings: 2, cumulativeTicketUnits: 4 }, { key: "SAME_DAY", label: "Same day", confirmedBookings: 2, ticketUnits: 2, grossBookingValue: 60, cumulativeBookings: 4, cumulativeTicketUnits: 6 }],
+};
+
 describe("EventReportsWorkspace", () => {
   beforeEach(() => {
     getEventReport.mockReset().mockResolvedValue(report);
     getTicketTypeSales.mockReset().mockResolvedValue(ticketTypeReport);
     getSessionSales.mockReset().mockResolvedValue(sessionSalesReport);
     getProductSales.mockReset().mockResolvedValue(productSalesReport);
+    getDateSales.mockReset().mockResolvedValue(dateSalesReport);
+    getSalesPace.mockReset().mockResolvedValue(salesPaceReport);
     getSessions.mockReset().mockResolvedValue([{ id: "session-1", eventId: "event-1", name: "Morning skate", startDate: "2027-09-01T00:30:00.000Z", endDate: "2027-09-01T01:30:00.000Z", capacity: 150, status: "ACTIVE", salesStart: null, salesEnd: null }]);
   });
 
@@ -133,5 +149,30 @@ describe("EventReportsWorkspace", () => {
     expect(screen.getByText(/46 of 50 remaining/)).toBeVisible();
     expect(screen.getByText(/does not reduce rink admission capacity/)).toBeVisible();
     expect(getProductSales).toHaveBeenLastCalledWith("event-1", {});
+  });
+
+  it("groups sales and operations by Event-local Session date", async () => {
+    const user = userEvent.setup();
+    render(<EventReportsWorkspace eventId="event-1" />);
+    await screen.findByText("$200.00");
+    await user.selectOptions(screen.getByLabelText("Report"), "DATES");
+
+    expect(await screen.findByRole("heading", { name: "Sales by Event date" })).toBeVisible();
+    expect(screen.getByText("1 Sept 2027")).toBeVisible();
+    expect(screen.getByText(/Payments and refunds remain attached/)).toBeVisible();
+    expect(getDateSales).toHaveBeenLastCalledWith("event-1", {});
+  });
+
+  it("discloses the confirmed-Booking creation-time basis for booking pace", async () => {
+    const user = userEvent.setup();
+    render(<EventReportsWorkspace eventId="event-1" />);
+    await screen.findByText("$200.00");
+    await user.selectOptions(screen.getByLabelText("Report"), "SALES_PACE");
+
+    expect(await screen.findByRole("heading", { name: "Booking pace" })).toBeVisible();
+    expect(screen.getByText("8–14 days before")).toBeVisible();
+    expect(screen.getByText(/confirmation time is not used/)).toBeVisible();
+    expect(screen.getByText(/not website traffic, abandonment or conversion/)).toBeVisible();
+    expect(getSalesPace).toHaveBeenLastCalledWith("event-1", {});
   });
 });
