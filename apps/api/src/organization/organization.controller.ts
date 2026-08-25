@@ -12,6 +12,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
+import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { AddOrganizationUserDto } from './dto/add-organization-user.dto';
 import { UpdateTeamAccessDto } from './dto/update-team-access.dto';
 import { OrganizationService } from './organization.service';
@@ -26,6 +27,7 @@ interface AuthenticatedUser {
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
+  @Roles(...OPERATOR_ROLES)
   @Get()
   findCurrent(@CurrentUser() user: AuthenticatedUser) {
     return this.organizationService.findCurrent(user.organizationId);
