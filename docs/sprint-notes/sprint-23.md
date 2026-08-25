@@ -40,3 +40,15 @@ Sales by Session returns confirmed Booking count/value, successful collection, s
 Both reads support the existing exact Event-local date and Session filters, deterministic ordering and bounded rows. They return no customer or participant identity, Ticket credentials or Payment-provider credentials.
 
 Focused detailed reporting verification: 2 reporting suites / 14 tests passed; API production build passed. New checks reconcile Ticket Type quantities/gross sales, preserve the unallocated-refund boundary and prove Session collection/refund/net plus shared-capacity semantics.
+
+## Slice 3 — Detailed Event Reports Interface
+
+The existing Event Reports workspace now provides one report selector for Event overview, Sales by Ticket Type and Sales by Session. The Event-local date and Session filters are shared across all three views, allowing an organiser to change the reporting lens without changing the population being compared.
+
+Sales by Ticket Type presents confirmed units, gross Ticket sales, unit share, Tickets issued and admissions. Its interface explicitly discloses that successful refunds cannot be allocated to individual Ticket Types with the current persisted PaymentRefund relationship and therefore are not subtracted from those rows.
+
+Sales by Session combines confirmed Booking demand, confirmed Booking value, successful collection, refunds, net collection, Ticket units, issued Tickets, admissions and shared venue capacity. The capacity presentation continues the established Glacier rule that Session admission capacity is shared across Ticket Types and remains separate from Product inventory.
+
+Wide operational tables scroll within their own report card rather than expanding the page. Empty results, loading failures and the operational-versus-accounting limitation remain explicit.
+
+Detailed Event Reports web verification: focused suite 1 / 4 tests passed; complete web suite 21 / 62 tests passed; production build passed. Web lint reports no errors and only the documented inherited internal-navigation warning in `src/lib/api.ts`.

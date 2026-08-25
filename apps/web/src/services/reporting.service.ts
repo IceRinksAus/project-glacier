@@ -47,13 +47,61 @@ export interface EventReport {
   }>;
 }
 
+export interface TicketTypeSalesReport {
+  event: { id: string; name: string; timezone: string };
+  filter: { date: string | null; sessionId: string | null };
+  totals: { unitsSold: number; grossItemSales: number; ticketsIssued: number; admissions: number };
+  refundAllocation: string;
+  rows: Array<{
+    id: string;
+    name: string;
+    active: boolean;
+    unitsSold: number;
+    grossItemSales: number;
+    unitSharePercent: number;
+    ticketsIssued: number;
+    admissions: number;
+  }>;
+}
+
+export interface SessionSalesReport {
+  event: { id: string; name: string; timezone: string };
+  filter: { date: string | null; sessionId: string | null };
+  rows: Array<{
+    id: string;
+    name: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    capacity: number;
+    confirmedBookings: number;
+    confirmedBookingValue: number;
+    grossCollected: number;
+    refunded: number;
+    netCollected: number;
+    ticketUnits: number;
+    ticketsIssued: number;
+    admissions: number;
+    reservedAttendance: number;
+    remainingCapacity: number;
+    utilisationPercent: number;
+  }>;
+}
+
+function eventReportPath(eventId: string, suffix = "", filters: { date?: string; sessionId?: string } = {}) {
+  const query = new URLSearchParams();
+  if (filters.date) query.set("date", filters.date);
+  if (filters.sessionId) query.set("sessionId", filters.sessionId);
+  const queryString = query.toString();
+  return `/reporting/events/${eventId}${suffix}${queryString ? `?${queryString}` : ""}`;
+}
+
 export const reportingService = {
   getOrganizationSummary: () => api.get<OrganizationReport>("/reporting/organization"),
-  getEventReport: (eventId: string, filters: { date?: string; sessionId?: string } = {}) => {
-    const query = new URLSearchParams();
-    if (filters.date) query.set("date", filters.date);
-    if (filters.sessionId) query.set("sessionId", filters.sessionId);
-    const suffix = query.toString();
-    return api.get<EventReport>(`/reporting/events/${eventId}${suffix ? `?${suffix}` : ""}`);
-  },
+  getEventReport: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<EventReport>(eventReportPath(eventId, "", filters)),
+  getTicketTypeSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<TicketTypeSalesReport>(eventReportPath(eventId, "/ticket-types", filters)),
+  getSessionSales: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
+    api.get<SessionSalesReport>(eventReportPath(eventId, "/sessions", filters)),
 };
