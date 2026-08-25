@@ -14,6 +14,8 @@ Archiving a Group does not delete Events or their commerce/operational records. 
 
 The migration adds `EventGroup` and `EventGroupEvent` tables, tenant/status and ordering indexes, exact membership uniqueness and a case-insensitive Organisation-level Group-name uniqueness index.
 
+The organiser Reports destination now provides the Event Group management surface. OWNER can create a controlled Group type, select Events, persist their comparison order through keyboard-accessible up/down controls, and archive or restore the Group without deleting any Event. MEMBER receives the same read-only Group presentation without mutation controls.
+
 ## Verification to Date
 
 - Event Group focused suite: 2 suites / 9 tests passed.
@@ -22,3 +24,7 @@ The migration adds `EventGroup` and `EventGroupEvent` tables, tenant/status and 
 - Prisma schema formatting, generation and validation: passed.
 - Additive Event Group migration applied locally; all 31 migrations are current.
 - Tests cover authenticated tenant scope, OWNER mutation roles, trimmed creation, duplicate names, cross-tenant Group denial, ordered transactional membership and rejection of a foreign Event before mutation.
+- Event Group web checks: 1 suite / 2 tests passed.
+- Complete web suite: 21 suites / 60 tests passed.
+- Web lint: no new errors; one documented inherited internal-navigation warning remains.
+- Web webpack production build: passed and includes the `/reports` route.
