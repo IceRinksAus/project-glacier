@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress from 25 August 2026. Scope is controlled by `docs/roadmap/sprint-23-plan.md`.
+Complete and locally verified on 25 August 2026. Scope is controlled by `docs/roadmap/sprint-23-plan.md`. Authenticated detailed Event-report browser acceptance is complete; representative saved-Group scorecard acceptance remains a data-fixture follow-up because the existing local Group has no persisted members.
 
 ## Slice 1 — Event Group Foundation
 
@@ -94,3 +94,23 @@ CSV output uses UTF-8 with a byte-order mark, stable human-readable columns, ISO
 Detailed report and Group comparison interfaces provide Export CSV and Print / Save PDF controls. Print mode uses the same loaded result, adds report scope and generation context, removes dashboard navigation, filters and Event Group editing controls, and preserves the operational/reporting limitations. This is print-ready browser output; production-quality generated PDF and XLSX remain within the locked Sprint 24 boundary.
 
 Export verification: focused API reporting suites 2 / 23 tests passed; complete API suite 69 / 456 tests passed; API production build passed. Focused export interface suites 2 / 11 tests passed; complete web suite 21 / 67 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.
+
+## Closeout
+
+Sprint 23 delivered the approved Event Group foundation, detailed Event report catalogue, Product/Variant and capacity insight, Event-local date and booking-pace views, saved Group comparison scorecard, formula-safe CSV and print-ready browser presentation. No customer or participant identity was added to reporting and no Booking, Payment, refund, Ticket, admission or inventory mutation was introduced.
+
+The final repository baseline is 69 API suites / 456 tests and 21 web suites / 67 tests, with both production builds passing. Prisma has 31 current migrations. Web lint has no errors and one inherited navigation warning. The production API start script was corrected during closeout to use Nest's actual `dist/src/main` output.
+
+Local production processes started successfully on the canonical API and dashboard ports. The production API start script itself was exercised after correction. The protected browser session recovered normally without credential retrieval and completed the detailed Event-report acceptance described below.
+
+The mandatory Pilot Readiness reassessment is recorded separately in `docs/roadmap/PILOT_READINESS_REASSESSMENT_AFTER_SPRINT_23.md`. It concludes that production/pilot hardening and missing operational workflows outrank generated XLSX/PDF as the next milestone.
+
+## Browser Acceptance
+
+Authenticated acceptance used the existing `Tenant Security Test` Event and its persisted records. The Event overview reconciled to AUD 290 gross collection, AUD 92 successful refunds, AUD 198 net collection, four confirmed Bookings and five issued Tickets, matching the prior authoritative Event-report baseline.
+
+The detailed report selector loaded Product and Variant sales with AUD 60 gross Product sales and a 50% Booking attach rate. It correctly identified the active Rule-required Kanga, displayed merchandise Variant stock remaining, showed the capacity-controlled preview Kanga against its Session, and retained the explicit separation between Event-wide inventory, reusable Product capacity and rink admission capacity.
+
+The CSV action completed without a visible application or console error. Automated export verification remains authoritative for filename, headers, content, filter propagation and formula-injection protection because the browser-control surface does not expose the client-created Blob download as a native navigation event. Print / Save PDF was present, with print-specific controls covered by the interface suite.
+
+At a 390 × 844 viewport, the detailed Product report had no page-level horizontal overflow (`documentScrollWidth` 375 against `innerWidth` 390); the intentionally wide table remained contained. The Event Group management page loaded the existing `Winter Fest 2027` Group, but View comparison was correctly disabled because that Group currently has no saved Event members. No Event Group membership, Booking, Payment, refund, Ticket, admission or inventory state was changed during acceptance.
