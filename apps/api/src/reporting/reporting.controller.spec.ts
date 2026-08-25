@@ -14,6 +14,7 @@ describe('ReportingController', () => {
     getProductSales: jest.fn(),
     getDateSales: jest.fn(),
     getSalesPace: jest.fn(),
+    getEventGroupComparison: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -73,5 +74,10 @@ describe('ReportingController', () => {
     expect(service.getProductSales).toHaveBeenCalledWith('org-1', 'event-1', query);
     expect(service.getDateSales).toHaveBeenCalledWith('org-1', 'event-1', query);
     expect(service.getSalesPace).toHaveBeenCalledWith('org-1', 'event-1', query);
+  });
+
+  it('uses trusted Organisation context for Event Group comparisons', async () => {
+    await controller.getEventGroupComparison('group-1', { organizationId: 'org-1' });
+    expect(service.getEventGroupComparison).toHaveBeenCalledWith('org-1', 'group-1');
   });
 });

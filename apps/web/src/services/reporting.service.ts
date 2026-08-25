@@ -133,6 +133,27 @@ export interface SalesPaceReport {
   }>;
 }
 
+export interface EventGroupComparisonReport {
+  group: { id: string; name: string; description: string | null; type: string; status: string };
+  currency: "AUD";
+  timezoneSemantics: string;
+  totals: {
+    events: number; sessions: number; confirmedBookings: number; ticketUnits: number; ticketsIssued: number; admissions: number;
+    totalCapacity: number; grossCollected: number; refunded: number; netCollected: number; grossProductSales: number;
+    attendanceRatePercent: number; capacityUtilisationPercent: number; productAttachRatePercent: number;
+  };
+  rows: Array<{
+    sortOrder: number;
+    event: { id: string; name: string; slug: string; status: string; startDate: string; endDate: string; timezone: string };
+    durationDays: number; sessions: number; totalCapacity: number; reservedAttendance: number; unusedCapacity: number; capacityUtilisationPercent: number;
+    confirmedBookings: number; ticketUnits: number; ticketsIssued: number; admissions: number; attendanceRatePercent: number;
+    grossCollected: number; refunded: number; netCollected: number; averageBookingValue: number; ticketsPerBooking: number;
+    revenuePerSession: number; revenuePerCapacityPlace: number; bookingsWithProducts: number; productAttachRatePercent: number;
+    grossProductSales: number; productRevenuePerAdmission: number; refundRatePercent: number; paymentExceptionCount: number;
+    contributionToGroupNetPercent: number;
+  }>;
+}
+
 function eventReportPath(eventId: string, suffix = "", filters: { date?: string; sessionId?: string } = {}) {
   const query = new URLSearchParams();
   if (filters.date) query.set("date", filters.date);
@@ -155,4 +176,6 @@ export const reportingService = {
     api.get<DateSalesReport>(eventReportPath(eventId, "/dates", filters)),
   getSalesPace: (eventId: string, filters: { date?: string; sessionId?: string } = {}) =>
     api.get<SalesPaceReport>(eventReportPath(eventId, "/sales-pace", filters)),
+  getEventGroupComparison: (groupId: string) =>
+    api.get<EventGroupComparisonReport>(`/reporting/event-groups/${groupId}/comparison`),
 };

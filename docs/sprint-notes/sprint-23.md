@@ -74,3 +74,13 @@ Booking pace aligns currently confirmed demand by Event-local calendar days betw
 The report explicitly discloses that `createdAt`, not `confirmedAt`, determines a Booking's pace bucket. It does not claim website traffic, checkout abandonment, conversion or marketing attribution because Glacier does not currently persist those privacy-reviewed data sources.
 
 Date and pace verification: focused API reporting suites 2 / 17 tests passed; complete API suite 69 / 450 tests passed; API production build passed. Focused Event Reports web suite 1 / 7 tests passed; complete web suite 21 / 65 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.
+
+## Slice 6 — Event Group Totals and Comparison Scorecard
+
+Saved Event Groups now provide a tenant-safe comparison report using their persisted Event membership and organiser-defined order. Group totals reconcile Sessions, confirmed Bookings and Ticket units, issued Tickets, admissions, capacity, successful collection, successful refunds, net collection and gross Product sales across the Group.
+
+Each Event row combines absolute performance with normalised context: revenue per Session, revenue per available capacity place, Tickets per Booking, attendance rate, capacity utilisation, unused capacity, Product attach rate, Product revenue per admission, refund rate, Payment exceptions and contribution to Group net collection. Larger or longer Events therefore do not appear automatically stronger solely because of scale.
+
+The current comparison contract aggregates AUD only and states that every Event retains its own timezone. The organiser interface explains that normalised measures provide context rather than a universal ranking and repeats the operational-versus-accounting boundary. It returns aggregate records only and no customer or participant identity.
+
+Event Group comparison verification: focused API reporting suites 2 / 20 tests passed; complete API suite 69 / 453 tests passed; API production build passed. Reports-page focused pattern 9 suites / 25 tests passed; complete web suite 21 / 66 tests passed; webpack production build passed. Web lint has no errors and retains only the documented inherited navigation warning.

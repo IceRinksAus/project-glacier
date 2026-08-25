@@ -13,6 +13,7 @@ describe('ReportingService', () => {
     ticketType: { findMany: jest.fn() },
     product: { findMany: jest.fn() },
     rule: { findMany: jest.fn() },
+    eventGroup: { findFirst: jest.fn() },
   };
 
   beforeEach(async () => {
@@ -47,6 +48,7 @@ describe('ReportingService', () => {
     prisma.ticketType.findMany.mockResolvedValue([]);
     prisma.product.findMany.mockResolvedValue([]);
     prisma.rule.findMany.mockResolvedValue([]);
+    prisma.eventGroup.findFirst.mockResolvedValue(null);
   });
 
   it('reports Ticket Type units and gross item sales without allocating refunds', async () => {
@@ -174,6 +176,45 @@ describe('ReportingService', () => {
     expect(result.totals).toEqual({ confirmedBookings: 2, ticketUnits: 3, grossBookingValue: 70 });
     expect(result.rows.find(({ key }) => key === '8_TO_14')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 2 }));
     expect(result.rows.find(({ key }) => key === 'SAME_DAY')).toEqual(expect.objectContaining({ confirmedBookings: 1, ticketUnits: 1, cumulativeTicketUnits: 3 }));
+  });
+
+  it('compares Event Group totals with absolute and normalised measures', async () => {
+    prisma.eventGroup.findFirst.mockResolvedValue({
+      id: 'group-1', name: 'Winter Tour', description: 'Two cities', type: 'TOUR', status: 'ACTIVE',
+      events: [
+        { sortOrder: 0, event: { id: 'event-1', name: 'Melbourne', slug: 'melbourne', status: 'ACTIVE', startDate: new Date('2027-09-01T00:00:00.000Z'), endDate: new Date('2027-09-02T00:00:00.000Z'), timezone: 'Australia/Melbourne' } },
+        { sortOrder: 1, event: { id: 'event-2', name: 'Sydney', slug: 'sydney', status: 'ACTIVE', startDate: new Date('2027-09-08T00:00:00.000Z'), endDate: new Date('2027-09-08T12:00:00.000Z'), timezone: 'Australia/Sydney' } },
+      ],
+    });
+    prisma.session.findMany.mockResolvedValue([
+      { id: 'session-1', eventId: 'event-1', capacity: 100 },
+      { id: 'session-2', eventId: 'event-2', capacity: 50 },
+    ]);
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        eventId: 'event-1', status: 'CONFIRMED', total: 100,
+        items: [{ quantity: 2 }], products: [{ quantity: 1, unitPrice: 20 }],
+        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }, { status: 'ACTIVE', checkedInAt: null }],
+        payments: [{ status: 'SUCCEEDED', amount: 100, refunds: [{ status: 'SUCCEEDED', amount: 10 }] }],
+      },
+      {
+        eventId: 'event-2', status: 'CONFIRMED', total: 60,
+        items: [{ quantity: 1 }], products: [],
+        tickets: [{ status: 'SCANNED', checkedInAt: new Date() }],
+        payments: [{ status: 'SUCCEEDED', amount: 60, refunds: [] }],
+      },
+    ]);
+
+    const result = await service.getEventGroupComparison('org-1', 'group-1');
+
+    expect(result.totals).toEqual(expect.objectContaining({ events: 2, sessions: 2, confirmedBookings: 2, ticketUnits: 3, totalCapacity: 150, grossCollected: 160, refunded: 10, netCollected: 150, attendanceRatePercent: 66.7 }));
+    expect(result.rows[0]).toEqual(expect.objectContaining({ revenuePerSession: 90, revenuePerCapacityPlace: 0.9, productAttachRatePercent: 100, contributionToGroupNetPercent: 60 }));
+    expect(result.rows[1]).toEqual(expect.objectContaining({ revenuePerSession: 60, revenuePerCapacityPlace: 1.2, contributionToGroupNetPercent: 40 }));
+    expect(result.timezoneSemantics).toBe('EACH_EVENT_RETAINS_ITS_OWN_TIMEZONE');
+  });
+
+  it('does not reveal an Event Group owned by another Organisation', async () => {
+    await expect(service.getEventGroupComparison('org-1', 'foreign-group')).rejects.toThrow(NotFoundException);
   });
 
   it('returns a safe empty Organisation summary', async () => {

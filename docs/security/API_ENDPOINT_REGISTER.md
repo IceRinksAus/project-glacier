@@ -94,6 +94,7 @@ Status values:
 | GET | `/reporting/events/:eventId/products` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Confirmed Product/Variant units and gross item sales; Event-wide current inventory and per-Session reusable capacity are explicitly separate; refunds unallocated. |
 | GET | `/reporting/events/:eventId/dates` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Session-date grouping in Event timezone with confirmed demand, collection/refund/net, attendance and shared admission capacity. |
 | GET | `/reporting/events/:eventId/sales-pace` | Operator | JWT OWNER/MEMBER | Event → Organisation | Strict date/Session query DTO | PROTECTED | Currently confirmed demand bucketed by Event-local calendar days from Booking creation to Session date; not conversion analytics. |
+| GET | `/reporting/event-groups/:groupId/comparison` | Operator | JWT OWNER/MEMBER | Event Group → Organisation | Param string | PROTECTED | Saved ordered Group totals and Event scorecard with absolute/normalised AUD operational measures; each Event retains its timezone; no PII. |
 
 ## Event Groups
 

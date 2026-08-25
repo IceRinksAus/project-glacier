@@ -42,6 +42,8 @@ Detailed reads currently group sales and operations by Ticket Type, Session, Eve
 
 Booking pace uses Booking `createdAt` in the Event timezone for Bookings that are currently `CONFIRMED`, aligned to each selected Session's local calendar date. It does not use `confirmedAt` for bucket assignment and is not a website conversion, abandonment or marketing-attribution report.
 
-Admission-state and comparison reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
+Saved Event Group comparison aggregates only Events attached to a tenant-owned Group. The current commerce foundation is AUD-only, so Group totals are explicitly labelled AUD. Each Event retains its own timezone and Event-local duration. Absolute totals are paired with normalised context including revenue per Session, revenue per capacity place, attendance rate, capacity utilisation, Product attach rate and contribution to Group net collection. These measures are not presented as a universal Event ranking.
+
+Admission-state and further benchmark reporting remain planned, together with CSV, XLSX, PDF and print-friendly output. Export endpoints must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.

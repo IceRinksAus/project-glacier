@@ -59,4 +59,9 @@ export class ReportingController {
   getSalesPace(@Param('eventId') eventId: string, @CurrentUser() user: AuthenticatedUser, @Query() query: EventReportQueryDto) {
     return this.reportingService.getSalesPace(user.organizationId, eventId, query);
   }
+
+  @Get('event-groups/:groupId/comparison')
+  getEventGroupComparison(@Param('groupId') groupId: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.reportingService.getEventGroupComparison(user.organizationId, groupId);
+  }
 }

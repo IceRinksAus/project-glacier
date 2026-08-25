@@ -741,6 +741,120 @@ export class ReportingService {
     };
   }
 
+  async getEventGroupComparison(organizationId: string, groupId: string) {
+    const group = await this.prisma.eventGroup.findFirst({
+      where: { id: groupId, organizationId },
+      select: {
+        id: true, name: true, description: true, type: true, status: true,
+        events: {
+          select: {
+            sortOrder: true,
+            event: { select: { id: true, name: true, slug: true, status: true, startDate: true, endDate: true, timezone: true } },
+          },
+          orderBy: [{ sortOrder: 'asc' }, { eventId: 'asc' }],
+        },
+      },
+    });
+    if (!group) throw new NotFoundException('Event Group not found.');
+    const eventIds = group.events.map(({ event }) => event.id);
+    const [sessions, bookings] = await Promise.all([
+      eventIds.length
+        ? this.prisma.session.findMany({
+            where: { eventId: { in: eventIds } },
+            select: { id: true, eventId: true, capacity: true },
+            orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+            take: 5000,
+          })
+        : Promise.resolve([]),
+      eventIds.length
+        ? this.prisma.booking.findMany({
+            where: { eventId: { in: eventIds } },
+            select: {
+              eventId: true, status: true, total: true,
+              items: { select: { quantity: true } },
+              products: { select: { quantity: true, unitPrice: true } },
+              tickets: { select: { status: true, checkedInAt: true } },
+              payments: { select: { status: true, amount: true, refunds: { select: { status: true, amount: true } } } },
+            },
+            take: 50000,
+          })
+        : Promise.resolve([]),
+    ]);
+    const baseRows = group.events.map(({ event, sortOrder }) => {
+      const eventSessions = sessions.filter(({ eventId }) => eventId === event.id);
+      const eventBookings = bookings.filter(({ eventId }) => eventId === event.id);
+      const confirmed = eventBookings.filter(({ status }) => status === 'CONFIRMED');
+      const successful = eventBookings.flatMap(({ payments }) => payments.filter(({ status }) => status === 'SUCCEEDED'));
+      const grossCollected = this.sum(successful.map(({ amount }) => Number(amount)));
+      const refunded = this.sum(successful.flatMap(({ refunds }) => refunds.filter(({ status }) => status === 'SUCCEEDED').map(({ amount }) => Number(amount))));
+      const netCollected = Number((grossCollected - refunded).toFixed(2));
+      const tickets = confirmed.flatMap(({ tickets }) => tickets);
+      const admissions = tickets.filter(({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null).length;
+      const ticketUnits = this.ticketQuantity(confirmed);
+      const totalCapacity = eventSessions.reduce((total, session) => total + session.capacity, 0);
+      const reservedAttendance = this.ticketQuantity(eventBookings.filter(({ status }) => ['RESERVED', 'CONFIRMED'].includes(status)));
+      const bookingsWithProducts = confirmed.filter(({ products }) => products.length > 0).length;
+      const grossProductSales = this.sum(confirmed.flatMap(({ products }) => products.map(({ quantity, unitPrice }) => quantity * Number(unitPrice))));
+      const timezone = event.timezone || 'Australia/Melbourne';
+      return {
+        sortOrder,
+        event: { ...event, timezone },
+        durationDays: this.inclusiveEventDays(event.startDate, event.endDate, timezone),
+        sessions: eventSessions.length,
+        totalCapacity,
+        reservedAttendance,
+        unusedCapacity: Math.max(totalCapacity - reservedAttendance, 0),
+        capacityUtilisationPercent: totalCapacity > 0 ? Number(((reservedAttendance / totalCapacity) * 100).toFixed(1)) : 0,
+        confirmedBookings: confirmed.length,
+        ticketUnits,
+        ticketsIssued: tickets.length,
+        admissions,
+        attendanceRatePercent: tickets.length > 0 ? Number(((admissions / tickets.length) * 100).toFixed(1)) : 0,
+        grossCollected,
+        refunded,
+        netCollected,
+        averageBookingValue: confirmed.length > 0 ? Number((this.sum(confirmed.map(({ total }) => Number(total))) / confirmed.length).toFixed(2)) : 0,
+        ticketsPerBooking: confirmed.length > 0 ? Number((ticketUnits / confirmed.length).toFixed(2)) : 0,
+        revenuePerSession: eventSessions.length > 0 ? Number((netCollected / eventSessions.length).toFixed(2)) : 0,
+        revenuePerCapacityPlace: totalCapacity > 0 ? Number((netCollected / totalCapacity).toFixed(2)) : 0,
+        bookingsWithProducts,
+        productAttachRatePercent: confirmed.length > 0 ? Number(((bookingsWithProducts / confirmed.length) * 100).toFixed(1)) : 0,
+        grossProductSales,
+        productRevenuePerAdmission: admissions > 0 ? Number((grossProductSales / admissions).toFixed(2)) : 0,
+        refundRatePercent: grossCollected > 0 ? Number(((refunded / grossCollected) * 100).toFixed(1)) : 0,
+        paymentExceptionCount: eventBookings.filter(({ payments }) => payments.some(({ status }) => status === 'PENDING')).length,
+      };
+    });
+    const totals = {
+      events: baseRows.length,
+      sessions: baseRows.reduce((total, row) => total + row.sessions, 0),
+      confirmedBookings: baseRows.reduce((total, row) => total + row.confirmedBookings, 0),
+      ticketUnits: baseRows.reduce((total, row) => total + row.ticketUnits, 0),
+      ticketsIssued: baseRows.reduce((total, row) => total + row.ticketsIssued, 0),
+      admissions: baseRows.reduce((total, row) => total + row.admissions, 0),
+      totalCapacity: baseRows.reduce((total, row) => total + row.totalCapacity, 0),
+      grossCollected: this.sum(baseRows.map(({ grossCollected }) => grossCollected)),
+      refunded: this.sum(baseRows.map(({ refunded }) => refunded)),
+      netCollected: this.sum(baseRows.map(({ netCollected }) => netCollected)),
+      grossProductSales: this.sum(baseRows.map(({ grossProductSales }) => grossProductSales)),
+    };
+    return {
+      group: { id: group.id, name: group.name, description: group.description, type: group.type, status: group.status },
+      currency: 'AUD',
+      timezoneSemantics: 'EACH_EVENT_RETAINS_ITS_OWN_TIMEZONE',
+      totals: {
+        ...totals,
+        attendanceRatePercent: totals.ticketsIssued > 0 ? Number(((totals.admissions / totals.ticketsIssued) * 100).toFixed(1)) : 0,
+        capacityUtilisationPercent: totals.totalCapacity > 0 ? Number(((baseRows.reduce((total, row) => total + row.reservedAttendance, 0) / totals.totalCapacity) * 100).toFixed(1)) : 0,
+        productAttachRatePercent: totals.confirmedBookings > 0 ? Number(((baseRows.reduce((total, row) => total + row.bookingsWithProducts, 0) / totals.confirmedBookings) * 100).toFixed(1)) : 0,
+      },
+      rows: baseRows.map((row) => ({
+        ...row,
+        contributionToGroupNetPercent: totals.netCollected > 0 ? Number(((row.netCollected / totals.netCollected) * 100).toFixed(1)) : 0,
+      })),
+    };
+  }
+
   private async detailedScope(organizationId: string, eventId: string, query: EventReportQueryDto) {
     const event = await this.prisma.event.findFirst({
       where: { id: eventId, organizationId },
@@ -784,6 +898,12 @@ export class ReportingService {
     const from = new Date(`${fromDate}T00:00:00.000Z`);
     const to = new Date(`${toDate}T00:00:00.000Z`);
     return Math.round((to.getTime() - from.getTime()) / 86_400_000);
+  }
+
+  private inclusiveEventDays(startDate: Date, endDate: Date, timezone: string) {
+    const start = formatInTimeZone(startDate, timezone, 'yyyy-MM-dd');
+    const end = formatInTimeZone(endDate, timezone, 'yyyy-MM-dd');
+    return Math.max(this.calendarDayDifference(start, end) + 1, 1);
   }
 
   private ticketQuantity(
