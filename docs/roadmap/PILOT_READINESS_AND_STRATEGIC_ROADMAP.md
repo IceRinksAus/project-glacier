@@ -1,922 +1,383 @@
-# Project Glacier — Pilot Readiness & Strategic Roadmap
+# Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Prepared:** 19 August 2026  
-**Status:** Strategic control document  
-**Purpose:** Define Glacier's current position, the path to pilot, and the broader product direction so roadmap decisions do not depend on chat history.
+**Updated:** 25 August 2026
 
----
+**Status:** Current strategic control document after Sprint 23
 
-# 1. Strategic Purpose
+**Purpose:** Record Glacier's current evidence-based position, define the controlled phases to a live pilot, and prevent delivery priorities from depending on chat history.
 
-Project Glacier is being developed as a multi-tenant event operating platform.
-
-Its initial implementation has been driven by session-based attractions and Ice Rinks Australia use cases, but the intended product is broader than a ticket-selling system.
-
-The strategic product direction is:
-
-> **Glacier should become an integrated event-management platform with ticketing, booking, payment and admission as core transactional capabilities, surrounded by organiser, customer and staff operating tools.**
-
-The immediate objective is not to build every future module.
-
-The immediate objective is:
-
-> **Move Glacier from its current end-to-end booking foundation to a genuinely pilot-ready product that Ice Rinks Australia can operate at a real event without relying on developer intervention or critical external/manual workarounds.**
+**Supporting evidence:** `PILOT_READINESS_REASSESSMENT_AFTER_SPRINT_23.md`, Sprint plans and Sprint notes.
 
 ---
 
-# 2. Current Product Architecture
+# 1. Executive Position
 
-Glacier should be understood as four product surfaces around one shared core platform.
+Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
+
+After Sprint 23, Glacier is best described as:
+
+> **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
+
+The software now supports most of the intended end-to-end journey locally. The remaining route to pilot is primarily about controlled operations, production infrastructure, real-device validation, security/privacy evidence and rehearsed support—not simply adding more product breadth.
+
+Glacier must not begin a live customer pilot until the release gates in this document have passed.
+
+---
+
+# 2. Product Surfaces
 
 ## 2.1 Organiser Platform
 
-Authenticated Organisation-facing software used to create, configure and operate Events.
-
-Long-term responsibilities include:
-
-- Organisation dashboard
-- Event creation wizard
-- Event workspace
-- Sessions
-- Operational schedules
-- Products
-- Product variants
-- Ticket Types
-- Rules
-- Bookings
-- Customers
-- Waivers
-- Reports
-- Settings
-- Event operations
-- later broader event-management modules
-
-Current status:
-A rudimentary Organiser Platform exists. The Event list and Event Workspace exist, with Overview and Sessions currently the most developed user-facing operator areas. Several Event Workspace sections remain placeholders.
-
----
+The authenticated Organisation-facing system used to create, configure, monitor and operate Events. Current foundations include Event creation and readiness, Sessions, schedules, Ticket Types, Products, Rules, branding, Bookings, Customers, Payment investigation, Event reports, Event Groups and exports.
 
 ## 2.2 Customer Event Websites
 
-Public-facing Event websites generated and powered by Glacier.
+Public Event websites powered by Glacier, including Event branding, date and Session selection, tickets, participants, add-ons, booking, Stripe payment, confirmation, Tickets and Waiver journeys.
 
-Long-term responsibilities include:
+## 2.3 Staff and Event Operations
 
-- Event landing page
-- Event branding
-- venue and Event information
-- session browsing
-- ticket selection
-- participant capture
-- add-ons
-- booking
-- payment
-- confirmation
-- waiver prompt
-- later customer booking management
+The on-site staff interface for automatic Gate Entry and Ticket Lookup followed by deliberate processing. It includes configurable entry windows and Ticket detail presentation.
 
-Current status:
-A rudimentary but functional public Event booking experience exists and now supports real Stripe payment and Ticket issuance.
+## 2.4 Future Glacier Commercial Website
 
-The experience is functionally ahead of its final product design and requires later UX/productisation work.
+A future public B2B website will explain and sell Glacier to other operators. It is not part of pilot readiness and should describe demonstrated capabilities rather than future promises.
 
 ---
 
-## 2.3 Staff / Event Operations
+# 3. Delivered Foundation Through Sprint 23
 
-Operational interface used by on-site staff.
+The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
-Long-term responsibilities include:
+- multi-tenant Organisations, Users, memberships and authenticated roles;
+- Events, Sessions, schedules and Session exceptions;
+- Ticket Types with shared Session admission capacity;
+- Products, Variants, grouping, ordering, inventory and reusable per-Session capacity;
+- backend-authoritative Rules and required Product behaviour;
+- reservations, server-authoritative pricing and booking state;
+- Stripe PaymentIntents, webhooks, persisted Payments/refunds, idempotency and late-success protection;
+- Ticket issuance, public Ticket presentation and validation;
+- Event Waiver persistence and digital acceptance foundation;
+- staff Gate Entry and Ticket Lookup foundations;
+- Event setup wizard, readiness checks, branding and media foundation;
+- routed public journey beginning with Event date, then Session;
+- tenant-safe Booking and Customer lookup;
+- controlled Payment investigation and reconciliation foundation;
+- Event reporting by overview, Ticket Type, Session, Event date, Product/Variant and booking pace;
+- Event Groups and multi-Event comparison scorecards; and
+- formula-safe CSV plus browser Print / Save PDF presentation.
 
-- staff authentication
-- Event/session selection
-- Ticket scanning
-- check-in
-- admission status
-- operational lookup
-- later waiver verification
-- staff-specific permissions and workflows
+Current verified baseline at Sprint 23 closeout:
 
-Current status:
-Ticket validation, QR and scan/check-in primitives exist in the API, but there is not yet a complete staff-facing operational product.
+- 31 current Prisma migrations;
+- 69 API suites / 456 passing tests;
+- 21 web suites / 67 passing tests;
+- passing API and web production builds; and
+- authenticated browser acceptance of detailed Event reports, exports and mobile containment.
 
----
-
-## 2.4 Glacier B2B Website
-
-A future public commercial website, likely at `glacier.com`, whose purpose is to sell Glacier to other event operators.
-
-This is not the event-management software itself.
-
-Its purpose is commercial:
-
-- product positioning
-- feature explanation
-- customer types / use cases
-- pricing or enquiry flow
-- demo requests
-- contact / sales
-- case studies
-- later onboarding and commercial conversion
-
-Current status:
-Not a near-term engineering priority.
-
-It should be developed when Glacier has a demonstrably usable pilot product so the marketing site can describe real delivered capabilities rather than future promises.
+This proves the local application baseline. It does not prove production readiness, legal approval, penetration resistance or event-day reliability.
 
 ---
 
-# 3. Current Glacier Status
+# 4. Current Pilot Gaps
 
-## 3.1 Overall Position
+## 4.1 Operating-policy decisions
 
-Glacier has now moved beyond an early prototype.
+Ice Rinks Australia must confirm:
 
-The core transactional and operational foundation includes:
+- cancellation and refund eligibility;
+- rescheduling and Session-change policy;
+- Ticket invalidation, replacement and audit consequences;
+- which MEMBER actions require OWNER authority;
+- treatment of Payment/refund failures and retries;
+- whether walk-up sales are mandatory for the first pilot; and
+- event-day escalation and fallback ownership.
 
-- Organisations
-- Users and Organisation memberships
-- JWT authentication
-- Event ownership
-- Events
-- Sessions
-- Operational Schedule Builder
-- Session exceptions
-- Products
-- Product Variants
-- Session Products
-- Ticket Types
-- Customers
-- Bookings
-- Booking Items
-- Participants
-- Rules / Rule Engine
-- Reservations
-- Stripe Payments
-- Payment Refunds
-- Tickets
-- QR generation
-- Ticket validation
-- Ticket scanning/check-in primitives
+These decisions must precede implementation so Glacier does not encode an accidental operating policy.
 
-Sprint 15 completed the real payment architecture and should be treated as the point at which Glacier reached a genuine end-to-end booking foundation.
+## 4.2 Controlled customer-service actions
 
----
+Lookup and investigation exist, but the pilot needs the minimum approved mutation workflows for refunds, cancellation and rescheduling. Every sensitive action requires tenant scope, explicit permissions, durable audit evidence, deterministic Ticket consequences and safe failure handling.
 
-## 3.2 Current Strategic Milestone
+## 4.3 Walk-up sales decision
 
-Glacier is best considered approximately:
+If mandatory, Glacier needs a deliberately narrow staff flow covering Session, Ticket Types, required Products, participant details, payment, Ticket issuance and optional Waiver handoff. This must not expand into a general retail POS programme before pilot.
 
-> **v0.5 — End-to-end booking foundation**
+## 4.4 Production environment and reliability
 
-The next target is:
+No live environment is yet evidenced. Readiness requires controlled hosting, domains, HTTPS, managed secrets, explicit CORS, edge rate limiting, central logs, monitoring, backups, restore evidence, deployment/migration procedures, rollback and incident ownership.
 
-> **v0.8 — Internal pilot-ready**
+## 4.5 Physical device and event-day operations
 
-followed by:
+The scanner and customer experience require physical iPhone Safari, Android Chrome and intended hand-scanner testing. Scenarios must include camera denial, weak/lost connectivity, duplicate/simultaneous scans, wrong Event, early/late arrival, cancelled Tickets and fallback procedures.
 
-> **v0.9 — Live-event pilot**
+## 4.6 Security, privacy, legal and storage
 
-and then:
+The formal Security and Privacy Gate remains open. Production-like tenant isolation, dependency review, access recovery/MFA policy, upload controls, Australian-region managed storage, retention/deletion policy, Waiver/legal approval and privacy review require evidence and sign-off.
 
-> **v1.0 — Production release**
+## 4.7 Representative operational acceptance
 
-The next few months should therefore be organised around reaching pilot readiness rather than simply adding whichever feature appears next on a roadmap list.
+Ice Rinks Australia staff must complete the normal operating chain without developer intervention using representative data, devices and failure scenarios.
 
 ---
 
-# 4. What Glacier Does Well Today
+# 5. Phased Roadmap to Pilot
 
-## 4.1 Booking Engine
+These phases are outcome-based. A phase may span more than one Sprint. Sprint scopes should only be locked after preceding decisions and dependencies are known.
 
-The backend is authoritative for:
+## Phase 1 — Pilot Policy and Operational Scope Lock
 
-- Event / Session relationships
-- Ticket Type validity
-- Product configuration
-- participant rules
-- required add-ons
-- capacity checks
-- server-side totals
-- reservation state
+**Objective:** Remove ambiguity about what the first pilot must operationally support.
 
-This is a strong foundation for future operator, staff and customer interfaces.
+### Scope
 
----
+- approve cancellation, refund, rescheduling and Ticket-consequence policies;
+- define OWNER and MEMBER authority for sensitive actions;
+- decide whether walk-up sales are a pilot blocker;
+- define Payment exception and failed-refund escalation;
+- nominate operational, technical, privacy and incident owners;
+- select the pilot Event profile, devices, payment mode and expected scale;
+- define support hours and fallback/manual procedures; and
+- convert decisions into acceptance criteria.
 
-## 4.2 Rule Engine
+### Deliverables
 
-Glacier already supports configurable Event rules and backend-authoritative enforcement.
+- Pilot Operating Policy;
+- permission/action matrix;
+- pilot scenario and volume profile;
+- walk-up decision record;
+- support/escalation ownership matrix; and
+- locked scopes for implementation Sprints.
 
-This provides a strong basis for session attractions and other event types with age, product or participation rules.
+### Exit gate
 
----
+No unresolved policy question can materially change customer-service, POS, Ticket or Payment behaviour.
 
-## 4.3 Operational Scheduling
+## Phase 2 — Minimum Pilot Operations
 
-Operational Schedule Builder and Session exception handling are mature capabilities and align with Glacier's broader event-operations vision.
+**Objective:** Close the smallest confirmed workflow gaps needed by real staff.
 
-They are more than generic ticketing features and should remain a core product differentiator.
+### Scope
 
----
+- controlled refund/cancellation workflow where approved;
+- controlled Booking reschedule/Session change where approved;
+- deterministic Ticket invalidation/reissue;
+- append-only audit evidence and reason capture;
+- role enforcement and tenant-safe service boundaries;
+- Payment-provider failure, retry and idempotency handling;
+- minimum walk-up flow only if Phase 1 makes it mandatory; and
+- focused organiser UX changes supported by UAT evidence.
 
-## 4.4 Payments
+### Excluded
 
-Sprint 15 delivered:
+Broad POS, CRM, generic workflow engines and speculative customer-portal work.
 
-- real Stripe PaymentIntents
-- Payment Element
-- signed webhooks
-- persistent Payment attempts
-- persistent PaymentRefunds
-- idempotency
-- reservation-expiry PaymentIntent cancellation
-- automatic late-success refund
-- Ticket issuance protection
+### Exit gate
 
-Payment and fulfilment architecture should now be treated as a stable foundation unless a future product requirement genuinely requires changes.
+Automated and browser tests prove every approved action, denial path, audit record, Ticket consequence and Payment failure path. Ice Rinks Australia accepts representative workflows.
 
----
+## Phase 3 — Production Platform and Security Hardening
 
-# 5. Current Gaps Before Pilot
+**Objective:** Create a controlled, observable and recoverable pilot environment.
 
-The core engines are now more mature than the product surfaces around them.
+### Scope
 
-The most important gaps are:
+- separate production configuration and managed Australian-region hosting;
+- HTTPS, domains and explicit allowed origins;
+- managed secrets and credential rotation;
+- production PostgreSQL and managed object storage;
+- edge rate limiting and abuse protection;
+- central structured logs with sensitive-field controls;
+- application error, uptime, Payment/webhook and operational alerts;
+- database/file backups and retention policy;
+- completed restore drill with measured recovery time;
+- automated build, test, migration and deployment checks;
+- rollback and forward-fix procedures;
+- production-like tenant-isolation verification; and
+- formal Security and Privacy Gate remediation/sign-off.
 
-## 5.1 Organiser onboarding and Event setup
+### Exit gate
 
-A complete Event creation/setup wizard does not yet exist.
+The environment can be deployed, monitored, backed up, restored and rolled back using documented procedures. No unresolved critical security/privacy finding remains.
 
-The Organiser Platform must become usable without developer intervention.
+## Phase 4 — End-to-End Rehearsal and Operational Readiness
 
----
+**Objective:** Prove the complete system and operating team before real customers use it.
 
-## 5.2 Staff / gate operations
+### Scope
 
-Ticket scan primitives exist, but a proper staff-facing scanner/check-in product is still required.
+- create a representative Event from a clean Organisation without developer shortcuts;
+- configure Sessions, shared capacity, Ticket Types, Products, Variants and Rules;
+- verify required Kanga behaviour and merchandise inventory exhaustion;
+- complete public mobile booking, Stripe test payment, Ticket and Waiver journeys;
+- exercise approved service and walk-up flows;
+- test Gate Entry and Lookup on intended physical devices;
+- test early, late, duplicate, simultaneous, cancelled and wrong-Event scans;
+- test camera denial, poor connectivity and recovery;
+- reconcile Bookings, Payments, refunds, Tickets, admissions, inventory and reports;
+- validate a representative Event Group and exports;
+- complete accessibility, privacy-content and runbook review; and
+- conduct a timed event-day simulation with named roles.
 
----
+### Exit gate
 
-## 5.3 Operator booking and customer-service tools
+All critical scenarios pass without developer intervention. Accepted non-critical issues have an owner, workaround and due date. A formal go/no-go review authorises only the bounded pilot.
 
-Real event operations require staff to locate and understand Bookings and Customers without database access.
+## Phase 5 — Controlled Live Pilot
 
-Minimum pilot capability will likely include:
+**Objective:** Operate one deliberately bounded real Event and collect evidence for v1.0.
 
-- Booking lookup
-- Customer lookup
-- Session / Ticket information
-- payment status
-- basic customer-service actions
+### Scope and controls
 
-Exact change/refund/reschedule functionality should be scoped from Ice Rinks Australia's actual operating requirements.
+- restricted Event, Organisation, staff and customer population;
+- production monitoring and named on-call ownership;
+- daily Payment, refund, capacity, inventory and admission reconciliation;
+- incident log and severity/escalation procedure;
+- customer and organiser feedback capture;
+- privacy/security observation and access review;
+- agreed performance/reliability measures;
+- no uncontrolled feature expansion during the live window;
+- no unrecorded manual production-data repair; and
+- agreed pause/rollback triggers for critical defects.
 
----
+### Exit gate
 
-## 5.4 On-site sales / POS
+A written pilot report reconciles commerce and operations, records incidents and feedback, and recommends remediation/rehearsal, a second controlled pilot, or progression toward v1.0.
 
-If walk-up sales are operationally important, Glacier needs a supported on-site sales workflow before pilot.
+## Phase 6 — v1.0 Production Release Preparation
 
-This does not necessarily require a fully mature retail POS platform.
+**Objective:** Convert pilot learning into a repeatable production service.
 
-The pre-pilot goal should be the smallest reliable POS/on-site sales capability needed to operate an Event.
+### Scope
 
----
+- remediate pilot findings and repeat affected gates;
+- refine onboarding, support and release procedures;
+- define service ownership and support expectations;
+- confirm legal/commercial terms and privacy materials;
+- establish repeatable Organisation onboarding; and
+- approve the v1.0 capability/reliability baseline.
 
-## 5.5 Basic reporting and reconciliation
+### Exit gate
 
-A pilot Event cannot reasonably be operated without basic operational and commercial visibility.
-
-Minimum pre-pilot reporting should likely include:
-
-- Event sales
-- revenue
-- Tickets sold
-- attendance / check-ins
-- Session utilisation
-- refunds
-- payment/reconciliation status
-
-Advanced BI/report-builder capability can follow later.
-
----
-
-## 5.6 Security consistency
-
-Several older API areas remain less consistently protected than newer tenant-scoped modules.
-
-A targeted API/security hardening milestone is required before live pilot.
-
-This should include:
-
-- clear Public / Operator / Staff endpoint boundaries
-- JWT/role enforcement
-- Organisation scoping
-- input validation policy
-- Ticket scan authorisation
-- cross-tenant denial testing
-
----
-
-## 5.7 Production readiness
-
-Before live pilot Glacier also requires:
-
-- production environment configuration
-- deployment process
-- secret management
-- rate limiting / abuse controls
-- logging / monitoring
-- backup / restore verification
-- error handling
-- auditability
-- privacy/security review
-- pre-pilot Security & Privacy Gate
+Glacier can onboard and support another approved operator or Event without undocumented development-team knowledge.
 
 ---
 
-# 6. Sprint 16 — Delivered Foundation
+# 6. Milestone Definitions
 
-## Sprint 16 — Event Waivers & Digital Acceptance
+## v0.8 — Internal Pilot Ready
 
-Sprint 16's core implementation is complete and in closeout.
+Reached after Phases 1–3 when approved operating workflows exist and a secure, observable, recoverable pilot environment is available. This does not authorise real customers.
 
-Core principles:
+## v0.85 — Rehearsal Passed
 
-- Waivers are Event-centric.
-- Waivers are independent of Booking, Ticket, Customer account and email.
-- Walk-up / POS customers must be able to complete a waiver.
-- The public waiver is accessible through a stable Event URL / physical QR code.
-- Online Booking confirmation may offer the same waiver as an optional shortcut.
-- Each adult completes their own acceptance.
-- A responsible adult may include multiple minors.
-- Published Event-specific Waiver Versions are immutable.
-- Glacier uses approved jurisdiction-specific legal templates and controlled Event/Organisation variable substitution.
-- The Event Setup Wizard includes `Waiver & Terms` as a standard **optional** step.
-- An Event may be valid with no Waiver.
-- If a Waiver is enabled, its generation / preview / approval / publication lifecycle is strict.
-- Digital Waiver Pass architecture should be considered.
-- Apple Wallet is a stretch goal and must not block Sprint 16 completion.
+Reached after Phase 4 when the complete operating chain succeeds on real devices without developer intervention and the go/no-go group authorises a bounded pilot.
 
-Sprint 16 preserved Sprint 15 payment and Ticket authority.
+## v0.9 — Live Pilot Completed
 
-Delivered capability and remaining production-readiness items are recorded in `docs/sprint-notes/sprint-16.md`. The next numbered Sprint has not yet been selected.
+Reached after Phase 5 when the controlled Event has operated and its technical, commercial and operational evidence has been reconciled.
+
+## v1.0 — Production Release
+
+Reached only after pilot findings are resolved and Glacier has repeatable deployment, support, onboarding, security, privacy and recovery controls.
 
 ---
 
-# 7. UX / Productisation Strategy
+# 7. Capability and Gate Matrix
 
-Glacier's Organiser Platform and Customer Event Websites both currently exist in rudimentary form.
-
-UX improvement is not considered cosmetic work to leave until v1.0.
-
-It is a pre-pilot workstream.
-
-## 7.1 Incremental rule
-
-From Sprint 16 onward:
-
-> **Any new UI should be built in the direction of the intended production product, not as temporary developer UI.**
-
-Reusable patterns should be established for:
-
-- navigation
-- page headers
-- forms
-- wizard steps
-- cards
-- tables
-- status indicators
-- empty states
-- confirmation states
-- error handling
-- mobile layouts
+| Capability | Current position | Required next evidence | Phase |
+|---|---|---|---|
+| Core Event, Session and schedule | Implemented | Representative operator UAT | 4 |
+| Ticket Types, Products, Variants and Rules | Implemented | Capacity/inventory acceptance | 4 |
+| Public routed booking | Implemented locally | Accessibility, resilience, customer UAT | 4 |
+| Stripe Payment and Tickets | Implemented foundation | Production alerts and reconciliation | 3–4 |
+| Event Waivers | Implemented foundation | Legal/privacy and storage approval | 3–4 |
+| Event setup and branding | Implemented foundation | Clean setup UAT, managed media | 3–4 |
+| Staff Scanner | Implemented foundation | Device, concurrency, network sign-off | 4 |
+| Booking and Customer lookup | Implemented | Support runbook and UAT | 2–4 |
+| Refund/cancellation | Policy/mutation gap | Approved controlled workflow | 1–2 |
+| Rescheduling | Policy/mutation gap | Approved controlled workflow | 1–2 |
+| Walk-up sales | Decision outstanding | Decision, then minimum flow if required | 1–2 |
+| Reporting and Event Groups | Implemented beyond minimum | Group/export reconciliation | 4 |
+| Production deployment | Not evidenced | Controlled deployed environment | 3 |
+| Logs, monitoring and alerts | Design/checklist only | Working alerts and ownership | 3 |
+| Backup and restore | Not evidenced | Successful restore drill | 3 |
+| Security and Privacy Gate | Open | Review, remediation, sign-off | 3 |
+| Event-day operations | Not formally rehearsed | Complete timed simulation | 4 |
 
 ---
 
-## 7.2 Dedicated productisation milestone
+# 8. Pilot Acceptance Chain
 
-Before internal pilot there should be a deliberate Organiser & Customer Experience Productisation milestone.
+Glacier is only ready when Ice Rinks Australia staff can complete this chain without developer shortcuts:
 
-Likely focus:
+Event setup → readiness/activation → date and Session → Ticket Types and Products → participants → payment → confirmation → Ticket/optional Waiver → approved service or walk-up action → Gate Entry/Lookup → reconciliation → reporting/export.
 
-### Organiser
-
-- Organisation dashboard
-- Event cards
-- Event Wizard
-- Event setup progress
-- Event Workspace consistency
-- usable Products / Ticket Types / Bookings / Customers workflows
-- clear statuses and empty states
-- tablet/desktop usability
-
-### Customer
-
-- Event landing page
-- Event branding
-- mobile-first booking
-- Session selection
-- Ticket presentation
-- booking-step progression
-- Add-ons
-- payment transition
-- confirmation
-- waiver CTA
-- accessibility and error recovery
+Mandatory cross-cutting evidence includes tenant/role isolation, capacity/inventory concurrency, Payment idempotency, backups, security/privacy approval, accessible mobile booking, physical scanner sign-off, production monitoring and named incident ownership.
 
 ---
 
-# 8. Pilot Capability Test
+# 9. Deferred Scope
 
-A capability should be considered pre-pilot if the answer to this question is **No**:
+Unless new operational evidence promotes them, the following must not displace pilot-critical work:
 
-> **Could Ice Rinks Australia run a real event using Glacier as the primary operating system without this capability?**
+- generated XLSX and advanced multi-page PDF reports;
+- generic report builder, broad BI and speculative benchmarks;
+- marketing attribution before approved instrumentation;
+- profit/margin reporting before reliable cost models;
+- general retail POS beyond confirmed pilot walk-up needs;
+- broad customer portal, CRM, memberships and Gift Cards;
+- workforce, sponsorship, advanced venue and asset management;
+- Glacier B2B marketing site; and
+- SaaS self-service billing.
 
-This test should override arbitrary software-category labels such as "Phase 1" or "Phase 2".
-
----
-
-# 9. Pilot Capability Matrix
-
-| Capability                       | Pre-Pilot Status                                   | Reason                                                      |
-| -------------------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
-| Core Event model                 | Complete foundation                                | Required                                                    |
-| Sessions                         | Complete foundation                                | Required                                                    |
-| Operational scheduling           | Complete foundation                                | Required                                                    |
-| Products / Ticket Types          | Complete foundation                                | Required                                                    |
-| Rule Engine                      | Complete foundation                                | Required                                                    |
-| Public Booking                   | Complete foundation                                | Required                                                    |
-| Stripe Payments                  | Complete foundation                                | Required                                                    |
-| Ticket issuance                  | Complete foundation                                | Required                                                    |
-| Event Waivers                    | **Required before pilot**                          | Real participation/check-in operation                       |
-| Event Setup Wizard               | **Required before pilot**                          | Organiser must create Events without developer intervention |
-| Organiser UX productisation      | **Required before pilot**                          | Platform must be operationally usable                       |
-| Customer UX productisation       | **Required before pilot**                          | Real customers must use it reliably                         |
-| Staff Scanner / Check-in         | Complete foundation; physical sign-off pending     | Gate operation                                              |
-| API / tenant hardening           | **Required before pilot**                          | Security boundary                                           |
-| Booking lookup                   | **Required before pilot**                          | Customer service                                            |
-| Customer lookup                  | **Required before pilot**                          | Customer service                                            |
-| Booking changes / rescheduling   | **Likely required before pilot**                   | Existing operational requirement; exact scope to confirm    |
-| Refund operations                | **Likely required before pilot**                   | Customer service; exact scope to confirm                    |
-| Minimum on-site sales / POS      | **Likely required before pilot**                   | Walk-up sales                                               |
-| Basic Event reporting            | **Required before pilot**                          | Event management                                            |
-| Payment reconciliation           | **Required before pilot**                          | Commercial control                                          |
-| Minimum venue data               | **Required before pilot**                          | Event setup / operational context                           |
-| Production deployment            | **Required before pilot**                          | Live use                                                    |
-| Logging / monitoring             | **Required before pilot**                          | Operational reliability                                     |
-| Backup / restore                 | **Required before pilot**                          | Production safety                                           |
-| Rate limiting / abuse protection | **Required before pilot**                          | Public production safety                                    |
-| Security & Privacy Gate          | **Required before live pilot**                     | Release gate                                                |
-| Customer Portal                  | Post-pilot unless operational evidence promotes it | Not essential to first operator pilot                       |
-| CRM campaigns                    | Post-pilot                                         | Growth capability                                           |
-| Memberships                      | Post-pilot                                         | Commercial expansion                                        |
-| Gift Cards                       | Post-pilot                                         | Commercial expansion                                        |
-| Advanced Venue Management        | Post-pilot                                         | Broader event-management expansion                          |
-| Asset Management                 | Post-pilot                                         | Broader event-management expansion                          |
-| Staff rostering                  | Post-pilot unless required operationally           | Broader operations                                          |
-| Sponsorship management           | Post-pilot                                         | Commercial event-management expansion                       |
-| Marketing automation             | Post-pilot                                         | Growth                                                      |
-| glacier.com B2B website          | Commercialisation stage                            | Sells Glacier rather than operating Events                  |
-| SaaS self-service billing        | Commercialisation stage                            | External operator scale                                     |
-
-Items marked "Likely required" should be confirmed against actual Ice Rinks Australia event-day operations before their Sprint is scoped.
+CSV and browser Print / Save PDF satisfy the present base reporting requirement.
 
 ---
 
-# 10. Proposed Roadmap to Pilot
+# 10. Decision and Scope-Control Rules
 
-Exact Sprint numbers after Sprint 16 are provisional.
+Before promoting an item, ask:
 
-Capability order is more important than numbering.
+1. Is it required for the approved pilot operating chain?
+2. Does it close a security, privacy, Payment, data-integrity or event-day risk?
+3. Is it supported by operator/customer evidence?
+4. Can it be delivered without destabilising a protected foundation?
+5. Does it have testable evidence and a named operational owner?
 
-## Sprint 16 — Event Waivers & Digital Acceptance
-
-Goal:
-Complete Glacier-native Event waiver creation, publication, public acceptance and evidence.
-
-Status:
-Core implementation complete. Approved production legal content, complete metadata administration and pre-launch privacy/security controls remain follow-up work.
+Each Sprint must record its phase outcome, scope boundaries, decisions/dependencies, required evidence, security/data-mutation implications, documentation changes and exact exit gate.
 
 ---
 
-## Sprint 17 — API Boundary & Security Hardening
+# 11. Strategic Direction After Pilot
 
-Goal:
+Ticketing remains a major Glacier module, not the whole product. After pilot evidence proves the core service, expansion can move deliberately into event operations, richer venue management, workforce, assets, customer/CRM capabilities, commercial tools and evidence-supported decision intelligence.
 
-> Establish consistently safe Operator, Staff and Public API boundaries before building more privileged UI.
-
-Likely areas:
-
-- Organization
-- Booking
-- Customer
-- Category
-- Ticket Type
-- Rule
-- Ticket
-- internal Payment routes
-- input validation policy
-
-This milestone should remain targeted rather than becoming an open-ended security rewrite.
-
-Status: implementation complete and locally verified. See `docs/roadmap/sprint-17-plan.md` for the locked contract and `docs/sprint-notes/sprint-17.md` for delivery evidence and residual risks.
+Commercialisation—including the B2B website and SaaS billing—should follow a repeatable product and support model.
 
 ---
 
-## Sprint 18 — Staff Scanner & Gate Operations
+# 12. Immediate Next Action
 
-Goal:
+The next work is **Phase 1 — Pilot Policy and Operational Scope Lock**.
 
-> Allow real staff to perform reliable authenticated check-in at the Event.
+It should begin with a short decision workshop and produce a written operating-policy record before another implementation Sprint is locked. The highest-impact questions are:
 
-Core flow:
+1. Must the first pilot support walk-up sales inside Glacier?
+2. Which refund, cancellation and rescheduling actions must staff perform?
+3. Which actions require OWNER approval?
+4. What happens to Tickets and capacity after each action?
+5. What pilot Event, devices, staff roles, expected volume and fallback procedures will be used?
 
-staff login
-→ select Event / operational context
-→ scan
-→ VALID / ALREADY SCANNED / INVALID
-→ check in
-→ continue
-
-Status: implementation complete and locally verified on 20 August 2026. Physical iPhone Safari and Android Chrome camera verification remains a pilot sign-off gate. See `docs/roadmap/sprint-18-plan.md`, `docs/sprint-notes/sprint-18.md` and `docs/operations/STAFF_SCANNER_RUNBOOK.md`.
+After approval, Phase 2 and Phase 3 can proceed in parallel where dependencies allow: operational workflows on one track and production/security foundations on the other. Phase 4 recombines them in one complete rehearsal.
 
 ---
 
-## Next Milestone — Organiser & Customer Experience Productisation
+# 13. Current Strategic Conclusion
 
-Goal:
+Glacier has delivered substantially more breadth than the original v0.5 roadmap recorded. The correct next move is not another broad feature Sprint.
 
-> Turn Glacier's existing functional surfaces into coherent product experiences.
+The route to a credible pilot is:
 
-Includes:
+> **decide operating policy → close minimum workflow gaps → harden production → rehearse end to end → run a controlled pilot → convert evidence into v1.0.**
 
-- Organisation dashboard
-- Event Wizard
-- Event Workspace
-- public Event site
-- booking UX
-- Event branding / Website configuration
-- consistent design system
-
----
-
-## Next Milestone — Operator Service Tools
-
-Goal:
-
-> Let event staff resolve real customer issues through Glacier.
-
-Likely scope:
-
-- Booking lookup
-- Customer lookup
-- Booking details
-- payment/ticket state
-- minimum session-change capability
-- minimum refund/cancellation workflow
-
-Exact scope should be based on real event-day workflows.
-
----
-
-## Next Milestone — Minimum Viable POS / On-Site Sales
-
-Goal:
-
-> Support the walk-up customer journey required by a real Event.
-
-Avoid building a broad retail POS platform unless the pilot requires it.
-
----
-
-## Next Milestone — Core Reporting & Reconciliation
-
-Goal:
-
-> Give organisers sufficient operational and financial visibility to run the Event.
-
-Minimum reports:
-
-- Event sales
-- revenue
-- Tickets
-- attendance
-- Session utilisation
-- refunds
-- payments / reconciliation
-
----
-
-## Next Milestone — Pilot Production Hardening
-
-Goal:
-
-> Turn the development system into a controlled pilot platform.
-
-Includes:
-
-- deployment
-- production environments
-- secrets
-- CORS/configuration
-- rate limiting
-- logs
-- monitoring
-- backup / restore
-- auditability
-- security review
-- privacy review
-- operational procedures
-
----
-
-# 11. v0.8 — Internal Pilot Ready
-
-The internal-pilot milestone should mean:
-
-> **Ice Rinks Australia can operate a complete Event through Glacier without developer shortcuts for normal Event operations.**
-
-Target operational chain:
-
-Organisation
-→ Event creation
-→ Event configuration
-→ Sessions
-→ Products / Ticket Types
-→ Rules
-→ optional Waiver
-→ public Event website
-→ customer Booking
-→ Stripe Payment
-→ Ticket issuance
-→ on-site sales
-→ staff check-in
-→ Booking/customer support
-→ reporting / reconciliation
-
-Real operational staff should be able to use the product.
-
----
-
-# 12. v0.9 — Live Event Pilot
-
-After internal operation is stable:
-
-> Run a controlled live Event where Glacier is genuinely responsible for customer and operational workflows.
-
-Live pilot should deliberately test:
-
-- customer behaviour
-- queues
-- poor network conditions
-- duplicate scans
-- late arrivals
-- walk-up sales
-- staff mistakes
-- refunds / changes
-- device issues
-- mobile usability
-- operational support
-- payment reconciliation
-
-Pilot findings should drive the final v1.0 priorities.
-
----
-
-# 13. Post-Pilot — Event Management Expansion
-
-Once the core platform and pilot foundation work, Glacier should expand beyond ticketing into a broader Event Operating System.
-
-Ticketing remains a major module, not the whole product.
-
-Potential expansion domains:
-
-## 13.1 Event operations
-
-- Event run sheets
-- operating checklists
-- tasks
-- incidents
-- maintenance
-- operational documents
-- suppliers
-- contractors
-
-## 13.2 Venue management
-
-- venue records
-- spaces / zones
-- capacities
-- utilities
-- maps
-- infrastructure
-- reusable venue configurations
-
-## 13.3 Workforce
-
-- staff
-- roles
-- shifts
-- accreditation
-- training
-- contractor access
-
-## 13.4 Assets
-
-- equipment
-- asset allocation
-- maintenance state
-- Event assignment
-
-## 13.5 Customer / CRM
-
-- customer history
-- segmentation
-- campaigns
-- memberships
-- loyalty
-- group / corporate sales
-
-## 13.6 Commercial
-
-- Gift Cards
-- promotions
-- sponsorship
-- vendors / concessions
-- merchandise
-- budgets
-- settlement
-
-## 13.7 Reporting / Intelligence
-
-- Event performance
-- revenue
-- attendance
-- utilisation
-- operational KPIs
-- customer analytics
-
----
-
-# 14. Product Expansion Principle
-
-Do not attempt to build a generic enterprise ERP in advance.
-
-Use real operational needs first.
-
-Example:
-
-Instead of:
-"Build generic asset management."
-
-Start from:
-"Ice Rinks Australia needs to know which equipment is assigned to which Event and whether it is operational."
-
-Then generalise the resulting capability carefully.
-
-The same approach should apply to:
-
-- Venue Management
-- CRM
-- Staff
-- Assets
-- Reporting
-- commercial modules
-
----
-
-# 15. Commercialisation Phase
-
-Once pilot evidence demonstrates that Glacier works as an event platform, prepare it for other operators.
-
-Commercialisation workstream may include:
-
-- `glacier.com`
-- product positioning
-- pricing / packaging
-- sales/demo flow
-- case studies
-- commercial onboarding
-- self-service Organisation onboarding
-- subscription/SaaS billing
-- support model
-- documentation
-- external customer configuration
-
-The B2B website should sell proven capability rather than future plans.
-
----
-
-# 16. Major Strategic Risks
-
-## 16.1 Backend capability outrunning product usability
-
-Glacier's backend/domain foundation is currently more mature than the Organiser and Staff experiences.
-
-From this point, development should rebalance toward productisation and pilot operations.
-
----
-
-## 16.2 Scope breadth
-
-The long-term vision is intentionally broad.
-
-The risk is trying to support every future event type before the initial platform has operated a real event.
-
-Use pilot needs to control sequencing.
-
----
-
-## 16.3 Security maturity inconsistency
-
-Newer modules use stronger tenant/role architecture than older modules.
-
-Do not continue expanding privileged operator/staff capability before normalising the relevant security boundaries.
-
----
-
-## 16.4 Delaying production hardening
-
-Deployment, monitoring, backup, security and operational procedures must be scheduled before pilot rather than treated as last-minute launch tasks.
-
----
-
-# 17. Development Balance Going Forward
-
-Development to date has necessarily concentrated heavily on backend/platform capability.
-
-Going forward, effort should increasingly balance:
-
-- backend / security / reliability
-- together with
-- Organiser UX
-- Customer UX
-- Staff UX
-- operational workflows
-
-The immediate milestone is no longer simply proving that Glacier can perform an operation.
-
-It is:
-
-> **Making Glacier usable as a coherent event platform.**
-
----
-
-# 18. Sprint / Roadmap Decision Test
-
-At the end of each Sprint, ask:
-
-1. Did this move Glacier materially closer to operating a real Event?
-2. Did it reuse the existing Glacier capability architecture?
-3. Did it reduce or increase operational risk?
-4. Did it add unnecessary breadth before the pilot needs it?
-5. Can a real organiser or staff member now do something meaningful they could not do before?
-6. Is backend authority preserved?
-7. Are tenant/security boundaries preserved?
-8. Are decisions committed to documentation rather than left only in chat?
-
----
-
-# 19. Pilot Scope Decision Rule
-
-Before adding a capability to the pre-pilot roadmap, ask:
-
-> **If this feature did not exist, could Ice Rinks Australia still operate the pilot Event successfully and safely using Glacier as its primary system?**
-
-If **No**:
-It belongs pre-pilot.
-
-If **Yes**:
-It should normally remain post-pilot unless there is another compelling strategic reason.
-
----
-
-# 20. Current Strategic Conclusion
-
-Glacier remains aligned with its original vision.
-
-The last several Sprints have built the underlying machinery needed for:
-
-- session-based events
-- booking
-- operational scheduling
-- rules
-- payments
-- Tickets
-- entry
-
-The next development phase should deliberately shift toward:
-
-1. completing pilot-critical domains;
-2. making the Organiser, Customer and Staff surfaces coherent and usable;
-3. securing and hardening the product;
-4. operating Glacier internally at a real Event;
-5. conducting a controlled live pilot;
-6. expanding into broader Event Management;
-7. commercialising Glacier to external operators.
-
-The strategic priority for the next few months is:
-
-> **Move Glacier from a strong v0.5 transaction engine to a v0.8 internal pilot-ready event operating platform.**
+This sequence protects the foundations already built, keeps the first pilot bounded, and makes readiness depend on observable evidence rather than optimism.
