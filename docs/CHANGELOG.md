@@ -1,5 +1,32 @@
 # Changelog
 
+# Sprint 24 – Access Levels and Scoped Authority
+
+## Complete
+
+- Replaced the active OWNER/MEMBER boundary with typed OWNER, MANAGER, STAFF and SCANNER roles; migrated legacy MEMBER memberships to STAFF.
+- Added explicit all-Event versus assigned-Event scope and deny-by-default empty assignment semantics.
+- Revalidated current User and Organisation membership on protected requests so role, status and scope changes do not wait for JWT expiry.
+- Applied Event scope to Events, Bookings, Customers, reporting, Event Groups, Tickets and Staff Scanner list/direct-object reads.
+- Added OWNER-only Team listing and role/scope/Event-assignment management with foreign-Event rejection and serializable final-OWNER protection.
+- Added append-only Organisation access audit evidence for membership and access changes.
+- Added Settings → Team and Access with role explanations, read-only OWNER protection, controlled non-owner roles and accessible Event assignment controls.
+- Replaced the fixed dashboard identity with the current authenticated operator name, initials and role.
+- Added a Team Access operating guide and updated authentication and endpoint-security documentation.
+
+## Verification
+
+- API: 71 suites / 476 tests passed; production build passed.
+- Web: 23 files / 71 tests passed; changed-file lint and webpack production build passed.
+- All 34 local Prisma migrations are applied and current.
+- Authenticated OWNER, MANAGER, STAFF and SCANNER browser acceptance passed with controlled fictional local data.
+- Manager and Staff saw only `Role Test Event`; an unassigned direct Event returned the privacy-safe not-found boundary.
+- SCANNER routed directly to Staff Scanner and ordinary Events returned forbidden; no Ticket was scanned or admitted.
+- Mobile 390 × 844 and tablet 768 × 1024 Team workspace checks had no page-level horizontal overflow.
+- Four append-only audit entries proved STAFF/All → MANAGER/Selected → STAFF/Selected → SCANNER/Selected → STAFF/All.
+- The temporary fictional Staff test credential was revoked after acceptance.
+- No Booking, Payment, refund, Ticket, admission, inventory, external or production mutation was performed.
+
 # Sprint 22 – Operational Dashboard and Core Event Reporting
 
 ## Complete
