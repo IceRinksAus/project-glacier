@@ -71,6 +71,7 @@ model Organization {
   eventGroups                   EventGroup[]
   accessAuditEntries            OrganizationAccessAudit[]
   ticketAdjustments             TicketAdjustment[]
+  bookingReschedules            BookingReschedule[]
 }
 
 model User {
@@ -94,6 +95,7 @@ model User {
   retailSalesCreated            RetailSale[]                   @relation("RetailSaleCreatedBy")
   retailSalesCompleted          RetailSale[]                   @relation("RetailSaleCompletedBy")
   ticketAdjustmentsRequested    TicketAdjustment[]             @relation("TicketAdjustmentRequestedBy")
+  bookingReschedulesRequested   BookingReschedule[]            @relation("BookingRescheduleRequestedBy")
   accessChangesMade             OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived         OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
@@ -206,9 +208,10 @@ model Event {
   products      Product[]
   productGroups ProductGroup[]
 
-  bookings          Booking[]
-  retailSales       RetailSale[]
-  ticketAdjustments TicketAdjustment[]
+  bookings           Booking[]
+  retailSales        RetailSale[]
+  ticketAdjustments  TicketAdjustment[]
+  bookingReschedules BookingReschedule[]
 
   rules Rule[]
 
@@ -342,6 +345,9 @@ model Session {
 
   bookings Booking[]
 
+  originalBookingReschedules    BookingReschedule[] @relation("BookingRescheduleOriginalSession")
+  destinationBookingReschedules BookingReschedule[] @relation("BookingRescheduleDestinationSession")
+
   sessionProducts SessionProduct[]
 
   createdAt DateTime @default(now())
@@ -428,8 +434,9 @@ model Product {
 
   sessionProducts SessionProduct[]
 
-  bookingProducts BookingProduct[]
-  retailSaleItems RetailSaleItem[]
+  bookingProducts              BookingProduct[]
+  retailSaleItems              RetailSaleItem[]
+  rescheduleProductAllocations BookingRescheduleProductAllocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -549,9 +556,10 @@ model TicketType {
   eventId String
   event   Event  @relation(fields: [eventId], references: [id])
 
-  bookingItems          BookingItem[]
-  bookingParticipants   BookingParticipant[]
-  adjustmentAllocations TicketAdjustmentAllocation[]
+  bookingItems             BookingItem[]
+  bookingParticipants      BookingParticipant[]
+  adjustmentAllocations    TicketAdjustmentAllocation[]
+  rescheduleTicketMappings BookingRescheduleTicket[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -600,6 +608,7 @@ model Booking {
   payments                      Payment[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   ticketAdjustments             TicketAdjustment[]
+  reschedules                   BookingReschedule[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -650,8 +659,9 @@ model BookingParticipant {
   ticketTypeId String
   ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
 
-  ticket                Ticket?
-  adjustmentAllocations TicketAdjustmentAllocation[]
+  tickets                  Ticket[]
+  adjustmentAllocations    TicketAdjustmentAllocation[]
+  rescheduleTicketMappings BookingRescheduleTicket[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -671,6 +681,8 @@ model BookingProduct {
 
   productVariantId String?
   productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
+  rescheduleProductAllocations BookingRescheduleProductAllocation[]
 
   quantity  Int
   unitPrice Decimal @db.Decimal(10, 2)
@@ -835,6 +847,129 @@ model PaymentRefund {
   @@index([paymentId])
   @@index([status])
   @@index([provider, providerReference])
+}
+
+enum BookingRescheduleStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum BookingRescheduleReason {
+  CUSTOMER_REQUEST
+  EVENT_SESSION_ISSUE
+  ORGANISER_CORRECTION
+  OTHER
+}
+
+model BookingReschedule {
+  id               String                  @id @default(cuid())
+  rescheduleNumber String                  @unique
+  idempotencyKey   String                  @unique
+  status           BookingRescheduleStatus @default(PENDING)
+  reason           BookingRescheduleReason
+  note             String
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  originalSessionId String
+  originalSession   Session @relation("BookingRescheduleOriginalSession", fields: [originalSessionId], references: [id], onDelete: Restrict)
+
+  destinationSessionId String
+  destinationSession   Session @relation("BookingRescheduleDestinationSession", fields: [destinationSessionId], references: [id], onDelete: Restrict)
+
+  originalSessionNameSnapshot     String
+  originalSessionStartSnapshot    DateTime
+  destinationSessionNameSnapshot  String
+  destinationSessionStartSnapshot DateTime
+
+  requestedByUserId String
+  requestedByUser   User   @relation("BookingRescheduleRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  ticketCount                Int
+  admissionPlacesTransferred Int
+
+  completedAt    DateTime?
+  failedAt       DateTime?
+  failureCode    String?
+  failureMessage String?
+
+  ticketMappings     BookingRescheduleTicket[]
+  productAllocations BookingRescheduleProductAllocation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([requestedByUserId, createdAt])
+  @@index([status, createdAt])
+  @@index([originalSessionId, createdAt])
+  @@index([destinationSessionId, createdAt])
+}
+
+model BookingRescheduleTicket {
+  id String @id @default(cuid())
+
+  rescheduleId String
+  reschedule   BookingReschedule @relation(fields: [rescheduleId], references: [id], onDelete: Restrict)
+
+  originalTicketId String @unique
+  originalTicket   Ticket @relation("BookingRescheduleOriginalTicket", fields: [originalTicketId], references: [id], onDelete: Restrict)
+
+  replacementTicketId String? @unique
+  replacementTicket   Ticket? @relation("BookingRescheduleReplacementTicket", fields: [replacementTicketId], references: [id], onDelete: Restrict)
+
+  participantId String
+  participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+
+  participantNameSnapshot         String
+  ticketTypeNameSnapshot          String
+  originalTicketNumberSnapshot    String
+  replacementTicketNumberSnapshot String?
+
+  createdAt DateTime @default(now())
+
+  @@index([rescheduleId])
+  @@index([participantId])
+  @@index([ticketTypeId])
+}
+
+model BookingRescheduleProductAllocation {
+  id String @id @default(cuid())
+
+  rescheduleId String
+  reschedule   BookingReschedule @relation(fields: [rescheduleId], references: [id], onDelete: Restrict)
+
+  bookingProductId String
+  bookingProduct   BookingProduct @relation(fields: [bookingProductId], references: [id], onDelete: Restrict)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  productNameSnapshot         String
+  variantNameSnapshot         String?
+  quantity                    Int
+  capacityTransferred         Int
+  originalSessionProductId    String?
+  destinationSessionProductId String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([rescheduleId, bookingProductId])
+  @@index([bookingProductId])
+  @@index([productId])
 }
 
 enum TicketAdjustmentAction {
@@ -1003,7 +1138,7 @@ model Ticket {
   bookingId String
   booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
-  participantId String             @unique
+  participantId String
   participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
 
   issuedAt    DateTime  @default(now())
@@ -1013,8 +1148,12 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  scanAttempts         TicketScanAttempt[]
-  adjustmentAllocation TicketAdjustmentAllocation?
+  scanAttempts                 TicketScanAttempt[]
+  adjustmentAllocation         TicketAdjustmentAllocation?
+  originalRescheduleMapping    BookingRescheduleTicket?    @relation("BookingRescheduleOriginalTicket")
+  replacementRescheduleMapping BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
+
+  @@index([participantId])
 }
 
 model TicketScanAttempt {
