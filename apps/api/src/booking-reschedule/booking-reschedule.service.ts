@@ -574,6 +574,22 @@ export class BookingRescheduleService {
         reschedules: {
           include: {
             requestedByUser: { select: { id: true, name: true } },
+            originalSession: {
+              select: {
+                id: true,
+                name: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+            destinationSession: {
+              select: {
+                id: true,
+                name: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
             ticketMappings: true,
             productAllocations: true,
           },

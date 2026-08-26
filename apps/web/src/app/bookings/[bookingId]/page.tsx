@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { Button } from "@/components/ui/button";
+import { getAuthUser } from "@/lib/auth";
 import {
   bookingOperationsService,
   PaymentInvestigation,
 } from "@/services/booking-operations.service";
+import { BookingReschedulePanel } from "./BookingReschedulePanel";
 import { TicketAdjustmentPanel } from "./TicketAdjustmentPanel";
 
 function money(value: number, currency = "AUD") {
@@ -32,6 +34,13 @@ export default function BookingPaymentPage() {
   const [isReconciling, setIsReconciling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const role = getAuthUser()?.role;
+  const canManageBooking = role === "OWNER" || role === "MANAGER";
+
+  async function refreshInvestigation() {
+    const response = await bookingOperationsService.investigate(bookingId);
+    setInvestigation(response);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -265,7 +274,15 @@ export default function BookingPaymentPage() {
               </div>
             </section>
 
-            <TicketAdjustmentPanel bookingId={bookingId} />
+            {canManageBooking ? (
+              <>
+                <BookingReschedulePanel
+                  bookingId={bookingId}
+                  onCompleted={refreshInvestigation}
+                />
+                <TicketAdjustmentPanel bookingId={bookingId} />
+              </>
+            ) : null}
 
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-lg font-semibold">Reconciliation history</h2>
