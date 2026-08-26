@@ -1,12 +1,12 @@
 # Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Updated:** 25 August 2026
+**Updated:** 26 August 2026
 
-**Status:** Current strategic control document after Sprint 23
+**Status:** Current strategic control document after Sprint 25 and the legacy-system capability review
 
 **Purpose:** Record Glacier's current evidence-based position, define the controlled phases to a live pilot, and prevent delivery priorities from depending on chat history.
 
-**Supporting evidence:** `PILOT_READINESS_REASSESSMENT_AFTER_SPRINT_23.md`, Sprint plans and Sprint notes.
+**Supporting evidence:** `PILOT_READINESS_REASSESSMENT_AFTER_SPRINT_23.md`, `LEGACY_SYSTEM_CAPABILITY_REVIEW.md`, Sprint plans and Sprint notes.
 
 ---
 
@@ -14,7 +14,7 @@
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 23, Glacier is best described as:
+After Sprint 25, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -44,7 +44,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 23
+# 3. Delivered Foundation Through Sprint 25
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -64,15 +64,17 @@ The following are implemented foundations and should not be reopened without evi
 - controlled Payment investigation and reconciliation foundation;
 - Event reporting by overview, Ticket Type, Session, Event date, Product/Variant and booking pace;
 - Event Groups and multi-Event comparison scorecards; and
-- formula-safe CSV plus browser Print / Save PDF presentation.
+- formula-safe CSV plus browser Print / Save PDF presentation;
+- OWNER, MANAGER, STAFF and SCANNER role/assignment foundations; and
+- shared-commerce walk-up Ticket sales with Cash and standalone EFTPOS evidence.
 
-Current verified baseline at Sprint 23 closeout:
+Current verified baseline at Sprint 25 closeout:
 
-- 31 current Prisma migrations;
-- 69 API suites / 456 passing tests;
-- 21 web suites / 67 passing tests;
+- 36 current Prisma migrations;
+- 73 API suites / 487 passing tests;
+- 24 web test files / 72 passing tests;
 - passing API and web production builds; and
-- authenticated browser acceptance of detailed Event reports, exports and mobile containment.
+- authenticated browser acceptance of detailed Event reports, access controls and a fictional walk-up Cash sale with operator evidence and exactly one Ticket per participant.
 
 This proves the local application baseline. It does not prove production readiness, legal approval, penetration resistance or event-day reliability.
 
@@ -106,19 +108,19 @@ Through secure Booking access, customers may request change/refund for covered T
 
 Flexible Ticket terms use Organisation defaults with deliberate Event overrides. The effective fee, rights, limits and policy version are snapshotted at purchase, so later configuration changes affect only future purchases.
 
-The existing OWNER/MEMBER boundary must evolve to OWNER, MANAGER and STAFF access levels. MANAGER is the trusted site/operational role authorised for refunds, cancellations and rescheduling within assigned scope; STAFF handles POS, scanning, lookup and preparation without high-risk financial authority. OWNER retains Organisation governance. Role and Event/site scope must be modelled separately.
+Sprint 24 established OWNER, MANAGER, STAFF and SCANNER access/assignment foundations. MANAGER is the trusted site/operational role intended for approved refunds, cancellations and rescheduling within assigned scope; STAFF handles POS, lookup and preparation without high-risk financial authority; SCANNER remains constrained to scanning duties; and OWNER retains Organisation governance. Each future sensitive mutation must enforce both role and Event assignment in its controller and service boundaries.
 
-## 4.3 Walk-up sales
+## 4.3 Walk-up sales and remaining POS work
 
-Walk-up Ticket sales are confirmed as mandatory and historically represent approximately 50% of sales. Glacier therefore needs a pilot-operational staff flow using the same Ticket Types, Products, Rules, pricing, capacity and inventory as online booking.
+Walk-up Ticket sales are confirmed as mandatory and historically represent approximately 50% of sales. Sprint 25 delivered the operational staff flow using the same Ticket Types, Products, Rules, pricing, capacity and inventory as online booking.
 
-The POS must prominently show an active selling Session, support manual Session retention/change and permit deliberate sale to future Sessions. Optional configurable automatic advancement may be added as a convenience, but it must never switch an in-progress sale. Full till-style visual productisation may follow in a dedicated UX Sprint, while the core commerce workflow must be operational before browser acceptance.
+The POS prominently shows and retains a selling Session, supports a deliberate time-based recommendation and permits future-Session sales. Optional configurable automatic advancement may be added later, but it must never switch an in-progress sale. Full till-style productisation remains a bounded UX concern.
 
-Walk-up sales must accept EFTPOS and cash. EFTPOS must be provider-neutral: the universal baseline supports any suitable standalone terminal through deliberate staff confirmation, while a stable adapter boundary permits optional provider integrations later. Payment methods remain separately persisted/reconciled, standalone terminal payments are never misrepresented as Stripe, and raw card data must never enter Glacier.
+Walk-up sales accept Cash and provider-neutral standalone EFTPOS confirmation. Payment methods are separately persisted, standalone terminal payments are not represented as Stripe, the receiving operator is retained and raw card data does not enter Glacier. A stable adapter boundary can support optional provider integrations later.
 
-Initial integration candidates are Stripe Terminal, Linkly-connected bank terminals and Square. Selection is deferred until a current Australian capability, hardware, cost, compliance and operational comparison is completed; none should become a core-platform dependency.
+Potential future integrations remain Stripe Terminal, Linkly-connected bank terminals and Square. Selection is deferred until a current Australian capability, hardware, cost, compliance and operational comparison is completed; none should become a core-platform dependency.
 
-The POS must also support merchandise-only sales from the same Event Product/Variant catalogue. These sales enforce finite inventory and reconcile by payment method, but do not consume admission capacity, require participant details or issue Tickets. Session-capacity Products remain Session-bound.
+The remaining POS commerce gap is merchandise-only sales from the same Event Product/Variant catalogue. These sales must enforce finite inventory and reconcile by payment method, but must not consume admission capacity, require participant details or issue Tickets. Session-capacity Products remain Session-bound.
 
 ## 4.4 Production environment and reliability
 
@@ -182,7 +184,7 @@ No unresolved policy question can materially change customer-service, POS, Ticke
 - append-only audit evidence and reason capture;
 - OWNER/MANAGER/STAFF enforcement, assignment scope and tenant-safe service boundaries;
 - Payment-provider failure, retry and idempotency handling;
-- minimum shared-catalogue walk-up flow; and
+- merchandise-only POS commerce and walk-up reconciliation follow-through; and
 - focused organiser UX changes supported by UAT evidence.
 
 ### Excluded
@@ -314,10 +316,12 @@ Reached only after pilot findings are resolved and Glacier has repeatable deploy
 | Booking and Customer lookup | Implemented | Support runbook and UAT | 2–4 |
 | Refund/cancellation | Default non-refundable, discretionary and partial entitlement paths confirmed | Manager-authorised workflow and approved terms | 1–2 |
 | Flexible Tickets | Entitlement and customer/staff workflow confirmed; implementation/terms gap | Purchase-time rights, secure requests, automatic eligible changes and approved refunds | 1–2 |
-| Access levels | OWNER/MEMBER currently too coarse | OWNER/MANAGER/STAFF with safe migration and scoped authority | 1–2 |
+| Access levels | OWNER, MANAGER, STAFF and SCANNER foundations implemented | Representative assignment/denial UAT and audit review | 4 |
 | Rescheduling | Policy/mutation gap | Approved controlled workflow | 1–2 |
-| Walk-up sales | Mandatory core channel; implementation gap | Shared-catalogue operational POS and browser acceptance | 1–2 |
+| Walk-up sales | Shared-catalogue Cash/standalone EFTPOS Ticket flow implemented and browser accepted | Physical till/device UAT and reconciliation | 4 |
+| Merchandise-only POS | Not implemented | Inventory-safe Sale/Order persistence and payment reconciliation without admission Booking/Tickets | 2 |
 | Reporting and Event Groups | Implemented beyond minimum | Group/export reconciliation | 4 |
+| Operational portfolio dashboard | Introductory landing page plus authoritative reporting foundations | Bounded decision-support dashboard after critical transaction sources stabilise | 2–4 |
 | Production deployment | Not evidenced | Controlled deployed environment | 3 |
 | Logs, monitoring and alerts | Design/checklist only | Working alerts and ownership | 3 |
 | Backup and restore | Not evidenced | Successful restore drill | 3 |
@@ -378,7 +382,7 @@ Commercialisation—including the B2B website and SaaS billing—should follow a
 
 # 12. Immediate Next Action
 
-The next work is **Phase 1 — Pilot Policy and Operational Scope Lock**.
+The immediate planning work remains governed by **Phase 1 — Pilot Policy and Operational Scope Lock**, while completed Sprint 24–25 foundations move their remaining evidence into rehearsal.
 
 It should begin with a short decision workshop and produce a written operating-policy record before another implementation Sprint is locked. The highest-impact questions are:
 
@@ -387,6 +391,8 @@ It should begin with a short decision workshop and produce a written operating-p
 3. How should existing MEMBER users migrate to STAFF or MANAGER, and how should Manager site/Event assignment work?
 4. What pilot Event, devices, staff roles, expected volume and fallback procedures will be used?
 5. Which named people own operations, Payments, technical incidents and privacy/security escalation?
+
+Before another Sprint is locked, the remaining transaction priorities—merchandise-only POS, controlled refunds/cancellations, Ticket changes and reconciliation—must be ordered against production/security work. The approved operational-dashboard direction in `LEGACY_SYSTEM_CAPABILITY_REVIEW.md` follows stable authoritative transaction sources and must not displace a pilot-critical gate.
 
 After approval, Phase 2 and Phase 3 can proceed in parallel where dependencies allow: operational workflows on one track and production/security foundations on the other. Phase 4 recombines them in one complete rehearsal.
 

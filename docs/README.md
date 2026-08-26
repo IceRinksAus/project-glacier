@@ -18,6 +18,12 @@ It must be recorded here and committed with the code.
 - `GLOSSARY.md`
 - `CONTRIBUTING.md`
 
+Current pilot and product-planning control documents:
+
+- `roadmap/PILOT_READINESS_AND_STRATEGIC_ROADMAP.md`
+- `roadmap/PILOT_READINESS_REASSESSMENT_AFTER_SPRINT_23.md`
+- `roadmap/LEGACY_SYSTEM_CAPABILITY_REVIEW.md`
+
 ---
 
 ## Architecture
