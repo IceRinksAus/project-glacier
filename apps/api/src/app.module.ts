@@ -13,6 +13,7 @@ import { CategoryModule } from './category/category.module';
 import { CustomerModule } from './customer/customer.module';
 import { EventModule } from './event/event.module';
 import { EventGroupModule } from './event-group/event-group.module';
+import { FlexibleTicketPolicyModule } from './flexible-ticket-policy/flexible-ticket-policy.module';
 import { OperationalScheduleModule } from './operational-schedule/operational-schedule.module';
 import { OrganizationModule } from './organization/organization.module';
 import { PaymentModule } from './payment/payment.module';
@@ -45,6 +46,7 @@ import { WaiverModule } from './waiver/waiver.module';
     UserModule,
     EventModule,
     EventGroupModule,
+    FlexibleTicketPolicyModule,
     TicketTypeModule,
     CustomerModule,
     BookingModule,
