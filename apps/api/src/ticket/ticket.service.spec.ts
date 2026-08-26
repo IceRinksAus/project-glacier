@@ -45,6 +45,9 @@ describe('TicketService', () => {
       createMany: jest.fn(),
       updateMany: jest.fn(),
     },
+    flexibleTicketEntitlement: {
+      updateMany: jest.fn(),
+    },
   };
 
   beforeEach(async () => {
@@ -64,6 +67,37 @@ describe('TicketService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('activates pending Flexible Ticket entitlements against issued Tickets and Payment', async () => {
+    prismaMock.ticket.findMany.mockResolvedValue([
+      { id: 'ticket-1', participantId: 'participant-1' },
+      { id: 'ticket-2', participantId: 'participant-2' },
+    ]);
+    prismaMock.flexibleTicketEntitlement.updateMany.mockResolvedValue({
+      count: 1,
+    });
+
+    await service.activateFlexibleTicketsForBooking('booking-1', 'payment-1');
+
+    expect(
+      prismaMock.flexibleTicketEntitlement.updateMany,
+    ).toHaveBeenCalledTimes(2);
+    expect(
+      prismaMock.flexibleTicketEntitlement.updateMany,
+    ).toHaveBeenCalledWith({
+      where: {
+        bookingId: 'booking-1',
+        participantId: 'participant-1',
+        status: 'PENDING',
+      },
+      data: {
+        status: 'ACTIVE',
+        initialTicketId: 'ticket-1',
+        activatedByPaymentId: 'payment-1',
+        activatedAt: expect.any(Date),
+      },
+    });
   });
 
   it('rejects malformed public possession tokens before querying', async () => {

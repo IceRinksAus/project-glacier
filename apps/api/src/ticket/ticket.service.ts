@@ -65,6 +65,38 @@ export class TicketService {
     });
   }
 
+  async activateFlexibleTicketsForBooking(
+    bookingId: string,
+    paymentId: string,
+  ) {
+    const tickets = await this.prisma.ticket.findMany({
+      where: { bookingId },
+      select: {
+        id: true,
+        participantId: true,
+      },
+    });
+    const activatedAt = new Date();
+
+    await Promise.all(
+      tickets.map((ticket) =>
+        this.prisma.flexibleTicketEntitlement.updateMany({
+          where: {
+            bookingId,
+            participantId: ticket.participantId,
+            status: 'PENDING',
+          },
+          data: {
+            status: 'ACTIVE',
+            initialTicketId: ticket.id,
+            activatedByPaymentId: paymentId,
+            activatedAt,
+          },
+        }),
+      ),
+    );
+  }
+
   async getTicketById(organizationId: string, id: string) {
     const ticket = await this.prisma.ticket.findFirst({
       where: {

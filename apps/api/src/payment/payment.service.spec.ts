@@ -35,6 +35,7 @@ describe('PaymentService', () => {
 
   const ticketService = {
     issueTicketsForBooking: jest.fn(),
+    activateFlexibleTicketsForBooking: jest.fn(),
   };
 
   const booking = {
@@ -849,7 +850,11 @@ describe('PaymentService', () => {
 
         expect(
           ticketService.issueTicketsForBooking,
-        ).not.toHaveBeenCalled();
+        ).toHaveBeenCalledWith('booking-1');
+
+        expect(
+          ticketService.activateFlexibleTicketsForBooking,
+        ).toHaveBeenCalledWith('booking-1', 'payment-1');
 
         expect(
           result,

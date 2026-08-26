@@ -433,6 +433,11 @@ export class PaymentService {
       payment.booking.status === 'CONFIRMED' &&
       payment.booking.paymentStatus === 'PAID'
     ) {
+      await this.ticketService.issueTicketsForBooking(payment.bookingId);
+      await this.ticketService.activateFlexibleTicketsForBooking(
+        payment.bookingId,
+        payment.id,
+      );
       return {
         status: 'SUCCEEDED' as const,
       };
@@ -494,6 +499,10 @@ export class PaymentService {
     }
 
     await this.ticketService.issueTicketsForBooking(payment.bookingId);
+    await this.ticketService.activateFlexibleTicketsForBooking(
+      payment.bookingId,
+      payment.id,
+    );
 
     return {
       status: 'SUCCEEDED' as const,
