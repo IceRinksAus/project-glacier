@@ -481,9 +481,10 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
             ) : null}
           </section>
           <p className="text-xs text-muted-foreground">
-            Successful refunds are reported at Event and Session level. They are
-            not allocated to, or subtracted from, individual Ticket Type rows.
-            These figures are operational reporting, not accounting records.
+            Successful Ticket-adjustment refunds are allocated to their Ticket
+            Types and reduce net Ticket sales. Refunds without authoritative
+            Ticket allocation remain separately disclosed as unallocated. These
+            figures are operational reporting, not accounting records.
           </p>
         </>
       ) : null}

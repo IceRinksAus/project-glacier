@@ -330,21 +330,19 @@ describe("EventReportsWorkspace", () => {
       () => undefined,
     );
     window.print = vi.fn();
-    getSessions
-      .mockReset()
-      .mockResolvedValue([
-        {
-          id: "session-1",
-          eventId: "event-1",
-          name: "Morning skate",
-          startDate: "2027-09-01T00:30:00.000Z",
-          endDate: "2027-09-01T01:30:00.000Z",
-          capacity: 150,
-          status: "ACTIVE",
-          salesStart: null,
-          salesEnd: null,
-        },
-      ]);
+    getSessions.mockReset().mockResolvedValue([
+      {
+        id: "session-1",
+        eventId: "event-1",
+        name: "Morning skate",
+        startDate: "2027-09-01T00:30:00.000Z",
+        endDate: "2027-09-01T01:30:00.000Z",
+        capacity: 150,
+        status: "ACTIVE",
+        salesStart: null,
+        salesEnd: null,
+      },
+    ]);
   });
 
   it("shows authoritative commercial, attendance, capacity and exception details", async () => {
@@ -402,7 +400,9 @@ describe("EventReportsWorkspace", () => {
     ).toBeVisible();
     expect(screen.getByText("Adult")).toBeVisible();
     expect(
-      screen.getByText(/not allocated to, or subtracted from/),
+      screen.getByText(
+        /allocated to their Ticket Types and reduce net Ticket sales/,
+      ),
     ).toBeVisible();
   });
 
