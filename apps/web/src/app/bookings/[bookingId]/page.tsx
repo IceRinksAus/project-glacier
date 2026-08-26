@@ -218,6 +218,67 @@ export default function BookingPaymentPage() {
             </section>
 
             <section className="rounded-xl border bg-card p-6 shadow-sm">
+              <h2 className="text-lg font-semibold">
+                Flexible Ticket entitlements
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recorded purchase rights only. Using an entitlement is not
+                available in this Sprint.
+              </p>
+              <div className="mt-5 space-y-3">
+                {(investigation.flexibleTicketEntitlements ?? []).length ===
+                0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No Flexible Ticket coverage was purchased.
+                  </p>
+                ) : (
+                  (investigation.flexibleTicketEntitlements ?? []).map(
+                    (entitlement) => (
+                      <article
+                        key={entitlement.entitlementNumber}
+                        className="rounded-lg border p-4 text-sm"
+                      >
+                        <div className="flex flex-col justify-between gap-2 sm:flex-row">
+                          <div>
+                            <p className="font-semibold">
+                              {entitlement.participant.firstName}{" "}
+                              {entitlement.participant.lastName}
+                            </p>
+                            <p className="mt-1 text-muted-foreground">
+                              {entitlement.initialTicket?.ticketNumber ??
+                                "Pending Ticket linkage"}{" "}
+                              · {entitlement.status}
+                            </p>
+                          </div>
+                          <p className="font-semibold">
+                            {money(entitlement.feeAmount, entitlement.currency)}
+                          </p>
+                        </div>
+                        <p className="mt-3">
+                          {entitlement.customerSummarySnapshot}
+                        </p>
+                        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-muted-foreground">
+                          <dt>Policy</dt>
+                          <dd>Version {entitlement.policyVersion}</dd>
+                          <dt>Uses</dt>
+                          <dd>
+                            {entitlement.remainingUses} of{" "}
+                            {entitlement.permittedUseLimitSnapshot} remaining
+                          </dd>
+                          <dt>Cut-off</dt>
+                          <dd>
+                            {entitlement.cutoffMinutesBeforeSessionSnapshot}{" "}
+                            minutes before Session
+                          </dd>
+                        </dl>
+                      </article>
+                    ),
+                  )
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-lg font-semibold">Payment attempts</h2>
               <div className="mt-5 space-y-4">
                 {investigation.payments.map((payment) => (

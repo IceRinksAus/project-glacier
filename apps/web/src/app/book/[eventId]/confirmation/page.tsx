@@ -8,11 +8,17 @@ import { use, useEffect } from "react";
 import { useBookingJourney } from "@/components/booking/BookingJourneyProvider";
 import { BookingJourneyShell } from "@/components/booking/BookingJourneyShell";
 
-export default function ConfirmationPage({ params }: { params: Promise<{ eventId: string }> }) {
+export default function ConfirmationPage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
   const { eventId } = use(params);
   const router = useRouter();
   const { bookingStatus } = useBookingJourney();
-  const confirmed = bookingStatus?.status === "CONFIRMED" && bookingStatus.paymentStatus === "PAID";
+  const confirmed =
+    bookingStatus?.status === "CONFIRMED" &&
+    bookingStatus.paymentStatus === "PAID";
 
   useEffect(() => {
     if (!confirmed) router.replace(`/book/${eventId}/payment`);
@@ -24,25 +30,95 @@ export default function ConfirmationPage({ params }: { params: Promise<{ eventId
     <BookingJourneyShell>
       <section className="mx-auto mt-5 max-w-3xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
         <CheckCircle2 className="size-12 text-emerald-600" />
-        <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-slate-500">Step 9 of 9</p>
-        <p className="mt-2 text-sm font-semibold uppercase tracking-widest text-emerald-700">Payment confirmed</p>
+        <p className="mt-5 text-sm font-semibold uppercase tracking-widest text-slate-500">
+          Step 9 of 9
+        </p>
+        <p className="mt-2 text-sm font-semibold uppercase tracking-widest text-emerald-700">
+          Payment confirmed
+        </p>
         <h1 className="mt-2 text-3xl font-bold">Your booking is confirmed</h1>
-        <p className="mt-3 text-slate-600">Booking {bookingStatus.bookingNumber} for {bookingStatus.event.name} has been paid and your Tickets have been issued.</p>
+        <p className="mt-3 text-slate-600">
+          Booking {bookingStatus.bookingNumber} for {bookingStatus.event.name}{" "}
+          has been paid and your Tickets have been issued.
+        </p>
 
         <div className="mt-8 grid gap-3">
           {bookingStatus.tickets.map((ticket) => (
-            <Link key={ticket.ticketNumber} href={`/tickets/${ticket.secureToken}`} className="flex items-center justify-between rounded-2xl border p-5 transition hover:bg-slate-50">
-              <div><p className="font-bold">{ticket.participant.firstName} {ticket.participant.lastName}</p><p className="mt-1 font-mono text-sm text-slate-500">{ticket.ticketNumber}</p></div>
-              <span className="inline-flex items-center gap-2 font-semibold">View Ticket <ExternalLink className="size-4" /></span>
+            <Link
+              key={ticket.ticketNumber}
+              href={`/tickets/${ticket.secureToken}`}
+              className="flex items-center justify-between rounded-2xl border p-5 transition hover:bg-slate-50"
+            >
+              <div>
+                <p className="font-bold">
+                  {ticket.participant.firstName} {ticket.participant.lastName}
+                </p>
+                <p className="mt-1 font-mono text-sm text-slate-500">
+                  {ticket.ticketNumber}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 font-semibold">
+                View Ticket <ExternalLink className="size-4" />
+              </span>
             </Link>
           ))}
         </div>
 
+        {(bookingStatus.flexibleTicketEntitlements ?? []).length ? (
+          <section className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
+            <h2 className="text-xl font-bold">Flexible Ticket coverage</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Coverage is recorded separately for the Tickets below. Online
+              self-service changes and cancellations are not yet available;
+              contact the Event organiser for assistance.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {(bookingStatus.flexibleTicketEntitlements ?? []).map(
+                (entitlement) => (
+                  <article
+                    key={entitlement.entitlementNumber}
+                    className="rounded-xl border border-sky-200 bg-white p-4"
+                  >
+                    <p className="font-bold">
+                      {entitlement.participant.firstName}{" "}
+                      {entitlement.participant.lastName}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {entitlement.initialTicket?.ticketNumber ??
+                        "Covered Ticket"}{" "}
+                      · {entitlement.status}
+                    </p>
+                    <p className="mt-2 text-sm">
+                      {entitlement.customerSummarySnapshot}
+                    </p>
+                    <details className="mt-3 text-sm text-slate-600">
+                      <summary className="cursor-pointer font-semibold">
+                        Coverage terms
+                      </summary>
+                      <p className="mt-2 whitespace-pre-wrap">
+                        {entitlement.materialTermsSnapshot}
+                      </p>
+                    </details>
+                  </article>
+                ),
+              )}
+            </div>
+          </section>
+        ) : null}
+
         {bookingStatus.event.waiverPublicSlug ? (
           <div className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
             <h2 className="text-xl font-bold">Complete the Event Waiver</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-700">Each adult skater should complete their own waiver before entering the ice. A responsible adult may include children in their care.</p>
-            <Link href={`/waivers/${bookingStatus.event.waiverPublicSlug}`} className="mt-4 inline-flex rounded-xl bg-sky-950 px-5 py-3 font-bold text-white">Complete waiver now</Link>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Each adult skater should complete their own waiver before entering
+              the ice. A responsible adult may include children in their care.
+            </p>
+            <Link
+              href={`/waivers/${bookingStatus.event.waiverPublicSlug}`}
+              className="mt-4 inline-flex rounded-xl bg-sky-950 px-5 py-3 font-bold text-white"
+            >
+              Complete waiver now
+            </Link>
           </div>
         ) : null}
       </section>

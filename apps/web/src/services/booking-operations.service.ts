@@ -79,6 +79,24 @@ export interface PaymentInvestigation {
     status: string;
     issuedAt: string;
   }>;
+  flexibleTicketEntitlements: Array<{
+    entitlementNumber: string;
+    status: string;
+    feeAmount: number;
+    currency: string;
+    policyVersion: number;
+    remainingUses: number;
+    permittedUseLimitSnapshot: number;
+    allowsSessionChangeSnapshot: boolean;
+    allowsRefundRequestSnapshot: boolean;
+    cutoffMinutesBeforeSessionSnapshot: number;
+    feeRefundabilitySnapshot: string;
+    customerSummarySnapshot: string;
+    materialTermsSnapshot: string;
+    activatedAt: string | null;
+    participant: { firstName: string; lastName: string | null };
+    initialTicket: { ticketNumber: string } | null;
+  }>;
   payments: Array<{
     id: string;
     provider: string;
@@ -124,8 +142,7 @@ export interface PaymentInvestigation {
 }
 
 export const bookingOperationsService = {
-  list: () =>
-    api.get<BookingListItem[]>("/booking"),
+  list: () => api.get<BookingListItem[]>("/booking"),
 
   search: (options: BookingSearchOptions) => {
     const query = new URLSearchParams();
@@ -149,8 +166,5 @@ export const bookingOperationsService = {
   reconcile: (bookingId: string) =>
     api.post<{
       investigation: PaymentInvestigation;
-    }>(
-      `/booking/${bookingId}/payment-reconciliation`,
-      {},
-    ),
+    }>(`/booking/${bookingId}/payment-reconciliation`, {}),
 };

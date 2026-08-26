@@ -315,6 +315,19 @@ export interface PublicBookingStatus {
       lastName: string | null;
     };
   }>;
+  flexibleTicketEntitlements: Array<{
+    entitlementNumber: string;
+    status: string;
+    feeAmount: number;
+    currency: string;
+    remainingUses: number;
+    allowsSessionChangeSnapshot: boolean;
+    allowsRefundRequestSnapshot: boolean;
+    customerSummarySnapshot: string;
+    materialTermsSnapshot: string;
+    initialTicket: { ticketNumber: string } | null;
+    participant: { firstName: string; lastName: string | null };
+  }>;
 }
 
 export interface PublicTicketPresentation {

@@ -79,6 +79,26 @@ export class PublicPaymentService {
             issuedAt: 'asc',
           },
         },
+        flexibleTicketEntitlements: {
+          select: {
+            entitlementNumber: true,
+            status: true,
+            feeAmount: true,
+            currency: true,
+            remainingUses: true,
+            allowsSessionChangeSnapshot: true,
+            allowsRefundRequestSnapshot: true,
+            customerSummarySnapshot: true,
+            materialTermsSnapshot: true,
+            initialTicket: {
+              select: { ticketNumber: true },
+            },
+            participant: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
@@ -104,6 +124,12 @@ export class PublicPaymentService {
         waiverPublicSlug: booking.event.waiver?.publicSlug ?? null,
       },
       tickets: confirmed ? booking.tickets : [],
+      flexibleTicketEntitlements: confirmed
+        ? booking.flexibleTicketEntitlements.map((entitlement) => ({
+            ...entitlement,
+            feeAmount: entitlement.feeAmount.toNumber(),
+          }))
+        : [],
     };
   }
 }

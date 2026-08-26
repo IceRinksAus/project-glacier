@@ -353,6 +353,31 @@ export class BookingService {
             issuedAt: 'asc',
           },
         },
+        flexibleTicketEntitlements: {
+          select: {
+            entitlementNumber: true,
+            status: true,
+            feeAmount: true,
+            currency: true,
+            policyVersion: true,
+            remainingUses: true,
+            permittedUseLimitSnapshot: true,
+            allowsSessionChangeSnapshot: true,
+            allowsRefundRequestSnapshot: true,
+            cutoffMinutesBeforeSessionSnapshot: true,
+            feeRefundabilitySnapshot: true,
+            customerSummarySnapshot: true,
+            materialTermsSnapshot: true,
+            activatedAt: true,
+            participant: {
+              select: { firstName: true, lastName: true },
+            },
+            initialTicket: {
+              select: { ticketNumber: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
         payments: {
           select: {
             id: true,
@@ -436,6 +461,12 @@ export class BookingService {
     return {
       ...booking,
       total: booking.total.toNumber(),
+      flexibleTicketEntitlements: (
+        booking.flexibleTicketEntitlements ?? []
+      ).map((entitlement) => ({
+        ...entitlement,
+        feeAmount: entitlement.feeAmount.toNumber(),
+      })),
       payments: payments.map(
         ({ providerReference: _reference, ...payment }) => ({
           ...payment,

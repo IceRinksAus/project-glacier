@@ -134,6 +134,7 @@ describe('PublicPaymentService', () => {
           participant: { firstName: 'Jamie', lastName: 'Test' },
         },
       ],
+      flexibleTicketEntitlements: [],
     });
 
     const result = await service.getBookingStatus(
@@ -184,6 +185,7 @@ describe('PublicPaymentService', () => {
       paidAt: new Date('2027-07-05T00:01:00.000Z'),
       event: { name: 'Test Event', slug: 'test-event', waiver: null },
       tickets: [ticket],
+      flexibleTicketEntitlements: [],
     });
 
     const result = await service.getBookingStatus(
