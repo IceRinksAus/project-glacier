@@ -392,7 +392,7 @@ It should begin with a short decision workshop and produce a written operating-p
 4. What pilot Event, devices, staff roles, expected volume and fallback procedures will be used?
 5. Which named people own operations, Payments, technical incidents and privacy/security escalation?
 
-Before another Sprint is locked, the remaining transaction priorities—merchandise-only POS, controlled refunds/cancellations, Ticket changes and reconciliation—must be ordered against production/security work. The approved operational-dashboard direction in `LEGACY_SYSTEM_CAPABILITY_REVIEW.md` follows stable authoritative transaction sources and must not displace a pilot-critical gate.
+Sprint 26 is now locked in `sprint-26-plan.md` as the merchandise-only POS commerce and investigation foundation. It must complete before controlled refunds/cancellations, Ticket changes and reconciliation are ordered against production/security work. The approved operational-dashboard direction in `LEGACY_SYSTEM_CAPABILITY_REVIEW.md` follows stable authoritative transaction sources and must not displace a pilot-critical gate.
 
 After approval, Phase 2 and Phase 3 can proceed in parallel where dependencies allow: operational workflows on one track and production/security foundations on the other. Phase 4 recombines them in one complete rehearsal.
 
