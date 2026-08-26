@@ -212,6 +212,7 @@ export class BookingService {
           id: true,
           bookingNumber: true,
           status: true,
+          source: true,
           paymentStatus: true,
           total: true,
           createdAt: true,
@@ -303,6 +304,7 @@ export class BookingService {
         id: true,
         bookingNumber: true,
         status: true,
+        source: true,
         paymentStatus: true,
         total: true,
         reservedUntil: true,
@@ -345,7 +347,9 @@ export class BookingService {
           select: {
             id: true,
             provider: true,
+            method: true,
             providerReference: true,
+            standaloneReference: true,
             amount: true,
             currency: true,
             status: true,
@@ -354,8 +358,15 @@ export class BookingService {
             succeededAt: true,
             failedAt: true,
             cancelledAt: true,
+            receivedAt: true,
             createdAt: true,
             updatedAt: true,
+            receivedByUser: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
             refunds: {
               select: {
                 id: true,

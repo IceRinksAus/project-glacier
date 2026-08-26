@@ -4,6 +4,7 @@ export interface BookingListItem {
   id: string;
   bookingNumber: string;
   status: string;
+  source: "ONLINE" | "WALK_UP";
   paymentStatus: string;
   total: string | number;
   createdAt: string;
@@ -49,6 +50,7 @@ export interface PaymentInvestigation {
   id: string;
   bookingNumber: string;
   status: string;
+  source: "ONLINE" | "WALK_UP";
   paymentStatus: string;
   total: number;
   reservedUntil: string | null;
@@ -80,7 +82,9 @@ export interface PaymentInvestigation {
   payments: Array<{
     id: string;
     provider: string;
+    method: "ONLINE_CARD" | "CASH" | "STANDALONE_EFTPOS";
     providerReferenceSummary: string | null;
+    standaloneReference: string | null;
     amount: number;
     currency: string;
     status: string;
@@ -89,7 +93,12 @@ export interface PaymentInvestigation {
     succeededAt: string | null;
     failedAt: string | null;
     cancelledAt: string | null;
+    receivedAt: string | null;
     createdAt: string;
+    receivedByUser: {
+      id: string;
+      name: string;
+    } | null;
     refunds: Array<{
       id: string;
       amount: number;

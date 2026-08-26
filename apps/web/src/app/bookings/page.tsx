@@ -268,7 +268,7 @@ export default function BookingsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b bg-muted/50 text-muted-foreground">
                   <tr>
-                    {["Booking", "Customer", "Session", "Event", "Booking state", "Payment", "Total"].map((heading) => (
+                    {["Booking", "Source", "Customer", "Session", "Event", "Booking state", "Payment", "Total"].map((heading) => (
                       <th key={heading} className={`px-5 py-3 font-medium ${heading === "Total" ? "text-right" : ""}`}>{heading}</th>
                     ))}
                   </tr>
@@ -280,6 +280,7 @@ export default function BookingsPage() {
                         <Link href={`/bookings/${booking.id}`} className="font-semibold underline-offset-4 hover:underline">{booking.bookingNumber}</Link>
                         <p className="mt-1 text-xs text-muted-foreground">{new Date(booking.createdAt).toLocaleString("en-AU")}</p>
                       </td>
+                      <td className="px-5 py-4">{booking.source === "WALK_UP" ? "Walk-up" : "Online"}</td>
                       <td className="px-5 py-4">
                         {booking.customer.firstName} {booking.customer.lastName}
                         <p className="mt-1 text-xs text-muted-foreground">{booking.customer.email}</p>

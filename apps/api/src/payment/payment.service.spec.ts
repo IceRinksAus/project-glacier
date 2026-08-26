@@ -292,6 +292,7 @@ describe('PaymentService', () => {
           bookingId:
             'booking-1',
           provider: 'MOCK',
+          method: 'ONLINE_CARD',
           providerReference:
             'mock-payment-1',
           idempotencyKey:

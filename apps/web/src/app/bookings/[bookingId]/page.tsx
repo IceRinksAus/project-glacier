@@ -162,6 +162,8 @@ export default function BookingPaymentPage() {
                   <dd>{investigation.customer.email}</dd>
                   <dt className="text-muted-foreground">Event</dt>
                   <dd>{investigation.event.name}</dd>
+                  <dt className="text-muted-foreground">Booking source</dt>
+                  <dd>{investigation.source === "WALK_UP" ? "Walk-up" : "Online"}</dd>
                   <dt className="text-muted-foreground">Session</dt>
                   <dd>{investigation.session?.name ?? "—"}</dd>
                   <dt className="text-muted-foreground">Reserved until</dt>
@@ -199,7 +201,20 @@ export default function BookingPaymentPage() {
                   <div key={payment.id} className="rounded-lg border p-5">
                     <div className="flex flex-col justify-between gap-2 sm:flex-row">
                       <div>
-                        <p className="font-semibold">{payment.provider} {payment.providerReferenceSummary}</p>
+                        <p className="font-semibold">
+                          {payment.method === "STANDALONE_EFTPOS"
+                            ? "Standalone EFTPOS"
+                            : payment.method === "CASH"
+                              ? "Cash"
+                              : "Online card"}
+                          {payment.providerReferenceSummary ? ` ${payment.providerReferenceSummary}` : ""}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">Provider: {payment.provider}</p>
+                        {payment.receivedByUser ? (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Confirmed by {payment.receivedByUser.name} {dateTime(payment.receivedAt)}
+                          </p>
+                        ) : null}
                         <p className="mt-1 text-sm text-muted-foreground">Created {dateTime(payment.createdAt)}</p>
                       </div>
                       <div className="sm:text-right">

@@ -127,6 +127,7 @@ export class PaymentService {
         bookingId: booking.id,
         provider:
           providerResult.provider,
+        method: 'ONLINE_CARD',
         providerReference:
           providerResult.paymentReference,
         idempotencyKey,

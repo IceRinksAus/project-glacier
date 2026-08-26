@@ -32,6 +32,7 @@ const booking = {
   id: "booking-1",
   bookingNumber: "PG-1234",
   status: "CONFIRMED",
+  source: "ONLINE",
   paymentStatus: "PAID",
   total: 74,
   createdAt: "2026-08-24T03:45:00.000Z",

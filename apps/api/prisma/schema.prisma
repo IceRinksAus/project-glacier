@@ -18,6 +18,17 @@ enum OrganizationAccessScope {
   ASSIGNED_EVENTS
 }
 
+enum BookingSource {
+  ONLINE
+  WALK_UP
+}
+
+enum PaymentMethod {
+  ONLINE_CARD
+  CASH
+  STANDALONE_EFTPOS
+}
+
 model Organization {
   id     String @id @default(cuid())
   name   String
@@ -67,6 +78,7 @@ model User {
   ticketScanAttempts            TicketScanAttempt[]
   createdFileAssets             FileAsset[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
+  paymentsReceived              Payment[]                      @relation("PaymentReceivedBy")
   accessChangesMade             OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived         OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
@@ -544,7 +556,8 @@ model Booking {
 
   bookingNumber String @unique
 
-  status String @default("PENDING")
+  status String        @default("PENDING")
+  source BookingSource @default(ONLINE)
 
   total Decimal @db.Decimal(10, 2)
 
@@ -578,6 +591,8 @@ model Booking {
   publicAccessTokenCreatedAt DateTime?
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
+
+  @@index([eventId, source])
 }
 
 model BookingItem {
@@ -653,9 +668,11 @@ model Payment {
   booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   provider String
+  method   PaymentMethod @default(ONLINE_CARD)
 
-  providerReference String?
-  idempotencyKey    String  @unique
+  providerReference   String?
+  standaloneReference String?
+  idempotencyKey      String  @unique
 
   amount   Decimal @db.Decimal(10, 2)
   currency String  @default("AUD")
@@ -668,6 +685,10 @@ model Payment {
   succeededAt DateTime?
   failedAt    DateTime?
   cancelledAt DateTime?
+  receivedAt  DateTime?
+
+  receivedByUserId String?
+  receivedByUser   User?   @relation("PaymentReceivedBy", fields: [receivedByUserId], references: [id], onDelete: Restrict)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -677,6 +698,8 @@ model Payment {
 
   @@index([bookingId])
   @@index([provider, providerReference])
+  @@index([method, status])
+  @@index([receivedByUserId])
   @@index([status])
 }
 
