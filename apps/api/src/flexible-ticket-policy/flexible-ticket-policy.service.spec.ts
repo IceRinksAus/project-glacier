@@ -102,6 +102,8 @@ describe('FlexibleTicketPolicyService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      session: { findFirst: jest.fn() },
+      ticketType: { findMany: jest.fn() },
       flexibleTicketPolicy: {
         findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
@@ -297,5 +299,74 @@ describe('FlexibleTicketPolicyService', () => {
 
     await expect(service.resolveEffectivePolicy('event-1')).resolves.toBeNull();
     expect(prisma.flexibleTicketPolicy.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('quotes fixed fees from authoritative Ticket Types', async () => {
+    prisma.session.findFirst.mockResolvedValue({
+      id: 'session-1',
+      startDate: new Date('2027-09-01T10:00:00.000Z'),
+    });
+    prisma.event.findUnique.mockResolvedValue({
+      id: 'event-1',
+      organizationId: 'org-1',
+      flexibleTicketMode: FlexibleTicketEventMode.INHERIT,
+    });
+    prisma.flexibleTicketPolicy.findFirst.mockResolvedValue(
+      policy({
+        status: FlexibleTicketPolicyStatus.PUBLISHED,
+        publishedAt: new Date(),
+        publishedByUserId: 'owner-1',
+      }),
+    );
+    prisma.ticketType.findMany.mockResolvedValue([
+      { id: 'adult', name: 'Adult', price: new Prisma.Decimal(24) },
+    ]);
+
+    const result = await service.quotePublicOffer('event-1', {
+      sessionId: 'session-1',
+      tickets: [{ ticketTypeId: 'adult', quantity: 2 }],
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        available: true,
+        policyId: 'policy-1',
+        totalFee: 10,
+        tickets: [expect.objectContaining({ feePerTicket: 5, feeTotal: 10 })],
+      }),
+    );
+  });
+
+  it('rounds percentage fees to cents using authoritative prices', () => {
+    expect(
+      service
+        .calculateFee(
+          FlexibleTicketFeeType.PERCENTAGE,
+          new Prisma.Decimal('7.5'),
+          new Prisma.Decimal('19.95'),
+        )
+        .toNumber(),
+    ).toBe(1.5);
+  });
+
+  it('does not offer flexibility after the policy cut-off', async () => {
+    prisma.session.findFirst.mockResolvedValue({
+      id: 'session-1',
+      startDate: new Date('2026-08-27T08:00:00.000Z'),
+    });
+    prisma.event.findUnique.mockResolvedValue({
+      id: 'event-1',
+      organizationId: 'org-1',
+      flexibleTicketMode: FlexibleTicketEventMode.INHERIT,
+    });
+    prisma.flexibleTicketPolicy.findFirst.mockResolvedValue(policy());
+
+    await expect(
+      service.quotePublicOffer('event-1', {
+        sessionId: 'session-1',
+        tickets: [{ ticketTypeId: 'adult', quantity: 1 }],
+      }),
+    ).resolves.toEqual({ available: false });
+    expect(prisma.ticketType.findMany).not.toHaveBeenCalled();
   });
 });

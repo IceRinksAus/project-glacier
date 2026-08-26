@@ -135,8 +135,35 @@ export interface CreatePublicBookingInput {
   eventId: string;
   sessionId: string;
   flexibleBooking?: boolean;
+  flexibleTicketPolicyId?: string;
+  flexibleTicketParticipantIndexes?: number[];
   participants: CreatePublicBookingParticipantInput[];
   products?: CreatePublicBookingProductInput[];
+}
+
+export interface PublicFlexibleTicketQuote {
+  available: boolean;
+  policyId?: string;
+  policyVersion?: number;
+  sourceMode?: "INHERIT" | "OVERRIDE";
+  feeType?: "FIXED" | "PERCENTAGE";
+  feeValue?: number;
+  currency?: string;
+  allowsSessionChange?: boolean;
+  allowsRefundRequest?: boolean;
+  cutoffAt?: string;
+  permittedUseLimit?: number;
+  customerSummary?: string;
+  materialTerms?: string;
+  tickets?: Array<{
+    ticketTypeId: string;
+    ticketTypeName: string;
+    quantity: number;
+    ticketPrice: number;
+    feePerTicket: number;
+    feeTotal: number;
+  }>;
+  totalFee?: number;
 }
 
 export interface PublicRulePreviewParticipant {
@@ -176,6 +203,7 @@ export interface PublicBookingResponse {
     total: number;
     reservedUntil: string | null;
     flexibleBooking: boolean;
+    flexibleTicketFeeTotal: number;
 
     /*
      * Returned only when a public reservation is created.
@@ -224,6 +252,16 @@ export interface PublicBookingResponse {
       lastName: string | null;
       age: number;
       ticketTypeId: string;
+    }>;
+
+    flexibleTicketEntitlements: Array<{
+      entitlementNumber: string;
+      participantId: string;
+      status: string;
+      feeAmount: number;
+      currency: string;
+      policyVersion: number;
+      customerSummary: string;
     }>;
 
     products: Array<{
@@ -322,6 +360,19 @@ export const publicBookingService = {
   getTicketTypes(eventId: string) {
     return publicApi.get<PublicTicketType[]>(
       `/public/events/${eventId}/ticket-types`,
+    );
+  },
+
+  quoteFlexibleTicket(
+    eventId: string,
+    data: {
+      sessionId: string;
+      tickets: Array<{ ticketTypeId: string; quantity: number }>;
+    },
+  ) {
+    return publicApi.post<PublicFlexibleTicketQuote>(
+      `/public/events/${eventId}/flexible-ticket-quote`,
+      data,
     );
   },
 

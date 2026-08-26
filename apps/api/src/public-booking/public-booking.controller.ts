@@ -15,6 +15,7 @@ import { CreateBookingDto } from '../booking/dto/create-booking.dto';
 import { CreatePublicCustomerDto } from './dto/create-public-customer.dto';
 import { CreatePublicPaymentDto } from './dto/create-public-payment.dto';
 import { EvaluatePublicRulesDto } from './dto/evaluate-public-rules.dto';
+import { QuoteFlexibleTicketDto } from './dto/quote-flexible-ticket.dto';
 import { PublicBookingService } from './public-booking.service';
 import { PublicPaymentService } from './public-payment.service';
 import { FileAssetService } from '../file-asset/file-asset.service';
@@ -64,6 +65,14 @@ export class PublicBookingController {
   @Get('events/:eventId/ticket-types')
   findTicketTypes(@Param('eventId') eventId: string) {
     return this.publicBookingService.findTicketTypes(eventId);
+  }
+
+  @Post('events/:eventId/flexible-ticket-quote')
+  quoteFlexibleTicket(
+    @Param('eventId') eventId: string,
+    @Body() data: QuoteFlexibleTicketDto,
+  ) {
+    return this.publicBookingService.quoteFlexibleTicket(eventId, data);
   }
 
   @Post('events/:eventId/evaluate-rules')

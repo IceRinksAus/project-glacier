@@ -58,7 +58,14 @@ export default function ReviewPage({ params }: { params: Promise<{ eventId: stri
     (total, item) => total + item.ticketType.price * item.quantity,
     0,
   );
-  const total = ticketSubtotal + journey.productSubtotal;
+  const flexibleTicketFee = (journey.flexibleTicketQuote?.tickets ?? []).reduce(
+    (fee, ticket) =>
+      fee +
+      ticket.feePerTicket *
+        (journey.flexibleTicketQuantities[ticket.ticketTypeId] ?? 0),
+    0,
+  );
+  const total = ticketSubtotal + journey.productSubtotal + flexibleTicketFee;
   const currency = (amount: number) => new Intl.NumberFormat("en-AU", {
     style: "currency",
     currency: "AUD",
@@ -86,11 +93,30 @@ export default function ReviewPage({ params }: { params: Promise<{ eventId: stri
           };
         }),
       );
+      let participantOffset = 0;
+      const flexibleTicketParticipantIndexes: number[] = [];
+      for (const { ticketType, quantity } of selectedTickets) {
+        const covered = Math.min(
+          journey.flexibleTicketQuantities[ticketType.id] ?? 0,
+          quantity,
+        );
+        for (let index = 0; index < covered; index += 1) {
+          flexibleTicketParticipantIndexes.push(participantOffset + index);
+        }
+        participantOffset += quantity;
+      }
       const reservation = await publicBookingService.createBooking({
         customerId: customer.id,
         eventId,
         sessionId: selectedSession.id,
         flexibleBooking: false,
+        ...(flexibleTicketParticipantIndexes.length > 0 &&
+        journey.flexibleTicketQuote?.policyId
+          ? {
+              flexibleTicketPolicyId: journey.flexibleTicketQuote.policyId,
+              flexibleTicketParticipantIndexes,
+            }
+          : {}),
         participants,
         products: journey.selectedProducts.map((product) => ({
           productId: product.productId,
@@ -130,6 +156,12 @@ export default function ReviewPage({ params }: { params: Promise<{ eventId: stri
               `${product.quantity} × ${product.name} — ${currency(product.price * product.quantity)}`,
             )
             : ["No optional add-ons selected"]} />
+          <Summary title="Flexible Ticket" lines={flexibleTicketFee > 0
+            ? [
+              `${Object.values(journey.flexibleTicketQuantities).reduce((sum, quantity) => sum + quantity, 0)} covered ${Object.values(journey.flexibleTicketQuantities).reduce((sum, quantity) => sum + quantity, 0) === 1 ? "Ticket" : "Tickets"} — ${currency(flexibleTicketFee)}`,
+              journey.flexibleTicketQuote?.customerSummary ?? "Flexible Ticket coverage selected",
+            ]
+            : ["Not selected"]} />
           <Summary title="Booking contact" lines={[
             `${journey.customerData.firstName} ${journey.customerData.lastName}`,
             journey.customerData.email,

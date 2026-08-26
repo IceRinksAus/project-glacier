@@ -4,6 +4,7 @@ import { BookingValidationModule } from '../booking-validation/booking-validatio
 import { PaymentModule } from '../payment/payment.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { RuleModule } from '../rule/rule.module';
+import { FlexibleTicketPolicyModule } from '../flexible-ticket-policy/flexible-ticket-policy.module';
 
 import { BookingReservationService } from './booking-reservation.service';
 import { BookingController } from './booking.controller';
@@ -15,6 +16,7 @@ import { BookingService } from './booking.service';
     BookingValidationModule,
     PaymentModule,
     InventoryModule,
+    FlexibleTicketPolicyModule,
   ],
   controllers: [BookingController],
   providers: [BookingService, BookingReservationService],

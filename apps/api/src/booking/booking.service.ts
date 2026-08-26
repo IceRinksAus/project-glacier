@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomBytes, randomUUID } from 'crypto';
 
 import { BookingValidationService } from '../booking-validation/booking-validation.service';
 import type { BookingCommerceSource } from '../booking-validation/booking-validation.service';
@@ -13,6 +14,7 @@ import {
 } from '../access-control/access-control.service';
 import { PaymentService } from '../payment/payment.service';
 import { InventoryCommitmentService } from '../inventory/inventory-commitment.service';
+import { FlexibleTicketPolicyService } from '../flexible-ticket-policy/flexible-ticket-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
 
@@ -28,6 +30,7 @@ export class BookingService {
     private readonly paymentService: PaymentService,
     private readonly accessControl: AccessControlService,
     private readonly inventoryCommitments: InventoryCommitmentService,
+    private readonly flexibleTicketPolicies: FlexibleTicketPolicyService,
   ) {}
 
   private summarizeProviderReference(providerReference: string | null) {
@@ -546,6 +549,48 @@ export class BookingService {
       );
     }
 
+    if (data.flexibleBooking === true) {
+      throw new BadRequestException(
+        'The legacy Flexible Booking option is no longer accepted.',
+      );
+    }
+
+    const flexibleTicketParticipantIndexes =
+      data.flexibleTicketParticipantIndexes ?? [];
+    if (
+      new Set(flexibleTicketParticipantIndexes).size !==
+      flexibleTicketParticipantIndexes.length
+    ) {
+      throw new BadRequestException(
+        'A participant cannot receive Flexible Ticket twice.',
+      );
+    }
+    if (
+      flexibleTicketParticipantIndexes.some(
+        (index) => index < 0 || index >= data.participants.length,
+      )
+    ) {
+      throw new BadRequestException(
+        'One or more Flexible Ticket selections are invalid.',
+      );
+    }
+    if (flexibleTicketParticipantIndexes.length > 0) {
+      if (source !== 'ONLINE') {
+        throw new BadRequestException(
+          'Flexible Ticket is not available through POS yet.',
+        );
+      }
+      if (!data.flexibleTicketPolicyId) {
+        throw new BadRequestException(
+          'Review the Flexible Ticket offer before reserving.',
+        );
+      }
+    } else if (data.flexibleTicketPolicyId) {
+      throw new BadRequestException(
+        'Flexible Ticket policy authority requires a selected Ticket.',
+      );
+    }
+
     const customer = await this.prisma.customer.findUnique({
       where: {
         id: data.customerId,
@@ -993,12 +1038,85 @@ export class BookingService {
     /*
      * Prepare participant records.
      */
-    const bookingParticipants = data.participants.map((participant) => ({
-      firstName: participant.firstName,
-      lastName: participant.lastName,
-      age: participant.age,
-      ticketTypeId: participant.ticketTypeId,
-    }));
+    const flexibleParticipantIds = data.participants.map(() =>
+      flexibleTicketParticipantIndexes.length > 0 ? randomUUID() : null,
+    );
+    const bookingParticipants = data.participants.map(
+      (participant, participantIndex) => ({
+        ...(flexibleParticipantIds[participantIndex]
+          ? { id: flexibleParticipantIds[participantIndex]! }
+          : {}),
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        age: participant.age,
+        ticketTypeId: participant.ticketTypeId,
+      }),
+    );
+
+    const flexibleTicketResolution =
+      flexibleTicketParticipantIndexes.length > 0
+        ? await this.flexibleTicketPolicies.resolveReservationPolicy(
+            data.eventId,
+            data.sessionId,
+            data.flexibleTicketPolicyId!,
+          )
+        : null;
+
+    const flexibleTicketEntitlements = flexibleTicketParticipantIndexes.map(
+      (participantIndex) => {
+        const participant = bookingParticipants[participantIndex];
+        const ticketType = ticketTypeMap.get(participant.ticketTypeId);
+        if (!ticketType || !flexibleTicketResolution) {
+          throw new BadRequestException(
+            'The Flexible Ticket selection could not be priced.',
+          );
+        }
+
+        const feeAmount = this.flexibleTicketPolicies.calculateFee(
+          flexibleTicketResolution.policy.feeType,
+          flexibleTicketResolution.policy.feeValue,
+          ticketType.price,
+        );
+        total = total.add(feeAmount);
+
+        return {
+          entitlementNumber: `FT-${Date.now()}-${randomBytes(4)
+            .toString('hex')
+            .toUpperCase()}`,
+          organizationId: event.organizationId,
+          eventId: data.eventId,
+          participantId: flexibleParticipantIds[participantIndex]!,
+          ticketTypeId: ticketType.id,
+          policyId: flexibleTicketResolution.policy.id,
+          policySourceMode: flexibleTicketResolution.sourceMode,
+          policyVersion: flexibleTicketResolution.policy.version,
+          ticketTypeNameSnapshot: ticketType.name,
+          ticketFaceValueSnapshot: ticketType.price,
+          feeTypeSnapshot: flexibleTicketResolution.policy.feeType,
+          feeValueSnapshot: flexibleTicketResolution.policy.feeValue,
+          feeAmount,
+          currency: flexibleTicketResolution.policy.currency,
+          allowsSessionChangeSnapshot:
+            flexibleTicketResolution.policy.allowsSessionChange,
+          allowsRefundRequestSnapshot:
+            flexibleTicketResolution.policy.allowsRefundRequest,
+          cutoffMinutesBeforeSessionSnapshot:
+            flexibleTicketResolution.policy.cutoffMinutesBeforeSession,
+          permittedUseLimitSnapshot:
+            flexibleTicketResolution.policy.permittedUseLimit,
+          remainingUses: flexibleTicketResolution.policy.permittedUseLimit,
+          priceIncreaseTreatmentSnapshot:
+            flexibleTicketResolution.policy.priceIncreaseTreatment,
+          priceDecreaseTreatmentSnapshot:
+            flexibleTicketResolution.policy.priceDecreaseTreatment,
+          feeRefundabilitySnapshot:
+            flexibleTicketResolution.policy.feeRefundability,
+          customerSummarySnapshot:
+            flexibleTicketResolution.policy.customerSummary,
+          materialTermsSnapshot: flexibleTicketResolution.policy.materialTerms,
+        };
+      },
+    );
 
     /*
      * Calculate product total and prepare booking product records.
@@ -1033,6 +1151,27 @@ export class BookingService {
 
     const booking = await this.createWithCapacityProtection(
       async (transaction) => {
+        if (flexibleTicketResolution) {
+          const currentFlexibleTicketPolicy =
+            await this.flexibleTicketPolicies.resolveReservationPolicy(
+              data.eventId,
+              data.sessionId,
+              flexibleTicketResolution.policy.id,
+              transaction,
+            );
+          if (
+            currentFlexibleTicketPolicy.policy.version !==
+              flexibleTicketResolution.policy.version ||
+            !currentFlexibleTicketPolicy.policy.feeValue.equals(
+              flexibleTicketResolution.policy.feeValue,
+            )
+          ) {
+            throw new BadRequestException(
+              'The Flexible Ticket offer changed. Review the offer again.',
+            );
+          }
+        }
+
         const currentSession = await transaction.session.findUnique({
           where: {
             id: data.sessionId,
@@ -1239,7 +1378,7 @@ export class BookingService {
           }
         }
 
-        return transaction.booking.create({
+        const createdBooking = await transaction.booking.create({
           data: {
             bookingNumber,
             status: 'RESERVED',
@@ -1247,7 +1386,7 @@ export class BookingService {
             reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
             paymentStatus: 'UNPAID',
             total,
-            flexibleBooking: data.flexibleBooking ?? false,
+            flexibleBooking: false,
             customerId: data.customerId,
             eventId: data.eventId,
             sessionId: data.sessionId,
@@ -1282,6 +1421,19 @@ export class BookingService {
             },
           },
         });
+
+        if (flexibleTicketEntitlements.length > 0) {
+          await transaction.flexibleTicketEntitlement.createMany({
+            data: flexibleTicketEntitlements.map((entitlement) => ({
+              ...entitlement,
+              bookingId: createdBooking.id,
+            })),
+          });
+        }
+
+        return flexibleTicketEntitlements.length > 0
+          ? { ...createdBooking, flexibleTicketEntitlements }
+          : createdBooking;
       },
     );
 

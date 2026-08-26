@@ -4,8 +4,10 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import { BookingService } from '../booking/booking.service';
 import { CreateBookingDto } from '../booking/dto/create-booking.dto';
+import { FlexibleTicketPolicyService } from '../flexible-ticket-policy/flexible-ticket-policy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
+import { QuoteFlexibleTicketDto } from './dto/quote-flexible-ticket.dto';
 
 interface EvaluatePublicRulesParticipant {
   firstName: string;
@@ -26,6 +28,7 @@ export class PublicBookingService {
     private readonly prisma: PrismaService,
     private readonly bookingService: BookingService,
     private readonly ruleEvaluationService: RuleEvaluationService,
+    private readonly flexibleTicketPolicies: FlexibleTicketPolicyService,
   ) {}
 
   async findEvent(eventId: string) {
@@ -192,6 +195,10 @@ export class PublicBookingService {
         eventId: true,
       },
     });
+  }
+
+  quoteFlexibleTicket(eventId: string, data: QuoteFlexibleTicketDto) {
+    return this.flexibleTicketPolicies.quotePublicOffer(eventId, data);
   }
 
   async evaluateRules(eventId: string, data: EvaluatePublicRulesData) {
@@ -540,7 +547,9 @@ export class PublicBookingService {
 
     return availableProducts
       .filter(
-        (sessionProduct): sessionProduct is NonNullable<typeof sessionProduct> =>
+        (
+          sessionProduct,
+        ): sessionProduct is NonNullable<typeof sessionProduct> =>
           sessionProduct !== null,
       )
       .sort((left, right) => {
@@ -582,6 +591,10 @@ export class PublicBookingService {
     const result = await this.bookingService.create(data);
 
     const booking = result.booking;
+    const flexibleTicketEntitlements =
+      'flexibleTicketEntitlements' in booking
+        ? booking.flexibleTicketEntitlements
+        : [];
 
     if (!booking.session) {
       throw new NotFoundException('Booking session not found.');
@@ -620,6 +633,10 @@ export class PublicBookingService {
         total: booking.total,
         reservedUntil: booking.reservedUntil,
         flexibleBooking: booking.flexibleBooking,
+        flexibleTicketFeeTotal: flexibleTicketEntitlements.reduce(
+          (total, entitlement) => total + entitlement.feeAmount.toNumber(),
+          0,
+        ),
 
         /*
          * Returned only through this public
@@ -669,6 +686,18 @@ export class PublicBookingService {
           age: participant.age,
           ticketTypeId: participant.ticketTypeId,
         })),
+
+        flexibleTicketEntitlements: flexibleTicketEntitlements.map(
+          (entitlement) => ({
+            entitlementNumber: entitlement.entitlementNumber,
+            participantId: entitlement.participantId,
+            status: 'PENDING',
+            feeAmount: entitlement.feeAmount.toNumber(),
+            currency: entitlement.currency,
+            policyVersion: entitlement.policyVersion,
+            customerSummary: entitlement.customerSummarySnapshot,
+          }),
+        ),
 
         products: booking.products.map((bookingProduct) => ({
           productId: bookingProduct.productId,

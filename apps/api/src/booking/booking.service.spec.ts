@@ -25,6 +25,7 @@ describe('BookingService', () => {
     id: 'event-1',
     name: 'Winter Festival',
     status: 'ACTIVE',
+    organizationId: 'organization-1',
   };
 
   const session = {
@@ -124,6 +125,9 @@ describe('BookingService', () => {
     paymentReconciliationAttempt: {
       create: jest.fn(),
     },
+    flexibleTicketEntitlement: {
+      createMany: jest.fn(),
+    },
   };
 
   const ruleEvaluationService = {
@@ -136,6 +140,11 @@ describe('BookingService', () => {
 
   const paymentService = {
     reconcilePendingPaymentForBooking: jest.fn(),
+  };
+
+  const flexibleTicketPolicies = {
+    resolveReservationPolicy: jest.fn(),
+    calculateFee: jest.fn(),
   };
 
   beforeEach(() => {
@@ -225,6 +234,7 @@ describe('BookingService', () => {
           return result._sum.quantity ?? 0;
         },
       } as never,
+      flexibleTicketPolicies as never,
     );
   });
 
@@ -861,5 +871,98 @@ describe('BookingService', () => {
         warnings: ['Jamie: Helmet recommended.'],
       },
     });
+  });
+
+  it('prices and persists one pending entitlement for a selected participant', async () => {
+    flexibleTicketPolicies.resolveReservationPolicy.mockResolvedValue({
+      sourceMode: 'INHERIT',
+      policy: {
+        id: 'policy-1',
+        version: 2,
+        feeType: 'FIXED',
+        feeValue: new Prisma.Decimal(5),
+        currency: 'AUD',
+        allowsSessionChange: true,
+        allowsRefundRequest: true,
+        cutoffMinutesBeforeSession: 1440,
+        permittedUseLimit: 1,
+        priceIncreaseTreatment: 'CUSTOMER_PAYS_DIFFERENCE',
+        priceDecreaseTreatment: 'KEEP_ORIGINAL_PRICE',
+        feeRefundability: 'NON_REFUNDABLE',
+        customerSummary: 'Peace of mind.',
+        materialTerms: 'Test terms.',
+      },
+    });
+    flexibleTicketPolicies.calculateFee.mockReturnValue(new Prisma.Decimal(5));
+
+    const result = await service.create({
+      ...createBookingDto,
+      flexibleTicketPolicyId: 'policy-1',
+      flexibleTicketParticipantIndexes: [0],
+    });
+
+    expect(
+      flexibleTicketPolicies.resolveReservationPolicy,
+    ).toHaveBeenCalledTimes(2);
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          total: new Prisma.Decimal(29),
+          flexibleBooking: false,
+          participants: {
+            create: [
+              expect.objectContaining({
+                id: expect.any(String),
+                ticketTypeId: 'ticket-adult',
+              }),
+            ],
+          },
+        }),
+      }),
+    );
+    expect(prisma.flexibleTicketEntitlement.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          bookingId: 'booking-1',
+          participantId: expect.any(String),
+          policyId: 'policy-1',
+          ticketFaceValueSnapshot: new Prisma.Decimal(24),
+          feeAmount: new Prisma.Decimal(5),
+          remainingUses: 1,
+        }),
+      ],
+    });
+    expect(result.booking).toEqual(
+      expect.objectContaining({
+        flexibleTicketEntitlements: [
+          expect.objectContaining({ feeAmount: new Prisma.Decimal(5) }),
+        ],
+      }),
+    );
+  });
+
+  it('rejects legacy Booking-level flexibility authority', async () => {
+    await expect(
+      service.create({ ...createBookingDto, flexibleBooking: true }),
+    ).rejects.toThrow('legacy Flexible Booking option is no longer accepted');
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate or out-of-range participant coverage', async () => {
+    await expect(
+      service.create({
+        ...createBookingDto,
+        flexibleTicketPolicyId: 'policy-1',
+        flexibleTicketParticipantIndexes: [0, 0],
+      }),
+    ).rejects.toThrow('cannot receive Flexible Ticket twice');
+
+    await expect(
+      service.create({
+        ...createBookingDto,
+        flexibleTicketPolicyId: 'policy-1',
+        flexibleTicketParticipantIndexes: [1],
+      }),
+    ).rejects.toThrow('Flexible Ticket selections are invalid');
   });
 });

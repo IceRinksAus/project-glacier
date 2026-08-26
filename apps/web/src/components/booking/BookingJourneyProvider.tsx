@@ -14,6 +14,7 @@ import {
   PublicBookingResponse,
   PublicBookingStatus,
   PublicEventSite,
+  PublicFlexibleTicketQuote,
   PublicRulePreviewResponse,
   publicBookingService,
 } from "@/services/public-booking.service";
@@ -37,6 +38,9 @@ interface BookingJourneyState {
   selectedDateKey: string | null;
   selectedSessionId: string | null;
   ticketQuantities: Record<string, number>;
+  flexibleTicketQuote: PublicFlexibleTicketQuote | null;
+  flexibleTicketQuantities: Record<string, number>;
+  flexibleTicketDecision: "UNDECIDED" | "ACCEPTED" | "DECLINED";
   participantData: Record<string, BookingParticipantData>;
   rulePreview: PublicRulePreviewResponse | null;
   selectedProducts: SelectedBookingProduct[];
@@ -48,6 +52,9 @@ interface BookingJourneyState {
   selectDate: (dateKey: string) => void;
   selectSession: (sessionId: string) => void;
   setTicketQuantity: (ticketTypeId: string, quantity: number) => void;
+  setFlexibleTicketQuote: (quote: PublicFlexibleTicketQuote | null) => void;
+  acceptFlexibleTickets: (quantities: Record<string, number>) => void;
+  declineFlexibleTickets: () => void;
   updateParticipant: (
     key: string,
     field: keyof BookingParticipantData,
@@ -85,6 +92,14 @@ export function BookingJourneyProvider({
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [ticketQuantities, setTicketQuantities] = useState<Record<string, number>>({});
+  const [flexibleTicketQuote, setFlexibleTicketQuote] =
+    useState<PublicFlexibleTicketQuote | null>(null);
+  const [flexibleTicketQuantities, setFlexibleTicketQuantities] = useState<
+    Record<string, number>
+  >({});
+  const [flexibleTicketDecision, setFlexibleTicketDecision] = useState<
+    "UNDECIDED" | "ACCEPTED" | "DECLINED"
+  >("UNDECIDED");
   const [participantData, setParticipantData] = useState<
     Record<string, BookingParticipantData>
   >({});
@@ -141,6 +156,9 @@ export function BookingJourneyProvider({
       selectedDateKey,
       selectedSessionId,
       ticketQuantities,
+      flexibleTicketQuote,
+      flexibleTicketQuantities,
+      flexibleTicketDecision,
       participantData,
       rulePreview,
       selectedProducts,
@@ -154,6 +172,9 @@ export function BookingJourneyProvider({
           setSelectedDateKey(dateKey);
           setSelectedSessionId(null);
           setTicketQuantities({});
+          setFlexibleTicketQuote(null);
+          setFlexibleTicketQuantities({});
+          setFlexibleTicketDecision("UNDECIDED");
           setParticipantData({});
           setRulePreview(null);
           setSelectedProducts([]);
@@ -167,6 +188,9 @@ export function BookingJourneyProvider({
         if (sessionId !== selectedSessionId) {
           setSelectedSessionId(sessionId);
           setTicketQuantities({});
+          setFlexibleTicketQuote(null);
+          setFlexibleTicketQuantities({});
+          setFlexibleTicketDecision("UNDECIDED");
           setParticipantData({});
           setRulePreview(null);
           setSelectedProducts([]);
@@ -182,6 +206,18 @@ export function BookingJourneyProvider({
           [ticketTypeId]: Math.max(0, quantity),
         }));
         setRulePreview(null);
+        setFlexibleTicketQuote(null);
+        setFlexibleTicketQuantities({});
+        setFlexibleTicketDecision("UNDECIDED");
+      },
+      setFlexibleTicketQuote,
+      acceptFlexibleTickets(quantities) {
+        setFlexibleTicketQuantities(quantities);
+        setFlexibleTicketDecision("ACCEPTED");
+      },
+      declineFlexibleTickets() {
+        setFlexibleTicketQuantities({});
+        setFlexibleTicketDecision("DECLINED");
       },
       updateParticipant(key, field, value) {
         setParticipantData((current) => ({
@@ -211,6 +247,9 @@ export function BookingJourneyProvider({
       customerData,
       eventSite,
       eventSiteLoaded,
+      flexibleTicketDecision,
+      flexibleTicketQuantities,
+      flexibleTicketQuote,
       participantData,
       paymentSubmitted,
       productSubtotal,

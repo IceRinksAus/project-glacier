@@ -3,10 +3,14 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
+  Max,
+  ArrayUnique,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -33,6 +37,21 @@ export class CreateBookingDto {
   @IsOptional()
   @IsBoolean()
   flexibleBooking?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  flexibleTicketPolicyId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(50)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(49, { each: true })
+  flexibleTicketParticipantIndexes?: number[];
 
   @IsArray()
   @ArrayMinSize(1)

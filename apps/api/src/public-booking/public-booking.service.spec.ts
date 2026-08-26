@@ -214,6 +214,7 @@ describe('PublicBookingService', () => {
           },
         },
       ],
+      flexibleTicketEntitlements: [],
       products: [],
     },
     ruleEvaluation: {
@@ -234,6 +235,7 @@ describe('PublicBookingService', () => {
       total: 24,
       reservedUntil: new Date('2027-07-05T00:15:00.000Z'),
       flexibleBooking: false,
+      flexibleTicketFeeTotal: 0,
       publicAccessToken: expect.any(String),
       customer: {
         id: 'customer-1',
@@ -275,6 +277,7 @@ describe('PublicBookingService', () => {
           ticketTypeId: 'ticket-type-1',
         },
       ],
+      flexibleTicketEntitlements: [],
       products: [],
     },
     ruleEvaluation: {
@@ -315,6 +318,14 @@ describe('PublicBookingService', () => {
     create: jest.fn(),
   };
 
+  const ruleEvaluationService = {
+    evaluate: jest.fn(),
+  };
+
+  const flexibleTicketPolicies = {
+    quotePublicOffer: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -341,11 +352,34 @@ describe('PublicBookingService', () => {
     service = new PublicBookingService(
       prisma as never,
       bookingService as unknown as BookingService,
+      ruleEvaluationService as never,
+      flexibleTicketPolicies as never,
     );
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('delegates Flexible Ticket quotes to the authoritative policy service', async () => {
+    flexibleTicketPolicies.quotePublicOffer.mockResolvedValue({
+      available: true,
+      policyId: 'policy-1',
+    });
+
+    await expect(
+      service.quoteFlexibleTicket('event-1', {
+        sessionId: 'session-1',
+        tickets: [{ ticketTypeId: 'ticket-type-1', quantity: 1 }],
+      }),
+    ).resolves.toEqual({ available: true, policyId: 'policy-1' });
+    expect(flexibleTicketPolicies.quotePublicOffer).toHaveBeenCalledWith(
+      'event-1',
+      {
+        sessionId: 'session-1',
+        tickets: [{ ticketTypeId: 'ticket-type-1', quantity: 1 }],
+      },
+    );
   });
 
   it('should return an active public event', async () => {

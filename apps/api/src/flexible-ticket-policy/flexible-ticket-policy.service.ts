@@ -209,6 +209,189 @@ export class FlexibleTicketPolicyService {
       : null;
   }
 
+  async quotePublicOffer(
+    eventId: string,
+    input: {
+      sessionId: string;
+      tickets: Array<{ ticketTypeId: string; quantity: number }>;
+    },
+  ) {
+    const session = await this.prisma.session.findFirst({
+      where: {
+        id: input.sessionId,
+        eventId,
+        status: 'ACTIVE',
+        event: { status: 'ACTIVE' },
+      },
+      select: { id: true, startDate: true },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    const resolved = await this.resolveEffectivePolicy(eventId);
+    if (!resolved) {
+      return { available: false as const };
+    }
+
+    const cutoffAt = new Date(
+      session.startDate.getTime() -
+        resolved.policy.cutoffMinutesBeforeSession * 60_000,
+    );
+    if (new Date() >= cutoffAt) {
+      return { available: false as const };
+    }
+
+    const quantities = new Map<string, number>();
+    for (const selection of input.tickets) {
+      quantities.set(
+        selection.ticketTypeId,
+        (quantities.get(selection.ticketTypeId) ?? 0) + selection.quantity,
+      );
+    }
+    const totalQuantity = Array.from(quantities.values()).reduce(
+      (total, quantity) => total + quantity,
+      0,
+    );
+    if (totalQuantity < 1 || totalQuantity > 50) {
+      throw new BadRequestException('Select between 1 and 50 Tickets.');
+    }
+
+    const ticketTypes = await this.prisma.ticketType.findMany({
+      where: {
+        id: { in: Array.from(quantities.keys()) },
+        eventId,
+        active: true,
+      },
+      select: { id: true, name: true, price: true },
+    });
+    if (ticketTypes.length !== quantities.size) {
+      throw new BadRequestException(
+        'One or more Ticket Types are not available for this Event.',
+      );
+    }
+
+    let totalFee = new Prisma.Decimal(0);
+    const tickets = ticketTypes
+      .map((ticketType) => {
+        const quantity = quantities.get(ticketType.id) ?? 0;
+        const feePerTicket = this.calculateFee(
+          resolved.policy.feeType,
+          resolved.policy.feeValue,
+          ticketType.price,
+        );
+        const feeTotal = feePerTicket.mul(quantity);
+        totalFee = totalFee.add(feeTotal);
+        return {
+          ticketTypeId: ticketType.id,
+          ticketTypeName: ticketType.name,
+          quantity,
+          ticketPrice: ticketType.price.toNumber(),
+          feePerTicket: feePerTicket.toNumber(),
+          feeTotal: feeTotal.toNumber(),
+        };
+      })
+      .sort((left, right) =>
+        left.ticketTypeName.localeCompare(right.ticketTypeName),
+      );
+
+    return {
+      available: true as const,
+      policyId: resolved.policy.id,
+      policyVersion: resolved.policy.version,
+      sourceMode: resolved.sourceMode,
+      feeType: resolved.policy.feeType,
+      feeValue: resolved.policy.feeValue.toNumber(),
+      currency: resolved.policy.currency,
+      allowsSessionChange: resolved.policy.allowsSessionChange,
+      allowsRefundRequest: resolved.policy.allowsRefundRequest,
+      cutoffAt,
+      permittedUseLimit: resolved.policy.permittedUseLimit,
+      customerSummary: resolved.policy.customerSummary,
+      materialTerms: resolved.policy.materialTerms,
+      tickets,
+      totalFee: totalFee.toNumber(),
+    };
+  }
+
+  async resolveReservationPolicy(
+    eventId: string,
+    sessionId: string,
+    policyId: string,
+    database: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    const session = await database.session.findFirst({
+      where: {
+        id: sessionId,
+        eventId,
+        status: 'ACTIVE',
+        event: { status: 'ACTIVE' },
+      },
+      select: {
+        startDate: true,
+        event: {
+          select: {
+            organizationId: true,
+            flexibleTicketMode: true,
+          },
+        },
+      },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    if (session.event.flexibleTicketMode === FlexibleTicketEventMode.DISABLED) {
+      throw new BadRequestException(
+        'Flexible Ticket is not available for this Event.',
+      );
+    }
+
+    const policy = await database.flexibleTicketPolicy.findFirst({
+      where: {
+        id: policyId,
+        organizationId: session.event.organizationId,
+        eventId:
+          session.event.flexibleTicketMode === FlexibleTicketEventMode.INHERIT
+            ? null
+            : eventId,
+        status: FlexibleTicketPolicyStatus.PUBLISHED,
+        available: true,
+      },
+    });
+    if (!policy) {
+      throw new BadRequestException(
+        'The Flexible Ticket offer changed. Review the offer again.',
+      );
+    }
+
+    const cutoffAt = new Date(
+      session.startDate.getTime() - policy.cutoffMinutesBeforeSession * 60_000,
+    );
+    if (new Date() >= cutoffAt) {
+      throw new BadRequestException(
+        'Flexible Ticket is no longer available for this Session.',
+      );
+    }
+
+    return {
+      policy,
+      sourceMode: session.event.flexibleTicketMode,
+      cutoffAt,
+    };
+  }
+
+  calculateFee(
+    feeType: FlexibleTicketFeeType,
+    feeValue: Prisma.Decimal,
+    ticketPrice: Prisma.Decimal,
+  ) {
+    return (
+      feeType === FlexibleTicketFeeType.FIXED
+        ? feeValue
+        : ticketPrice.mul(feeValue).div(100)
+    ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+  }
+
   private async createDraft(
     access: AuthenticatedAccessContext,
     eventId: string | null,

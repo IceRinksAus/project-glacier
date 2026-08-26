@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   getTicketTypes: vi.fn(),
+  quoteFlexibleTicket: vi.fn(),
   evaluateRules: vi.fn(),
   getEvent: vi.fn(),
   getSessions: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock("@/components/booking/ReservationCountdown", () => ({
 vi.mock("@/services/public-booking.service", () => ({
   publicBookingService: {
     getTicketTypes: mocks.getTicketTypes,
+    quoteFlexibleTicket: mocks.quoteFlexibleTicket,
     evaluateRules: mocks.evaluateRules,
     getEvent: mocks.getEvent,
     getSessions: mocks.getSessions,
@@ -74,6 +76,9 @@ describe("routed public booking pages", () => {
       selectedDateKey: null,
       selectedSessionId: null,
       ticketQuantities: {},
+      flexibleTicketQuote: null,
+      flexibleTicketQuantities: {},
+      flexibleTicketDecision: "UNDECIDED",
       participantData: {},
       rulePreview: null,
       selectedProducts: [],
@@ -83,6 +88,9 @@ describe("routed public booking pages", () => {
       paymentSubmitted: false,
       totalTicketQuantity: 0,
       setTicketQuantity: vi.fn(),
+      setFlexibleTicketQuote: vi.fn(),
+      acceptFlexibleTickets: vi.fn(),
+      declineFlexibleTickets: vi.fn(),
       updateParticipant: vi.fn(),
       setRulePreview: mocks.setRulePreview,
       setReservation: vi.fn(),
@@ -130,6 +138,60 @@ describe("routed public booking pages", () => {
       expect.objectContaining({ valid: false }),
     );
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it("offers Flexible Ticket immediately after Tickets are selected", async () => {
+    const user = userEvent.setup();
+    Object.assign(journey, {
+      selectedDateKey: "2027-07-01",
+      selectedSessionId: "session-1",
+      ticketQuantities: { adult: 2 },
+      totalTicketQuantity: 2,
+      flexibleTicketQuote: {
+        available: true,
+        policyId: "policy-1",
+        customerSummary: "$4.00 per covered Ticket",
+        materialTerms: "Requests must be made before the stated cut-off.",
+        allowsSessionChange: true,
+        allowsRefundRequest: true,
+        tickets: [
+          {
+            ticketTypeId: "adult",
+            ticketTypeName: "Adult",
+            quantity: 2,
+            feePerTicket: 4,
+          },
+        ],
+        totalFee: 8,
+      },
+    });
+    mocks.getTicketTypes.mockResolvedValue([
+      { id: "adult", name: "Adult", price: 24 },
+    ]);
+    mocks.quoteFlexibleTicket.mockResolvedValue({
+      available: true,
+      policyId: "policy-1",
+      customerSummary: "$4.00 per covered Ticket",
+      materialTerms: "Requests must be made before the stated cut-off.",
+      allowsSessionChange: true,
+      allowsRefundRequest: true,
+      tickets: [
+        {
+          ticketTypeId: "adult",
+          ticketTypeName: "Adult",
+          quantity: 2,
+          feePerTicket: 4,
+        },
+      ],
+      totalFee: 8,
+    });
+
+    await renderRoute(<TicketsPage params={params} />);
+    await user.click(await screen.findByRole("button", { name: /Continue/ }));
+
+    expect(await screen.findByRole("dialog", { name: "Want peace of mind?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add to all Tickets — $8.00" })).toBeVisible();
+    expect(mocks.push).not.toHaveBeenCalledWith("/book/event-1/participants");
   });
 
   it("shows the authoritative reservation failure instead of advancing to Payment", async () => {
