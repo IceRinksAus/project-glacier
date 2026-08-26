@@ -64,17 +64,31 @@ describe('TicketAdjustmentService', () => {
       },
     ],
   };
-  const prisma = { booking: { findFirst: jest.fn() } };
+  const transaction = {
+    ticket: { updateMany: jest.fn() },
+    ticketAdjustment: { update: jest.fn() },
+    paymentRefund: { findUniqueOrThrow: jest.fn() },
+  };
+  const prisma = {
+    booking: { findFirst: jest.fn() },
+    ticketAdjustment: { findUnique: jest.fn(), update: jest.fn() },
+    paymentRefund: { create: jest.fn() },
+    payment: { findUnique: jest.fn() },
+    $transaction: jest.fn((operation) => operation(transaction)),
+  };
   const accessControl = {
     eventWhere: jest.fn(() => ({ organizationId: 'org-1' })),
   };
+  const paymentService = { requestRefund: jest.fn() };
   let service: TicketAdjustmentService;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.ticketAdjustment.findUnique.mockResolvedValue(null);
     service = new TicketAdjustmentService(
       prisma as never,
       accessControl as never,
+      paymentService as never,
     );
   });
 
@@ -132,5 +146,44 @@ describe('TicketAdjustmentService', () => {
         }),
       }),
     );
+  });
+
+  it('resumes an interrupted cancel-only adjustment exactly once', async () => {
+    const pending = {
+      id: 'adjustment-1',
+      idempotencyKey: 'adjustment-key-1',
+      organizationId: 'org-1',
+      bookingId: 'booking-1',
+      action: TicketAdjustmentAction.CANCEL_ONLY,
+      reason: TicketAdjustmentReason.ORGANISER_CORRECTION,
+      note: 'Ticket issued in error.',
+      status: 'PENDING',
+      capacityReleasedAt: null,
+      externalReference: null,
+      requestedAmount: new Prisma.Decimal(0),
+      currency: 'AUD',
+      allocations: [{ ticketId: 'ticket-1' }],
+      paymentRefund: null,
+      payment: null,
+    };
+    prisma.ticketAdjustment.findUnique.mockResolvedValue(pending);
+    transaction.ticket.updateMany.mockResolvedValue({ count: 1 });
+    transaction.ticketAdjustment.update.mockResolvedValue({
+      ...pending,
+      status: 'COMPLETED',
+    });
+
+    const result = await service.execute(access, 'booking-1', {
+      action: TicketAdjustmentAction.CANCEL_ONLY,
+      reason: TicketAdjustmentReason.ORGANISER_CORRECTION,
+      note: 'Ticket issued in error.',
+      ticketIds: ['ticket-1'],
+      previewHash: 'a'.repeat(64),
+      idempotencyKey: 'adjustment-key-1',
+    });
+
+    expect(result.status).toBe('COMPLETED');
+    expect(transaction.ticket.updateMany).toHaveBeenCalledTimes(1);
+    expect(paymentService.requestRefund).not.toHaveBeenCalled();
   });
 });

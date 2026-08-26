@@ -892,6 +892,7 @@ model TicketAdjustment {
   capacityReleasedAt DateTime?
   failureCode        String?
   failureMessage     String?
+  externalReference  String?
 
   allocations TicketAdjustmentAllocation[]
 

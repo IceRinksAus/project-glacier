@@ -14,6 +14,7 @@ import type {
   CompleteProviderPaymentEvent,
   CreatePaymentResult,
   PaymentProvider,
+  RefundPaymentRequest,
 } from './payment-provider.interface';
 
 @Injectable()
@@ -26,6 +27,10 @@ export class PaymentService {
 
     private readonly ticketService: TicketService,
   ) {}
+
+  requestRefund(request: RefundPaymentRequest) {
+    return this.paymentProvider.refundPayment(request);
+  }
 
   async createPayment(bookingId: string): Promise<CreatePaymentResult> {
     const booking = await this.prisma.booking.findUnique({

@@ -8,6 +8,7 @@ import { MANAGEMENT_ROLES } from '../auth/roles/organization-role';
 import { RolesGuard } from '../auth/roles/roles.guard';
 
 import { PreviewTicketAdjustmentDto } from './dto/preview-ticket-adjustment.dto';
+import { ExecuteTicketAdjustmentDto } from './dto/execute-ticket-adjustment.dto';
 import { TicketAdjustmentService } from './ticket-adjustment.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,5 +24,14 @@ export class TicketAdjustmentController {
     @Body() input: PreviewTicketAdjustmentDto,
   ) {
     return this.service.preview(user, bookingId, input);
+  }
+
+  @Post()
+  execute(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('bookingId') bookingId: string,
+    @Body() input: ExecuteTicketAdjustmentDto,
+  ) {
+    return this.service.execute(user, bookingId, input);
   }
 }
