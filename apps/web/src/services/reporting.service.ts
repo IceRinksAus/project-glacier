@@ -84,6 +84,10 @@ export interface EventReport {
       } | null;
     }>;
   };
+  sessionChanges: {
+    completed: number;
+    byReason: Record<string, number>;
+  };
   sessions: Array<{
     id: string;
     name: string;

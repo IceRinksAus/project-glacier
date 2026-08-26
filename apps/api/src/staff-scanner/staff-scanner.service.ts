@@ -14,6 +14,9 @@ type ScannerTicket = Prisma.TicketGetPayload<{
   include: {
     participant: { include: { ticketType: true } };
     booking: { include: { event: true; session: true } };
+    originalRescheduleMapping: {
+      select: { replacementTicketNumberSnapshot: true };
+    };
   };
 }>;
 
@@ -168,6 +171,9 @@ export class StaffScannerService {
       include: {
         participant: { include: { ticketType: true } },
         booking: { include: { event: true, session: true } },
+        originalRescheduleMapping: {
+          select: { replacementTicketNumberSnapshot: true },
+        },
       },
     });
   }
@@ -206,6 +212,9 @@ export class StaffScannerService {
       issuedAt: ticket.issuedAt,
       status: ticket.status,
       checkedInAt: ticket.checkedInAt,
+      replacementTicketNumber:
+        ticket.originalRescheduleMapping?.replacementTicketNumberSnapshot ??
+        null,
       participantName: [
         ticket.participant.firstName,
         ticket.participant.lastName,

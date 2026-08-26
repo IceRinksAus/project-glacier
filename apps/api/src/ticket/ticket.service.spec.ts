@@ -144,6 +144,28 @@ describe('TicketService', () => {
     );
   });
 
+  it('identifies a cancelled original as replaced without exposing its new token', async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue({
+      ...ticket,
+      status: 'CANCELLED',
+      originalRescheduleMapping: {
+        replacementTicketNumberSnapshot: 'TKT-REPLACEMENT',
+      },
+    });
+
+    const result = await service.validateTicket('organization-1', token);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        valid: false,
+        reason: 'CANCELLED',
+        replacementTicketNumber: 'TKT-REPLACEMENT',
+        message: expect.stringContaining('replaced after a Session change'),
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain('secureToken');
+  });
+
   it('preserves atomic Ticket scan while tenant-scoping the mutation', async () => {
     prismaMock.ticket.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.ticket.findFirst.mockResolvedValue(ticket);

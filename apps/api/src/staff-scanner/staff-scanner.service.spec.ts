@@ -118,6 +118,26 @@ describe('StaffScannerService', () => {
     expect(result.result).toBe(ScannerTicketResult.NOT_YET_VALID);
   });
 
+  it('denies a superseded credential and identifies its replacement safely', async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue({
+      ...ticket,
+      status: 'CANCELLED',
+      originalRescheduleMapping: {
+        replacementTicketNumberSnapshot: 'TKT-REPLACEMENT',
+      },
+    });
+
+    const result = await service.lookup(scannerAccess, 'event-1', input);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        result: ScannerTicketResult.CANCELLED,
+        replacementTicketNumber: 'TKT-REPLACEMENT',
+      }),
+    );
+    expect(JSON.stringify(result)).not.toContain('secureToken');
+  });
+
   it('does not disclose details for a Ticket belonging to another selected Event', async () => {
     prismaMock.ticket.findFirst.mockResolvedValue({
       ...ticket,

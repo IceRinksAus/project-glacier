@@ -283,6 +283,9 @@ export interface PublicTicketPresentation {
   ticketNumber: string;
   status: string;
   checkedInAt: string | null;
+  originalRescheduleMapping: {
+    replacementTicketNumberSnapshot: string | null;
+  } | null;
   participant: {
     firstName: string;
     lastName: string | null;

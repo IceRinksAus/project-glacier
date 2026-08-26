@@ -11,6 +11,7 @@ describe('ReportingService', () => {
     event: { findFirst: jest.fn(), findMany: jest.fn() },
     session: { findMany: jest.fn() },
     booking: { findMany: jest.fn() },
+    bookingReschedule: { findMany: jest.fn() },
     ticketType: { findMany: jest.fn() },
     product: { findMany: jest.fn() },
     rule: { findMany: jest.fn() },
@@ -53,6 +54,7 @@ describe('ReportingService', () => {
       },
     ]);
     prisma.booking.findMany.mockResolvedValue([]);
+    prisma.bookingReschedule.findMany.mockResolvedValue([]);
     prisma.event.findMany.mockResolvedValue([]);
     prisma.ticketType.findMany.mockResolvedValue([]);
     prisma.product.findMany.mockResolvedValue([]);
@@ -635,6 +637,7 @@ describe('ReportingService', () => {
       admissions: 0,
       attendanceRate: 0,
     });
+    expect(result.sessionChanges).toEqual({ completed: 0, byReason: {} });
     expect(result.sessions[0]).toEqual(
       expect.objectContaining({
         reservedAttendance: 0,
@@ -643,6 +646,51 @@ describe('ReportingService', () => {
         utilisationPercent: 0,
       }),
     );
+  });
+
+  it('reports completed Session changes without PII and excludes superseded Tickets', async () => {
+    prisma.bookingReschedule.findMany.mockResolvedValue([
+      { reason: 'CUSTOMER_REQUEST' },
+      { reason: 'CUSTOMER_REQUEST' },
+      { reason: 'ORGANISER_CORRECTION' },
+    ]);
+    prisma.booking.findMany.mockResolvedValue([
+      {
+        id: 'booking-rescheduled',
+        bookingNumber: 'PG-RESCHEDULED',
+        sessionId: 'session-1',
+        status: 'CONFIRMED',
+        total: 80,
+        items: [{ quantity: 2 }],
+        tickets: [
+          { id: 'replacement-1', status: 'ACTIVE', checkedInAt: null },
+          { id: 'replacement-2', status: 'ACTIVE', checkedInAt: null },
+        ],
+        payments: [],
+        paymentReconciliationAttempts: [],
+      },
+    ]);
+
+    const result = await service.getEventReport('org-1', 'event-1', {});
+
+    expect(result.tickets.issued).toBe(2);
+    expect(result.sessionChanges).toEqual({
+      completed: 3,
+      byReason: { CUSTOMER_REQUEST: 2, ORGANISER_CORRECTION: 1 },
+    });
+    expect(prisma.bookingReschedule.findMany).toHaveBeenCalledWith({
+      where: {
+        organizationId: 'org-1',
+        eventId: 'event-1',
+        status: 'COMPLETED',
+        destinationSessionId: { in: ['session-1'] },
+      },
+      select: { reason: true },
+      take: 50000,
+    });
+    expect(
+      JSON.stringify(prisma.bookingReschedule.findMany.mock.calls[0][0]),
+    ).not.toContain('customer');
   });
 
   it('calculates mixed payment, refund, Ticket and capacity metrics', async () => {

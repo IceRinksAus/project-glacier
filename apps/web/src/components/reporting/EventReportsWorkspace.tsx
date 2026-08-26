@@ -304,10 +304,36 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
             <Metric label="Tickets issued" value={report.tickets.issued} />
             <Metric label="Admissions" value={report.tickets.admissions} />
             <Metric
+              label="Completed Session changes"
+              value={report.sessionChanges.completed}
+            />
+            <Metric
               label="Attendance rate"
               value={`${report.tickets.attendanceRate}%`}
             />
           </section>
+
+          {report.sessionChanges.completed > 0 ? (
+            <section className="rounded-xl border bg-card p-6 shadow-sm">
+              <h3 className="text-lg font-semibold">Session-change reasons</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Operational counts only; no customer or participant identity is
+                included.
+              </p>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {Object.entries(report.sessionChanges.byReason).map(
+                  ([reason, count]) => (
+                    <div key={reason} className="rounded-lg border p-4">
+                      <dt className="text-sm text-muted-foreground">
+                        {reason.replaceAll("_", " ")}
+                      </dt>
+                      <dd className="mt-1 text-xl font-semibold">{count}</dd>
+                    </div>
+                  ),
+                )}
+              </dl>
+            </section>
+          ) : null}
 
           <section className="rounded-xl border bg-card p-6 shadow-sm">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">

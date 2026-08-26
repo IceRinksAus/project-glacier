@@ -63,6 +63,7 @@ export class ReportingService {
             status: true,
             items: { select: { quantity: true } },
             tickets: {
+              where: { originalRescheduleMapping: null },
               select: { status: true, checkedInAt: true },
             },
             payments: {
@@ -256,41 +257,54 @@ export class ReportingService {
     }
 
     const sessionIds = sessions.map(({ id }) => id);
-    const bookings = sessionIds.length
-      ? await this.prisma.booking.findMany({
-          where: { eventId, sessionId: { in: sessionIds } },
-          select: {
-            id: true,
-            bookingNumber: true,
-            sessionId: true,
-            status: true,
-            total: true,
-            items: { select: { quantity: true } },
-            tickets: {
-              select: { id: true, status: true, checkedInAt: true },
-            },
-            payments: {
-              select: {
-                id: true,
-                status: true,
-                amount: true,
-                refunds: {
-                  select: { status: true, amount: true },
+    const [bookings, reschedules] = sessionIds.length
+      ? await Promise.all([
+          this.prisma.booking.findMany({
+            where: { eventId, sessionId: { in: sessionIds } },
+            select: {
+              id: true,
+              bookingNumber: true,
+              sessionId: true,
+              status: true,
+              total: true,
+              items: { select: { quantity: true } },
+              tickets: {
+                where: { originalRescheduleMapping: null },
+                select: { id: true, status: true, checkedInAt: true },
+              },
+              payments: {
+                select: {
+                  id: true,
+                  status: true,
+                  amount: true,
+                  refunds: {
+                    select: { status: true, amount: true },
+                  },
                 },
               },
-            },
-            paymentReconciliationAttempts: {
-              select: {
-                succeeded: true,
-                outcome: true,
-                attemptedAt: true,
+              paymentReconciliationAttempts: {
+                select: {
+                  succeeded: true,
+                  outcome: true,
+                  attemptedAt: true,
+                },
+                orderBy: { attemptedAt: 'desc' },
+                take: 1,
               },
-              orderBy: { attemptedAt: 'desc' },
-              take: 1,
             },
-          },
-        })
-      : [];
+          }),
+          this.prisma.bookingReschedule.findMany({
+            where: {
+              organizationId,
+              eventId,
+              status: 'COMPLETED',
+              destinationSessionId: { in: sessionIds },
+            },
+            select: { reason: true },
+            take: 50000,
+          }),
+        ])
+      : [[], []];
 
     const confirmedBookings = bookings.filter(
       ({ status }) => status === 'CONFIRMED',
@@ -401,6 +415,10 @@ export class ReportingService {
             booking.paymentReconciliationAttempts[0] ?? null,
         })),
       },
+      sessionChanges: {
+        completed: reschedules.length,
+        byReason: this.countBy(reschedules.map(({ reason }) => reason)),
+      },
       sessions: sessionRows,
     };
   }
@@ -439,6 +457,7 @@ export class ReportingService {
                 },
               },
               tickets: {
+                where: { originalRescheduleMapping: null },
                 select: {
                   status: true,
                   checkedInAt: true,
@@ -586,7 +605,10 @@ export class ReportingService {
             status: true,
             total: true,
             items: { select: { quantity: true } },
-            tickets: { select: { status: true, checkedInAt: true } },
+            tickets: {
+              where: { originalRescheduleMapping: null },
+              select: { status: true, checkedInAt: true },
+            },
             payments: {
               select: {
                 status: true,
@@ -940,7 +962,10 @@ export class ReportingService {
             status: true,
             total: true,
             items: { select: { quantity: true } },
-            tickets: { select: { status: true, checkedInAt: true } },
+            tickets: {
+              where: { originalRescheduleMapping: null },
+              select: { status: true, checkedInAt: true },
+            },
             payments: {
               select: {
                 status: true,
@@ -1186,7 +1211,10 @@ export class ReportingService {
               total: true,
               items: { select: { quantity: true } },
               products: { select: { quantity: true, unitPrice: true } },
-              tickets: { select: { status: true, checkedInAt: true } },
+              tickets: {
+                where: { originalRescheduleMapping: null },
+                select: { status: true, checkedInAt: true },
+              },
               payments: {
                 select: {
                   status: true,

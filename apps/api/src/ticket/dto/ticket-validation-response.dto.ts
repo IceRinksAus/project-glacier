@@ -22,6 +22,8 @@ export class TicketValidationResponseDto {
 
   checkedInAt: Date | null;
 
+  replacementTicketNumber: string | null;
+
   participant: {
     firstName: string;
     lastName: string | null;

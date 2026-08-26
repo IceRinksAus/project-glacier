@@ -10,11 +10,12 @@ Glacier reporting is a read-only operational projection over authoritative Event
 - Gross collected is the sum of persisted `SUCCEEDED` Payments attached to selected Bookings.
 - Refunded is the sum of persisted `SUCCEEDED` PaymentRefunds attached to those successful Payments.
 - Net collected is gross collected less successful refunds.
-- Tickets issued includes Tickets attached to confirmed Bookings only.
+- Tickets issued includes Tickets attached to confirmed Bookings, excluding an original credential superseded by an immutable Session-change mapping. The replacement is counted once; ordinary cancellation history remains visible under its existing definitions.
 - Admissions are issued Tickets with a successful scanned/checked-in state.
 - Session capacity consumption is the Booking Item quantity on `RESERVED` and `CONFIRMED` Bookings.
 - Product inventory and reusable Product capacity remain separate from admission capacity.
 - Payment exceptions are Bookings with a locally pending Payment or a failed latest reconciliation attempt.
+- Completed Session changes are counted from the immutable reschedule ledger and grouped by controlled reason without customer or participant identity.
 
 No mutable revenue or attendance cache is stored. The reporting read model cannot change commerce, admission or inventory state.
 
@@ -51,3 +52,5 @@ Browser print mode reuses the already loaded authoritative report, adds scope an
 Admission-state and further benchmark reporting remain planned, together with production XLSX and generated PDF. Future export formats must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.
+
+Whole-Booking Session changes do not create commerce. Current Booking demand, Ticket presentation and reusable capacity are attributed to the destination Session after completion. Superseded Ticket credentials are excluded from issued/admission totals so a replacement does not double-count attendance. Event, Ticket Type and Product gross sales remain based on the unchanged Booking lines and Payment records.

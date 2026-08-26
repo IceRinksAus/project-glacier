@@ -105,6 +105,9 @@ export class TicketService {
         ticketNumber: true,
         status: true,
         checkedInAt: true,
+        originalRescheduleMapping: {
+          select: { replacementTicketNumberSnapshot: true },
+        },
         participant: {
           select: {
             firstName: true,
@@ -154,6 +157,9 @@ export class TicketService {
       },
       include: {
         participant: true,
+        originalRescheduleMapping: {
+          select: { replacementTicketNumberSnapshot: true },
+        },
         booking: {
           include: {
             event: true,
@@ -180,7 +186,9 @@ export class TicketService {
         : 'Ticket has already been scanned.';
     } else if (cancelled) {
       reason = TicketValidationReason.CANCELLED;
-      message = 'Ticket has been cancelled.';
+      message = ticket.originalRescheduleMapping
+        ? 'Ticket was replaced after a Session change. Use the replacement Ticket.'
+        : 'Ticket has been cancelled.';
     }
 
     return {
@@ -190,6 +198,9 @@ export class TicketService {
       ticketNumber: ticket.ticketNumber,
       status: ticket.status,
       checkedInAt: ticket.checkedInAt,
+      replacementTicketNumber:
+        ticket.originalRescheduleMapping?.replacementTicketNumberSnapshot ??
+        null,
       participant: {
         firstName: ticket.participant.firstName,
         lastName: ticket.participant.lastName,

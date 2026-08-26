@@ -52,6 +52,7 @@ interface TicketResult {
   issuedAt?: string;
   status?: string;
   checkedInAt?: string | null;
+  replacementTicketNumber?: string | null;
 }
 
 const EVENT_KEY = "glacier_scanner_event";
@@ -389,10 +390,16 @@ export default function StaffScannerPage() {
                 <presentation.Icon className="mt-1 size-10 shrink-0" />
                 <div>
                   <h3 className="text-3xl font-black uppercase tracking-tight">
-                    {presentation.title}
+                    {result.result === "CANCELLED" &&
+                    result.replacementTicketNumber
+                      ? "Replaced Ticket"
+                      : presentation.title}
                   </h3>
                   <p className="mt-1 text-sm font-medium">
-                    {presentation.message}
+                    {result.result === "CANCELLED" &&
+                    result.replacementTicketNumber
+                      ? `Entry denied. Use replacement Ticket ${result.replacementTicketNumber}.`
+                      : presentation.message}
                   </p>
                 </div>
               </div>

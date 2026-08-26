@@ -108,7 +108,7 @@ Through secure Booking access, customers may request change/refund for covered T
 
 Flexible Ticket terms use Organisation defaults with deliberate Event overrides. The effective fee, rights, limits and policy version are snapshotted at purchase, so later configuration changes affect only future purchases.
 
-Sprint 24 established OWNER, MANAGER, STAFF and SCANNER access/assignment foundations. MANAGER is the trusted site/operational role intended for approved refunds, cancellations and rescheduling within assigned scope; STAFF handles POS, lookup and preparation without high-risk financial authority; SCANNER remains constrained to scanning duties; and OWNER retains Organisation governance. Each future sensitive mutation must enforce both role and Event assignment in its controller and service boundaries.
+Sprint 24 established OWNER, MANAGER, STAFF and SCANNER access/assignment foundations. Sprints 27–28 now apply that authority to controlled partial Ticket cancellation/refund and whole-Booking Session rescheduling. MANAGER is the trusted site/operational role for those approved actions within assigned scope; STAFF handles POS and lookup without high-risk financial or rescheduling authority; SCANNER remains constrained to scanning duties; and OWNER retains Organisation governance. Each future sensitive mutation must continue to enforce both role and Event assignment in its controller and service boundaries.
 
 ## 4.3 Walk-up sales and remaining POS work
 

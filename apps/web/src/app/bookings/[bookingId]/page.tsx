@@ -34,6 +34,7 @@ export default function BookingPaymentPage() {
   const [isReconciling, setIsReconciling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [bookingOperationVersion, setBookingOperationVersion] = useState(0);
   const role = getAuthUser()?.role;
   const canManageBooking = role === "OWNER" || role === "MANAGER";
 
@@ -150,7 +151,7 @@ export default function BookingPaymentPage() {
                 ["Booking state", investigation.status],
                 ["Payment state", investigation.paymentStatus],
                 ["Total", money(investigation.total)],
-                ["Tickets issued", String(investigation.tickets.length)],
+                ["Ticket records", String(investigation.tickets.length)],
               ].map(([label, value]) => (
                 <div
                   key={label}
@@ -278,9 +279,15 @@ export default function BookingPaymentPage() {
               <>
                 <BookingReschedulePanel
                   bookingId={bookingId}
-                  onCompleted={refreshInvestigation}
+                  onCompleted={async () => {
+                    await refreshInvestigation();
+                    setBookingOperationVersion((version) => version + 1);
+                  }}
                 />
-                <TicketAdjustmentPanel bookingId={bookingId} />
+                <TicketAdjustmentPanel
+                  key={bookingOperationVersion}
+                  bookingId={bookingId}
+                />
               </>
             ) : null}
 

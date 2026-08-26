@@ -78,6 +78,10 @@ const report = {
       },
     ],
   },
+  sessionChanges: {
+    completed: 2,
+    byReason: { CUSTOMER_REQUEST: 2 },
+  },
   sessions: [
     {
       id: "session-1",
@@ -350,6 +354,8 @@ describe("EventReportsWorkspace", () => {
 
     expect(await screen.findByText("$200.00")).toBeVisible();
     expect(screen.getByText("50%")).toBeVisible();
+    expect(screen.getByText("Completed Session changes")).toBeVisible();
+    expect(screen.getByText("CUSTOMER REQUEST")).toBeVisible();
     expect(screen.getByText("40%")).toBeVisible();
     expect(screen.getByRole("link", { name: /PG-1234/ })).toHaveAttribute(
       "href",
