@@ -2,9 +2,9 @@
 
 **Prepared:** 25 August 2026
 
-**Status:** Phase 1 decision record in progress — walk-up requirement confirmed
+**Status:** Phase 1 direction substantially confirmed; commercial/legal values, pilot profile and ownership remain open
 
-**Purpose:** Lock the minimum operating policies required before customer-service, refund, rescheduling and walk-up workflows are implemented.
+**Purpose:** Lock and preserve the minimum operating policies governing customer service, refunds, rescheduling, Flexible Tickets and walk-up workflows.
 
 **Strategic source:** `PILOT_READINESS_AND_STRATEGIC_ROADMAP.md`, Phase 1.
 
@@ -205,11 +205,9 @@ Support whole-Booking Session rescheduling only during the first pilot. Do not s
 
 For the first pilot, permit rescheduling only when the destination produces no price difference for the existing Booking contents. A different price should require cancellation/refund and a new Booking rather than an implicit charge or credit workflow.
 
-## Confirmation required
+## Implemented pilot boundary
 
-- Whether whole-Booking-only rescheduling is operationally sufficient.
-- Whether every MANAGER may complete a same-price move or additional Event/site assignment is required.
-- Whether rescheduling should close at Session start or at a configurable earlier time.
+Sprint 28 implemented same-price, whole-Booking-only rescheduling for OWNER and assigned MANAGER before Session start. It requires full eligibility, current capacity/Rule/Product compatibility and replacement Tickets. Scanned, partially adjusted, late and price-changing moves remain excluded. This is the accepted first-pilot operator boundary; Flexible Ticket customer authority is not inferred from it.
 
 ---
 
