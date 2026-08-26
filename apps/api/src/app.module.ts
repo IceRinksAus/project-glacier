@@ -27,6 +27,7 @@ import { SessionModule } from './session/session.module';
 import { SessionProductModule } from './session-product/session-product.module';
 import { StaffScannerModule } from './staff-scanner/staff-scanner.module';
 import { TicketModule } from './ticket/ticket.module';
+import { TicketAdjustmentModule } from './ticket-adjustment/ticket-adjustment.module';
 import { TicketTypeModule } from './ticket-type/ticket-type.module';
 import { UserModule } from './user/user.module';
 import { WaiverModule } from './waiver/waiver.module';
@@ -58,6 +59,7 @@ import { WaiverModule } from './waiver/waiver.module';
     PaymentModule,
     PosModule,
     TicketModule,
+    TicketAdjustmentModule,
     AuthModule,
     BookingValidationModule,
     OperationalScheduleModule,
