@@ -60,7 +60,7 @@ describe('ReportingService', () => {
     prisma.eventGroup.findFirst.mockResolvedValue(null);
   });
 
-  it('reports Ticket Type units and gross item sales without allocating refunds', async () => {
+  it('reports Ticket Type gross, allocated refund and net sales separately', async () => {
     prisma.ticketType.findMany.mockResolvedValue([
       { id: 'adult', name: 'Adult', active: true },
       { id: 'child', name: 'Child', active: true },
@@ -96,6 +96,9 @@ describe('ReportingService', () => {
     expect(result.totals).toEqual({
       unitsSold: 3,
       grossItemSales: 65,
+      allocatedTicketRefunds: 0,
+      netTicketSales: 65,
+      unallocatedRefunds: 0,
       ticketsIssued: 3,
       admissions: 1,
     });

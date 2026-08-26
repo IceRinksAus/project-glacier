@@ -295,13 +295,17 @@ export class BookingService {
     return booking;
   }
 
-  async findPaymentInvestigation(organizationId: string, id: string) {
+  async findPaymentInvestigation(
+    access: AuthenticatedAccessContext | string,
+    id: string,
+  ) {
     const booking = await this.prisma.booking.findFirst({
       where: {
         id,
-        event: {
-          organizationId,
-        },
+        event:
+          typeof access === 'string'
+            ? { organizationId: access }
+            : this.accessControl.eventWhere(access),
       },
       select: {
         id: true,

@@ -445,6 +445,27 @@ export class ReportingService {
                   participant: { select: { ticketTypeId: true } },
                 },
               },
+              ticketAdjustments: {
+                where: {
+                  status: 'COMPLETED',
+                  paymentRefund: { status: 'SUCCEEDED' },
+                },
+                select: {
+                  paymentRefundId: true,
+                  allocations: {
+                    select: { ticketTypeId: true, unitValue: true },
+                  },
+                },
+              },
+              payments: {
+                where: { status: 'SUCCEEDED' },
+                select: {
+                  refunds: {
+                    where: { status: 'SUCCEEDED' },
+                    select: { id: true, amount: true },
+                  },
+                },
+              },
             },
             take: 50000,
           })
@@ -453,6 +474,20 @@ export class ReportingService {
     const totalUnits = bookings
       .flatMap(({ items }) => items)
       .reduce((sum, item) => sum + item.quantity, 0);
+    const allocatedRefundIds = new Set(
+      bookings.flatMap(({ ticketAdjustments }) =>
+        (ticketAdjustments ?? []).flatMap(({ paymentRefundId }) =>
+          paymentRefundId ? [paymentRefundId] : [],
+        ),
+      ),
+    );
+    const totalSuccessfulRefunds = this.sum(
+      bookings.flatMap(({ payments }) =>
+        (payments ?? []).flatMap(({ refunds }) =>
+          refunds.map(({ amount }) => Number(amount)),
+        ),
+      ),
+    );
     const rows = ticketTypes.map((ticketType) => {
       const items = bookings
         .flatMap(({ items }) => items)
@@ -463,11 +498,25 @@ export class ReportingService {
           ({ participant }) => participant.ticketTypeId === ticketType.id,
         );
       const unitsSold = items.reduce((sum, item) => sum + item.quantity, 0);
+      const allocatedTicketRefunds = this.sum(
+        bookings.flatMap(({ ticketAdjustments }) =>
+          (ticketAdjustments ?? []).flatMap(({ allocations }) =>
+            allocations
+              .filter(({ ticketTypeId }) => ticketTypeId === ticketType.id)
+              .map(({ unitValue }) => Number(unitValue)),
+          ),
+        ),
+      );
+      const grossItemSales = this.sum(
+        items.map(({ totalPrice }) => Number(totalPrice)),
+      );
       return {
         ...ticketType,
         unitsSold,
-        grossItemSales: this.sum(
-          items.map(({ totalPrice }) => Number(totalPrice)),
+        grossItemSales,
+        allocatedTicketRefunds,
+        netTicketSales: Number(
+          (grossItemSales - allocatedTicketRefunds).toFixed(2),
         ),
         unitSharePercent:
           totalUnits > 0
@@ -488,10 +537,32 @@ export class ReportingService {
         grossItemSales: this.sum(
           rows.map(({ grossItemSales }) => grossItemSales),
         ),
+        allocatedTicketRefunds: this.sum(
+          rows.map(({ allocatedTicketRefunds }) => allocatedTicketRefunds),
+        ),
+        netTicketSales: this.sum(
+          rows.map(({ netTicketSales }) => netTicketSales),
+        ),
+        unallocatedRefunds: Number(
+          Math.max(
+            0,
+            totalSuccessfulRefunds -
+              this.sum(
+                bookings.flatMap(({ ticketAdjustments }) =>
+                  (ticketAdjustments ?? []).flatMap(({ allocations }) =>
+                    allocations.map(({ unitValue }) => Number(unitValue)),
+                  ),
+                ),
+              ),
+          ).toFixed(2),
+        ),
         ticketsIssued: rows.reduce((sum, row) => sum + row.ticketsIssued, 0),
         admissions: rows.reduce((sum, row) => sum + row.admissions, 0),
       },
-      refundAllocation: 'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL',
+      refundAllocation:
+        allocatedRefundIds.size > 0
+          ? 'TICKET_ADJUSTMENTS_ALLOCATED_LEGACY_REFUNDS_UNALLOCATED'
+          : 'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL',
       rows,
     };
   }

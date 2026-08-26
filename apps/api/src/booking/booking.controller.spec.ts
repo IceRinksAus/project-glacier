@@ -44,7 +44,7 @@ describe('BookingController', () => {
     await controller.findPaymentInvestigation('booking-1', user);
 
     expect(serviceMock.findPaymentInvestigation).toHaveBeenCalledWith(
-      'organization-1',
+      user,
       'booking-1',
     );
   });
@@ -61,10 +61,10 @@ describe('BookingController', () => {
     );
   });
 
-  it('restricts payment operations to OWNER', () => {
+  it('allows scoped Managers to investigate while retaining OWNER-only reconciliation', () => {
     expect(
       Reflect.getMetadata(ROLES_KEY, controller.findPaymentInvestigation),
-    ).toEqual(['OWNER']);
+    ).toEqual(['OWNER', 'MANAGER']);
 
     expect(Reflect.getMetadata(ROLES_KEY, controller.reconcilePayment)).toEqual(
       ['OWNER'],

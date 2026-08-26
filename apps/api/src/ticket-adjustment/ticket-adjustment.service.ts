@@ -25,6 +25,107 @@ export class TicketAdjustmentService {
     private readonly paymentService: PaymentService,
   ) {}
 
+  async context(access: AuthenticatedAccessContext, bookingId: string) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { id: bookingId, event: this.accessControl.eventWhere(access) },
+      select: {
+        id: true,
+        bookingNumber: true,
+        status: true,
+        paymentStatus: true,
+        items: { select: { ticketTypeId: true, unitPrice: true } },
+        products: {
+          select: {
+            id: true,
+            quantity: true,
+            product: { select: { name: true } },
+            productVariant: { select: { name: true } },
+          },
+        },
+        tickets: {
+          select: {
+            id: true,
+            ticketNumber: true,
+            status: true,
+            issuedAt: true,
+            checkedInAt: true,
+            cancelledAt: true,
+            participant: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                ticketTypeId: true,
+                ticketType: { select: { name: true } },
+              },
+            },
+            adjustmentAllocation: { select: { id: true } },
+          },
+          orderBy: { issuedAt: 'asc' },
+        },
+        ticketAdjustments: {
+          include: {
+            requestedByUser: { select: { id: true, name: true } },
+            allocations: true,
+            payment: { select: { method: true } },
+            paymentRefund: {
+              select: { amount: true, currency: true, status: true },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+      },
+    });
+    if (!booking) throw new NotFoundException('Booking not found');
+    const prices = new Map(
+      booking.items.map(({ ticketTypeId, unitPrice }) => [
+        ticketTypeId,
+        unitPrice.toNumber(),
+      ]),
+    );
+    return {
+      id: booking.id,
+      bookingNumber: booking.bookingNumber,
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+      tickets: booking.tickets.map((ticket) => ({
+        ...ticket,
+        participantName: [
+          ticket.participant.firstName,
+          ticket.participant.lastName,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        ticketTypeName: ticket.participant.ticketType.name,
+        unitValue: prices.get(ticket.participant.ticketTypeId) ?? null,
+        eligible:
+          booking.status === 'CONFIRMED' &&
+          booking.paymentStatus === 'PAID' &&
+          ticket.status === 'ACTIVE' &&
+          !ticket.checkedInAt &&
+          !ticket.adjustmentAllocation,
+      })),
+      productsUnchanged: booking.products.map((product) => ({
+        id: product.id,
+        name: product.productVariant
+          ? `${product.product.name} — ${product.productVariant.name}`
+          : product.product.name,
+        quantity: product.quantity,
+      })),
+      adjustments: booking.ticketAdjustments.map((adjustment) => ({
+        ...adjustment,
+        requestedAmount: adjustment.requestedAmount.toNumber(),
+        refundedAmount: adjustment.refundedAmount.toNumber(),
+        paymentRefund: adjustment.paymentRefund
+          ? {
+              ...adjustment.paymentRefund,
+              amount: adjustment.paymentRefund.amount.toNumber(),
+            }
+          : null,
+      })),
+    };
+  }
+
   async execute(
     access: AuthenticatedAccessContext,
     bookingId: string,

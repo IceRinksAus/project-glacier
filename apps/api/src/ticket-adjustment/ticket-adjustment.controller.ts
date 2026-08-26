@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 
 import type { AuthenticatedAccessContext } from '../access-control/access-control.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -16,6 +16,14 @@ import { TicketAdjustmentService } from './ticket-adjustment.service';
 @Controller('booking/:bookingId/ticket-adjustments')
 export class TicketAdjustmentController {
   constructor(private readonly service: TicketAdjustmentService) {}
+
+  @Get()
+  context(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('bookingId') bookingId: string,
+  ) {
+    return this.service.context(user, bookingId);
+  }
 
   @Post('preview')
   preview(

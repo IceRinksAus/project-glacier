@@ -10,6 +10,7 @@ import {
   bookingOperationsService,
   PaymentInvestigation,
 } from "@/services/booking-operations.service";
+import { TicketAdjustmentPanel } from "./TicketAdjustmentPanel";
 
 function money(value: number, currency = "AUD") {
   return new Intl.NumberFormat("en-AU", {
@@ -19,9 +20,7 @@ function money(value: number, currency = "AUD") {
 }
 
 function dateTime(value: string | null) {
-  return value
-    ? new Date(value).toLocaleString("en-AU")
-    : "—";
+  return value ? new Date(value).toLocaleString("en-AU") : "—";
 }
 
 export default function BookingPaymentPage() {
@@ -70,8 +69,7 @@ export default function BookingPaymentPage() {
     setMessage(null);
 
     try {
-      const response =
-        await bookingOperationsService.reconcile(bookingId);
+      const response = await bookingOperationsService.reconcile(bookingId);
       setInvestigation(response.investigation);
       setMessage(
         response.investigation.requiresReconciliation
@@ -145,7 +143,10 @@ export default function BookingPaymentPage() {
                 ["Total", money(investigation.total)],
                 ["Tickets issued", String(investigation.tickets.length)],
               ].map(([label, value]) => (
-                <div key={label} className="rounded-xl border bg-card p-5 shadow-sm">
+                <div
+                  key={label}
+                  className="rounded-xl border bg-card p-5 shadow-sm"
+                >
                   <p className="text-sm text-muted-foreground">{label}</p>
                   <p className="mt-2 text-xl font-semibold">{value}</p>
                 </div>
@@ -157,13 +158,18 @@ export default function BookingPaymentPage() {
                 <h2 className="text-lg font-semibold">Booking context</h2>
                 <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-5 gap-y-3 text-sm">
                   <dt className="text-muted-foreground">Customer</dt>
-                  <dd>{investigation.customer.firstName} {investigation.customer.lastName}</dd>
+                  <dd>
+                    {investigation.customer.firstName}{" "}
+                    {investigation.customer.lastName}
+                  </dd>
                   <dt className="text-muted-foreground">Email</dt>
                   <dd>{investigation.customer.email ?? "No email recorded"}</dd>
                   <dt className="text-muted-foreground">Event</dt>
                   <dd>{investigation.event.name}</dd>
                   <dt className="text-muted-foreground">Booking source</dt>
-                  <dd>{investigation.source === "WALK_UP" ? "Walk-up" : "Online"}</dd>
+                  <dd>
+                    {investigation.source === "WALK_UP" ? "Walk-up" : "Online"}
+                  </dd>
                   <dt className="text-muted-foreground">Session</dt>
                   <dd>{investigation.session?.name ?? "—"}</dd>
                   <dt className="text-muted-foreground">Reserved until</dt>
@@ -181,15 +187,22 @@ export default function BookingPaymentPage() {
                 <h2 className="text-lg font-semibold">Tickets</h2>
                 <div className="mt-5 space-y-3">
                   {investigation.tickets.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No Tickets have been issued.</p>
-                  ) : investigation.tickets.map((ticket) => (
-                    <div key={ticket.ticketNumber} className="rounded-lg border p-4 text-sm">
-                      <p className="font-medium">{ticket.ticketNumber}</p>
-                      <p className="mt-1 text-muted-foreground">
-                        {ticket.status} · issued {dateTime(ticket.issuedAt)}
-                      </p>
-                    </div>
-                  ))}
+                    <p className="text-sm text-muted-foreground">
+                      No Tickets have been issued.
+                    </p>
+                  ) : (
+                    investigation.tickets.map((ticket) => (
+                      <div
+                        key={ticket.ticketNumber}
+                        className="rounded-lg border p-4 text-sm"
+                      >
+                        <p className="font-medium">{ticket.ticketNumber}</p>
+                        <p className="mt-1 text-muted-foreground">
+                          {ticket.status} · issued {dateTime(ticket.issuedAt)}
+                        </p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </section>
@@ -207,29 +220,43 @@ export default function BookingPaymentPage() {
                             : payment.method === "CASH"
                               ? "Cash"
                               : "Online card"}
-                          {payment.providerReferenceSummary ? ` ${payment.providerReferenceSummary}` : ""}
+                          {payment.providerReferenceSummary
+                            ? ` ${payment.providerReferenceSummary}`
+                            : ""}
                         </p>
-                        <p className="mt-1 text-sm text-muted-foreground">Provider: {payment.provider}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Provider: {payment.provider}
+                        </p>
                         {payment.receivedByUser ? (
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Confirmed by {payment.receivedByUser.name} {dateTime(payment.receivedAt)}
+                            Confirmed by {payment.receivedByUser.name}{" "}
+                            {dateTime(payment.receivedAt)}
                           </p>
                         ) : null}
-                        <p className="mt-1 text-sm text-muted-foreground">Created {dateTime(payment.createdAt)}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Created {dateTime(payment.createdAt)}
+                        </p>
                       </div>
                       <div className="sm:text-right">
-                        <p className="font-semibold">{money(payment.amount, payment.currency)}</p>
+                        <p className="font-semibold">
+                          {money(payment.amount, payment.currency)}
+                        </p>
                         <p className="mt-1 text-sm">{payment.status}</p>
                       </div>
                     </div>
                     {payment.failureMessage ? (
                       <p className="mt-4 rounded-lg bg-destructive/5 p-3 text-sm text-destructive">
-                        {payment.failureCode ? `${payment.failureCode}: ` : ""}{payment.failureMessage}
+                        {payment.failureCode ? `${payment.failureCode}: ` : ""}
+                        {payment.failureMessage}
                       </p>
                     ) : null}
                     {payment.refunds.map((refund) => (
-                      <div key={refund.id} className="mt-4 rounded-lg bg-muted/60 p-4 text-sm">
-                        Refund {money(refund.amount, refund.currency)} · {refund.status}
+                      <div
+                        key={refund.id}
+                        className="mt-4 rounded-lg bg-muted/60 p-4 text-sm"
+                      >
+                        Refund {money(refund.amount, refund.currency)} ·{" "}
+                        {refund.status}
                         {refund.reason ? ` · ${refund.reason}` : ""}
                       </div>
                     ))}
@@ -238,23 +265,38 @@ export default function BookingPaymentPage() {
               </div>
             </section>
 
+            <TicketAdjustmentPanel bookingId={bookingId} />
+
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-lg font-semibold">Reconciliation history</h2>
               <div className="mt-5 space-y-3">
                 {investigation.paymentReconciliationAttempts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No manual reconciliation attempts recorded.</p>
-                ) : investigation.paymentReconciliationAttempts.map((attempt) => (
-                  <div key={attempt.id} className="rounded-lg border p-4 text-sm">
-                    <div className="flex flex-col justify-between gap-1 sm:flex-row">
-                      <p className="font-medium">{attempt.outcome}</p>
-                      <p className="text-muted-foreground">{dateTime(attempt.attemptedAt)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    No manual reconciliation attempts recorded.
+                  </p>
+                ) : (
+                  investigation.paymentReconciliationAttempts.map((attempt) => (
+                    <div
+                      key={attempt.id}
+                      className="rounded-lg border p-4 text-sm"
+                    >
+                      <div className="flex flex-col justify-between gap-1 sm:flex-row">
+                        <p className="font-medium">{attempt.outcome}</p>
+                        <p className="text-muted-foreground">
+                          {dateTime(attempt.attemptedAt)}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-muted-foreground">
+                        Requested by {attempt.user.name}
+                      </p>
+                      {attempt.errorMessage ? (
+                        <p className="mt-2 text-destructive">
+                          {attempt.errorMessage}
+                        </p>
+                      ) : null}
                     </div>
-                    <p className="mt-1 text-muted-foreground">Requested by {attempt.user.name}</p>
-                    {attempt.errorMessage ? (
-                      <p className="mt-2 text-destructive">{attempt.errorMessage}</p>
-                    ) : null}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </section>
           </>
