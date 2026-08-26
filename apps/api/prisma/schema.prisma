@@ -40,6 +40,46 @@ enum RetailSalePaymentStatus {
   PAID
 }
 
+enum FlexibleTicketEventMode {
+  DISABLED
+  INHERIT
+  OVERRIDE
+}
+
+enum FlexibleTicketPolicyStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+}
+
+enum FlexibleTicketFeeType {
+  FIXED
+  PERCENTAGE
+}
+
+enum FlexibleTicketPriceIncreaseTreatment {
+  CUSTOMER_PAYS_DIFFERENCE
+  CHANGE_NOT_PERMITTED
+}
+
+enum FlexibleTicketPriceDecreaseTreatment {
+  KEEP_ORIGINAL_PRICE
+  REFUND_DIFFERENCE
+}
+
+enum FlexibleTicketFeeRefundability {
+  NON_REFUNDABLE
+  REFUNDABLE_WITH_TICKET
+  EVENT_CANCELLATION_ONLY
+}
+
+enum FlexibleTicketEntitlementStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
 model Organization {
   id     String @id @default(cuid())
   name   String
@@ -72,6 +112,8 @@ model Organization {
   accessAuditEntries            OrganizationAccessAudit[]
   ticketAdjustments             TicketAdjustment[]
   bookingReschedules            BookingReschedule[]
+  flexibleTicketPolicies        FlexibleTicketPolicy[]
+  flexibleTicketEntitlements    FlexibleTicketEntitlement[]
 }
 
 model User {
@@ -84,20 +126,22 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eventRoles                    EventUser[]
-  eventAccess                   UserEventAccess[]
-  organizations                 UserOrganization[]
-  publishedWaiverVersions       WaiverVersion[]
-  ticketScanAttempts            TicketScanAttempt[]
-  createdFileAssets             FileAsset[]
-  paymentReconciliationAttempts PaymentReconciliationAttempt[]
-  paymentsReceived              Payment[]                      @relation("PaymentReceivedBy")
-  retailSalesCreated            RetailSale[]                   @relation("RetailSaleCreatedBy")
-  retailSalesCompleted          RetailSale[]                   @relation("RetailSaleCompletedBy")
-  ticketAdjustmentsRequested    TicketAdjustment[]             @relation("TicketAdjustmentRequestedBy")
-  bookingReschedulesRequested   BookingReschedule[]            @relation("BookingRescheduleRequestedBy")
-  accessChangesMade             OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
-  accessChangesReceived         OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
+  eventRoles                      EventUser[]
+  eventAccess                     UserEventAccess[]
+  organizations                   UserOrganization[]
+  publishedWaiverVersions         WaiverVersion[]
+  ticketScanAttempts              TicketScanAttempt[]
+  createdFileAssets               FileAsset[]
+  paymentReconciliationAttempts   PaymentReconciliationAttempt[]
+  paymentsReceived                Payment[]                      @relation("PaymentReceivedBy")
+  retailSalesCreated              RetailSale[]                   @relation("RetailSaleCreatedBy")
+  retailSalesCompleted            RetailSale[]                   @relation("RetailSaleCompletedBy")
+  ticketAdjustmentsRequested      TicketAdjustment[]             @relation("TicketAdjustmentRequestedBy")
+  bookingReschedulesRequested     BookingReschedule[]            @relation("BookingRescheduleRequestedBy")
+  flexibleTicketPoliciesCreated   FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyCreatedBy")
+  flexibleTicketPoliciesPublished FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyPublishedBy")
+  accessChangesMade               OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
+  accessChangesReceived           OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
 
 model EventGroup {
@@ -182,6 +226,8 @@ model Event {
   timezone    String?
   status      String   @default("DRAFT")
 
+  flexibleTicketMode FlexibleTicketEventMode @default(DISABLED)
+
   venueName    String?
   addressLine1 String?
   addressLine2 String?
@@ -208,10 +254,12 @@ model Event {
   products      Product[]
   productGroups ProductGroup[]
 
-  bookings           Booking[]
-  retailSales        RetailSale[]
-  ticketAdjustments  TicketAdjustment[]
-  bookingReschedules BookingReschedule[]
+  bookings                   Booking[]
+  retailSales                RetailSale[]
+  ticketAdjustments          TicketAdjustment[]
+  bookingReschedules         BookingReschedule[]
+  flexibleTicketPolicies     FlexibleTicketPolicy[]
+  flexibleTicketEntitlements FlexibleTicketEntitlement[]
 
   rules Rule[]
 
@@ -556,10 +604,11 @@ model TicketType {
   eventId String
   event   Event  @relation(fields: [eventId], references: [id])
 
-  bookingItems             BookingItem[]
-  bookingParticipants      BookingParticipant[]
-  adjustmentAllocations    TicketAdjustmentAllocation[]
-  rescheduleTicketMappings BookingRescheduleTicket[]
+  bookingItems               BookingItem[]
+  bookingParticipants        BookingParticipant[]
+  adjustmentAllocations      TicketAdjustmentAllocation[]
+  rescheduleTicketMappings   BookingRescheduleTicket[]
+  flexibleTicketEntitlements FlexibleTicketEntitlement[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -609,6 +658,7 @@ model Booking {
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   ticketAdjustments             TicketAdjustment[]
   reschedules                   BookingReschedule[]
+  flexibleTicketEntitlements    FlexibleTicketEntitlement[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -659,9 +709,10 @@ model BookingParticipant {
   ticketTypeId String
   ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
 
-  tickets                  Ticket[]
-  adjustmentAllocations    TicketAdjustmentAllocation[]
-  rescheduleTicketMappings BookingRescheduleTicket[]
+  tickets                   Ticket[]
+  adjustmentAllocations     TicketAdjustmentAllocation[]
+  rescheduleTicketMappings  BookingRescheduleTicket[]
+  flexibleTicketEntitlement FlexibleTicketEntitlement?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -795,9 +846,10 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refunds                PaymentRefund[]
-  reconciliationAttempts PaymentReconciliationAttempt[]
-  ticketAdjustments      TicketAdjustment[]
+  refunds                    PaymentRefund[]
+  reconciliationAttempts     PaymentReconciliationAttempt[]
+  ticketAdjustments          TicketAdjustment[]
+  flexibleTicketEntitlements FlexibleTicketEntitlement[]
 
   @@index([bookingId])
   @@index([retailSaleId])
@@ -847,6 +899,126 @@ model PaymentRefund {
   @@index([paymentId])
   @@index([status])
   @@index([provider, providerReference])
+}
+
+model FlexibleTicketPolicy {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  version Int
+  status  FlexibleTicketPolicyStatus @default(DRAFT)
+
+  available Boolean @default(false)
+
+  feeType  FlexibleTicketFeeType
+  feeValue Decimal               @db.Decimal(10, 2)
+  currency String                @default("AUD")
+
+  allowsSessionChange        Boolean
+  allowsRefundRequest        Boolean
+  cutoffMinutesBeforeSession Int
+  permittedUseLimit          Int
+
+  priceIncreaseTreatment FlexibleTicketPriceIncreaseTreatment
+  priceDecreaseTreatment FlexibleTicketPriceDecreaseTreatment
+  feeRefundability       FlexibleTicketFeeRefundability
+
+  customerSummary String @db.Text
+  materialTerms   String @db.Text
+
+  createdByUserId String
+  createdByUser   User   @relation("FlexibleTicketPolicyCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  publishedByUserId String?
+  publishedByUser   User?   @relation("FlexibleTicketPolicyPublishedBy", fields: [publishedByUserId], references: [id], onDelete: Restrict)
+
+  publishedAt  DateTime?
+  supersededAt DateTime?
+
+  entitlements FlexibleTicketEntitlement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, version])
+  @@index([organizationId, status, createdAt])
+  @@index([eventId, status, createdAt])
+  @@index([createdByUserId, createdAt])
+  @@index([publishedByUserId, publishedAt])
+}
+
+model FlexibleTicketEntitlement {
+  id                String                          @id @default(cuid())
+  entitlementNumber String                          @unique
+  status            FlexibleTicketEntitlementStatus @default(PENDING)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  participantId String             @unique
+  participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  initialTicketId String? @unique
+  initialTicket   Ticket? @relation(fields: [initialTicketId], references: [id], onDelete: Restrict)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+
+  policyId String
+  policy   FlexibleTicketPolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
+
+  activatedByPaymentId String?
+  activatedByPayment   Payment? @relation(fields: [activatedByPaymentId], references: [id], onDelete: Restrict)
+
+  policySourceMode FlexibleTicketEventMode
+  policyVersion    Int
+
+  ticketTypeNameSnapshot  String
+  ticketFaceValueSnapshot Decimal @db.Decimal(10, 2)
+
+  feeTypeSnapshot  FlexibleTicketFeeType
+  feeValueSnapshot Decimal               @db.Decimal(10, 2)
+  feeAmount        Decimal               @db.Decimal(10, 2)
+  currency         String                @default("AUD")
+
+  allowsSessionChangeSnapshot        Boolean
+  allowsRefundRequestSnapshot        Boolean
+  cutoffMinutesBeforeSessionSnapshot Int
+  permittedUseLimitSnapshot          Int
+  remainingUses                      Int
+
+  priceIncreaseTreatmentSnapshot FlexibleTicketPriceIncreaseTreatment
+  priceDecreaseTreatmentSnapshot FlexibleTicketPriceDecreaseTreatment
+  feeRefundabilitySnapshot       FlexibleTicketFeeRefundability
+
+  customerSummarySnapshot String @db.Text
+  materialTermsSnapshot   String @db.Text
+
+  activatedAt DateTime?
+  expiredAt   DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([policyId, createdAt])
+  @@index([status, createdAt])
+  @@index([ticketTypeId])
+  @@index([activatedByPaymentId])
 }
 
 enum BookingRescheduleStatus {
@@ -967,7 +1139,7 @@ model BookingRescheduleProductAllocation {
 
   createdAt DateTime @default(now())
 
-  @@unique([rescheduleId, bookingProductId])
+  @@unique([rescheduleId, bookingProductId], map: "BookingRescheduleProductAllocation_rescheduleId_bookingProductI")
   @@index([bookingProductId])
   @@index([productId])
 }
@@ -1148,10 +1320,11 @@ model Ticket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  scanAttempts                 TicketScanAttempt[]
-  adjustmentAllocation         TicketAdjustmentAllocation?
-  originalRescheduleMapping    BookingRescheduleTicket?    @relation("BookingRescheduleOriginalTicket")
-  replacementRescheduleMapping BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
+  scanAttempts                     TicketScanAttempt[]
+  adjustmentAllocation             TicketAdjustmentAllocation?
+  originalRescheduleMapping        BookingRescheduleTicket?    @relation("BookingRescheduleOriginalTicket")
+  replacementRescheduleMapping     BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
+  initialFlexibleTicketEntitlement FlexibleTicketEntitlement?
 
   @@index([participantId])
 }
