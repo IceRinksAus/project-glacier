@@ -11,6 +11,7 @@ describe('application security configuration', () => {
     expect(getCorsOrigins({ NODE_ENV: 'development' })).toEqual([
       'http://localhost:3001',
       'http://localhost:3002',
+      'http://localhost:3005',
     ]);
   });
 

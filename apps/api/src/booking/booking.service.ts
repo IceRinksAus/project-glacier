@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 
 import { BookingValidationService } from '../booking-validation/booking-validation.service';
+import type { BookingCommerceSource } from '../booking-validation/booking-validation.service';
 import {
   AccessControlService,
   AuthenticatedAccessContext,
@@ -528,8 +529,11 @@ export class BookingService {
     }
   }
 
-  async create(data: CreateBookingDto) {
-    await this.bookingValidationService.validateBooking(data);
+  async create(
+    data: CreateBookingDto,
+    source: BookingCommerceSource = 'ONLINE',
+  ) {
+    await this.bookingValidationService.validateBooking(data, source);
     if (!data.participants || data.participants.length === 0) {
       throw new BadRequestException(
         'A booking must contain at least one participant',
@@ -846,7 +850,10 @@ export class BookingService {
         );
       }
 
-      if (variant.status !== 'ACTIVE' || !variant.availableOnline) {
+      const variantAvailableForChannel =
+        source === 'WALK_UP' ? variant.availablePos : variant.availableOnline;
+
+      if (variant.status !== 'ACTIVE' || !variantAvailableForChannel) {
         throw new BadRequestException(
           `${variant.name} is not currently available`,
         );
@@ -871,9 +878,14 @@ export class BookingService {
         );
       }
 
-      if (!product.availableOnline) {
+      const productAvailableForChannel =
+        source === 'WALK_UP' ? product.availablePos : product.availableOnline;
+
+      if (!productAvailableForChannel) {
         throw new BadRequestException(
-          `${product.name} is not available for online booking`,
+          `${product.name} is not available for ${
+            source === 'WALK_UP' ? 'POS' : 'online booking'
+          }`,
         );
       }
 
@@ -1174,7 +1186,9 @@ export class BookingService {
                   in: selectedVariantIds,
                 },
                 status: 'ACTIVE',
-                availableOnline: true,
+                ...(source === 'WALK_UP'
+                  ? { availablePos: true }
+                  : { availableOnline: true }),
               },
             });
 
@@ -1240,6 +1254,7 @@ export class BookingService {
           data: {
             bookingNumber,
             status: 'RESERVED',
+            source,
             reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
             paymentStatus: 'UNPAID',
             total,

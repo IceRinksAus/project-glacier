@@ -290,6 +290,23 @@ describe('BookingService', () => {
 
     expect(bookingValidationService.validateBooking).toHaveBeenCalledWith(
       createBookingDto,
+      'ONLINE',
+    );
+  });
+
+  it('persists and validates a walk-up booking through the POS channel', async () => {
+    await service.create(createBookingDto, 'WALK_UP');
+
+    expect(bookingValidationService.validateBooking).toHaveBeenCalledWith(
+      createBookingDto,
+      'WALK_UP',
+    );
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          source: 'WALK_UP',
+        }),
+      }),
     );
   });
 

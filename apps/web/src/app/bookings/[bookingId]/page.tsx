@@ -159,7 +159,7 @@ export default function BookingPaymentPage() {
                   <dt className="text-muted-foreground">Customer</dt>
                   <dd>{investigation.customer.firstName} {investigation.customer.lastName}</dd>
                   <dt className="text-muted-foreground">Email</dt>
-                  <dd>{investigation.customer.email}</dd>
+                  <dd>{investigation.customer.email ?? "No email recorded"}</dd>
                   <dt className="text-muted-foreground">Event</dt>
                   <dd>{investigation.event.name}</dd>
                   <dt className="text-muted-foreground">Booking source</dt>

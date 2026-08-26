@@ -15,6 +15,7 @@ import { EventGroupModule } from './event-group/event-group.module';
 import { OperationalScheduleModule } from './operational-schedule/operational-schedule.module';
 import { OrganizationModule } from './organization/organization.module';
 import { PaymentModule } from './payment/payment.module';
+import { PosModule } from './pos/pos.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductModule } from './product/product.module';
 import { ProductGroupModule } from './product-group/product-group.module';
@@ -55,6 +56,7 @@ import { WaiverModule } from './waiver/waiver.module';
     RuleModule,
     ReportingModule,
     PaymentModule,
+    PosModule,
     TicketModule,
     AuthModule,
     BookingValidationModule,

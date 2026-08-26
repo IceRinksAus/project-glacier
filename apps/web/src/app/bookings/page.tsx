@@ -283,7 +283,7 @@ export default function BookingsPage() {
                       <td className="px-5 py-4">{booking.source === "WALK_UP" ? "Walk-up" : "Online"}</td>
                       <td className="px-5 py-4">
                         {booking.customer.firstName} {booking.customer.lastName}
-                        <p className="mt-1 text-xs text-muted-foreground">{booking.customer.email}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{booking.customer.email ?? "No email recorded"}</p>
                       </td>
                       <td className="px-5 py-4">{booking.session?.name ?? "—"}</td>
                       <td className="px-5 py-4">{booking.event.name}</td>

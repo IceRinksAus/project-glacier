@@ -7,11 +7,16 @@ import {
 import { CreateBookingDto } from '../booking/dto/create-booking.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
+export type BookingCommerceSource = 'ONLINE' | 'WALK_UP';
+
 @Injectable()
 export class BookingValidationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async validateBooking(createBookingDto: CreateBookingDto) {
+  async validateBooking(
+    createBookingDto: CreateBookingDto,
+    source: BookingCommerceSource = 'ONLINE',
+  ) {
     await this.validateCustomer(createBookingDto.customerId);
 
     await this.validateEvent(createBookingDto.eventId);
@@ -20,17 +25,18 @@ export class BookingValidationService {
       createBookingDto.sessionId,
       createBookingDto.eventId,
     );
-const consolidatedProducts = this.consolidateProducts(
-  createBookingDto.products ?? [],
-);
+    const consolidatedProducts = this.consolidateProducts(
+      createBookingDto.products ?? [],
+    );
 
-await this.validateProducts(
-  createBookingDto.eventId,
-  createBookingDto.sessionId,
-  consolidatedProducts,
-);
+    await this.validateProducts(
+      createBookingDto.eventId,
+      createBookingDto.sessionId,
+      consolidatedProducts,
+      source,
+    );
 
-await this.validateProductVariants(createBookingDto.products ?? []);
+    await this.validateProductVariants(createBookingDto.products ?? [], source);
 
     return true;
   }
@@ -69,10 +75,7 @@ await this.validateProductVariants(createBookingDto.products ?? []);
     return event;
   }
 
-  private async validateSession(
-    sessionId: string,
-    eventId: string,
-  ) {
+  private async validateSession(sessionId: string, eventId: string) {
     const session = await this.prisma.session.findUnique({
       where: {
         id: sessionId,
@@ -98,47 +101,43 @@ await this.validateProductVariants(createBookingDto.products ?? []);
     const now = new Date();
 
     if (session.salesStart && now < session.salesStart) {
-      throw new BadRequestException(
-        'Sales have not opened for this session',
-      );
+      throw new BadRequestException('Sales have not opened for this session');
     }
 
     if (session.salesEnd && now > session.salesEnd) {
-      throw new BadRequestException(
-        'Sales have closed for this session',
-      );
+      throw new BadRequestException('Sales have closed for this session');
     }
 
     return session;
   }
 
   private consolidateProducts(
-  products: NonNullable<CreateBookingDto['products']>,
-) {
-  const quantitiesByProductId = new Map<string, number>();
+    products: NonNullable<CreateBookingDto['products']>,
+  ) {
+    const quantitiesByProductId = new Map<string, number>();
 
-  for (const product of products) {
-    const currentQuantity =
-      quantitiesByProductId.get(product.productId) ?? 0;
+    for (const product of products) {
+      const currentQuantity = quantitiesByProductId.get(product.productId) ?? 0;
 
-    quantitiesByProductId.set(
-      product.productId,
-      currentQuantity + product.quantity,
+      quantitiesByProductId.set(
+        product.productId,
+        currentQuantity + product.quantity,
+      );
+    }
+
+    return Array.from(quantitiesByProductId.entries()).map(
+      ([productId, quantity]) => ({
+        productId,
+        quantity,
+      }),
     );
   }
-
-  return Array.from(
-    quantitiesByProductId.entries(),
-  ).map(([productId, quantity]) => ({
-    productId,
-    quantity,
-  }));
-}
 
   private async validateProducts(
     eventId: string,
     sessionId: string,
     products: CreateBookingDto['products'],
+    source: BookingCommerceSource,
   ) {
     return Promise.all(
       (products ?? []).map(async (bookingProduct) => {
@@ -147,25 +146,18 @@ await this.validateProductVariants(createBookingDto.products ?? []);
           bookingProduct.productId,
         );
 
-        const sessionProduct =
-          await this.validateSessionProduct(
-            sessionId,
-            bookingProduct.productId,
-          );
-
-        this.validateQuantity(
-          bookingProduct.quantity,
-          product,
+        const sessionProduct = await this.validateSessionProduct(
+          sessionId,
+          bookingProduct.productId,
         );
 
-        this.validateOnlineAvailability(product);
+        this.validateQuantity(bookingProduct.quantity, product);
+
+        this.validateChannelAvailability(product, source);
 
         this.validateProductSalesWindow(product);
 
-        this.validateInventory(
-  bookingProduct.quantity,
-  product,
-);
+        this.validateInventory(bookingProduct.quantity, product);
 
         return {
           product,
@@ -178,6 +170,7 @@ await this.validateProductVariants(createBookingDto.products ?? []);
 
   private async validateProductVariants(
     products: NonNullable<CreateBookingDto['products']>,
+    source: BookingCommerceSource,
   ) {
     const quantitiesByVariantId = new Map<
       string,
@@ -218,7 +211,12 @@ await this.validateProductVariants(createBookingDto.products ?? []);
             );
           }
 
-          if (variant.status !== 'ACTIVE' || !variant.availableOnline) {
+          const availableForChannel =
+            source === 'WALK_UP'
+              ? variant.availablePos
+              : variant.availableOnline;
+
+          if (variant.status !== 'ACTIVE' || !availableForChannel) {
             throw new BadRequestException(
               'The selected Product Variant is not available',
             );
@@ -238,10 +236,7 @@ await this.validateProductVariants(createBookingDto.products ?? []);
     );
   }
 
-  private async validateProduct(
-    eventId: string,
-    productId: string,
-  ) {
+  private async validateProduct(eventId: string, productId: string) {
     const product = await this.prisma.product.findUnique({
       where: {
         id: productId,
@@ -259,27 +254,21 @@ await this.validateProductVariants(createBookingDto.products ?? []);
     }
 
     if (product.status !== 'ACTIVE') {
-      throw new BadRequestException(
-        'The selected product is not available',
-      );
+      throw new BadRequestException('The selected product is not available');
     }
 
     return product;
   }
 
-  private async validateSessionProduct(
-    sessionId: string,
-    productId: string,
-  ) {
-    const sessionProduct =
-      await this.prisma.sessionProduct.findUnique({
-        where: {
-          sessionId_productId: {
-            sessionId,
-            productId,
-          },
+  private async validateSessionProduct(sessionId: string, productId: string) {
+    const sessionProduct = await this.prisma.sessionProduct.findUnique({
+      where: {
+        sessionId_productId: {
+          sessionId,
+          productId,
         },
-      });
+      },
+    });
 
     if (!sessionProduct) {
       throw new BadRequestException(
@@ -303,76 +292,71 @@ await this.validateProductVariants(createBookingDto.products ?? []);
       maxQuantity: number | null;
     },
   ) {
-    if (
-      product.minQuantity !== null &&
-      quantity < product.minQuantity
-    ) {
+    if (product.minQuantity !== null && quantity < product.minQuantity) {
       throw new BadRequestException(
         `Minimum quantity for this product is ${product.minQuantity}`,
       );
     }
 
-    if (
-      product.maxQuantity !== null &&
-      quantity > product.maxQuantity
-    ) {
+    if (product.maxQuantity !== null && quantity > product.maxQuantity) {
       throw new BadRequestException(
         `Maximum quantity for this product is ${product.maxQuantity}`,
       );
     }
   }
-  private validateOnlineAvailability(
-  product: {
-    availableOnline: boolean;
-  },
-) {
-  if (!product.availableOnline) {
-    throw new BadRequestException(
-      'The selected product is not available for online purchase',
-    );
+  private validateChannelAvailability(
+    product: {
+      availableOnline: boolean;
+      availablePos: boolean;
+    },
+    source: BookingCommerceSource,
+  ) {
+    const availableForChannel =
+      source === 'WALK_UP' ? product.availablePos : product.availableOnline;
+
+    if (!availableForChannel) {
+      throw new BadRequestException(
+        `The selected product is not available for ${
+          source === 'WALK_UP' ? 'POS' : 'online purchase'
+        }`,
+      );
+    }
   }
-}
-private validateProductSalesWindow(
-  product: {
+  private validateProductSalesWindow(product: {
     salesStart: Date | null;
     salesEnd: Date | null;
-  },
-) {
-  const now = new Date();
+  }) {
+    const now = new Date();
 
-  if (product.salesStart && now < product.salesStart) {
-    throw new BadRequestException(
-      'Sales have not opened for this product',
-    );
-  }
+    if (product.salesStart && now < product.salesStart) {
+      throw new BadRequestException('Sales have not opened for this product');
+    }
 
-  if (product.salesEnd && now > product.salesEnd) {
-    throw new BadRequestException(
-      'Sales have closed for this product',
-    );
+    if (product.salesEnd && now > product.salesEnd) {
+      throw new BadRequestException('Sales have closed for this product');
+    }
   }
-}
-private validateInventory(
-  quantity: number,
-  product: {
-    inventoryTracked: boolean;
-    inventoryQuantity: number | null;
-  },
-) {
-  if (!product.inventoryTracked) {
-    return;
-  }
+  private validateInventory(
+    quantity: number,
+    product: {
+      inventoryTracked: boolean;
+      inventoryQuantity: number | null;
+    },
+  ) {
+    if (!product.inventoryTracked) {
+      return;
+    }
 
-  if (product.inventoryQuantity === null) {
-    throw new BadRequestException(
-      'Inventory quantity has not been configured for this product',
-    );
-  }
+    if (product.inventoryQuantity === null) {
+      throw new BadRequestException(
+        'Inventory quantity has not been configured for this product',
+      );
+    }
 
-  if (quantity > product.inventoryQuantity) {
-    throw new BadRequestException(
-      'The selected product does not have enough inventory available',
-    );
+    if (quantity > product.inventoryQuantity) {
+      throw new BadRequestException(
+        'The selected product does not have enough inventory available',
+      );
+    }
   }
-}
 }

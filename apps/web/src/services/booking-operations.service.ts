@@ -11,7 +11,7 @@ export interface BookingListItem {
   customer: {
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
   };
   event: {
     id: string;
@@ -62,7 +62,7 @@ export interface PaymentInvestigation {
   customer: {
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
   };
   event: {
     id: string;

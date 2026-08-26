@@ -1,0 +1,109 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import PosPage from "./page";
+
+const {
+  getEvents,
+  getCatalogue,
+  evaluateRules,
+  createCustomer,
+  createReservation,
+  completePayment,
+} = vi.hoisted(() => ({
+  getEvents: vi.fn(),
+  getCatalogue: vi.fn(),
+  evaluateRules: vi.fn(),
+  createCustomer: vi.fn(),
+  createReservation: vi.fn(),
+  completePayment: vi.fn(),
+}));
+
+vi.mock("@/services/event.service", () => ({
+  eventService: { getEvents },
+}));
+
+vi.mock("@/services/pos.service", () => ({
+  posService: {
+    getCatalogue,
+    evaluateRules,
+    createCustomer,
+    createReservation,
+    completePayment,
+  },
+}));
+
+vi.mock("@/components/layout/PlatformShell", () => ({
+  PlatformShell: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+
+const event = {
+  id: "event-1",
+  name: "Winter Festival",
+  status: "ACTIVE",
+};
+
+const catalogue = {
+  event: {
+    id: "event-1",
+    name: "Winter Festival",
+    timezone: "Australia/Melbourne",
+  },
+  sessions: [
+    {
+      id: "session-1",
+      name: "10:00 session",
+      startDate: "2027-08-01T00:00:00.000Z",
+      endDate: "2027-08-01T01:00:00.000Z",
+      capacity: 150,
+      salesStart: null,
+      salesEnd: null,
+    },
+  ],
+  ticketTypes: [
+    {
+      id: "ticket-1",
+      name: "Adult",
+      description: null,
+      price: 24,
+      saleStart: null,
+      saleEnd: null,
+    },
+  ],
+  sessionProducts: [],
+};
+
+describe("PosPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    localStorage.setItem("glacier_pos_event", "event-1");
+    getEvents.mockResolvedValue([event]);
+    getCatalogue.mockResolvedValue(catalogue);
+  });
+
+  it("requires deliberate use of the recommended selling Session", async () => {
+    render(<PosPage />);
+
+    expect(
+      await screen.findByText(/Recommended current Session/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Selling Session locked/),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use recommendation" }));
+
+    expect(
+      await screen.findByText(/Selling Session locked/),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /Add Ticket/ }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(getCatalogue).toHaveBeenLastCalledWith("event-1", "session-1"),
+    );
+  });
+});

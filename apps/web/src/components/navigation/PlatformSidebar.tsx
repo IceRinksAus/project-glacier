@@ -4,6 +4,7 @@ import {
   CreditCard,
   LayoutDashboard,
   Package,
+  ReceiptText,
   ScanLine,
   Settings,
   Ticket,
@@ -26,6 +27,11 @@ const navigationItems = [
     label: "Staff Scanner",
     href: "/staff/scanner",
     icon: ScanLine,
+  },
+  {
+    label: "Point of Sale",
+    href: "/pos",
+    icon: ReceiptText,
   },
   {
     label: "Bookings",
