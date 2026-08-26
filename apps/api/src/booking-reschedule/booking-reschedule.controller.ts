@@ -8,6 +8,7 @@ import { MANAGEMENT_ROLES } from '../auth/roles/organization-role';
 import { RolesGuard } from '../auth/roles/roles.guard';
 
 import { BookingRescheduleService } from './booking-reschedule.service';
+import { ExecuteBookingRescheduleDto } from './dto/execute-booking-reschedule.dto';
 import { PreviewBookingRescheduleDto } from './dto/preview-booking-reschedule.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,5 +32,14 @@ export class BookingRescheduleController {
     @Body() input: PreviewBookingRescheduleDto,
   ) {
     return this.service.preview(user, bookingId, input);
+  }
+
+  @Post()
+  execute(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('bookingId') bookingId: string,
+    @Body() input: ExecuteBookingRescheduleDto,
+  ) {
+    return this.service.execute(user, bookingId, input);
   }
 }

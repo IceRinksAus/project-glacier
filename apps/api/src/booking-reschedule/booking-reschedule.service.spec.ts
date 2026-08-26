@@ -106,6 +106,25 @@ describe('BookingRescheduleService', () => {
     session: { findFirst: jest.fn(), findMany: jest.fn() },
     sessionProduct: { findMany: jest.fn() },
     bookingProduct: { aggregate: jest.fn() },
+    bookingReschedule: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
+  };
+  const transaction = {
+    booking: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    session: { findFirst: jest.fn() },
+    sessionProduct: { findMany: jest.fn() },
+    bookingProduct: { aggregate: jest.fn() },
+    ticket: { updateMany: jest.fn(), create: jest.fn() },
+    bookingReschedule: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    bookingRescheduleTicket: { update: jest.fn() },
   };
   const accessControl = {
     eventWhere: jest.fn(() => ({
@@ -117,6 +136,7 @@ describe('BookingRescheduleService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.bookingReschedule.findUnique.mockResolvedValue(null);
     prisma.booking.findFirst.mockResolvedValue(booking);
     prisma.session.findFirst.mockResolvedValue(destinationSession);
     prisma.session.findMany.mockResolvedValue([destinationSession]);
@@ -146,6 +166,58 @@ describe('BookingRescheduleService', () => {
     prisma.bookingProduct.aggregate.mockResolvedValue({
       _sum: { quantity: 5 },
     });
+    transaction.booking.findFirst.mockResolvedValue(booking);
+    transaction.booking.findMany.mockResolvedValue([
+      {
+        status: 'CONFIRMED',
+        items: [{ quantity: 10 }],
+        tickets: Array.from({ length: 10 }, () => ({ status: 'ACTIVE' })),
+      },
+    ]);
+    transaction.session.findFirst.mockResolvedValue(destinationSession);
+    transaction.sessionProduct.findMany.mockResolvedValue([
+      {
+        id: 'session-product-1',
+        sessionId: 'session-1',
+        productId: 'kanga-1',
+        active: true,
+        capacityOverride: 20,
+      },
+      {
+        id: 'session-product-2',
+        sessionId: 'session-2',
+        productId: 'kanga-1',
+        active: true,
+        capacityOverride: 20,
+      },
+    ]);
+    transaction.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 5 },
+    });
+    transaction.bookingReschedule.findUnique.mockResolvedValue(null);
+    transaction.bookingReschedule.create.mockResolvedValue({
+      id: 'reschedule-1',
+      ticketMappings: [
+        { id: 'mapping-1', originalTicketId: 'ticket-1' },
+        { id: 'mapping-2', originalTicketId: 'ticket-2' },
+      ],
+    });
+    transaction.ticket.updateMany.mockResolvedValue({ count: 2 });
+    transaction.booking.updateMany.mockResolvedValue({ count: 1 });
+    transaction.ticket.create
+      .mockResolvedValueOnce({ id: 'replacement-1', ticketNumber: 'RT-1' })
+      .mockResolvedValueOnce({ id: 'replacement-2', ticketNumber: 'RT-2' });
+    transaction.bookingRescheduleTicket.update.mockResolvedValue({});
+    transaction.bookingReschedule.update.mockResolvedValue({
+      id: 'reschedule-1',
+      rescheduleNumber: 'BR-1',
+      status: 'COMPLETED',
+      ticketMappings: [],
+      productAllocations: [],
+    });
+    prisma.$transaction.mockImplementation((operation) =>
+      operation(transaction),
+    );
     ruleEvaluation.evaluate.mockResolvedValue({
       valid: true,
       errors: [],
@@ -342,5 +414,159 @@ describe('BookingRescheduleService', () => {
         note: 'Customer requested a different Session.',
       }),
     ).rejects.toThrow(/required Product Rules/);
+  });
+
+  it('atomically moves the Booking and replaces every Ticket', async () => {
+    const input = {
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      idempotencyKey: 'reschedule-key-1',
+    };
+    const preview = await service.preview(access, 'booking-1', input);
+
+    const result = await service.execute(access, 'booking-1', {
+      ...input,
+      previewHash: preview.previewHash,
+    });
+
+    expect(result.status).toBe('COMPLETED');
+    expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+    expect(transaction.ticket.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ status: 'ACTIVE' }),
+        data: expect.objectContaining({ status: 'CANCELLED' }),
+      }),
+    );
+    expect(transaction.booking.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        id: 'booking-1',
+        sessionId: 'session-1',
+      }),
+      data: { sessionId: 'session-2' },
+    });
+    expect(transaction.ticket.create).toHaveBeenCalledTimes(2);
+    expect(transaction.bookingRescheduleTicket.update).toHaveBeenCalledTimes(2);
+    expect(transaction.bookingReschedule.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'COMPLETED' }),
+      }),
+    );
+  });
+
+  it('returns an exact completed idempotent replay without another transaction', async () => {
+    prisma.bookingReschedule.findUnique.mockResolvedValue({
+      id: 'reschedule-1',
+      organizationId: 'org-1',
+      bookingId: 'booking-1',
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      status: 'COMPLETED',
+      ticketMappings: [],
+      productAllocations: [],
+    });
+
+    const result = await service.execute(access, 'booking-1', {
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      idempotencyKey: 'reschedule-key-1',
+      previewHash: 'a'.repeat(64),
+    });
+
+    expect(result.status).toBe('COMPLETED');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects reuse of an idempotency key for a different move', async () => {
+    prisma.bookingReschedule.findUnique.mockResolvedValue({
+      organizationId: 'org-1',
+      bookingId: 'booking-1',
+      destinationSessionId: 'session-3',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      status: 'COMPLETED',
+    });
+
+    await expect(
+      service.execute(access, 'booking-1', {
+        destinationSessionId: 'session-2',
+        reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+        note: 'Customer requested the later Session.',
+        idempotencyKey: 'reschedule-key-1',
+        previewHash: 'a'.repeat(64),
+      }),
+    ).rejects.toThrow(/idempotency key/);
+  });
+
+  it('fails without mutation when destination capacity changes after preview', async () => {
+    const input = {
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      idempotencyKey: 'reschedule-key-1',
+    };
+    const preview = await service.preview(access, 'booking-1', input);
+    transaction.booking.findMany.mockResolvedValue([
+      {
+        status: 'CONFIRMED',
+        items: [{ quantity: 149 }],
+        tickets: Array.from({ length: 149 }, () => ({ status: 'ACTIVE' })),
+      },
+    ]);
+
+    await expect(
+      service.execute(access, 'booking-1', {
+        ...input,
+        previewHash: preview.previewHash,
+      }),
+    ).rejects.toThrow(/admission capacity/);
+    expect(transaction.bookingReschedule.create).not.toHaveBeenCalled();
+    expect(transaction.ticket.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rolls back when a Ticket changes during execution', async () => {
+    const input = {
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      idempotencyKey: 'reschedule-key-1',
+    };
+    const preview = await service.preview(access, 'booking-1', input);
+    transaction.ticket.updateMany.mockResolvedValue({ count: 1 });
+
+    await expect(
+      service.execute(access, 'booking-1', {
+        ...input,
+        previewHash: preview.previewHash,
+      }),
+    ).rejects.toThrow(/no longer eligible/);
+    expect(transaction.booking.updateMany).not.toHaveBeenCalled();
+    expect(transaction.ticket.create).not.toHaveBeenCalled();
+  });
+
+  it('retries a serializable write conflict without duplicating the move', async () => {
+    const input = {
+      destinationSessionId: 'session-2',
+      reason: BookingRescheduleReason.CUSTOMER_REQUEST,
+      note: 'Customer requested the later Session.',
+      idempotencyKey: 'reschedule-key-1',
+    };
+    const preview = await service.preview(access, 'booking-1', input);
+    prisma.$transaction
+      .mockRejectedValueOnce({ code: 'P2034' })
+      .mockImplementationOnce((operation) => operation(transaction));
+
+    await expect(
+      service.execute(access, 'booking-1', {
+        ...input,
+        previewHash: preview.previewHash,
+      }),
+    ).resolves.toEqual(expect.objectContaining({ status: 'COMPLETED' }));
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(transaction.bookingReschedule.create).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,10 +1,12 @@
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import {
   AccessControlService,
@@ -14,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
 
 import { PreviewBookingRescheduleDto } from './dto/preview-booking-reschedule.dto';
+import { ExecuteBookingRescheduleDto } from './dto/execute-booking-reschedule.dto';
 
 type ProductEffect = {
   bookingProductId: string;
@@ -42,6 +45,28 @@ type DestinationOption = {
 
 @Injectable()
 export class BookingRescheduleService {
+  private readonly resultInclude = {
+    originalSession: {
+      select: { id: true, name: true, startDate: true, endDate: true },
+    },
+    destinationSession: {
+      select: { id: true, name: true, startDate: true, endDate: true },
+    },
+    requestedByUser: { select: { id: true, name: true } },
+    ticketMappings: {
+      include: {
+        originalTicket: {
+          select: { id: true, ticketNumber: true, status: true },
+        },
+        replacementTicket: {
+          select: { id: true, ticketNumber: true, status: true },
+        },
+      },
+      orderBy: { createdAt: 'asc' as const },
+    },
+    productAllocations: { orderBy: { createdAt: 'asc' as const } },
+  } satisfies Prisma.BookingRescheduleInclude;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessControl: AccessControlService,
@@ -103,6 +128,50 @@ export class BookingRescheduleService {
         requestedByUser: reschedule.requestedByUser,
       })),
     };
+  }
+
+  async execute(
+    access: AuthenticatedAccessContext,
+    bookingId: string,
+    input: ExecuteBookingRescheduleDto,
+  ) {
+    const existing = await this.prisma.bookingReschedule.findUnique({
+      where: { idempotencyKey: input.idempotencyKey },
+      include: this.resultInclude,
+    });
+    if (existing) {
+      this.assertExactRetry(existing, access, bookingId, input);
+      if (existing.status === 'PENDING') {
+        throw new ConflictException('The Session change is still in progress');
+      }
+      return this.serializeResult(existing);
+    }
+
+    const preview = await this.preview(access, bookingId, input);
+    if (preview.previewHash !== input.previewHash) {
+      throw new BadRequestException(
+        'The Session change changed after review. Review it again.',
+      );
+    }
+
+    try {
+      const result = await this.withSerializableRetry((transaction) =>
+        this.executeTransaction(transaction, access, bookingId, input, preview),
+      );
+      return this.serializeResult(result);
+    } catch (error) {
+      if (this.prismaErrorCode(error) === 'P2002') {
+        const raced = await this.prisma.bookingReschedule.findUnique({
+          where: { idempotencyKey: input.idempotencyKey },
+          include: this.resultInclude,
+        });
+        if (raced) {
+          this.assertExactRetry(raced, access, bookingId, input);
+          return this.serializeResult(raced);
+        }
+      }
+      throw error;
+    }
   }
 
   async preview(
@@ -191,11 +260,297 @@ export class BookingRescheduleService {
     };
   }
 
+  private async executeTransaction(
+    transaction: Prisma.TransactionClient,
+    access: AuthenticatedAccessContext,
+    bookingId: string,
+    input: ExecuteBookingRescheduleDto,
+    preview: Awaited<ReturnType<BookingRescheduleService['preview']>>,
+  ) {
+    const existing = await transaction.bookingReschedule.findUnique({
+      where: { idempotencyKey: input.idempotencyKey },
+      include: this.resultInclude,
+    });
+    if (existing) {
+      this.assertExactRetry(existing, access, bookingId, input);
+      return existing;
+    }
+
+    const booking = await this.loadBooking(access, bookingId, transaction);
+    const reasons = this.bookingEligibilityReasons(booking);
+    if (reasons.length > 0) throw new BadRequestException(reasons[0]);
+    if (booking.sessionId !== preview.originalSession?.id) {
+      throw new BadRequestException(
+        'The Booking Session changed after review. Review it again.',
+      );
+    }
+
+    const currentTickets = this.currentTickets(booking);
+    if (
+      JSON.stringify(currentTickets.map(({ id }) => id).sort()) !==
+      JSON.stringify(preview.tickets.map(({ id }) => id).sort())
+    ) {
+      throw new BadRequestException(
+        'The Booking Tickets changed after review. Review it again.',
+      );
+    }
+
+    const destination = await transaction.session.findFirst({
+      where: {
+        id: input.destinationSessionId,
+        eventId: booking.eventId,
+        status: 'ACTIVE',
+        startDate: { gt: new Date() },
+      },
+    });
+    if (!destination) {
+      throw new BadRequestException(
+        'The destination Session is no longer available',
+      );
+    }
+    const occupiedAdmission = await this.occupiedAdmission(
+      destination.id,
+      transaction,
+    );
+    if (currentTickets.length > destination.capacity - occupiedAdmission) {
+      throw new BadRequestException(
+        `${destination.name} does not have enough admission capacity`,
+      );
+    }
+
+    const productIds = [
+      ...new Set(booking.products.map(({ productId }) => productId)),
+    ];
+    const assignments = productIds.length
+      ? await transaction.sessionProduct.findMany({
+          where: {
+            sessionId: { in: [booking.sessionId!, destination.id] },
+            productId: { in: productIds },
+          },
+        })
+      : [];
+    const destinationAssignments = new Map(
+      assignments
+        .filter(({ sessionId }) => sessionId === destination.id)
+        .map((assignment) => [assignment.productId, assignment]),
+    );
+    const originalAssignments = new Map(
+      assignments
+        .filter(({ sessionId }) => sessionId === booking.sessionId)
+        .map((assignment) => [assignment.productId, assignment]),
+    );
+
+    for (const item of booking.products) {
+      const assignment = destinationAssignments.get(item.productId);
+      if (item.product.status !== 'ACTIVE' || !assignment?.active) {
+        throw new BadRequestException(
+          `${item.product.name} is no longer active for the destination Session`,
+        );
+      }
+      if (item.product.capacityControlled) {
+        const limit = assignment.capacityOverride ?? item.product.capacity;
+        if (limit === null) {
+          throw new BadRequestException(
+            `${item.product.name} capacity is not configured`,
+          );
+        }
+        const occupied = await transaction.bookingProduct.aggregate({
+          where: {
+            productId: item.productId,
+            booking: {
+              sessionId: destination.id,
+              status: { in: ['RESERVED', 'CONFIRMED'] },
+            },
+          },
+          _sum: { quantity: true },
+        });
+        if (item.quantity > limit - (occupied._sum.quantity ?? 0)) {
+          throw new BadRequestException(
+            `${item.product.name} does not have enough capacity for the destination Session`,
+          );
+        }
+      }
+    }
+
+    const reschedule = await transaction.bookingReschedule.create({
+      data: {
+        rescheduleNumber: `BR-${Date.now()}-${randomBytes(3)
+          .toString('hex')
+          .toUpperCase()}`,
+        idempotencyKey: input.idempotencyKey,
+        reason: input.reason,
+        note: input.note.trim(),
+        organizationId: access.organizationId,
+        eventId: booking.eventId,
+        bookingId,
+        originalSessionId: booking.sessionId!,
+        destinationSessionId: destination.id,
+        originalSessionNameSnapshot: booking.session!.name,
+        originalSessionStartSnapshot: booking.session!.startDate,
+        destinationSessionNameSnapshot: destination.name,
+        destinationSessionStartSnapshot: destination.startDate,
+        requestedByUserId: access.userId,
+        ticketCount: currentTickets.length,
+        admissionPlacesTransferred: currentTickets.length,
+        ticketMappings: {
+          create: currentTickets.map((ticket) => ({
+            originalTicketId: ticket.id,
+            participantId: ticket.participant.id,
+            ticketTypeId: ticket.participant.ticketTypeId,
+            participantNameSnapshot: [
+              ticket.participant.firstName,
+              ticket.participant.lastName,
+            ]
+              .filter(Boolean)
+              .join(' '),
+            ticketTypeNameSnapshot: ticket.participant.ticketType.name,
+            originalTicketNumberSnapshot: ticket.ticketNumber,
+          })),
+        },
+        productAllocations: {
+          create: booking.products.map((item) => ({
+            bookingProductId: item.id,
+            productId: item.productId,
+            productNameSnapshot: item.product.name,
+            variantNameSnapshot: item.productVariant?.name ?? null,
+            quantity: item.quantity,
+            capacityTransferred: item.product.capacityControlled
+              ? item.quantity
+              : 0,
+            originalSessionProductId:
+              originalAssignments.get(item.productId)?.id ?? null,
+            destinationSessionProductId: destinationAssignments.get(
+              item.productId,
+            )!.id,
+          })),
+        },
+      },
+      include: { ticketMappings: true },
+    });
+
+    const now = new Date();
+    const cancelled = await transaction.ticket.updateMany({
+      where: {
+        id: { in: currentTickets.map(({ id }) => id) },
+        bookingId,
+        status: 'ACTIVE',
+        checkedInAt: null,
+      },
+      data: { status: 'CANCELLED', cancelledAt: now },
+    });
+    if (cancelled.count !== currentTickets.length) {
+      throw new BadRequestException(
+        'One or more Tickets are no longer eligible to change Session',
+      );
+    }
+
+    const moved = await transaction.booking.updateMany({
+      where: {
+        id: bookingId,
+        sessionId: booking.sessionId,
+        status: 'CONFIRMED',
+        paymentStatus: 'PAID',
+      },
+      data: { sessionId: destination.id },
+    });
+    if (moved.count !== 1) {
+      throw new BadRequestException(
+        'The Booking changed while the Session move was being completed',
+      );
+    }
+
+    const mappingsByOriginal = new Map(
+      reschedule.ticketMappings.map((mapping) => [
+        mapping.originalTicketId,
+        mapping,
+      ]),
+    );
+    for (const ticket of currentTickets) {
+      const replacement = await transaction.ticket.create({
+        data: {
+          bookingId,
+          participantId: ticket.participant.id,
+          ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
+            .toString('hex')
+            .toUpperCase()}`,
+          secureToken: randomBytes(32).toString('hex'),
+          status: 'ACTIVE',
+        },
+      });
+      await transaction.bookingRescheduleTicket.update({
+        where: { id: mappingsByOriginal.get(ticket.id)!.id },
+        data: {
+          replacementTicketId: replacement.id,
+          replacementTicketNumberSnapshot: replacement.ticketNumber,
+        },
+      });
+    }
+
+    return transaction.bookingReschedule.update({
+      where: { id: reschedule.id },
+      data: { status: 'COMPLETED', completedAt: now },
+      include: this.resultInclude,
+    });
+  }
+
+  private assertExactRetry(
+    existing: {
+      organizationId: string;
+      bookingId: string;
+      destinationSessionId: string;
+      reason: string;
+      note: string;
+    },
+    access: AuthenticatedAccessContext,
+    bookingId: string,
+    input: ExecuteBookingRescheduleDto,
+  ) {
+    if (
+      existing.organizationId !== access.organizationId ||
+      existing.bookingId !== bookingId ||
+      existing.destinationSessionId !== input.destinationSessionId ||
+      existing.reason !== input.reason ||
+      existing.note !== input.note.trim()
+    ) {
+      throw new BadRequestException(
+        'This idempotency key was already used for a different Session change',
+      );
+    }
+  }
+
+  private serializeResult<T extends { status: string }>(result: T) {
+    return result;
+  }
+
+  private async withSerializableRetry<T>(
+    operation: (transaction: Prisma.TransactionClient) => Promise<T>,
+  ) {
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        return await this.prisma.$transaction(operation, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      } catch (error) {
+        if (this.prismaErrorCode(error) !== 'P2034' || attempt === 3) {
+          throw error;
+        }
+      }
+    }
+    throw new ConflictException('Unable to transfer Session capacity');
+  }
+
+  private prismaErrorCode(error: unknown) {
+    return typeof error === 'object' && error !== null && 'code' in error
+      ? String(error.code)
+      : null;
+  }
+
   private async loadBooking(
     access: AuthenticatedAccessContext,
     bookingId: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
   ) {
-    const booking = await this.prisma.booking.findFirst({
+    const booking = await client.booking.findFirst({
       where: { id: bookingId, event: this.accessControl.eventWhere(access) },
       include: {
         session: true,
@@ -449,8 +804,11 @@ export class BookingRescheduleService {
     };
   }
 
-  private async occupiedAdmission(sessionId: string) {
-    const bookings = await this.prisma.booking.findMany({
+  private async occupiedAdmission(
+    sessionId: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    const bookings = await client.booking.findMany({
       where: {
         sessionId,
         status: { in: ['RESERVED', 'CONFIRMED'] },
