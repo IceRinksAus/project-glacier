@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { AccessControlModule } from './access-control/access-control.module';
 import { AuthModule } from './auth/auth.module';
 import { BookingModule } from './booking/booking.module';
+import { BookingRescheduleModule } from './booking-reschedule/booking-reschedule.module';
 import { BookingValidationModule } from './booking-validation/booking-validation.module';
 import { CategoryModule } from './category/category.module';
 import { CustomerModule } from './customer/customer.module';
@@ -47,6 +48,7 @@ import { WaiverModule } from './waiver/waiver.module';
     TicketTypeModule,
     CustomerModule,
     BookingModule,
+    BookingRescheduleModule,
     SessionModule,
     CategoryModule,
     ProductModule,
