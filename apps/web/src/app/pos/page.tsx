@@ -21,6 +21,7 @@ import {
   PosReservation,
   posService,
 } from "@/services/pos.service";
+import { MerchandiseSaleMode } from "./MerchandiseSaleMode";
 
 const EVENT_KEY = "glacier_pos_event";
 const SESSION_KEY = "glacier_pos_session";
@@ -44,6 +45,9 @@ function sessionLabel(
 }
 
 export default function PosPage() {
+  const [saleMode, setSaleMode] = useState<"TICKETS" | "MERCHANDISE">(
+    "TICKETS",
+  );
   const [events, setEvents] = useState<GlacierEvent[]>([]);
   const [eventId, setEventId] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -296,10 +300,43 @@ export default function PosPage() {
             Point of Sale
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Sell walk-up Tickets and Session Products from Glacier&apos;s shared
-            catalogue.
+            {saleMode === "TICKETS"
+              ? "Sell walk-up Tickets and Session Products from Glacier's shared catalogue."
+              : "Sell Event merchandise without creating an admission Booking or Ticket."}
           </p>
+          <Link
+            href="/pos/sales"
+            className="mt-3 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Find merchandise Sales
+          </Link>
         </header>
+
+        <section
+          aria-label="Sale mode"
+          className="grid gap-3 rounded-xl border bg-card p-3 sm:grid-cols-2"
+        >
+          <button
+            type="button"
+            className={`rounded-lg border p-4 text-left ${saleMode === "TICKETS" ? "border-primary bg-primary/5" : ""}`}
+            onClick={() => setSaleMode("TICKETS")}
+          >
+            <span className="font-semibold">Ticket Sale</span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Session admission, participants and eligible Products
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg border p-4 text-left ${saleMode === "MERCHANDISE" ? "border-primary bg-primary/5" : ""}`}
+            onClick={() => setSaleMode("MERCHANDISE")}
+          >
+            <span className="font-semibold">Merchandise Sale</span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Products only — no Session, participant or Ticket
+            </span>
+          </button>
+        </section>
 
         {error ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -307,7 +344,9 @@ export default function PosPage() {
           </div>
         ) : null}
 
-        <section className="grid gap-4 rounded-xl border bg-card p-5 shadow-sm md:grid-cols-2">
+        <section
+          className={`grid gap-4 rounded-xl border bg-card p-5 shadow-sm ${saleMode === "TICKETS" ? "md:grid-cols-2" : ""}`}
+        >
           <label className="space-y-2 text-sm font-medium">
             Event
             <select
@@ -323,23 +362,25 @@ export default function PosPage() {
               ))}
             </select>
           </label>
-          <label className="space-y-2 text-sm font-medium">
-            Selling Session
-            <select
-              className="w-full rounded-md border bg-background px-3 py-3"
-              value={sessionId}
-              onChange={(event) => selectSession(event.target.value)}
-              disabled={!catalogue}
-            >
-              <option value="">Choose and retain a Session</option>
-              {catalogue?.sessions.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {sessionLabel(session, catalogue.event.timezone)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!sessionId && recommendedSession ? (
+          {saleMode === "TICKETS" ? (
+            <label className="space-y-2 text-sm font-medium">
+              Selling Session
+              <select
+                className="w-full rounded-md border bg-background px-3 py-3"
+                value={sessionId}
+                onChange={(event) => selectSession(event.target.value)}
+                disabled={!catalogue}
+              >
+                <option value="">Choose and retain a Session</option>
+                {catalogue?.sessions.map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {sessionLabel(session, catalogue.event.timezone)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {saleMode === "TICKETS" && !sessionId && recommendedSession ? (
             <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-sky-50 p-4 text-sm text-sky-950">
               <span>
                 Recommended current Session:{" "}
@@ -356,7 +397,7 @@ export default function PosPage() {
               </Button>
             </div>
           ) : null}
-          {selectedSession ? (
+          {saleMode === "TICKETS" && selectedSession ? (
             <p className="md:col-span-2 rounded-lg bg-emerald-50 p-4 font-medium text-emerald-950">
               Selling Session locked:{" "}
               {sessionLabel(selectedSession, catalogue?.event.timezone)}
@@ -364,7 +405,7 @@ export default function PosPage() {
           ) : null}
         </section>
 
-        {sessionId && catalogue && !reservation ? (
+        {saleMode === "TICKETS" && sessionId && catalogue && !reservation ? (
           <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
             <div className="space-y-6">
               <section className="rounded-xl border bg-card p-5 shadow-sm">
@@ -566,7 +607,7 @@ export default function PosPage() {
           </div>
         ) : null}
 
-        {reservation && !completion ? (
+        {saleMode === "TICKETS" && reservation && !completion ? (
           <section className="mx-auto max-w-2xl space-y-5 rounded-xl border bg-card p-6 shadow-sm">
             <div>
               <p className="text-sm text-muted-foreground">
@@ -638,7 +679,7 @@ export default function PosPage() {
           </section>
         ) : null}
 
-        {completion ? (
+        {saleMode === "TICKETS" && completion ? (
           <section className="mx-auto max-w-2xl rounded-xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-950">
             <CheckCircle2 className="size-10" />
             <h2 className="mt-4 text-2xl font-semibold">Sale complete</h2>
@@ -665,6 +706,10 @@ export default function PosPage() {
               Start next sale
             </Button>
           </section>
+        ) : null}
+
+        {saleMode === "MERCHANDISE" ? (
+          <MerchandiseSaleMode eventId={eventId} />
         ) : null}
       </div>
     </PlatformShell>

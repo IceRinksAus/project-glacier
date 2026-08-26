@@ -12,6 +12,7 @@ import {
   AuthenticatedAccessContext,
 } from '../access-control/access-control.service';
 import { PaymentService } from '../payment/payment.service';
+import { InventoryCommitmentService } from '../inventory/inventory-commitment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
 
@@ -26,6 +27,7 @@ export class BookingService {
     private readonly bookingValidationService: BookingValidationService,
     private readonly paymentService: PaymentService,
     private readonly accessControl: AccessControlService,
+    private readonly inventoryCommitments: InventoryCommitmentService,
   ) {}
 
   private summarizeProviderReference(providerReference: string | null) {
@@ -1150,22 +1152,13 @@ export class BookingService {
               product.inventoryTracked &&
               product.inventoryQuantity !== null
             ) {
-              const committed = await transaction.bookingProduct.aggregate({
-                where: {
+              const committed =
+                await this.inventoryCommitments.productCommitted(
+                  transaction,
                   productId,
-                  booking: {
-                    status: {
-                      in: ['RESERVED', 'CONFIRMED'],
-                    },
-                  },
-                },
-                _sum: {
-                  quantity: true,
-                },
-              });
+                );
 
-              const remainingInventory =
-                product.inventoryQuantity - (committed._sum.quantity ?? 0);
+              const remainingInventory = product.inventoryQuantity - committed;
 
               if (quantity > remainingInventory) {
                 throw new BadRequestException(
@@ -1219,22 +1212,14 @@ export class BookingService {
                 variant.inventoryTracked &&
                 variant.inventoryQuantity !== null
               ) {
-                const committed = await transaction.bookingProduct.aggregate({
-                  where: {
-                    productVariantId: variant.id,
-                    booking: {
-                      status: {
-                        in: ['RESERVED', 'CONFIRMED'],
-                      },
-                    },
-                  },
-                  _sum: {
-                    quantity: true,
-                  },
-                });
+                const committed =
+                  await this.inventoryCommitments.variantCommitted(
+                    transaction,
+                    variant.id,
+                  );
 
                 const remainingInventory =
-                  variant.inventoryQuantity - (committed._sum.quantity ?? 0);
+                  variant.inventoryQuantity - committed;
 
                 if (selection.quantity > remainingInventory) {
                   throw new BadRequestException(

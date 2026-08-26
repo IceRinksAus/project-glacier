@@ -136,6 +136,19 @@ Status values:
 | POST   | `/payment/:bookingId`     | Legacy   | N/A                         | N/A                               | N/A                | PROTECTED | Removed; token-protected public Payment route remains authoritative. |
 | POST   | `/payment/stripe/webhook` | Stripe   | Stripe signature + raw body | Provider event → internal records | Signature/raw body | EXTERNAL  | Preserve raw-body verification and idempotency.                      |
 
+## Point of Sale
+
+| Method | Route | Actor | Authentication | Ownership boundary | Validation | Exposure | Notes |
+|---|---|---|---|---|---|---|---|
+| GET | `/pos/events/:eventId/catalogue` | POS operator | JWT OWNER/MANAGER/STAFF | Event assignment | Bounded optional Session ID | PROTECTED | Ticket-sale catalogue; server filters POS availability and Session eligibility. |
+| POST | `/pos/events/:eventId/reservations` | POS operator | JWT OWNER/MANAGER/STAFF | Event assignment and Session ownership | Strict nested DTO | PROTECTED | Creates a capacity- and inventory-protected walk-up admission Booking. |
+| POST | `/pos/events/:eventId/reservations/:bookingId/complete` | POS operator | JWT OWNER/MANAGER/STAFF | Booking → Event assignment | Exact amount, Cash/EFTPOS allowlist and idempotency key | PROTECTED | Completes walk-up admission commerce and issues Tickets through the existing issuer. |
+| GET | `/pos/events/:eventId/merchandise` | POS operator | JWT OWNER/MANAGER/STAFF | Event assignment | Event ID | PROTECTED | Returns active POS merchandise only; excludes admission, Session-required and capacity-controlled Products. |
+| GET | `/pos/events/:eventId/retail-sales` | POS operator | JWT OWNER/MANAGER/STAFF | RetailSale → Event assignment | Strict bounded filters and pagination | PROTECTED | Separate merchandise Sale investigation; lazily expires stale unpaid reservations. |
+| GET | `/pos/events/:eventId/retail-sales/:retailSaleId` | POS operator | JWT OWNER/MANAGER/STAFF | RetailSale → Event assignment | String IDs | PROTECTED | Returns authoritative lines, successful Payment and operator evidence. |
+| POST | `/pos/events/:eventId/retail-sales` | POS operator | JWT OWNER/MANAGER/STAFF | Products/Variants → Event assignment | Strict 1–50 line DTO and quantity bounds | PROTECTED | Creates a short-lived server-priced stock reservation; never creates a Booking or Ticket. |
+| POST | `/pos/events/:eventId/retail-sales/:retailSaleId/complete` | POS operator | JWT OWNER/MANAGER/STAFF | RetailSale → Event assignment | Exact amount, Cash/EFTPOS allowlist and idempotency key | PROTECTED | Completes one merchandise Sale and one exclusively parented Payment; no raw card data. |
+
 ## Public Booking
 
 | Method | Route                                    | Audience | Authentication              | Validation                    | Status | Sprint 17 action                                            |

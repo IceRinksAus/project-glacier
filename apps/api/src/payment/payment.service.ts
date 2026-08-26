@@ -342,6 +342,12 @@ export class PaymentService {
       throw new NotFoundException('Payment not found');
     }
 
+    if (!payment.bookingId || !payment.booking) {
+      throw new BadRequestException(
+        'Provider payment is not linked to an admission Booking',
+      );
+    }
+
     const now = new Date();
 
     if (event.status === 'FAILED') {

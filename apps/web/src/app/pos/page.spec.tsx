@@ -10,6 +10,9 @@ const {
   createCustomer,
   createReservation,
   completePayment,
+  getMerchandiseCatalogue,
+  createRetailSale,
+  completeRetailSale,
 } = vi.hoisted(() => ({
   getEvents: vi.fn(),
   getCatalogue: vi.fn(),
@@ -17,6 +20,9 @@ const {
   createCustomer: vi.fn(),
   createReservation: vi.fn(),
   completePayment: vi.fn(),
+  getMerchandiseCatalogue: vi.fn(),
+  createRetailSale: vi.fn(),
+  completeRetailSale: vi.fn(),
 }));
 
 vi.mock("@/services/event.service", () => ({
@@ -30,6 +36,9 @@ vi.mock("@/services/pos.service", () => ({
     createCustomer,
     createReservation,
     completePayment,
+    getMerchandiseCatalogue,
+    createRetailSale,
+    completeRetailSale,
   },
 }));
 
@@ -82,6 +91,23 @@ describe("PosPage", () => {
     localStorage.setItem("glacier_pos_event", "event-1");
     getEvents.mockResolvedValue([event]);
     getCatalogue.mockResolvedValue(catalogue);
+    getMerchandiseCatalogue.mockResolvedValue({
+      event: catalogue.event,
+      products: [
+        {
+          id: "hoodie",
+          name: "Hoodie",
+          description: null,
+          price: 50,
+          minQuantity: 0,
+          maxQuantity: null,
+          inventoryTracked: true,
+          remainingInventory: 10,
+          productGroup: { id: "merch", name: "Merchandise", sortOrder: 0 },
+          variants: [],
+        },
+      ],
+    });
   });
 
   it("requires deliberate use of the recommended selling Session", async () => {
@@ -105,5 +131,22 @@ describe("PosPage", () => {
     await waitFor(() =>
       expect(getCatalogue).toHaveBeenLastCalledWith("event-1", "session-1"),
     );
+  });
+
+  it("switches to merchandise without requiring a Session or purchaser", async () => {
+    render(<PosPage />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /^Merchandise Sale/ }),
+    );
+
+    expect(await screen.findByText("Merchandise")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No Session, participant or purchaser details are required.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Selling Session")).not.toBeInTheDocument();
+    expect(await screen.findByText("10 remaining")).toBeInTheDocument();
   });
 });

@@ -29,6 +29,17 @@ enum PaymentMethod {
   STANDALONE_EFTPOS
 }
 
+enum RetailSaleStatus {
+  RESERVED
+  COMPLETED
+  EXPIRED
+}
+
+enum RetailSalePaymentStatus {
+  UNPAID
+  PAID
+}
+
 model Organization {
   id     String @id @default(cuid())
   name   String
@@ -79,6 +90,8 @@ model User {
   createdFileAssets             FileAsset[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   paymentsReceived              Payment[]                      @relation("PaymentReceivedBy")
+  retailSalesCreated            RetailSale[]                   @relation("RetailSaleCreatedBy")
+  retailSalesCompleted          RetailSale[]                   @relation("RetailSaleCompletedBy")
   accessChangesMade             OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived         OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
@@ -191,7 +204,8 @@ model Event {
   products      Product[]
   productGroups ProductGroup[]
 
-  bookings Booking[]
+  bookings    Booking[]
+  retailSales RetailSale[]
 
   rules Rule[]
 
@@ -412,6 +426,7 @@ model Product {
   sessionProducts SessionProduct[]
 
   bookingProducts BookingProduct[]
+  retailSaleItems RetailSaleItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -474,6 +489,7 @@ model ProductVariant {
   product   Product @relation(fields: [productId], references: [id])
 
   bookingProducts BookingProduct[]
+  retailSaleItems RetailSaleItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -661,11 +677,79 @@ model BookingProduct {
   @@index([productVariantId])
 }
 
+model RetailSale {
+  id String @id @default(cuid())
+
+  saleNumber String @unique
+
+  status        RetailSaleStatus        @default(RESERVED)
+  paymentStatus RetailSalePaymentStatus @default(UNPAID)
+
+  total    Decimal @db.Decimal(10, 2)
+  currency String  @default("AUD")
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  createdByUserId String
+  createdByUser   User   @relation("RetailSaleCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  completedByUserId String?
+  completedByUser   User?   @relation("RetailSaleCompletedBy", fields: [completedByUserId], references: [id], onDelete: Restrict)
+
+  reservedUntil DateTime
+  completedAt   DateTime?
+  expiredAt     DateTime?
+
+  items    RetailSaleItem[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId, createdAt])
+  @@index([eventId, status, createdAt])
+  @@index([createdByUserId, createdAt])
+  @@index([completedByUserId, completedAt])
+}
+
+model RetailSaleItem {
+  id String @id @default(cuid())
+
+  retailSaleId String
+  retailSale   RetailSale @relation(fields: [retailSaleId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  productVariantId String?
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+
+  productNameSnapshot String
+  variantNameSnapshot String?
+  skuSnapshot         String?
+  barcodeSnapshot     String?
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  gstRate   Float
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([retailSaleId])
+  @@index([productId])
+  @@index([productVariantId])
+}
+
 model Payment {
   id String @id @default(cuid())
 
-  bookingId String
-  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  retailSaleId String?
+  retailSale   RetailSale? @relation(fields: [retailSaleId], references: [id], onDelete: Cascade)
 
   provider String
   method   PaymentMethod @default(ONLINE_CARD)
@@ -697,6 +781,7 @@ model Payment {
   reconciliationAttempts PaymentReconciliationAttempt[]
 
   @@index([bookingId])
+  @@index([retailSaleId])
   @@index([provider, providerReference])
   @@index([method, status])
   @@index([receivedByUserId])

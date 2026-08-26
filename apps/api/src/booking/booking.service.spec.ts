@@ -200,6 +200,31 @@ describe('BookingService', () => {
           organizationId,
         }),
       } as never,
+      {
+        productCommitted: async (_transaction: unknown, productId: string) => {
+          const result = await prisma.bookingProduct.aggregate({
+            where: {
+              productId,
+              booking: { status: { in: ['RESERVED', 'CONFIRMED'] } },
+            },
+            _sum: { quantity: true },
+          });
+          return result._sum.quantity ?? 0;
+        },
+        variantCommitted: async (
+          _transaction: unknown,
+          productVariantId: string,
+        ) => {
+          const result = await prisma.bookingProduct.aggregate({
+            where: {
+              productVariantId,
+              booking: { status: { in: ['RESERVED', 'CONFIRMED'] } },
+            },
+            _sum: { quantity: true },
+          });
+          return result._sum.quantity ?? 0;
+        },
+      } as never,
     );
   });
 

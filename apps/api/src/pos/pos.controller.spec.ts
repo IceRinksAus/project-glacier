@@ -4,6 +4,7 @@ import { ROLES_KEY } from '../auth/decorators/roles.decorator';
 
 import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
+import { RetailSaleService } from './retail-sale.service';
 
 describe('PosController', () => {
   const service = {
@@ -19,13 +20,23 @@ describe('PosController', () => {
     role: 'STAFF' as const,
     accessScope: 'ASSIGNED_EVENTS' as const,
   };
+  const retailSaleService = {
+    findCatalogue: jest.fn(),
+    search: jest.fn(),
+    findOne: jest.fn(),
+    createReservation: jest.fn(),
+    completePayment: jest.fn(),
+  };
   let controller: PosController;
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PosController],
-      providers: [{ provide: PosService, useValue: service }],
+      providers: [
+        { provide: PosService, useValue: service },
+        { provide: RetailSaleService, useValue: retailSaleService },
+      ],
     }).compile();
     controller = module.get(PosController);
   });

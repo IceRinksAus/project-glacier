@@ -88,6 +88,78 @@ export interface PosCompletion {
   }>;
 }
 
+export interface RetailProductVariant {
+  id: string;
+  name: string;
+  priceOverride: number | null;
+  inventoryTracked: boolean;
+  remainingInventory: number | null;
+}
+
+export interface RetailProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  minQuantity: number;
+  maxQuantity: number | null;
+  inventoryTracked: boolean;
+  remainingInventory: number | null;
+  productGroup: { id: string; name: string; sortOrder: number } | null;
+  variants: RetailProductVariant[];
+}
+
+export interface RetailCatalogue {
+  event: { id: string; name: string; timezone: string | null };
+  products: RetailProduct[];
+}
+
+export interface RetailSale {
+  id: string;
+  saleNumber: string;
+  status: "RESERVED" | "COMPLETED" | "EXPIRED";
+  paymentStatus: "UNPAID" | "PAID";
+  total: number;
+  currency: string;
+  reservedUntil: string;
+  completedAt: string | null;
+  completedByUser: { id: string; name: string } | null;
+  items: Array<{
+    id: string;
+    productNameSnapshot: string;
+    variantNameSnapshot: string | null;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>;
+  payments: Array<{
+    id: string;
+    method: "CASH" | "STANDALONE_EFTPOS";
+    amount: number;
+    standaloneReference: string | null;
+    receivedAt: string | null;
+    receivedByUser: { id: string; name: string } | null;
+  }>;
+}
+
+export interface RetailSaleSearchResult {
+  total: number;
+  page: number;
+  pageSize: number;
+  sales: Array<{
+    id: string;
+    saleNumber: string;
+    status: "RESERVED" | "COMPLETED" | "EXPIRED";
+    paymentStatus: "UNPAID" | "PAID";
+    total: number;
+    createdAt: string;
+    completedAt: string | null;
+    completedByUser: { id: string; name: string } | null;
+    payments: Array<{ method: "CASH" | "STANDALONE_EFTPOS" }>;
+    _count: { items: number };
+  }>;
+}
+
 export const posService = {
   getCatalogue: (eventId: string, sessionId?: string) =>
     api.get<PosCatalogue>(
@@ -144,4 +216,39 @@ export const posService = {
       `/pos/events/${eventId}/reservations/${bookingId}/complete`,
       input,
     ),
+
+  getMerchandiseCatalogue: (eventId: string) =>
+    api.get<RetailCatalogue>(`/pos/events/${eventId}/merchandise`),
+
+  createRetailSale: (
+    eventId: string,
+    items: Array<{
+      productId: string;
+      productVariantId?: string;
+      quantity: number;
+    }>,
+  ) => api.post<RetailSale>(`/pos/events/${eventId}/retail-sales`, { items }),
+
+  completeRetailSale: (
+    eventId: string,
+    retailSaleId: string,
+    input: {
+      method: "CASH" | "STANDALONE_EFTPOS";
+      amount: number;
+      idempotencyKey: string;
+      standaloneReference?: string;
+    },
+  ) =>
+    api.post<RetailSale>(
+      `/pos/events/${eventId}/retail-sales/${retailSaleId}/complete`,
+      input,
+    ),
+
+  searchRetailSales: (eventId: string, search = "") =>
+    api.get<RetailSaleSearchResult>(
+      `/pos/events/${eventId}/retail-sales${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+    ),
+
+  getRetailSale: (eventId: string, retailSaleId: string) =>
+    api.get<RetailSale>(`/pos/events/${eventId}/retail-sales/${retailSaleId}`),
 };
