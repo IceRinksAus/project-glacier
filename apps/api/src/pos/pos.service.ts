@@ -172,7 +172,7 @@ export class PosService {
     return this.prisma.customer.create({
       data: {
         firstName: data.firstName.trim(),
-        lastName: data.lastName.trim(),
+        lastName: data.lastName?.trim() ?? '',
         email: data.email?.trim().toLowerCase() || null,
         phone: data.phone?.trim() || null,
       },

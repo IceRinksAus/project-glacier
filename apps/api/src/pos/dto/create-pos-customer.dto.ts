@@ -15,10 +15,11 @@ export class CreatePosCustomerDto {
   firstName: string;
 
   @IsString()
+  @IsOptional()
   @MinLength(1)
   @MaxLength(200)
   @Matches(/\S/)
-  lastName: string;
+  lastName?: string;
 
   @IsOptional()
   @IsEmail()

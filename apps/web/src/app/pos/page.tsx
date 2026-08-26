@@ -52,12 +52,6 @@ export default function PosPage() {
   const [products, setProducts] = useState<
     Record<string, { quantity: number; productVariantId?: string }>
   >({});
-  const [customer, setCustomer] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-  });
   const [reservation, setReservation] = useState<PosReservation | null>(null);
   const [completion, setCompletion] = useState<PosCompletion | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<
@@ -195,7 +189,6 @@ export default function PosPage() {
   function resetSale() {
     setParticipants([]);
     setProducts({});
-    setCustomer({ firstName: "", lastName: "", email: "", phone: "" });
     setReservation(null);
     setCompletion(null);
     setTerminalReference("");
@@ -206,8 +199,6 @@ export default function PosPage() {
   async function reserveSale() {
     if (!eventId || !sessionId || participants.length === 0)
       return setError("Choose a Session and at least one Ticket.");
-    if (!customer.firstName.trim() || !customer.lastName.trim())
-      return setError("Enter the purchaser's first and last name.");
     if (participants.some((participant) => !participant.firstName.trim()))
       return setError("Enter a first name for every participant.");
     setIsWorking(true);
@@ -236,10 +227,8 @@ export default function PosPage() {
       }
       setProducts(selectedProducts);
       const createdCustomer = await posService.createCustomer(eventId, {
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        email: customer.email || undefined,
-        phone: customer.phone || undefined,
+        firstName: participants[0].firstName,
+        lastName: participants[0].lastName || undefined,
       });
       const createdReservation = await posService.createReservation(eventId, {
         customerId: createdCustomer.id,
@@ -561,58 +550,10 @@ export default function PosPage() {
                 <h2 className="text-xl font-semibold">Sale</h2>
               </div>
               <p className="text-3xl font-bold">{money(estimatedTotal)}</p>
-              <div className="space-y-3 border-t pt-4">
-                <label className="block text-sm font-medium">
-                  Purchaser first name
-                  <input
-                    className="mt-1 w-full rounded-md border px-3 py-2"
-                    value={customer.firstName}
-                    onChange={(event) =>
-                      setCustomer({
-                        ...customer,
-                        firstName: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Purchaser last name
-                  <input
-                    className="mt-1 w-full rounded-md border px-3 py-2"
-                    value={customer.lastName}
-                    onChange={(event) =>
-                      setCustomer({ ...customer, lastName: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Email{" "}
-                  <span className="font-normal text-muted-foreground">
-                    (optional)
-                  </span>
-                  <input
-                    className="mt-1 w-full rounded-md border px-3 py-2"
-                    type="email"
-                    value={customer.email}
-                    onChange={(event) =>
-                      setCustomer({ ...customer, email: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Phone{" "}
-                  <span className="font-normal text-muted-foreground">
-                    (optional)
-                  </span>
-                  <input
-                    className="mt-1 w-full rounded-md border px-3 py-2"
-                    value={customer.phone}
-                    onChange={(event) =>
-                      setCustomer({ ...customer, phone: event.target.value })
-                    }
-                  />
-                </label>
-              </div>
+              <p className="border-t pt-4 text-sm text-muted-foreground">
+                No separate purchaser details are required. The first
+                participant is used as the Booking lookup name.
+              </p>
               <Button
                 className="w-full"
                 size="lg"

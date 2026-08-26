@@ -123,7 +123,6 @@ describe('PosService', () => {
 
     await service.createCustomer(access, 'event-1', {
       firstName: ' Jamie ',
-      lastName: ' Stoller ',
     });
 
     expect(accessControl.assertEventAccess).toHaveBeenCalledWith(
@@ -133,7 +132,7 @@ describe('PosService', () => {
     expect(prisma.customer.create).toHaveBeenCalledWith({
       data: {
         firstName: 'Jamie',
-        lastName: 'Stoller',
+        lastName: '',
         email: null,
         phone: null,
       },

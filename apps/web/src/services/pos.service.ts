@@ -110,7 +110,7 @@ export const posService = {
     eventId: string,
     customer: {
       firstName: string;
-      lastName: string;
+      lastName?: string;
       email?: string;
       phone?: string;
     },
