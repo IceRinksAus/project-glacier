@@ -70,6 +70,7 @@ model Organization {
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   eventGroups                   EventGroup[]
   accessAuditEntries            OrganizationAccessAudit[]
+  ticketAdjustments             TicketAdjustment[]
 }
 
 model User {
@@ -92,6 +93,7 @@ model User {
   paymentsReceived              Payment[]                      @relation("PaymentReceivedBy")
   retailSalesCreated            RetailSale[]                   @relation("RetailSaleCreatedBy")
   retailSalesCompleted          RetailSale[]                   @relation("RetailSaleCompletedBy")
+  ticketAdjustmentsRequested    TicketAdjustment[]             @relation("TicketAdjustmentRequestedBy")
   accessChangesMade             OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived         OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
@@ -204,8 +206,9 @@ model Event {
   products      Product[]
   productGroups ProductGroup[]
 
-  bookings    Booking[]
-  retailSales RetailSale[]
+  bookings          Booking[]
+  retailSales       RetailSale[]
+  ticketAdjustments TicketAdjustment[]
 
   rules Rule[]
 
@@ -546,8 +549,9 @@ model TicketType {
   eventId String
   event   Event  @relation(fields: [eventId], references: [id])
 
-  bookingItems        BookingItem[]
-  bookingParticipants BookingParticipant[]
+  bookingItems          BookingItem[]
+  bookingParticipants   BookingParticipant[]
+  adjustmentAllocations TicketAdjustmentAllocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -595,6 +599,7 @@ model Booking {
   tickets                       Ticket[]
   payments                      Payment[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
+  ticketAdjustments             TicketAdjustment[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -645,7 +650,8 @@ model BookingParticipant {
   ticketTypeId String
   ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
 
-  ticket Ticket?
+  ticket                Ticket?
+  adjustmentAllocations TicketAdjustmentAllocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -779,6 +785,7 @@ model Payment {
 
   refunds                PaymentRefund[]
   reconciliationAttempts PaymentReconciliationAttempt[]
+  ticketAdjustments      TicketAdjustment[]
 
   @@index([bookingId])
   @@index([retailSaleId])
@@ -823,9 +830,107 @@ model PaymentRefund {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  ticketAdjustment TicketAdjustment?
+
   @@index([paymentId])
   @@index([status])
   @@index([provider, providerReference])
+}
+
+enum TicketAdjustmentAction {
+  CANCEL_ONLY
+  CANCEL_AND_REFUND
+}
+
+enum TicketAdjustmentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TicketAdjustmentReason {
+  MEDICAL_COMPASSIONATE
+  EVENT_SESSION_ISSUE
+  DUPLICATE_PURCHASE
+  ORGANISER_CORRECTION
+  OTHER
+}
+
+model TicketAdjustment {
+  id               String                 @id @default(cuid())
+  adjustmentNumber String                 @unique
+  idempotencyKey   String                 @unique
+  action           TicketAdjustmentAction
+  status           TicketAdjustmentStatus @default(PENDING)
+  reason           TicketAdjustmentReason
+  note             String
+
+  requestedAmount Decimal @db.Decimal(10, 2)
+  refundedAmount  Decimal @default(0) @db.Decimal(10, 2)
+  currency        String  @default("AUD")
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  paymentRefundId String?        @unique
+  paymentRefund   PaymentRefund? @relation(fields: [paymentRefundId], references: [id], onDelete: Restrict)
+
+  requestedByUserId String
+  requestedByUser   User   @relation("TicketAdjustmentRequestedBy", fields: [requestedByUserId], references: [id], onDelete: Restrict)
+
+  completedAt        DateTime?
+  failedAt           DateTime?
+  capacityReleasedAt DateTime?
+  failureCode        String?
+  failureMessage     String?
+
+  allocations TicketAdjustmentAllocation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([requestedByUserId, createdAt])
+  @@index([status, createdAt])
+  @@index([paymentId])
+}
+
+model TicketAdjustmentAllocation {
+  id String @id @default(cuid())
+
+  adjustmentId String
+  adjustment   TicketAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Restrict)
+
+  ticketId String @unique
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  participantId String
+  participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  ticketTypeId String
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id], onDelete: Restrict)
+
+  participantNameSnapshot String
+  ticketNumberSnapshot    String
+  ticketTypeNameSnapshot  String
+  unitValue               Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  @@index([adjustmentId])
+  @@index([participantId])
+  @@index([ticketTypeId])
 }
 
 model PaymentReconciliationAttempt {
@@ -902,11 +1007,13 @@ model Ticket {
 
   issuedAt    DateTime  @default(now())
   checkedInAt DateTime?
+  cancelledAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  scanAttempts TicketScanAttempt[]
+  scanAttempts         TicketScanAttempt[]
+  adjustmentAllocation TicketAdjustmentAllocation?
 }
 
 model TicketScanAttempt {
