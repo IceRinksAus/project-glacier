@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { ShieldCheck, UserRoundCog } from "lucide-react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
+import { OrganizationFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
 import { Button } from "@/components/ui/button";
 import {
   getAuthRoleSnapshot,
@@ -91,6 +92,8 @@ export default function SettingsPage() {
 
         <RoleGuide />
 
+        {role === "OWNER" ? <OrganizationFlexibleTicketSettings /> : null}
+
         {role !== "OWNER" ? (
           <StateCard>
             Only the organisation Owner can change team access. Your current
@@ -162,7 +165,9 @@ function MemberAccessCard({
   const [draftRole, setDraftRole] = useState<UpdateTeamAccess["role"]>(
     member.role === "OWNER" ? "MANAGER" : member.role,
   );
-  const [scope, setScope] = useState<OrganizationAccessScope>(member.accessScope);
+  const [scope, setScope] = useState<OrganizationAccessScope>(
+    member.accessScope,
+  );
   const [eventIds, setEventIds] = useState(
     member.user.eventAccess.map(({ event }) => event.id),
   );

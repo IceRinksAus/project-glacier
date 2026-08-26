@@ -5,12 +5,10 @@ import { use } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
 import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
+import { EventFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
 import { EventOverview } from "@/components/events/EventOverview";
 import { EventBrandingWorkspace } from "@/components/events/EventBrandingWorkspace";
-import {
-  EventTabs,
-  parseEventTab,
-} from "@/components/events/EventTabs";
+import { EventTabs, parseEventTab } from "@/components/events/EventTabs";
 import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ProductsWorkspace } from "@/components/products/ProductsWorkspace";
@@ -44,7 +42,9 @@ export default function EventWorkspacePage({
       nextSearchParams.set("tab", tab);
     }
     const query = nextSearchParams.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
   }
 
   return (
@@ -124,13 +124,18 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Settings" ? (
-              <EventEntryPolicySettings
-                eventId={event.id}
-                initialOpensMinutesBeforeStart={
-                  event.entryOpensMinutesBeforeStart
-                }
-                initialClosesMinutesAfterEnd={event.entryClosesMinutesAfterEnd}
-              />
+              <div className="space-y-6">
+                <EventFlexibleTicketSettings eventId={event.id} />
+                <EventEntryPolicySettings
+                  eventId={event.id}
+                  initialOpensMinutesBeforeStart={
+                    event.entryOpensMinutesBeforeStart
+                  }
+                  initialClosesMinutesAfterEnd={
+                    event.entryClosesMinutesAfterEnd
+                  }
+                />
+              </div>
             ) : null}
 
             {activeTab === "Reports" ? (
