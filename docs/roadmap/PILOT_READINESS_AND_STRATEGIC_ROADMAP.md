@@ -2,7 +2,7 @@
 
 **Updated:** 27 August 2026
 
-**Status:** Current strategic control document after Sprint 28; Sprint 29 Flexible Ticket foundation proposed
+**Status:** Current strategic control document after Sprint 29; Flexible Ticket purchase authority delivered and controlled entitlement use remains next
 
 **Purpose:** Record Glacier's current evidence-based position, define the controlled phases to a live pilot, and prevent delivery priorities from depending on chat history.
 
@@ -14,7 +14,7 @@
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 28, Glacier is best described as:
+After Sprint 29, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -44,7 +44,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 28
+# 3. Delivered Foundation Through Sprint 29
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -69,15 +69,16 @@ The following are implemented foundations and should not be reopened without evi
 - shared-commerce walk-up Ticket sales with Cash and standalone EFTPOS evidence;
 - merchandise-only POS commerce with finite inventory and Payment evidence;
 - controlled per-Ticket cancellation/refund with immutable adjustment history; and
-- controlled same-price whole-Booking Session rescheduling with replacement Tickets.
+- controlled same-price whole-Booking Session rescheduling with replacement Tickets; and
+- versioned Organisation/Event Flexible Ticket governance, selective per-Ticket purchase, Payment activation and immutable entitlement evidence.
 
-Current verified baseline at Sprint 28 closeout:
+Current verified baseline at Sprint 29 closeout:
 
-- 40 current Prisma migrations;
-- 77 API suites / 517 passing tests;
-- 25 web test files / 75 passing tests;
+- 41 current Prisma migrations;
+- 78 API suites / 536 passing tests;
+- 26 web test files / 78 passing tests;
 - passing API and web production builds; and
-- authenticated browser acceptance of reporting, access controls, walk-up and merchandise commerce, partial Ticket adjustment/refund and whole-Booking Session rescheduling with replacement-credential handling.
+- authenticated/public browser acceptance of Flexible Ticket governance, selective purchase, successful Payment activation and matching customer/operator entitlement presentation, in addition to the previously accepted reporting, access controls, walk-up and merchandise commerce, partial Ticket adjustment/refund and whole-Booking Session rescheduling foundations.
 
 This proves the local application baseline. It does not prove production readiness, legal approval, penetration resistance or event-day reliability.
 
@@ -96,13 +97,13 @@ The minimum cancellation/refund, rescheduling, Ticket replacement, role/assignme
 - the representative pilot Event, volume, devices and staff roster; and
 - named operational, Payment, technical, privacy/security and fallback owners.
 
-Sprint 29 may build configurable, disabled-by-default entitlement authority without pretending these commercial/legal values are approved. A live offer cannot be enabled until its material terms are deliberately published.
+Sprint 29 delivered configurable, disabled-by-default entitlement authority without pretending these commercial/legal values are approved. A live offer must not be enabled for a production Event until its material terms are deliberately published and commercially/legally approved.
 
 ## 4.2 Controlled customer-service actions
 
 Sprints 27–28 delivered the minimum operator-controlled per-Ticket cancellation/refund and whole-Booking same-price rescheduling foundations. Every sensitive action remains tenant- and assignment-scoped, permission-controlled, append-only, idempotent and explicit about Ticket/capacity/Payment consequences.
 
-The remaining operational gap is Flexible Ticket authority and its bounded customer-access workflow. Glacier must first create immutable purchased rights, then allow secure requests and controlled use without treating current settings or the legacy Booking Boolean as historical authority.
+Glacier now creates immutable purchased Flexible Ticket rights. The remaining operational gap is a bounded customer-access workflow that can submit secure requests and consume those rights through the existing controlled refund/reschedule ledgers without treating current settings or the legacy Booking Boolean as historical authority.
 
 Tickets are non-refundable by default, with that position clearly disclosed before purchase. MANAGER/OWNER discretionary exceptions remain available with reason/audit evidence. Customers may also purchase a Flexible Ticket entitlement giving covered Tickets defined change/refund rights for an additional fee. Coverage, fee, rights, deadline, price-difference treatment and accepted policy version must be snapshotted at purchase rather than inferred from later settings.
 
@@ -317,7 +318,7 @@ Reached only after pilot findings are resolved and Glacier has repeatable deploy
 | Staff Scanner | Implemented foundation | Device, concurrency, network sign-off | 4 |
 | Booking and Customer lookup | Implemented | Support runbook and UAT | 2–4 |
 | Refund/cancellation | Controlled per-Ticket cancellation/refund implemented | Approved terms plus representative operator/provider UAT | 1–4 |
-| Flexible Tickets | Policy and workflow confirmed; only a legacy Booking Boolean exists | Versioned per-Ticket purchase rights, then secure requests and controlled use | 1–2 |
+| Flexible Tickets | Versioned policy, selective per-Ticket purchase and immutable Payment-activated entitlement implemented | Commercial/legal approval, secure requests and controlled entitlement use | 1–2 |
 | Access levels | OWNER, MANAGER, STAFF and SCANNER foundations implemented | Representative assignment/denial UAT and audit review | 4 |
 | Rescheduling | Controlled same-price whole-Booking workflow implemented | Representative OWNER/MANAGER operational UAT | 4 |
 | Walk-up sales | Shared-catalogue Cash/standalone EFTPOS Ticket flow implemented and browser accepted | Physical till/device UAT and reconciliation | 4 |
@@ -384,9 +385,9 @@ Commercialisation—including the B2B website and SaaS billing—should follow a
 
 # 12. Immediate Next Action
 
-Sprints 24–28 have established role/assignment authority, walk-up and merchandise commerce, controlled per-Ticket adjustment/refund and whole-Booking Session rescheduling. The next pilot-critical operational dependency is durable Flexible Ticket authority.
+Sprints 24–29 have established role/assignment authority, walk-up and merchandise commerce, controlled per-Ticket adjustment/refund, whole-Booking Session rescheduling and durable Flexible Ticket purchase authority. The next pilot-critical operational dependency is controlled use of those purchased rights.
 
-Sprint 29 is proposed in `sprint-29-plan.md` as the versioned Organisation/Event policy, per-Ticket purchase and immutable entitlement foundation. It deliberately creates the commercial right without yet implementing customer requests or entitlement consumption. A following Sprint can then connect secure customer requests to the proven Sprint 27 refund and Sprint 28 reschedule ledgers.
+Sprint 29 completed the versioned Organisation/Event policy, per-Ticket purchase and immutable entitlement foundation in `sprint-29-plan.md`. Sprint 30 should connect possession-scoped customer requests and controlled operator consumption to the proven Sprint 27 refund and Sprint 28 reschedule ledgers. It must remain bounded by the purchased entitlement snapshot, current operational facts, role/assignment controls and explicit Payment consequences.
 
 The remaining Phase 1 choices—exact commercial/legal values and wording, EFTPOS hardware, pilot Event/devices/volume and named operational owners—must still be closed before production rehearsal. They do not justify inventing entitlement rights from the legacy Booking Boolean.
 

@@ -2,7 +2,7 @@
 
 ## Planning Status
 
-Scope confirmed on 27 August 2026. This plan must be committed before implementation begins.
+Completed and browser-accepted on 27 August 2026 under this locked scope. Detailed implementation and verification evidence is recorded in `docs/sprint-notes/sprint-29.md`.
 
 ## Recommendation
 
