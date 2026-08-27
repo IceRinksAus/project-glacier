@@ -80,6 +80,39 @@ enum FlexibleTicketEntitlementStatus {
   CANCELLED
 }
 
+enum FlexibleTicketRequestType {
+  REFUND
+  SESSION_CHANGE
+}
+
+enum FlexibleTicketRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  COMPLETED
+  DECLINED
+  WITHDRAWN
+  FAILED
+  EXPIRED
+}
+
+enum FlexibleTicketRequestReason {
+  CHANGE_OF_PLANS
+  ILLNESS_OR_INJURY
+  BOOKING_ERROR
+  OTHER
+}
+
+enum FlexibleTicketDecisionReason {
+  APPROVED_UNDER_ENTITLEMENT
+  OUTSIDE_ENTITLEMENT
+  INELIGIBLE_TICKET
+  CUTOFF_PASSED
+  CAPACITY_UNAVAILABLE
+  PAYMENT_ACTION_REQUIRED
+  OTHER
+}
+
 model Organization {
   id     String @id @default(cuid())
   name   String
@@ -114,6 +147,7 @@ model Organization {
   bookingReschedules            BookingReschedule[]
   flexibleTicketPolicies        FlexibleTicketPolicy[]
   flexibleTicketEntitlements    FlexibleTicketEntitlement[]
+  flexibleTicketRequests        FlexibleTicketRequest[]
 }
 
 model User {
@@ -140,6 +174,7 @@ model User {
   bookingReschedulesRequested     BookingReschedule[]            @relation("BookingRescheduleRequestedBy")
   flexibleTicketPoliciesCreated   FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyCreatedBy")
   flexibleTicketPoliciesPublished FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyPublishedBy")
+  flexibleTicketRequestsReviewed  FlexibleTicketRequest[]        @relation("FlexibleTicketRequestReviewedBy")
   accessChangesMade               OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived           OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
 }
@@ -260,6 +295,7 @@ model Event {
   bookingReschedules         BookingReschedule[]
   flexibleTicketPolicies     FlexibleTicketPolicy[]
   flexibleTicketEntitlements FlexibleTicketEntitlement[]
+  flexibleTicketRequests     FlexibleTicketRequest[]
 
   rules Rule[]
 
@@ -393,8 +429,9 @@ model Session {
 
   bookings Booking[]
 
-  originalBookingReschedules    BookingReschedule[] @relation("BookingRescheduleOriginalSession")
-  destinationBookingReschedules BookingReschedule[] @relation("BookingRescheduleDestinationSession")
+  originalBookingReschedules        BookingReschedule[]     @relation("BookingRescheduleOriginalSession")
+  destinationBookingReschedules     BookingReschedule[]     @relation("BookingRescheduleDestinationSession")
+  destinationFlexibleTicketRequests FlexibleTicketRequest[] @relation("FlexibleTicketRequestDestinationSession")
 
   sessionProducts SessionProduct[]
 
@@ -659,6 +696,7 @@ model Booking {
   ticketAdjustments             TicketAdjustment[]
   reschedules                   BookingReschedule[]
   flexibleTicketEntitlements    FlexibleTicketEntitlement[]
+  flexibleTicketRequests        FlexibleTicketRequest[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -709,10 +747,11 @@ model BookingParticipant {
   ticketTypeId String
   ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
 
-  tickets                   Ticket[]
-  adjustmentAllocations     TicketAdjustmentAllocation[]
-  rescheduleTicketMappings  BookingRescheduleTicket[]
-  flexibleTicketEntitlement FlexibleTicketEntitlement?
+  tickets                    Ticket[]
+  adjustmentAllocations      TicketAdjustmentAllocation[]
+  rescheduleTicketMappings   BookingRescheduleTicket[]
+  flexibleTicketEntitlement  FlexibleTicketEntitlement?
+  flexibleTicketRequestItems FlexibleTicketRequestItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1009,6 +1048,9 @@ model FlexibleTicketEntitlement {
   expiredAt   DateTime?
   cancelledAt DateTime?
 
+  requestItems   FlexibleTicketRequestItem[]
+  useAllocations FlexibleTicketUseAllocation[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1019,6 +1061,116 @@ model FlexibleTicketEntitlement {
   @@index([status, createdAt])
   @@index([ticketTypeId])
   @@index([activatedByPaymentId])
+}
+
+model FlexibleTicketRequest {
+  id             String                      @id @default(cuid())
+  requestNumber  String                      @unique
+  idempotencyKey String                      @unique
+  type           FlexibleTicketRequestType
+  status         FlexibleTicketRequestStatus @default(SUBMITTED)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  destinationSessionId String?
+  destinationSession   Session? @relation("FlexibleTicketRequestDestinationSession", fields: [destinationSessionId], references: [id], onDelete: Restrict)
+
+  customerReason FlexibleTicketRequestReason
+  customerNote   String?
+
+  reviewedByUserId String?
+  reviewedByUser   User?   @relation("FlexibleTicketRequestReviewedBy", fields: [reviewedByUserId], references: [id], onDelete: Restrict)
+
+  decisionReason FlexibleTicketDecisionReason?
+  decisionNote   String?
+
+  ticketAdjustmentId String?           @unique
+  ticketAdjustment   TicketAdjustment? @relation(fields: [ticketAdjustmentId], references: [id], onDelete: Restrict)
+
+  bookingRescheduleId String?            @unique
+  bookingReschedule   BookingReschedule? @relation(fields: [bookingRescheduleId], references: [id], onDelete: Restrict)
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  decidedAt   DateTime?
+  withdrawnAt DateTime?
+  completedAt DateTime?
+  failedAt    DateTime?
+  expiredAt   DateTime?
+
+  failureCode    String?
+  failureMessage String?
+
+  items          FlexibleTicketRequestItem[]
+  useAllocations FlexibleTicketUseAllocation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId, status, createdAt])
+  @@index([eventId, status, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([reviewedByUserId, reviewedAt])
+  @@index([destinationSessionId])
+}
+
+model FlexibleTicketRequestItem {
+  id String @id @default(cuid())
+
+  requestId String
+  request   FlexibleTicketRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  entitlementId String
+  entitlement   FlexibleTicketEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Restrict)
+
+  participantId String
+  participant   BookingParticipant @relation(fields: [participantId], references: [id], onDelete: Restrict)
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  activeRequestKey String? @unique
+
+  participantNameSnapshot String
+  ticketNumberSnapshot    String
+  ticketTypeNameSnapshot  String
+  ticketValueSnapshot     Decimal  @db.Decimal(10, 2)
+  flexibleFeeSnapshot     Decimal  @db.Decimal(10, 2)
+  currency                String   @default("AUD")
+  remainingUsesSnapshot   Int
+  cutoffAtSnapshot        DateTime
+
+  createdAt DateTime @default(now())
+
+  @@unique([requestId, entitlementId])
+  @@unique([requestId, ticketId])
+  @@index([entitlementId, createdAt])
+  @@index([participantId])
+  @@index([ticketId])
+}
+
+model FlexibleTicketUseAllocation {
+  id String @id @default(cuid())
+
+  requestId String
+  request   FlexibleTicketRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  entitlementId String
+  entitlement   FlexibleTicketEntitlement @relation(fields: [entitlementId], references: [id], onDelete: Restrict)
+
+  remainingUsesBefore Int
+  remainingUsesAfter  Int
+  consumedAt          DateTime @default(now())
+
+  @@unique([requestId, entitlementId])
+  @@index([entitlementId, consumedAt])
 }
 
 enum BookingRescheduleStatus {
@@ -1073,8 +1225,9 @@ model BookingReschedule {
   failureCode    String?
   failureMessage String?
 
-  ticketMappings     BookingRescheduleTicket[]
-  productAllocations BookingRescheduleProductAllocation[]
+  ticketMappings        BookingRescheduleTicket[]
+  productAllocations    BookingRescheduleProductAllocation[]
+  flexibleTicketRequest FlexibleTicketRequest?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1201,7 +1354,8 @@ model TicketAdjustment {
   failureMessage     String?
   externalReference  String?
 
-  allocations TicketAdjustmentAllocation[]
+  allocations           TicketAdjustmentAllocation[]
+  flexibleTicketRequest FlexibleTicketRequest?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1325,6 +1479,7 @@ model Ticket {
   originalRescheduleMapping        BookingRescheduleTicket?    @relation("BookingRescheduleOriginalTicket")
   replacementRescheduleMapping     BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
   initialFlexibleTicketEntitlement FlexibleTicketEntitlement?
+  flexibleTicketRequestItems       FlexibleTicketRequestItem[]
 
   @@index([participantId])
 }
