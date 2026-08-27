@@ -106,7 +106,12 @@ describe('FlexibleTicketRequestService public workflow', () => {
       flexibleTicketRequestItem: { updateMany: jest.fn() },
       $transaction: jest.fn((callback) => callback(prisma)),
     };
-    service = new FlexibleTicketRequestService(prisma as PrismaService);
+    service = new FlexibleTicketRequestService(
+      prisma as PrismaService,
+      { eventWhere: jest.fn(() => ({})) } as any,
+      {} as any,
+      {} as any,
+    );
   });
 
   it('uses a SHA-256 possession-token lookup and returns no context for an invalid token', async () => {

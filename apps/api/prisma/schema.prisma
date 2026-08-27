@@ -1181,6 +1181,7 @@ enum BookingRescheduleStatus {
 
 enum BookingRescheduleReason {
   CUSTOMER_REQUEST
+  FLEXIBLE_TICKET
   EVENT_SESSION_ISSUE
   ORGANISER_CORRECTION
   OTHER
@@ -1310,6 +1311,7 @@ enum TicketAdjustmentStatus {
 
 enum TicketAdjustmentReason {
   MEDICAL_COMPASSIONATE
+  FLEXIBLE_TICKET
   EVENT_SESSION_ISSUE
   DUPLICATE_PURCHASE
   ORGANISER_CORRECTION
