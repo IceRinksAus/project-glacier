@@ -1080,6 +1080,7 @@ export class FlexibleTicketRequestService {
           status: entitlement.status,
           remainingUses: entitlement.remainingUses,
           cutoffAt,
+          ticketValue: entitlement.ticketFaceValueSnapshot.toNumber(),
           feeAmount: entitlement.feeAmount.toNumber(),
           currency: entitlement.currency,
           feeRefundability: entitlement.feeRefundabilitySnapshot,

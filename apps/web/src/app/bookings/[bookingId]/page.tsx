@@ -12,6 +12,7 @@ import {
   PaymentInvestigation,
 } from "@/services/booking-operations.service";
 import { BookingReschedulePanel } from "./BookingReschedulePanel";
+import { FlexibleTicketRequestPanel } from "./FlexibleTicketRequestPanel";
 import { TicketAdjustmentPanel } from "./TicketAdjustmentPanel";
 
 function money(value: number, currency = "AUD") {
@@ -222,8 +223,8 @@ export default function BookingPaymentPage() {
                 Flexible Ticket entitlements
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Recorded purchase rights only. Using an entitlement is not
-                available in this Sprint.
+                Immutable purchased rights and remaining uses. Customer
+                requests and controlled decisions are shown below.
               </p>
               <div className="mt-5 space-y-3">
                 {(investigation.flexibleTicketEntitlements ?? []).length ===
@@ -338,6 +339,13 @@ export default function BookingPaymentPage() {
 
             {canManageBooking ? (
               <>
+                <FlexibleTicketRequestPanel
+                  bookingId={bookingId}
+                  onCompleted={async () => {
+                    await refreshInvestigation();
+                    setBookingOperationVersion((version) => version + 1);
+                  }}
+                />
                 <BookingReschedulePanel
                   bookingId={bookingId}
                   onCompleted={async () => {

@@ -7,6 +7,7 @@ import { use, useEffect } from "react";
 
 import { useBookingJourney } from "@/components/booking/BookingJourneyProvider";
 import { BookingJourneyShell } from "@/components/booking/BookingJourneyShell";
+import { FlexibleTicketRequestCustomerPanel } from "@/components/flexible-ticket/FlexibleTicketRequestCustomerPanel";
 
 export default function ConfirmationPage({
   params,
@@ -15,7 +16,7 @@ export default function ConfirmationPage({
 }) {
   const { eventId } = use(params);
   const router = useRouter();
-  const { bookingStatus } = useBookingJourney();
+  const { bookingStatus, reservation } = useBookingJourney();
   const confirmed =
     bookingStatus?.status === "CONFIRMED" &&
     bookingStatus.paymentStatus === "PAID";
@@ -68,9 +69,9 @@ export default function ConfirmationPage({
           <section className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
             <h2 className="text-xl font-bold">Flexible Ticket coverage</h2>
             <p className="mt-2 text-sm leading-6 text-slate-700">
-              Coverage is recorded separately for the Tickets below. Online
-              self-service changes and cancellations are not yet available;
-              contact the Event organiser for assistance.
+              Coverage is recorded separately for the Tickets below. You may
+              submit an eligible request below, but the organiser must review
+              it before any Ticket, Session or payment changes.
             </p>
             <div className="mt-4 grid gap-3">
               {(bookingStatus.flexibleTicketEntitlements ?? []).map(
@@ -104,6 +105,22 @@ export default function ConfirmationPage({
               )}
             </div>
           </section>
+        ) : null}
+
+        {(bookingStatus.flexibleTicketEntitlements ?? []).length &&
+        reservation?.booking.publicAccessToken ? (
+          <>
+            <FlexibleTicketRequestCustomerPanel
+              bookingId={bookingStatus.id}
+              publicAccessToken={reservation.booking.publicAccessToken}
+            />
+            <Link
+              href={`/booking-access/${bookingStatus.id}#access=${reservation.booking.publicAccessToken}`}
+              className="mt-4 inline-flex text-sm font-semibold text-sky-900 underline"
+            >
+              Open the secure booking-management page
+            </Link>
+          </>
         ) : null}
 
         {bookingStatus.event.waiverPublicSlug ? (
