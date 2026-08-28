@@ -15,6 +15,7 @@ The following are agreed living deliverables and must be created, versioned and 
 - Financial Model
 - Budget Forecasts
 - Organisational Structure
+- Entity, domain, intellectual-property and production-account ownership plan (`GLACIER_ENTITY_AND_ASSET_OWNERSHIP_PLAN.md`)
 - Growth Strategy
 - Licensing Strategy
 - Investor material if required
