@@ -7,6 +7,7 @@ import { createHash, randomBytes } from 'crypto';
 import * as QRCode from 'qrcode';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { getWebAppUrl } from '../config/application-security';
 import { WaiverTemplateService } from './waiver-template.service';
 
 @Injectable()
@@ -68,9 +69,7 @@ export class EventWaiverService {
       );
     }
 
-    const publicBaseUrl = (
-      process.env.WEB_APP_URL ?? 'http://localhost:3001'
-    ).replace(/\/$/, '');
+    const publicBaseUrl = getWebAppUrl();
     const publicUrl = `${publicBaseUrl}/waivers/${waiver.publicSlug}`;
     const qrCodeDataUrl = await QRCode.toDataURL(publicUrl, {
       errorCorrectionLevel: 'H',

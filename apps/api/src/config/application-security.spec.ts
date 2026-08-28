@@ -4,6 +4,8 @@ import { LoginDto } from '../auth/dto/login.dto';
 import {
   createApplicationValidationPipe,
   getCorsOrigins,
+  getWebAppUrl,
+  validateApplicationEnvironment,
 } from './application-security';
 
 describe('application security configuration', () => {
@@ -28,6 +30,68 @@ describe('application security configuration', () => {
   it('fails closed when production origins are not configured', () => {
     expect(() => getCorsOrigins({ NODE_ENV: 'production' })).toThrow(
       'CORS_ORIGINS must be configured in production.',
+    );
+  });
+
+  it('accepts a complete HTTPS production environment', () => {
+    expect(() =>
+      validateApplicationEnvironment({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://database.example/glacier',
+        JWT_SECRET: 'a'.repeat(32),
+        STRIPE_SECRET_KEY: 'sk_live_example',
+        STRIPE_WEBHOOK_SECRET: 'whsec_example',
+        WEB_APP_URL: 'https://app.glacier.example',
+        CORS_ORIGINS:
+          'https://app.glacier.example,https://admin.glacier.example',
+      }),
+    ).not.toThrow();
+  });
+
+  it('reports all missing production variables before startup', () => {
+    expect(() =>
+      validateApplicationEnvironment({ NODE_ENV: 'production' }),
+    ).toThrow(
+      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS.',
+    );
+  });
+
+  it('rejects a short production authentication secret', () => {
+    expect(() =>
+      validateApplicationEnvironment({
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://database.example/glacier',
+        JWT_SECRET: 'too-short',
+        STRIPE_SECRET_KEY: 'sk_live_example',
+        STRIPE_WEBHOOK_SECRET: 'whsec_example',
+        WEB_APP_URL: 'https://app.glacier.example',
+        CORS_ORIGINS: 'https://app.glacier.example',
+      }),
+    ).toThrow('JWT_SECRET must contain at least 32 characters in production.');
+  });
+
+  it('rejects localhost and non-HTTPS production origins', () => {
+    const environment = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'postgresql://database.example/glacier',
+      JWT_SECRET: 'a'.repeat(32),
+      STRIPE_SECRET_KEY: 'sk_live_example',
+      STRIPE_WEBHOOK_SECRET: 'whsec_example',
+      WEB_APP_URL: 'https://app.glacier.example',
+      CORS_ORIGINS: 'http://localhost:3001',
+    };
+
+    expect(() => validateApplicationEnvironment(environment)).toThrow(
+      'CORS_ORIGINS must use HTTPS in production.',
+    );
+  });
+
+  it('uses a local web URL only outside production', () => {
+    expect(getWebAppUrl({ NODE_ENV: 'development' })).toBe(
+      'http://localhost:3001',
+    );
+    expect(() => getWebAppUrl({ NODE_ENV: 'production' })).toThrow(
+      'WEB_APP_URL must be configured in production.',
     );
   });
 

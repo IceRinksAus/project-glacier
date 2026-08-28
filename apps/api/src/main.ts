@@ -5,9 +5,12 @@ import { AppModule } from './app.module';
 import {
   createApplicationValidationPipe,
   getCorsOrigins,
+  validateApplicationEnvironment,
 } from './config/application-security';
 
 async function bootstrap() {
+  validateApplicationEnvironment();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
