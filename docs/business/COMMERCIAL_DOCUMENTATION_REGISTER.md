@@ -14,6 +14,7 @@ The following are agreed living deliverables and must be created, versioned and 
 - Partnership Strategy
 - Financial Model
 - Budget Forecasts
+- Establishment, pilot-readiness and annual operating budget baseline (`GLACIER_BUDGET_BASELINE_2026.md`)
 - Organisational Structure
 - Entity, domain, intellectual-property and production-account ownership plan (`GLACIER_ENTITY_AND_ASSET_OWNERSHIP_PLAN.md`)
 - Accountant business and ownership brief (`ACCOUNTANT_BUSINESS_AND_OWNERSHIP_BRIEF.md`)

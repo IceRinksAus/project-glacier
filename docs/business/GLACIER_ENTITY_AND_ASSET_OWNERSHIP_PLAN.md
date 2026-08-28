@@ -4,12 +4,12 @@
 
 Working decision plan created during Sprint 31 preparation on 28 August 2026. It is not legal, tax, accounting or trademark advice. Final structure and transfer instruments require appropriately qualified Australian advisers.
 
-Glacier is intended to become a new enterprise rather than an informal extension of Ice Rinks Australia. This plan prevents valuable assets and production accounts from being acquired casually under the wrong entity while the new structure is being designed.
+Glacier is intended to become a distinct commercial enterprise rather than an undocumented extension of Ice Rinks Australia. Immediate standalone establishment is now being compared with documented incubation inside Ice Rinks Australia followed by a defined future spin-out. This plan prevents valuable assets and production accounts from being acquired casually under the wrong entity while that pathway is being designed.
 
 ## Principles
 
 - Glacier's long-term operating and intellectual-property ownership must be deliberate and documented.
-- Ice Rinks Australia may be a pilot customer, related party or strategic participant without automatically owning Glacier assets.
+- Ice Rinks Australia may be the documented incubating owner/operator, pilot customer, related party or strategic participant. Its role and any ownership must be explicit rather than inferred.
 - A temporary holder must be eligible, identifiable and willing to transfer the asset under written evidence.
 - Domains, source code, trademarks, cloud accounts, Stripe accounts, customer contracts and data-controller obligations are distinct assets/responsibilities.
 - Production infrastructure must not depend on one person's personal email, phone, payment card or undocumented recovery method.
