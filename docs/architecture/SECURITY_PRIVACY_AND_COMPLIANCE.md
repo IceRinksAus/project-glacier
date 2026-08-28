@@ -201,6 +201,12 @@ Role and permission design should become increasingly granular as the Admin and 
 
 ## Public API Security
 
+Flexible Ticket request endpoints reuse the high-entropy Booking possession credential and compare only its SHA-256 hash. A request reference alone grants no access. The browser's reusable Booking-management link keeps the raw credential in the URL fragment rather than the query string; the fragment is read client-side and submitted only in the protected request body. Public responses are limited to that Booking's safe entitlement eligibility, destination summaries and customer-visible status history.
+
+Customer submission is deliberately non-mutating. OWNER/assigned MANAGER guards are repeated through service-level tenant and Event-assignment filters before any decision preview or execution. STAFF and SCANNER cannot approve, decline or consume an entitlement. Decision previews bind request, Organisation, operator, controlled reason/note and the underlying authoritative mutation preview into a SHA-256 confirmation hash.
+
+Free-form customer and operator notes are length-bounded and must not contain card, bank, credential, detailed health or unnecessary personal data. Raw Booking/Ticket tokens and provider credentials are excluded from request, decision and use-allocation audit records.
+
 Public customer APIs must remain separate from broad internal operator APIs where practical.
 
 Public responses should:

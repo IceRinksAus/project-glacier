@@ -246,9 +246,10 @@ export default function BookingPaymentPage() {
                               {entitlement.participant.lastName}
                             </p>
                             <p className="mt-1 text-muted-foreground">
+                              Original Ticket:{" "}
                               {entitlement.initialTicket?.ticketNumber ??
-                                "Pending Ticket linkage"}{" "}
-                              · {entitlement.status}
+                                "Pending linkage"}{" "}
+                              · Entitlement {entitlement.status}
                             </p>
                           </div>
                           <p className="font-semibold">

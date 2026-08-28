@@ -511,3 +511,15 @@ Customer
 `ProductGroup` is Event-owned presentation metadata. It is intentionally separate from catalogue Category, Rule evaluation, Session Product assignment, capacity and inventory. Groups define customer headings and their order; Product `sortOrder` defines order within a group. Ungrouped Products remain sellable through a deterministic fallback section.
 
 OWNER ordering writes validate the complete Event-owned group/Product set and update transactionally. The public Add-ons response exposes only the group fields needed for presentation and continues to derive required minimums and availability from the existing Rule, Session capacity and Product/Variant inventory systems.
+
+### Flexible Ticket request and use authority
+
+Flexible Ticket remains a service entitlement rather than a Product. `FlexibleTicketPolicy` supplies immutable published commercial versions and `FlexibleTicketEntitlement` snapshots the exact per-participant rights purchased with a Booking. Current Event settings and the legacy Booking Boolean never become service-time authority.
+
+`FlexibleTicketRequest` is a durable case record. Its selected items bind the entitlement, participant and currently issued Ticket with request-time value, fee, deadline and remaining-use evidence. Creating, reviewing, declining, withdrawing, failing or expiring a request does not itself mutate a Ticket, Session, Product, inventory allocation, Payment or entitlement use.
+
+An approved refund request delegates to the existing `TicketAdjustment` engine. An approved Session-change request delegates to the existing whole-Booking `BookingReschedule` engine and is permitted only when every active Ticket is covered and eligible. The request stores only the resulting ledger identity; it does not duplicate the financial, capacity or credential mutation record.
+
+After the delegated operation reports completion, Glacier records one `FlexibleTicketUseAllocation` per authorising entitlement and decrements `remainingUses` through a serializable, compare-and-update finalisation transaction. Exact retry returns the same linked result. Pending provider outcomes retain an approved/investigation state and do not prematurely consume a use.
+
+Public request access is possession-scoped through the existing hash-only Booking credential. The reusable browser link places the raw credential in the URL fragment, which is not sent as part of the HTTP request URL; the client submits it only in the validated API body. Operator reads and decisions require OWNER or assigned MANAGER authority at both guard and service layers.
