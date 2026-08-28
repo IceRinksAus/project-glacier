@@ -15,6 +15,7 @@ import { EventModule } from './event/event.module';
 import { EventGroupModule } from './event-group/event-group.module';
 import { FlexibleTicketPolicyModule } from './flexible-ticket-policy/flexible-ticket-policy.module';
 import { FlexibleTicketRequestModule } from './flexible-ticket-request/flexible-ticket-request.module';
+import { HealthModule } from './health/health.module';
 import { OperationalScheduleModule } from './operational-schedule/operational-schedule.module';
 import { OrganizationModule } from './organization/organization.module';
 import { PaymentModule } from './payment/payment.module';
@@ -49,6 +50,7 @@ import { WaiverModule } from './waiver/waiver.module';
     EventGroupModule,
     FlexibleTicketPolicyModule,
     FlexibleTicketRequestModule,
+    HealthModule,
     TicketTypeModule,
     CustomerModule,
     BookingModule,
