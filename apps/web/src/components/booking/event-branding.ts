@@ -18,7 +18,7 @@ export const defaultEventBranding: EventBranding = {
 };
 
 export const eventFontFamilies: Record<EventBranding["headingFont"], string> = {
-  INTER: "var(--font-geist-sans), Arial, sans-serif",
+  INTER: "var(--glacier-font-sans)",
   NUNITO_SANS: '"Avenir Next", "Trebuchet MS", sans-serif',
   PLAYFAIR_DISPLAY: 'Georgia, "Times New Roman", serif',
   OSWALD: '"Arial Narrow", Impact, sans-serif',

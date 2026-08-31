@@ -5,7 +5,8 @@
   "description": "The operating system for seasonal attractions",
   "scripts": {
     "dev": "Start development",
-    "build": "Build production applications",
-    "test": "Run tests"
+    "build": "npm --prefix apps/api run build && NEXT_DIST_DIR=.next-release npm --prefix apps/web run build -- --webpack",
+    "test": "npm --prefix apps/api test -- --runInBand && npm --prefix apps/web test",
+    "verify:release": "bash scripts/verify-release.sh"
   }
 }
