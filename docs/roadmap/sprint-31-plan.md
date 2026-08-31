@@ -2,17 +2,17 @@
 
 ## Planning status
 
-Draft for organiser review. Not yet scope-confirmed or committed.
+Scope confirmed. Updated 1 September 2026 to operate under the no-material-spend development gate in `docs/decisions/ADR-007-NO-SPEND-DEVELOPMENT-GATE.md`.
 
 ## Recommendation
 
-Sprint 31 should be a decision-and-foundation Sprint for Phase 3. Glacier's operational chain is now broad enough that infrastructure choices affect security, recovery, privacy, cost and ownership. The Sprint should select and document a deployable architecture, close the highest-risk application configuration gaps and create reproducible staging foundations without representing Glacier as production ready.
+Sprint 31 is a decision-and-foundation Sprint for Phase 3. Glacier's operational chain is now broad enough that infrastructure choices affect security, recovery, privacy, cost and ownership. The Sprint will select and document a deployable architecture, close the highest-risk application configuration gaps and create reproducible staging foundations locally without representing Glacier as production ready or provisioning paid services.
 
-Entity and asset ownership must run concurrently through `docs/business/GLACIER_ENTITY_AND_ASSET_OWNERSHIP_PLAN.md`. Technical work may use placeholder hostnames and non-production accounts while the new Glacier entity is formed. Live merchant, customer-data and production ownership must not be guessed.
+Entity and asset ownership runs concurrently through `docs/business/GLACIER_ENTITY_AND_ASSET_OWNERSHIP_PLAN.md`. Ice Rinks Australia is the provisional incubation path, subject to professional confirmation before real operation. Technical work will use local services and placeholder hostnames. Live merchant, customer-data and production ownership must not be guessed.
 
 ## Objective
 
-Produce a controlled staging-ready architecture and security baseline that can be deployed, observed, backed up and recovered, while preserving Glacier's existing tenant, commerce, capacity, inventory, Ticket, Waiver and Flexible Ticket authorities.
+Produce a controlled deployment-ready architecture and security baseline that can later be provisioned, observed, backed up and recovered, while locally testing every control that can be evidenced without paid infrastructure and preserving Glacier's existing tenant, commerce, capacity, inventory, Ticket, Waiver and Flexible Ticket authorities.
 
 ## User outcome
 
@@ -20,11 +20,11 @@ The organiser has a clear infrastructure choice, realistic recurring-cost view, 
 
 ## Workstream A — Entity, domain and account control
 
-- identify temporary and intended legal holders for domains, IP and infrastructure accounts;
+- record provisional Ice Rinks Australia incubation and intended future ownership questions for domains, IP and infrastructure accounts;
 - shortlist primary `.com` and defensive Australian domain candidates;
 - record `.com.au` eligibility and formal transfer requirements;
 - establish an asset/account register and two-person recovery principle;
-- keep registrar purchase/payment as a user-controlled action;
+- defer registrar purchase unless an ordinary-price domain is separately approved after the intended registrant is confirmed;
 - define placeholder production hostnames until the domain is acquired; and
 - prepare accountant/lawyer decision questions without selecting a legal/tax structure in code documentation.
 
@@ -85,10 +85,10 @@ Define local, staging and production configuration explicitly:
 
 ## Workstream F — Backup, restore and storage
 
-- managed database backups with retention and encryption evidence;
-- point-in-time recovery decision;
-- object-storage versioning/retention decision;
-- restore into an isolated environment;
+- define future managed database backup, retention and encryption requirements;
+- retain the point-in-time recovery decision for funded infrastructure;
+- define future object-storage versioning/retention requirements;
+- perform a repeatable local backup and restore into an isolated local database;
 - measured recovery time and recovery-point evidence;
 - integrity checks for Organisations, Events, Bookings, Payments, Tickets, inventory and Waiver records;
 - documented destructive-action controls; and
@@ -121,17 +121,18 @@ Sprint 31 must not redesign or weaken:
 - append-only adjustment, refund, reschedule and Flexible Ticket evidence; or
 - the existing local development workflow.
 
-## Required decisions before implementation lock
+## Decision register
 
-1. Hosting/provider shortlist and decision criteria.
-2. Whether Sprint 31 deploys staging or only creates deployment-ready foundations.
-3. Expected monthly pilot budget range.
-4. Australian data-region requirement for database, objects, logs and backups.
-5. Temporary account owner while the Glacier entity is formed.
-6. Domain timing: wait, or secure an important candidate through a documented eligible temporary holder.
-7. Alert recipients and operational owner.
-8. Acceptable recovery objectives for the pilot.
-9. Scope of external legal, privacy and security review.
+1. **Hosting:** Google Cloud is the preferred future direction; no provisioning authorised.
+2. **Sprint deployment scope:** reproducible local deployment foundations only; paid staging deferred.
+3. **Current external-spend authority:** no material new commitment until Product Comfort Gate review; small reversible items require individual approval.
+4. **Future monthly infrastructure allowance:** $250–$600 remains a planning estimate, not approved expenditure.
+5. **Data region:** Australian regions remain proposed; final confirmation occurs before provisioning.
+6. **Interim operating/account holder:** Ice Rinks Australia is provisional incubation path, subject to accountant advice.
+7. **Domain timing:** purchase deferred.
+8. **Alert recipients/operational owner:** pending before funded staging.
+9. **Recovery objectives:** proposed RPO 15 minutes/RTO four supported-hours; pending before funded staging.
+10. **External legal/privacy/security review:** deferred under the current gate, explicitly not waived before live operation.
 
 ## Required evidence
 
@@ -142,15 +143,15 @@ Sprint 31 must not redesign or weaken:
 - staging or reproducible deployment evidence as scope-confirmed;
 - explicit CORS/TLS/rate-limit verification;
 - tenant/role production-like regression evidence;
-- working logs/error/uptime/Payment alerts;
-- successful isolated backup restore with measured results;
+- locally verifiable structured logs and alert-event foundations, with external delivery deferred;
+- successful isolated local database backup/restore with measured results where safe and reproducible;
 - dependency/security/privacy findings register;
 - deployment, rollback/forward-fix and incident runbooks; and
 - updated pilot roadmap and Sprint closeout note.
 
 ## Browser and operational acceptance
 
-If staging deployment is included, acceptance must prove through its real HTTPS origins:
+Paid staging deployment is not included under the current gate. A future staging acceptance must prove through its real HTTPS origins:
 
 - dashboard authentication and tenant-scoped Event access;
 - public Event and routed booking reads;
@@ -167,6 +168,7 @@ Backup restore, alert delivery and migration failure/recovery require operator e
 - live customer launch or live Stripe processing;
 - final legal/tax/entity advice;
 - automatic purchase of domains or cloud subscriptions;
+- any new paid product, business or professional-service commitment;
 - full visual redesign;
 - broad new product features;
 - individual-attendee rescheduling or deferred commerce expansion;
@@ -176,8 +178,8 @@ Backup restore, alert delivery and migration failure/recovery require operator e
 
 ## Exit gate
 
-Sprint 31 closes only when the organiser has approved the architecture and ownership path, the confirmed technical scope is implemented, automated baselines remain green, deployment and migration controls are reproducible, observability is actionable, restore evidence exists where included, critical security/privacy findings are resolved, documentation is current and any remaining entity/domain dependencies are explicit owners rather than hidden assumptions.
+Sprint 31 closes only when the organiser has approved the architecture and provisional incubation path, the confirmed cost-controlled technical scope is implemented, automated baselines remain green, deployment and migration controls are reproducible locally, observability foundations are testable, local restore evidence exists where included, critical code/configuration security findings are resolved, documentation is current and every material paid production/security/entity dependency is explicitly deferred rather than represented as complete.
 
 ## Strategic result
 
-Sprint 31 moves Glacier from a strong localhost operating system toward a controlled service. It should make the next infrastructure actions deliberate and reversible while the independent Glacier enterprise is formed, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally from Ice Rinks Australia.
+Sprint 31 moves Glacier from a strong localhost operating system toward a deployment-ready controlled service without forcing premature expenditure. It makes later infrastructure actions deliberate and reversible while Glacier is provisionally incubated inside Ice Rinks Australia, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally or paid for before the product comfort gate passes.

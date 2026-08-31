@@ -31,9 +31,9 @@ A `.com` has no Australian ABN allocation test, but registrant identity, payment
 
 ## Recommended interim approach
 
-Do not acquire a domain through Ice Rinks Australia's operating ABN by default.
+Under the accepted no-new-spend development gate, do not acquire a domain or establish a separate entity yet. Ice Rinks Australia is the provisional incubation path for planning and local development, subject to accountant/legal confirmation before real customer operation.
 
-For an important available name that may be lost before the Glacier structure is completed:
+If the organiser later explicitly approves securing an important available name before the final structure is completed:
 
 1. Confirm with the accountant or commercial lawyer which existing legal person/entity is the intended temporary holder and whether it is acting beneficially or as trustee.
 2. Confirm that holder satisfies the registrar/auDA rules for any `.com.au` name.
@@ -87,15 +87,16 @@ Before purchase:
 
 ## Entity planning sequence
 
-1. Prepare a concise business/ownership brief for the accountant and commercial lawyer.
-2. Decide the intended operating, IP and ownership structure.
-3. Check/reserve company and business names as advised.
-4. Complete preliminary trademark search and obtain advice before relying on the Glacier name.
-5. Establish entities, ABNs, banking and governance records.
-6. Transfer or newly acquire assets into the intended holder.
-7. Provision production accounts under entity-controlled identities and billing.
-8. Execute contributor IP assignments and related-party agreements.
-9. Confirm privacy, customer-contract and merchant entity before any real pilot data/payment.
+1. Continue local development and complete the Product Comfort Gate without new paid commitments.
+2. Prepare and retain the concise business/ownership brief for later accountant and commercial-lawyer review.
+3. If funding is approved, decide the intended incubation, operating, IP and ownership structure before purchasing assets or provisioning production accounts.
+4. Check/reserve company, business and domain names only under an explicitly approved funding gate.
+5. Complete preliminary trademark search and obtain advice before relying commercially on the Glacier name.
+6. Establish or confirm the operating entity, ABN, banking, insurance and governance records.
+7. Transfer or newly acquire assets into the intended holder.
+8. Provision production accounts under controlled identities and billing.
+9. Execute contributor IP assignments and related-party agreements.
+10. Confirm privacy, customer-contract and merchant entity before any real pilot data/payment.
 
 ## Exit gate
 

@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed during Sprint 31. Provider accounts, paid resources and live deployment are not yet authorised.
+Preferred technical direction, provisioning deferred. Updated 1 September 2026: provider accounts, paid resources and live deployment are prohibited by ADR-007 until the Product Comfort Gate is reviewed and a capped funding gate is explicitly approved.
 
 ## Decision summary
 
-Use Google Cloud as the preferred pilot architecture, subject to organiser approval, current pricing verification and creation of the correct Glacier-owned account after entity advice.
+Retain Google Cloud as the preferred future pilot architecture, subject to current pricing verification, organiser funding approval and creation under the professionally confirmed operating/account holder. Sprint 31 will create portable deployment foundations locally and will not open or fund Google Cloud resources.
 
 The proposed Australian deployment is:
 
@@ -53,8 +53,8 @@ This is a recommendation, not a claim that Google Cloud is intrinsically more se
 
 ### Account and project control
 
-- Create a Glacier-owned Google Cloud organisation/billing arrangement after accountant advice identifies the correct holder.
-- Do not build permanent production ownership under Ice Rinks Australia by default.
+- Create no Google Cloud organisation, billing arrangement or paid resource under the current gate.
+- Before later provisioning, accountant advice must confirm whether Ice Rinks Australia should hold the incubated pilot account or a standalone Glacier entity should be established.
 - Use separate `glacier-staging` and `glacier-production` projects with separate service identities, databases, buckets, secrets and Stripe modes.
 - Require MFA for human administrators, at least two recovery owners and no shared daily-use administrator login.
 - Apply budgets and alerts; budgets warn but must not be treated as hard security limits.
@@ -92,16 +92,16 @@ The managed PostgreSQL instances are expected to dominate the fixed pilot cost. 
 
 ## Decisions needed to accept this ADR
 
-1. Approve Google Cloud as the pilot preference or request deeper comparison of one alternative.
+1. Google Cloud is accepted only as the preferred future technical direction, not as authority to provision or spend.
 2. Approve Australian-region storage as the default.
 3. Confirm whether the AUD 250–600 monthly planning range is acceptable.
 4. Confirm initial RPO 15 minutes and supported-hours RTO four hours as planning targets.
 5. Identify the temporary billing/account holder after accountant advice.
-6. Decide whether Sprint 31 may create a staging account/deployment or should stop at reproducible deployment foundations.
+6. Resolved: Sprint 31 stops at reproducible deployment foundations and local evidence; paid staging is deferred.
 
 ## Consequences
 
-Acceptance enables container/deployment files, staged infrastructure definitions, health checks, migration gates and restore evidence to target one coherent platform. It creates Google Cloud operational knowledge and billing dependency, mitigated by standard containers, PostgreSQL and documented export/rebuild procedures.
+Acceptance enables container/deployment files, staged infrastructure definitions, health checks, migration gates and local restore evidence to target one coherent future platform. Later provisioning would create Google Cloud operational knowledge and billing dependency, mitigated by standard containers, PostgreSQL and documented export/rebuild procedures.
 
 ## Sources reviewed
 

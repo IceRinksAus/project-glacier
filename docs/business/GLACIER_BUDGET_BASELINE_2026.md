@@ -12,6 +12,12 @@ This model answers three different questions:
 
 The model must be refreshed after entity advice, dated provider estimates, insurance quotations, legal scope and pilot-volume assumptions are available.
 
+## Current spending authority
+
+ADR-007 establishes a **no-material-new-spend gate** during the current development phase. The figures below are future decision allowances, not approved expenditure. Glacier may continue using existing authorised development tools and Ice Rinks Australia/local resources, with actual costs recorded. Small reversible items such as an ordinary-price domain may be approved individually, but no entity, cloud, professional-service, hardware or other material Glacier commitment may be made without explicit organiser approval.
+
+The next funding decision occurs only after the organiser completes the Product Comfort Gate. Ice Rinks Australia is the provisional incubation route for an initial testing season if professional advice and later live-operation gates support it.
+
 ## Executive budget position
 
 The original independent-entity estimate combined establishment, professional legal work, production hardening and independent security assurance. It was a prudent end-to-end reserve, not the minimum amount needed immediately.
@@ -28,6 +34,8 @@ Revised structural scenarios are:
 The recommended planning path for professional evaluation is documented incubation within Ice Rinks Australia, with separate Glacier accounting/asset records and a defined spin-out gate. Allow an additional **$8,000–$20,000** around the eventual spin-out for entity establishment, advice, assignments, account transitions and contingencies; the amount depends heavily on how well the incubation records are maintained.
 
 Across every pathway, payment processing remains volume-based—approximately 2.0% at a $100 domestic-card average order under the current standard rate.
+
+For provider-replacement decisions, Stripe fees are not an incremental Glacier cost: Ice Rinks Australia paid them separately from Ticket income under 123Tix, while 123Tix retained a clear $1 per-Ticket provider fee. At 25,000 Tickets, the directly observable annual saving from replacing 123Tix is therefore $25,000 before Glacier's own incremental costs. See `GLACIER_UNIT_ECONOMICS_AND_VIABILITY.md`.
 
 The reserves are not predictions that every dollar will be spent. They prevent legal, privacy, security and recovery work from being abandoned because only company-registration and hosting fees were budgeted.
 
