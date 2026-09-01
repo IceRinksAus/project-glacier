@@ -92,4 +92,4 @@
 
 ## Current Dependency Note
 
-Sprint 18 web closeout reports zero known npm audit vulnerabilities after a compatible override to patched `nanoid 3.3.18`. Continue auditing both workspaces and do not use forced breaking downgrades merely to clear a report.
+The 1 September 2026 audit reports zero known web vulnerabilities and one underlying High API advisory propagated through four Prisma-related package entries. See `docs/security/DEPENDENCY_AUDIT_2026-09-01.md`. A compatible upstream fix is not currently available; recheck weekly and before exposure. Do not force breaking transitive overrides merely to clear a report.
