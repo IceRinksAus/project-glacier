@@ -4,6 +4,9 @@
 
 - Rotate development credentials
 - enforce HTTPS/TLS
+- verify API and web security headers through the real HTTPS edge
+- stage web Content Security Policy in report-only mode before enforcement
+- enable HSTS only after every covered hostname supports HTTPS
 - configure managed secret storage
 - set an explicit production `CORS_ORIGINS` allowlist
 - verify production fails closed without the allowlist

@@ -1,4 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { RequestHandler } from 'express';
 
 type Environment = Record<string, string | undefined>;
 
@@ -83,6 +85,30 @@ export function createApplicationValidationPipe() {
     whitelist: true,
     forbidNonWhitelisted: true,
   });
+}
+
+const API_SECURITY_HEADERS = {
+  'Content-Security-Policy':
+    "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+  'Referrer-Policy': 'no-referrer',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+} as const;
+
+export function applyApplicationSecurityHeaders(app: NestExpressApplication) {
+  app.disable('x-powered-by');
+
+  const securityHeaders: RequestHandler = (_request, response, next) => {
+    for (const [name, value] of Object.entries(API_SECURITY_HEADERS)) {
+      response.setHeader(name, value);
+    }
+
+    next();
+  };
+
+  app.use(securityHeaders);
 }
 
 export function getCorsOrigins(environment: Environment = process.env) {

@@ -2,6 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 
 import { LoginDto } from '../auth/dto/login.dto';
 import {
+  applyApplicationSecurityHeaders,
   createApplicationValidationPipe,
   getCorsOrigins,
   getWebAppUrl,
@@ -9,6 +10,39 @@ import {
 } from './application-security';
 
 describe('application security configuration', () => {
+  it('applies privacy-safe API response headers and removes framework disclosure', () => {
+    let middleware: ((...args: never[]) => void) | undefined;
+    const app = {
+      disable: jest.fn(),
+      use: jest.fn((handler) => {
+        middleware = handler;
+      }),
+    };
+    const response = {
+      setHeader: jest.fn(),
+    };
+    const next = jest.fn();
+
+    applyApplicationSecurityHeaders(app as never);
+    middleware?.({} as never, response as never, next as never);
+
+    expect(app.disable).toHaveBeenCalledWith('x-powered-by');
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Content-Security-Policy',
+      "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=(), browsing-topics=()',
+    );
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'X-Content-Type-Options',
+      'nosniff',
+    );
+    expect(response.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the local web origin outside production by default', () => {
     expect(getCorsOrigins({ NODE_ENV: 'development' })).toEqual([
       'http://localhost:3001',

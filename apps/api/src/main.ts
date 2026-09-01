@@ -3,6 +3,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 
 import { AppModule } from './app.module';
 import {
+  applyApplicationSecurityHeaders,
   createApplicationValidationPipe,
   getCorsOrigins,
   validateApplicationEnvironment,
@@ -15,6 +16,7 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  applyApplicationSecurityHeaders(app);
   app.useGlobalPipes(createApplicationValidationPipe());
 
   app.enableCors({
