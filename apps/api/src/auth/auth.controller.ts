@@ -7,6 +7,7 @@ import { CurrentUser } from './decorators/current-user.decorator';
 
 interface AuthenticatedUser {
   userId: string;
+  sessionId: string;
   email: string;
   role: string | null;
   organizationId: string | null;
@@ -24,6 +25,23 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@CurrentUser() user: AuthenticatedUser) {
-    return user;
+    return {
+      userId: user.userId,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.revokeSession(user.userId, user.sessionId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout-all')
+  logoutAll(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.revokeAllSessions(user.userId);
   }
 }

@@ -33,6 +33,7 @@ After restore, the drill compares row counts between the source and restored dat
 - Tickets;
 - Products and Product Variants;
 - Event Waivers and Waiver Submissions; and
+- Authentication Sessions; and
 - Prisma migration history.
 
 Matching counts are a bounded structural check, not full semantic verification or corruption detection. A funded staging exercise must add application smoke tests, object-storage recovery and provider-managed backup evidence.
@@ -43,16 +44,17 @@ The command reports the UTC snapshot start, archive size, backup duration, resto
 
 ## Recorded Sprint 31 evidence
 
-The first controlled drill passed on 1 September 2026 (Australia/Melbourne):
+The latest controlled drill passed on 1 September 2026 (Australia/Melbourne),
+after authentication sessions became part of the critical integrity set:
 
 | Evidence                              |                                      Result |
 | ------------------------------------- | ------------------------------------------: |
 | Source                                | Local `project_glacier` PostgreSQL database |
-| Snapshot start                        |                  `2026-08-31T23:54:43.109Z` |
-| Custom archive size                   |                                    0.26 MiB |
-| Backup duration                       |                                0.81 seconds |
-| Restore duration                      |                                3.52 seconds |
-| Critical tables compared              |                                  11 matched |
+| Snapshot start                        |                  `2026-09-01T04:33:00.679Z` |
+| Custom archive size                   |                                    0.27 MiB |
+| Backup duration                       |                                0.62 seconds |
+| Restore duration                      |                                1.10 seconds |
+| Critical tables compared              |                                  12 matched |
 | Temporary restore databases remaining |                                           0 |
 | Non-local-host refusal check          |                                      Passed |
 

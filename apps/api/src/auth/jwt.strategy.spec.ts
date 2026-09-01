@@ -6,6 +6,9 @@ import { JwtStrategy } from './jwt.strategy';
 
 describe('JwtStrategy', () => {
   const prismaMock = {
+    authenticationSession: {
+      findUnique: jest.fn(),
+    },
     userOrganization: {
       findUnique: jest.fn(),
     },
@@ -20,12 +23,21 @@ describe('JwtStrategy', () => {
 
   const payload = {
     sub: 'user-1',
+    sid: 'session-1',
     email: 'operator@example.com',
     role: 'OWNER',
     organizationId: 'organization-1',
   };
 
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prismaMock.authenticationSession.findUnique.mockResolvedValue({
+      userId: 'user-1',
+      organizationId: 'organization-1',
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    });
+  });
 
   it('uses the current membership role and scope rather than stale JWT values', async () => {
     prismaMock.userOrganization.findUnique.mockResolvedValue({
@@ -37,6 +49,7 @@ describe('JwtStrategy', () => {
 
     await expect(strategy.validate(payload)).resolves.toEqual({
       userId: 'user-1',
+      sessionId: 'session-1',
       email: 'operator@example.com',
       role: 'STAFF',
       accessScope: 'ASSIGNED_EVENTS',
@@ -50,6 +63,44 @@ describe('JwtStrategy', () => {
     await expect(strategy.validate(payload)).rejects.toThrow(
       UnauthorizedException,
     );
+  });
+
+  it('rejects missing, revoked, expired or mismatched sessions', async () => {
+    prismaMock.userOrganization.findUnique.mockResolvedValue({
+      role: 'OWNER',
+      accessScope: 'ALL_EVENTS',
+      user: { isActive: true },
+      organization: { status: 'ACTIVE' },
+    });
+
+    for (const session of [
+      null,
+      {
+        userId: 'user-1',
+        organizationId: 'organization-1',
+        expiresAt: new Date(Date.now() + 60_000),
+        revokedAt: new Date(),
+      },
+      {
+        userId: 'user-1',
+        organizationId: 'organization-1',
+        expiresAt: new Date(Date.now() - 1),
+        revokedAt: null,
+      },
+      {
+        userId: 'different-user',
+        organizationId: 'organization-1',
+        expiresAt: new Date(Date.now() + 60_000),
+        revokedAt: null,
+      },
+    ]) {
+      prismaMock.authenticationSession.findUnique.mockResolvedValueOnce(
+        session,
+      );
+      await expect(strategy.validate(payload)).rejects.toThrow(
+        'Authentication access is no longer active',
+      );
+    }
   });
 
   it('rejects inactive users and organizations', async () => {

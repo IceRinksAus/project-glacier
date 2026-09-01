@@ -8,6 +8,8 @@ describe('AuthController', () => {
 
   const serviceMock = {
     login: jest.fn(),
+    revokeSession: jest.fn(),
+    revokeAllSessions: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -49,11 +51,39 @@ describe('AuthController', () => {
   it('returns only the claims supplied by the authenticated request', () => {
     const user = {
       userId: 'user-1',
+      sessionId: 'session-1',
       email: 'operator@example.com',
       role: 'OWNER',
       organizationId: 'organization-1',
     };
 
-    expect(controller.me(user)).toEqual(user);
+    expect(controller.me(user)).toEqual({
+      userId: 'user-1',
+      email: 'operator@example.com',
+      role: 'OWNER',
+      organizationId: 'organization-1',
+    });
+  });
+
+  it('revokes the current or all authenticated sessions', async () => {
+    const user = {
+      userId: 'user-1',
+      sessionId: 'session-1',
+      email: 'operator@example.com',
+      role: 'OWNER',
+      organizationId: 'organization-1',
+    };
+    serviceMock.revokeSession.mockResolvedValue({ revoked: true });
+    serviceMock.revokeAllSessions.mockResolvedValue({ revoked: true });
+
+    await expect(controller.logout(user)).resolves.toEqual({ revoked: true });
+    await expect(controller.logoutAll(user)).resolves.toEqual({
+      revoked: true,
+    });
+    expect(serviceMock.revokeSession).toHaveBeenCalledWith(
+      'user-1',
+      'session-1',
+    );
+    expect(serviceMock.revokeAllSessions).toHaveBeenCalledWith('user-1');
   });
 });

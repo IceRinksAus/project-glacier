@@ -19,6 +19,8 @@ Status values:
 | GET    | `/`           | Health         | None           | N/A                                    | PUBLIC    | Static service-health message only; no internal detail.                                      |
 | POST   | `/auth/login` | Operator/Staff | Credentials    | Strict bounded DTO through global pipe | PROTECTED | Generic credential failure; application defence-in-depth limit is active, while coordinated deployment-edge limiting remains required before pilot exposure. |
 | GET    | `/auth/me`    | Operator/Staff | JWT            | N/A                                    | PROTECTED | Typed, minimal JWT claims response.                                                          |
+| POST   | `/auth/logout` | Operator/Staff | Current persisted JWT session | N/A | PROTECTED | Revokes the current session and retains bounded reason evidence. |
+| POST   | `/auth/logout-all` | Operator/Staff | All active sessions for current User | N/A | PROTECTED | Immediately revokes all unexpired sessions across the User's Organisation memberships. |
 
 ## Organisation and Users
 

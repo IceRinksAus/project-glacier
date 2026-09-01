@@ -1,16 +1,19 @@
 "use client";
 
-import { Bell, ChevronDown } from "lucide-react";
+import { Bell, ChevronDown, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
   getAuthUserSnapshot,
   getServerAuthUserSnapshot,
+  endAuthSession,
   subscribeAuthSession,
 } from "@/lib/auth";
 
 export function PlatformTopBar() {
+  const router = useRouter();
   const user = useSyncExternalStore(
     subscribeAuthSession,
     getAuthUserSnapshot,
@@ -19,6 +22,11 @@ export function PlatformTopBar() {
   const displayName = user?.name ?? "Glacier User";
   const displayRole = user?.role ? roleLabel(user.role) : "Signed in";
   const initials = getInitials(displayName);
+
+  async function signOut() {
+    await endAuthSession();
+    router.replace("/login");
+  }
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
@@ -42,7 +50,7 @@ export function PlatformTopBar() {
           <Bell className="size-5" />
         </Button>
 
-        <button className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-accent">
+        <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
           <div className="flex size-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
             {initials}
           </div>
@@ -55,7 +63,12 @@ export function PlatformTopBar() {
           </div>
 
           <ChevronDown className="size-4 text-muted-foreground" />
-        </button>
+        </div>
+
+        <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+          <LogOut className="mr-2 size-4" />
+          Sign out
+        </Button>
       </div>
     </header>
   );

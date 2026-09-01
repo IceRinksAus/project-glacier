@@ -2,18 +2,19 @@
 
 ## Login
 
-`POST /auth/login` normalises email, verifies a bcrypt password hash, checks active status, loads Organisation membership and issues an eight-hour JWT.
+`POST /auth/login` normalises email, verifies a bcrypt password hash, checks active status, loads Organisation membership, persists an eight-hour `AuthenticationSession` and issues an eight-hour JWT carrying that session identifier.
 
 The request passes through Glacier's global strict validation boundary. Email is a valid, bounded address and password is a non-empty bounded string; unknown fields are rejected before authentication work. Successful responses and JWT claims do not contain passwords or password hashes.
 
 ## JWT claims and current authority
 
 - `sub`
+- `sid`
 - `email`
 - `role`
 - `organizationId`
 
-JWT claims identify the requested membership context, but they are not the final authority for a protected request. The JWT strategy reloads the current User and `UserOrganization` membership, rejects inactive or removed access, and replaces the request role/scope with the current persisted values. Role demotion and Event-assignment removal therefore do not wait for an eight-hour token to expire.
+JWT claims identify the requested membership context, but they are not the final authority for a protected request. The JWT strategy reloads the persisted authentication session plus the current User and `UserOrganization` membership, rejects expired/revoked/mismatched sessions and inactive or removed access, and replaces the request role/scope with the current persisted values. Session revocation, role demotion and Event-assignment removal therefore do not wait for an eight-hour token to expire.
 
 ## Guards
 
@@ -57,10 +58,10 @@ Cross-tenant identifiers receive a privacy-safe not-found or forbidden response 
 
 ## Abuse controls
 
-Production login limiting is a deployment-edge requirement. Glacier deliberately does not use a per-process in-memory counter because it would reset on deployment and would not coordinate across instances. The pilot gate and required evidence are recorded in `docs/security/AUTHENTICATION_ABUSE_CONTROLS.md`.
+The API provides a per-process safety limiter, while coordinated production login limiting remains a deployment-edge requirement because local counters reset and do not coordinate across instances. The pilot gate and required evidence are recorded in `docs/security/AUTHENTICATION_ABUSE_CONTROLS.md`.
 
 ## Known future improvement
 
 The login service currently selects the first organisation membership. A formal active-organisation selection flow is required for users in multiple organisations.
 
-Production readiness also requires password reset/recovery, MFA for privileged roles, monitoring and the verified edge login limit. Controlled ownership transfer and recovery remain separate from ordinary Team management.
+Current-session and all-session revocation are server-authoritative. Production readiness still requires the password recovery and privileged MFA controls specified in `docs/security/PRIVILEGED_AUTHENTICATION_LIFECYCLE.md`, monitoring and the verified edge login limit. Controlled ownership transfer and recovery remain separate from ordinary Team management.

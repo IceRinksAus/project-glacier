@@ -20,7 +20,9 @@
 - audit logging
 - formal role matrix
 - MFA for privileged users
-- password reset/recovery and session-revocation decision
+- implement the approved password recovery and privileged MFA contract
+- verify current-session and all-session revocation through deployed instances
+- define and operate expired/revoked authentication-session retention
 - privacy review
 - tenant-isolation integration verification against a production-like database
 - dependency vulnerability review

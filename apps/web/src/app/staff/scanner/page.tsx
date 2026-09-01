@@ -16,7 +16,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { ScannerCamera } from "@/components/scanner/ScannerCamera";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { clearAuthSession } from "@/lib/auth";
+import { endAuthSession } from "@/lib/auth";
 
 type ScannerMode = "GATE_ENTRY" | "TICKET_LOOKUP";
 type ScannerResult =
@@ -239,9 +239,9 @@ export default function StaffScannerPage() {
     void lookup(manualToken);
   }
 
-  function signOut() {
-    clearAuthSession();
-    router.push("/login");
+  async function signOut() {
+    await endAuthSession();
+    router.replace("/login");
   }
 
   const presentation = result ? resultPresentation[result.result] : null;
@@ -257,7 +257,7 @@ export default function StaffScannerPage() {
             </p>
             <h1 className="text-lg font-bold">Ticket Scanner</h1>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
+          <Button variant="ghost" size="sm" onClick={() => void signOut()}>
             <LogOut className="size-4" /> Sign out
           </Button>
         </div>

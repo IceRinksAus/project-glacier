@@ -8,6 +8,7 @@ const envPath = new URL("apps/api/.env", projectRoot);
 const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 const criticalTables = [
   "Organization",
+  "AuthenticationSession",
   "Event",
   "Booking",
   "Payment",

@@ -143,6 +143,7 @@ model Organization {
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   eventGroups                   EventGroup[]
   accessAuditEntries            OrganizationAccessAudit[]
+  authenticationSessions        AuthenticationSession[]
   ticketAdjustments             TicketAdjustment[]
   bookingReschedules            BookingReschedule[]
   flexibleTicketPolicies        FlexibleTicketPolicy[]
@@ -177,6 +178,26 @@ model User {
   flexibleTicketRequestsReviewed  FlexibleTicketRequest[]        @relation("FlexibleTicketRequestReviewedBy")
   accessChangesMade               OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived           OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
+  authenticationSessions          AuthenticationSession[]
+}
+
+model AuthenticationSession {
+  id String @id
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokeReason String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([organizationId, expiresAt])
 }
 
 model EventGroup {

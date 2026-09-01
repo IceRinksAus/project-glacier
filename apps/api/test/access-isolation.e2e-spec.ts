@@ -160,9 +160,9 @@ describe('Tenant and role isolation (e2e)', () => {
       .get('/event')
       .set('Authorization', `Bearer ${ownerAToken}`)
       .expect(200);
-    expect(ownerAEvents.body.map(({ id }: { id: string }) => id).sort()).toEqual(
-      ['isolation-event-a-assigned', 'isolation-event-a-unassigned'],
-    );
+    expect(
+      ownerAEvents.body.map(({ id }: { id: string }) => id).sort(),
+    ).toEqual(['isolation-event-a-assigned', 'isolation-event-a-unassigned']);
 
     await request(app.getHttpServer())
       .get('/event/isolation-event-b')
@@ -231,5 +231,22 @@ describe('Tenant and role isolation (e2e)', () => {
 
     expect(blocked.headers['retry-after']).toBeDefined();
     expect(blocked.headers['ratelimit-limit']).toBe('20');
+  });
+
+  it('invalidates an authenticated token immediately after all-session revocation', async () => {
+    const token = await login('owner-a@isolation.invalid');
+
+    await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/auth/logout-all')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201, { revoked: true });
+    await request(app.getHttpServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(401);
   });
 });

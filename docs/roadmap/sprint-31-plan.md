@@ -212,6 +212,19 @@ test files / 85 tests, both production builds, all 43 migrations current and
 isolated image re-encoding, malware scanning, lifecycle evidence and deployed
 object-access testing remain explicit pre-live requirements.
 
+Persisted authentication sessions now bind every new eight-hour JWT to a
+server-authoritative User and Organisation session record. Protected requests
+reject missing, expired, revoked or mismatched sessions while continuing to
+reload live membership authority. Current-session and all-session logout retain
+revocation evidence, and dashboard/scanner sign-out calls server revocation
+before clearing the device. Password recovery and mandatory OWNER/MANAGER MFA
+are specified but remain blocking pre-live controls rather than simulated local
+features without an approved delivery channel.
+
+The complete gate passed with 87 API suites / 599 tests, 30 web test files / 88
+tests, both production builds, all 44 migrations current and 5 / 5 disposable
+database integration checks including immediate post-revocation denial.
+
 ## Strategic result
 
 Sprint 31 moves Glacier from a strong localhost operating system toward a deployment-ready controlled service without forcing premature expenditure. It makes later infrastructure actions deliberate and reversible while Glacier is provisionally incubated inside Ice Rinks Australia, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally or paid for before the product comfort gate passes.

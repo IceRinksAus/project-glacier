@@ -36,6 +36,30 @@ export function clearAuthSession() {
   cachedUser = null;
 }
 
+export async function endAuthSession() {
+  const token = getAccessToken();
+  let revoked = false;
+
+  try {
+    if (token) {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      revoked = response.ok;
+    }
+  } catch {
+    revoked = false;
+  } finally {
+    clearAuthSession();
+  }
+
+  return revoked;
+}
+
 export function getAuthUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
 
