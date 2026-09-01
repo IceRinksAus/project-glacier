@@ -17,10 +17,11 @@ The gate stops at the first failure and verifies:
 1. all API Jest suites in one deterministic process;
 2. the NestJS production build;
 3. all web Vitest suites;
-4. the Next.js production build using the supported Webpack build mode and `.next-release`, isolated from the normal `.next` directory; and
-5. Prisma migration status against the database configured by `apps/api/.env`.
+4. the Next.js production build using the supported Webpack build mode and `.next-release`, isolated from the normal `.next` directory;
+5. Prisma migration status against the database configured by `apps/api/.env`; and
+6. authenticated organisation, assigned-event and scanner-role boundaries against a newly migrated disposable database.
 
-The database must be running and reachable. The migration check is intentionally not skipped when the database is unavailable: an unknown migration state cannot pass a release gate.
+The database must be running and reachable. The migration check is intentionally not skipped when the database is unavailable: an unknown migration state cannot pass a release gate. The isolation check accepts only a local database server and does not modify the configured development database; its controls are documented in `docs/security/TENANT_AND_ROLE_ISOLATION_VERIFICATION.md`.
 
 Where `pg_isready` is available, the gate first reports a clear stopped-database failure for `localhost:5432` rather than continuing into Prisma's schema engine.
 
@@ -33,6 +34,7 @@ The web build uses local/system font stacks and must not download fonts or other
 - the committed application compiles for production;
 - the current automated API/web behaviour passes;
 - the configured local database recognises the committed migration history; and
+- owners, restricted staff and scanner credentials obey the tested tenant and role boundaries; and
 - release verification does not overwrite the normal web development build directory.
 
 ## What passing does not prove

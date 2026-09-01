@@ -2,6 +2,8 @@
 
 ## Security
 
+- [ ] Run `npm run verify:isolation` and retain the passing tenant/role boundary evidence.
+
 - Rotate development credentials
 - enforce HTTPS/TLS
 - verify API and web security headers through the real HTTPS edge

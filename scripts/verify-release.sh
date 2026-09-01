@@ -28,4 +28,7 @@ fi
   ./node_modules/.bin/prisma migrate status
 )
 
+echo "Checking tenant and role isolation against a disposable database"
+npm run verify:isolation
+
 echo "Local release gate passed"

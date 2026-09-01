@@ -180,6 +180,21 @@ Backup restore, alert delivery and migration failure/recovery require operator e
 
 Sprint 31 closes only when the organiser has approved the architecture and provisional incubation path, the confirmed cost-controlled technical scope is implemented, automated baselines remain green, deployment and migration controls are reproducible locally, observability foundations are testable, local restore evidence exists where included, critical code/configuration security findings are resolved, documentation is current and every material paid production/security/entity dependency is explicitly deferred rather than represented as complete.
 
+## Implementation evidence — 1 September 2026
+
+The local release gate now includes a production-like tenant and role boundary
+check. It creates a fresh local PostgreSQL database, applies all 43 committed
+migrations, starts the real Nest application stack and authenticates synthetic
+OWNER, restricted STAFF and SCANNER users. It proves cross-Organisation
+not-found behaviour, assigned-Event filtering and scanner denial on ordinary
+Event administration, then removes the temporary database.
+
+The complete gate passed with 85 API suites / 571 unit tests, 29 web test files /
+85 tests, API and web production builds, current migration status and 3 / 3
+isolated integration checks. The tracked-secret scan also passed across 594
+tracked files. This is representative local evidence, not an independent
+penetration-test result or approval for Internet exposure.
+
 ## Strategic result
 
 Sprint 31 moves Glacier from a strong localhost operating system toward a deployment-ready controlled service without forcing premature expenditure. It makes later infrastructure actions deliberate and reversible while Glacier is provisionally incubated inside Ice Rinks Australia, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally or paid for before the product comfort gate passes.

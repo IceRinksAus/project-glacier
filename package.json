@@ -9,6 +9,7 @@
     "test": "npm --prefix apps/api test -- --runInBand && npm --prefix apps/web test",
     "verify:release": "bash scripts/verify-release.sh",
     "verify:restore": "node scripts/verify-local-restore.mjs",
+    "verify:isolation": "node scripts/verify-access-isolation.mjs",
     "verify:secrets": "node scripts/verify-tracked-secrets.mjs",
     "verify:containers": "bash scripts/verify-containers.sh"
   }

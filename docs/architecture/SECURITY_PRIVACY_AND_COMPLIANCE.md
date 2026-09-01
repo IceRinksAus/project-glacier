@@ -142,7 +142,11 @@ This includes, where applicable:
 
 A cross-tenant data-access defect should be treated as a critical security issue.
 
-Automated tenant-isolation testing should form part of the pre-pilot security gate.
+Automated tenant-isolation testing forms part of the local release gate through
+`npm run verify:isolation`. It exercises representative OWNER, assigned STAFF
+and SCANNER boundaries through real authentication and a disposable migrated
+PostgreSQL database. Route-by-route review and independent penetration testing
+remain pre-live requirements.
 
 ---
 
