@@ -135,7 +135,7 @@ export class EventController {
     );
     response.set({
       'Content-Type': asset.mimeType,
-      'Content-Disposition': `inline; filename="${asset.displayName.replace(/["\\]/g, '')}"`,
+      'Content-Disposition': 'inline',
       'Cache-Control': 'private, max-age=300',
       ETag: `"${asset.checksum}"`,
       'X-Content-Type-Options': 'nosniff',

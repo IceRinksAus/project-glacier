@@ -856,13 +856,34 @@ Sprint 20 introduced the first bounded implementation of this architecture for `
 - `FileStorageProvider` separates metadata and validation from binary persistence;
 - the development provider stores files below a configured local root rather than in PostgreSQL;
 - uploads require authenticated OWNER authority and authoritative Event → Organisation ownership;
-- PNG, JPEG and WebP signatures are checked from file bytes; SVG and arbitrary remote URLs remain excluded;
-- uploads are limited to 5 MiB and bounded image dimensions;
+- PNG and JPEG signatures are checked from file bytes; WebP, SVG and arbitrary remote URLs remain excluded;
+- logos are limited to 2 MiB, heroes to 5 MiB, and both have purpose-specific bounded dimensions;
 - public delivery succeeds only when the asset is the logo or hero reference of the requested ACTIVE Event;
 - private operator preview remains tenant-scoped for OWNER and MEMBER; and
 - delivery responses set an authoritative MIME type, checksum ETag and `X-Content-Type-Options: nosniff`.
 
 This is a development foundation, not production object storage. Production remains blocked until the managed Australian-region provider, private bucket policy, encryption, signed/direct upload approach, malware controls, lifecycle rules, monitoring, backup/restore treatment and CDN/caching decision are implemented and evidenced.
+
+### Sprint 31 file-boundary hardening
+
+The local implementation additionally verifies that reported upload size exactly
+matches the received buffer, requires complete bounded PNG chunk structure or a
+JPEG end marker, rejects appended PNG data, sanitises stored filenames/display
+names, and never reflects a filename into the private response header. Local
+storage accepts only Glacier-generated Event-branding keys with Organisation,
+Event, UUID and approved extension components.
+
+Replacing an active logo or hero commits the new metadata/reference and marks
+the previous asset `REPLACED` transactionally. After commit, Glacier removes the
+old local object. A cleanup failure is privacy-safe logged for operational
+repair; the replaced record remains inaccessible through both private and
+public application reads.
+
+These checks reduce parser, path, header and orphan-object risk but do not claim
+malware scanning or image sanitisation. A production implementation should
+decode and re-encode accepted images in an isolated processor, scan uploads,
+keep the bucket private, use least-privilege service credentials, enforce
+lifecycle policy and verify object access through the deployed edge.
 
 ---
 

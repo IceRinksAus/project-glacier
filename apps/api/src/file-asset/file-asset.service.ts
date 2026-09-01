@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { FileAssetPurpose } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,8 @@ import { LocalStorageProvider } from './local-storage.provider';
 
 @Injectable()
 export class FileAssetService {
+  private readonly logger = new Logger(FileAssetService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: LocalStorageProvider,
@@ -30,11 +32,21 @@ export class FileAssetService {
     await this.storage.put(storageKey, input.file.buffer);
 
     try {
-      return await this.prisma.$transaction(async (transaction) => {
+      const result = await this.prisma.$transaction(async (transaction) => {
         const existingBranding = await transaction.eventBranding.findUnique({
           where: { eventId: event.id },
-          select: { logoAssetId: true, heroAssetId: true },
+          select: {
+            logoAssetId: true,
+            logoAsset: { select: { storageKey: true } },
+            heroAssetId: true,
+            heroAsset: { select: { storageKey: true } },
+          },
         });
+        const originalFilename = this.safeAssetName(
+          input.file.originalname,
+          'branding-image',
+          255,
+        );
         const asset = await transaction.fileAsset.create({
           data: {
             organizationId: input.organizationId,
@@ -43,10 +55,12 @@ export class FileAssetService {
             purpose: input.purpose,
             storageProvider: this.storage.name,
             storageKey,
-            originalFilename: input.file.originalname.slice(0, 255),
-            displayName: (
-              input.displayName?.trim() || input.file.originalname
-            ).slice(0, 200),
+            originalFilename,
+            displayName: this.safeAssetName(
+              input.displayName?.trim() || originalFilename,
+              'Branding image',
+              200,
+            ),
             mimeType: image.mimeType,
             fileSize: input.file.size,
             checksum,
@@ -73,12 +87,36 @@ export class FileAssetService {
             data: { status: 'REPLACED' },
           });
         }
-        return asset;
+        const replacedStorageKey =
+          input.purpose === FileAssetPurpose.EVENT_LOGO
+            ? existingBranding?.logoAsset?.storageKey
+            : existingBranding?.heroAsset?.storageKey;
+        return { asset, replacedStorageKey };
       });
+
+      if (result.replacedStorageKey) {
+        await this.storage.remove(result.replacedStorageKey).catch(() => {
+          this.logger.warn(
+            JSON.stringify({ event: 'file_asset.replaced_object_cleanup_failed' }),
+          );
+        });
+      }
+
+      return result.asset;
     } catch (error) {
       await this.storage.remove(storageKey);
       throw error;
     }
+  }
+
+  private safeAssetName(value: string, fallback: string, maximum: number) {
+    const safe = value
+      .replace(/[\u0000-\u001f\u007f]/g, '')
+      .replace(/[\\/]/g, '-')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .slice(0, maximum);
+    return safe || fallback;
   }
 
   async getBrandingAsset(

@@ -26,6 +26,8 @@
 - dependency vulnerability review
 - current tracked-secret scan passes with `npm run verify:secrets`
 - reviewed Git-history secret scan and provider credential rotation evidence
+- configure private managed object storage, isolated image decoding/re-encoding, malware scanning and lifecycle/cleanup evidence
+- verify branding objects cannot be fetched directly without an authorised Glacier/public Event path
 - Security & Privacy Gate
 
 ## Payments

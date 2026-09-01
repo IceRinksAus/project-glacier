@@ -26,13 +26,48 @@ function pngDimensions(buffer: Buffer) {
       .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
     buffer.readUInt32BE(8) !== 13 ||
     buffer.subarray(12, 16).toString('ascii') !== 'IHDR'
-  )
-    return null;
-  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  ) return null;
+
+  let offset = 8;
+  let dimensions: { width: number; height: number } | null = null;
+  let hasImageData = false;
+  let hasEnd = false;
+
+  while (offset + 12 <= buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
+    const nextOffset = offset + 12 + length;
+    if (nextOffset > buffer.length) return null;
+
+    if (offset === 8 && (type !== 'IHDR' || length !== 13)) return null;
+    if (type === 'IHDR') {
+      if (dimensions) return null;
+      dimensions = {
+        width: buffer.readUInt32BE(offset + 8),
+        height: buffer.readUInt32BE(offset + 12),
+      };
+    } else if (type === 'IDAT') {
+      hasImageData = true;
+    } else if (type === 'IEND') {
+      if (length !== 0 || nextOffset !== buffer.length) return null;
+      hasEnd = true;
+    }
+
+    offset = nextOffset;
+    if (hasEnd) break;
+  }
+
+  return dimensions && hasImageData && hasEnd ? dimensions : null;
 }
 
 function jpegDimensions(buffer: Buffer) {
-  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8)
+  if (
+    buffer.length < 4 ||
+    buffer[0] !== 0xff ||
+    buffer[1] !== 0xd8 ||
+    buffer[buffer.length - 2] !== 0xff ||
+    buffer[buffer.length - 1] !== 0xd9
+  )
     return null;
   let offset = 2;
   while (offset + 9 < buffer.length) {
@@ -70,7 +105,13 @@ export function validateBrandingImage(
   if (!file?.buffer?.length)
     throw new BadRequestException('Choose an image to upload.');
   const limit = limits[purpose];
-  if (file.size > limit.maxBytes) {
+  if (!limit) {
+    throw new BadRequestException('Unsupported branding image purpose.');
+  }
+  if (file.size !== file.buffer.length) {
+    throw new BadRequestException('Image size metadata is invalid.');
+  }
+  if (file.buffer.length > limit.maxBytes) {
     throw new BadRequestException(
       `Image exceeds the ${limit.maxBytes / 1024 / 1024} MB limit.`,
     );

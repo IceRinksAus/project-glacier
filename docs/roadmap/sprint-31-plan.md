@@ -198,6 +198,20 @@ topology and external alert delivery remain unproven pre-live controls. This is
 representative local evidence, not an independent penetration-test result or
 approval for Internet exposure.
 
+The file-upload and asset-access review then hardened Event branding without
+expanding accepted formats or changing the organiser workflow. Glacier now
+checks actual buffer size and bounded image structure, removes unsafe stored-name
+characters, uses constrained server-generated local keys, avoids reflecting
+filenames in response headers, and cleans up replaced local objects after the
+metadata transaction commits. Private reads remain tenant-scoped and public
+reads remain limited to the selected `READY` asset of an `ACTIVE` Event.
+
+After this work, the complete gate passed with 87 API suites / 594 tests, 29 web
+test files / 85 tests, both production builds, all 43 migrations current and
+4 / 4 disposable-database integration checks. Managed private storage,
+isolated image re-encoding, malware scanning, lifecycle evidence and deployed
+object-access testing remain explicit pre-live requirements.
+
 ## Strategic result
 
 Sprint 31 moves Glacier from a strong localhost operating system toward a deployment-ready controlled service without forcing premature expenditure. It makes later infrastructure actions deliberate and reversible while Glacier is provisionally incubated inside Ice Rinks Australia, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally or paid for before the product comfort gate passes.
