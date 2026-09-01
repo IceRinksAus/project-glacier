@@ -1,6 +1,7 @@
 import { ScheduleModule } from '@nestjs/schedule';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -17,6 +18,8 @@ import { FlexibleTicketPolicyModule } from './flexible-ticket-policy/flexible-ti
 import { FlexibleTicketRequestModule } from './flexible-ticket-request/flexible-ticket-request.module';
 import { HealthModule } from './health/health.module';
 import { OperationalScheduleModule } from './operational-schedule/operational-schedule.module';
+import { RequestFailureInterceptor } from './observability/request-failure.interceptor';
+import { RequestObservabilityMiddleware } from './observability/request-observability.middleware';
 import { OrganizationModule } from './organization/organization.module';
 import { PaymentModule } from './payment/payment.module';
 import { PosModule } from './pos/pos.module';
@@ -75,6 +78,16 @@ import { WaiverModule } from './waiver/waiver.module';
     WaiverModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestFailureInterceptor,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestObservabilityMiddleware).forRoutes('*');
+  }
+}
