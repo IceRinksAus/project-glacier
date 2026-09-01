@@ -31,6 +31,7 @@ describe('Tenant and role isolation (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication({ rawBody: true });
+    app.set('trust proxy', 1);
     applyApplicationSecurityHeaders(app);
     app.useGlobalPipes(createApplicationValidationPipe());
     await app.init();
@@ -204,5 +205,31 @@ describe('Tenant and role isolation (e2e)', () => {
       .get('/event/isolation-event-a-assigned')
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
+  });
+
+  it('returns a generic 429 after repeated login attempts from one source', async () => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .set('X-Forwarded-For', '203.0.113.31')
+        .send({ email: 'unknown@isolation.invalid', password })
+        .expect(401, {
+          message: 'Invalid email or password',
+          error: 'Unauthorized',
+          statusCode: 401,
+        });
+    }
+
+    const blocked = await request(app.getHttpServer())
+      .post('/auth/login')
+      .set('X-Forwarded-For', '203.0.113.31')
+      .send({ email: 'unknown@isolation.invalid', password })
+      .expect(429, {
+        statusCode: 429,
+        message: 'Too many requests. Please try again later.',
+      });
+
+    expect(blocked.headers['retry-after']).toBeDefined();
+    expect(blocked.headers['ratelimit-limit']).toBe('20');
   });
 });

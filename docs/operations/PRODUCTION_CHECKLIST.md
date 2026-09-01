@@ -3,6 +3,8 @@
 ## Security
 
 - [ ] Run `npm run verify:isolation` and retain the passing tenant/role boundary evidence.
+- [ ] Set and verify `TRUST_PROXY_HOPS` against the real edge topology; test that distinct clients remain distinct and spoofed forwarding headers are ignored.
+- [ ] Configure a coordinated edge abuse limit and alert destination; retain repeated-login `429` evidence.
 
 - Rotate development credentials
 - enforce HTTPS/TLS

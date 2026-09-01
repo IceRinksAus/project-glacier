@@ -38,6 +38,7 @@ import { TicketAdjustmentModule } from './ticket-adjustment/ticket-adjustment.mo
 import { TicketTypeModule } from './ticket-type/ticket-type.module';
 import { UserModule } from './user/user.module';
 import { WaiverModule } from './waiver/waiver.module';
+import { AbuseProtectionMiddleware } from './security/abuse-protection.middleware';
 
 @Module({
   imports: [
@@ -88,6 +89,8 @@ import { WaiverModule } from './waiver/waiver.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(RequestObservabilityMiddleware).forRoutes('*');
+    consumer
+      .apply(RequestObservabilityMiddleware, AbuseProtectionMiddleware)
+      .forRoutes('*');
   }
 }

@@ -17,7 +17,7 @@ Status values:
 | Method | Route         | Audience       | Authentication | Validation                             | Status    | Sprint 17 action                                                                             |
 | ------ | ------------- | -------------- | -------------- | -------------------------------------- | --------- | -------------------------------------------------------------------------------------------- |
 | GET    | `/`           | Health         | None           | N/A                                    | PUBLIC    | Static service-health message only; no internal detail.                                      |
-| POST   | `/auth/login` | Operator/Staff | Credentials    | Strict bounded DTO through global pipe | PROTECTED | Generic credential failure; deployment-edge rate limiting is required before pilot exposure. |
+| POST   | `/auth/login` | Operator/Staff | Credentials    | Strict bounded DTO through global pipe | PROTECTED | Generic credential failure; application defence-in-depth limit is active, while coordinated deployment-edge limiting remains required before pilot exposure. |
 | GET    | `/auth/me`    | Operator/Staff | JWT            | N/A                                    | PROTECTED | Typed, minimal JWT claims response.                                                          |
 
 ## Organisation and Users

@@ -5,6 +5,7 @@ import {
   applyApplicationSecurityHeaders,
   createApplicationValidationPipe,
   getCorsOrigins,
+  getTrustedProxyHops,
   getWebAppUrl,
   validateApplicationEnvironment,
 } from './application-security';
@@ -78,6 +79,7 @@ describe('application security configuration', () => {
         WEB_APP_URL: 'https://app.glacier.example',
         CORS_ORIGINS:
           'https://app.glacier.example,https://admin.glacier.example',
+        TRUST_PROXY_HOPS: '1',
       }),
     ).not.toThrow();
   });
@@ -86,7 +88,7 @@ describe('application security configuration', () => {
     expect(() =>
       validateApplicationEnvironment({ NODE_ENV: 'production' }),
     ).toThrow(
-      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS.',
+      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS, TRUST_PROXY_HOPS.',
     );
   });
 
@@ -100,6 +102,7 @@ describe('application security configuration', () => {
         STRIPE_WEBHOOK_SECRET: 'whsec_example',
         WEB_APP_URL: 'https://app.glacier.example',
         CORS_ORIGINS: 'https://app.glacier.example',
+        TRUST_PROXY_HOPS: '1',
       }),
     ).toThrow('JWT_SECRET must contain at least 32 characters in production.');
   });
@@ -113,6 +116,7 @@ describe('application security configuration', () => {
       STRIPE_WEBHOOK_SECRET: 'whsec_example',
       WEB_APP_URL: 'https://app.glacier.example',
       CORS_ORIGINS: 'http://localhost:3001',
+      TRUST_PROXY_HOPS: '1',
     };
 
     expect(() => validateApplicationEnvironment(environment)).toThrow(
@@ -127,6 +131,25 @@ describe('application security configuration', () => {
     expect(() => getWebAppUrl({ NODE_ENV: 'production' })).toThrow(
       'WEB_APP_URL must be configured in production.',
     );
+  });
+
+  it('requires an explicit bounded trusted-proxy hop count in production', () => {
+    expect(getTrustedProxyHops({ NODE_ENV: 'development' })).toBe(0);
+    expect(
+      getTrustedProxyHops({
+        NODE_ENV: 'production',
+        TRUST_PROXY_HOPS: '1',
+      }),
+    ).toBe(1);
+    expect(() => getTrustedProxyHops({ NODE_ENV: 'production' })).toThrow(
+      'TRUST_PROXY_HOPS must be configured in production.',
+    );
+    expect(() =>
+      getTrustedProxyHops({
+        NODE_ENV: 'production',
+        TRUST_PROXY_HOPS: '4',
+      }),
+    ).toThrow('TRUST_PROXY_HOPS must be a whole number from 0 to 3.');
   });
 
   it('rejects unknown fields through the application validation pipe', async () => {

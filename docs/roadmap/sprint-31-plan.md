@@ -189,11 +189,14 @@ OWNER, restricted STAFF and SCANNER users. It proves cross-Organisation
 not-found behaviour, assigned-Event filtering and scanner denial on ordinary
 Event administration, then removes the temporary database.
 
-The complete gate passed with 85 API suites / 571 unit tests, 29 web test files /
-85 tests, API and web production builds, current migration status and 3 / 3
-isolated integration checks. The tracked-secret scan also passed across 594
-tracked files. This is representative local evidence, not an independent
-penetration-test result or approval for Internet exposure.
+After adding application abuse-protection evidence, the complete gate passed
+with 86 API suites / 582 unit tests, 29 web test files / 85 tests, API and web
+production builds, current migration status and 4 / 4 isolated integration
+checks. The real HTTP-stack check proves a generic `429` after the configured
+login threshold. The coordinated deployment-edge rule, forwarded-address
+topology and external alert delivery remain unproven pre-live controls. This is
+representative local evidence, not an independent penetration-test result or
+approval for Internet exposure.
 
 ## Strategic result
 

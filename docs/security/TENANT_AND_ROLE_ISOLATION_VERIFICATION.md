@@ -13,7 +13,9 @@ The check covers:
   organisation's event that they receive for an inaccessible event;
 - restricted staff can list and open only explicitly assigned events; and
 - scanner credentials receive `403 Forbidden` on ordinary event
-  administration routes, even when assigned to that event.
+  administration routes, even when assigned to that event; and
+- repeated login attempts from one trusted source receive a generic `429` after
+  the application safety threshold, with retry evidence and no account detail.
 
 ## Data safety
 

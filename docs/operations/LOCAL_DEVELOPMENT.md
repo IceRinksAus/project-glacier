@@ -43,12 +43,17 @@ Expected local variables include:
 - `STRIPE_WEBHOOK_SECRET`
 - `WEB_APP_URL`
 - `CORS_ORIGINS`
+- `TRUST_PROXY_HOPS`
 
 Never commit real secrets.
 
 `WEB_APP_URL` is the canonical web origin encoded in Event Waiver QR codes. The local fallback is `http://localhost:3001`. Production must set the deployed HTTPS origin explicitly.
 
 `CORS_ORIGINS` is a comma-separated allowlist of trusted web origins. Local development defaults to `http://localhost:3001`. Production fails to start when this variable is absent; wildcard origins must not be used with credentials.
+
+`TRUST_PROXY_HOPS` defaults to `0` locally. Production must set the exact
+verified number of reverse-proxy hops so source-address abuse controls neither
+trust spoofed forwarding headers nor group unrelated customers together.
 
 `NEXT_DIST_DIR` optionally selects an isolated Next.js output directory for parallel local preview verification. Leave it unset for normal development; the default remains `.next`.
 

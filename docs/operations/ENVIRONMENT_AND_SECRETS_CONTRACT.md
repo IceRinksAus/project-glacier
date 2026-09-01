@@ -28,6 +28,7 @@ No database, Stripe secret, webhook secret, object store or authentication secre
 | `STRIPE_WEBHOOK_SECRET` | Yes | Required for webhooks | Required and unique to the environment endpoint |
 | `WEB_APP_URL` | No | Defaults to `http://localhost:3001` | Required HTTPS origin; no path or localhost fallback |
 | `CORS_ORIGINS` | No | Defaults to approved local ports | Required comma-separated HTTPS origin allowlist |
+| `TRUST_PROXY_HOPS` | No | Defaults to `0` | Required integer `0`–`3`, matching the verified reverse-proxy topology |
 | `EMAIL_API_KEY` | Yes | Optional until email provider work | Environment-specific when email delivery is enabled |
 
 The API refuses to start in production when required variables are missing, when the JWT secret is too short, or when public/CORS origins are not HTTPS origins.

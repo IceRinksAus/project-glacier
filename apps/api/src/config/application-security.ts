@@ -11,6 +11,7 @@ const PRODUCTION_REQUIRED_VARIABLES = [
   'STRIPE_WEBHOOK_SECRET',
   'WEB_APP_URL',
   'CORS_ORIGINS',
+  'TRUST_PROXY_HOPS',
 ] as const;
 
 function requireHttpsUrl(name: string, value: string) {
@@ -63,6 +64,8 @@ export function validateApplicationEnvironment(
   for (const origin of getCorsOrigins(environment)) {
     requireHttpsUrl('CORS_ORIGINS', origin);
   }
+
+  getTrustedProxyHops(environment);
 }
 
 export function getWebAppUrl(environment: Environment = process.env) {
@@ -129,4 +132,26 @@ export function getCorsOrigins(environment: Environment = process.env) {
     'http://localhost:3002',
     'http://localhost:3005',
   ];
+}
+
+export function getTrustedProxyHops(environment: Environment = process.env) {
+  const configured = environment.TRUST_PROXY_HOPS?.trim();
+
+  if (!configured) {
+    if (environment.NODE_ENV === 'production') {
+      throw new Error('TRUST_PROXY_HOPS must be configured in production.');
+    }
+    return 0;
+  }
+
+  if (!/^[0-9]+$/.test(configured)) {
+    throw new Error('TRUST_PROXY_HOPS must be a whole number from 0 to 3.');
+  }
+
+  const hops = Number(configured);
+  if (hops < 0 || hops > 3) {
+    throw new Error('TRUST_PROXY_HOPS must be a whole number from 0 to 3.');
+  }
+
+  return hops;
 }

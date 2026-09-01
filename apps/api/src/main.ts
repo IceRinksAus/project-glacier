@@ -6,6 +6,7 @@ import {
   applyApplicationSecurityHeaders,
   createApplicationValidationPipe,
   getCorsOrigins,
+  getTrustedProxyHops,
   validateApplicationEnvironment,
 } from './config/application-security';
 
@@ -15,6 +16,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+
+  app.set('trust proxy', getTrustedProxyHops());
 
   applyApplicationSecurityHeaders(app);
   app.useGlobalPipes(createApplicationValidationPipe());
