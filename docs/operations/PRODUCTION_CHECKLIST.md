@@ -47,6 +47,8 @@
 ## Reliability
 
 - backups and restore testing
+- retain successful local restore-drill evidence from `npm run verify:restore`
+- complete a separate managed point-in-time restore before live approval; local evidence is not production recovery evidence
 - monitoring and alerting
 - central logs
 - error tracking

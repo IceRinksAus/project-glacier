@@ -7,6 +7,7 @@
     "dev": "Start development",
     "build": "npm --prefix apps/api run build && NEXT_DIST_DIR=.next-release npm --prefix apps/web run build -- --webpack",
     "test": "npm --prefix apps/api test -- --runInBand && npm --prefix apps/web test",
-    "verify:release": "bash scripts/verify-release.sh"
+    "verify:release": "bash scripts/verify-release.sh",
+    "verify:restore": "node scripts/verify-local-restore.mjs"
   }
 }
