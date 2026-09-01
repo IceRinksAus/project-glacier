@@ -17,6 +17,8 @@
 - privacy review
 - tenant-isolation integration verification against a production-like database
 - dependency vulnerability review
+- current tracked-secret scan passes with `npm run verify:secrets`
+- reviewed Git-history secret scan and provider credential rotation evidence
 - Security & Privacy Gate
 
 ## Payments

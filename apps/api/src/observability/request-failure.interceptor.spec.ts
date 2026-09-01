@@ -48,6 +48,7 @@ describe('RequestFailureInterceptor', () => {
     const logger = (interceptor as unknown as { logger: { error: jest.Mock } })
       .logger;
     jest.spyOn(logger, 'error').mockImplementation();
+    // secret-scan: allow-next-line -- deliberate non-secret redaction fixture
     const exception = new Error('postgresql://user:password@private-host/data');
     const context = {
       switchToHttp: () => ({
