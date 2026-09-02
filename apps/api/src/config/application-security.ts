@@ -12,6 +12,8 @@ const PRODUCTION_REQUIRED_VARIABLES = [
   'WEB_APP_URL',
   'CORS_ORIGINS',
   'TRUST_PROXY_HOPS',
+  'TICKET_TOKEN_ACTIVE_KEY_ID',
+  'TICKET_TOKEN_SIGNING_KEYS',
 ] as const;
 
 function requireHttpsUrl(name: string, value: string) {

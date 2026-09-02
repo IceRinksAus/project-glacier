@@ -80,6 +80,10 @@ describe('application security configuration', () => {
         CORS_ORIGINS:
           'https://app.glacier.example,https://admin.glacier.example',
         TRUST_PROXY_HOPS: '1',
+        TICKET_TOKEN_ACTIVE_KEY_ID: 'primary-v1',
+        TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
+          'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
+        }),
       }),
     ).not.toThrow();
   });
@@ -88,7 +92,7 @@ describe('application security configuration', () => {
     expect(() =>
       validateApplicationEnvironment({ NODE_ENV: 'production' }),
     ).toThrow(
-      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS, TRUST_PROXY_HOPS.',
+      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS, TRUST_PROXY_HOPS, TICKET_TOKEN_ACTIVE_KEY_ID, TICKET_TOKEN_SIGNING_KEYS.',
     );
   });
 
@@ -103,6 +107,10 @@ describe('application security configuration', () => {
         WEB_APP_URL: 'https://app.glacier.example',
         CORS_ORIGINS: 'https://app.glacier.example',
         TRUST_PROXY_HOPS: '1',
+        TICKET_TOKEN_ACTIVE_KEY_ID: 'primary-v1',
+        TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
+          'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
+        }),
       }),
     ).toThrow('JWT_SECRET must contain at least 32 characters in production.');
   });
@@ -117,6 +125,10 @@ describe('application security configuration', () => {
       WEB_APP_URL: 'https://app.glacier.example',
       CORS_ORIGINS: 'http://localhost:3001',
       TRUST_PROXY_HOPS: '1',
+      TICKET_TOKEN_ACTIVE_KEY_ID: 'primary-v1',
+      TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
+        'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
+      }),
     };
 
     expect(() => validateApplicationEnvironment(environment)).toThrow(
