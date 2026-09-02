@@ -1,5 +1,48 @@
 # Changelog
 
+# Sprint 31 – Production Architecture, Security and Entity-Control Foundations
+
+## Complete
+
+- Added fail-closed production environment validation, explicit origin/CORS
+  contracts and liveness/readiness health probes.
+- Added portable API/web containers plus repeatable local release, migration,
+  tenant-isolation, secret-scan and backup/restore gates.
+- Added privacy-safe correlated API request evidence, baseline HTTP response
+  headers and per-instance login/high-risk-public-route abuse protection.
+- Recorded the current dependency vulnerability disposition without applying an
+  unsafe transitive override.
+- Hardened Event branding image validation, stored names/keys, response headers
+  and replaced-object cleanup.
+- Added persisted eight-hour authentication sessions with immediate current/all
+  session revocation and live authority revalidation.
+- Defined the privileged password-recovery/MFA contract while retaining both as
+  explicit pre-live controls.
+- Mapped Glacier's actual privacy data flows, current deletion constraints,
+  proposed retention decisions, legal holds, customer-rights workflows and
+  backup ageing without inventing legal retention periods.
+- Recorded provisional Ice Rinks Australia incubation, ownership/account
+  questions and a no-material-spend Product Comfort Gate.
+
+## Verification
+
+- API: 87 suites / 599 tests passed; production build passed.
+- Web: 30 files / 88 tests passed; production build passed.
+- All 44 Prisma migrations are current.
+- Disposable authenticated tenant/role isolation passed 5 / 5 checks.
+- Tracked-secret scan passed across 604 files and 6 rules.
+- Isolated PostgreSQL backup/restore matched 12 critical tables; the 0.27 MiB
+  local archive completed in 0.59 seconds and restored in 1.58 seconds.
+- No unresolved Critical finding is currently known from completed local
+  evidence. Open High and Pending findings continue to prohibit internet/live
+  exposure.
+
+## Boundary
+
+No paid infrastructure, domain, production service, real Payment, customer-data
+environment, external alerting, legal/privacy approval or independent security
+test was purchased or represented as complete.
+
 # Sprint 24 – Access Levels and Scoped Authority
 
 ## Complete

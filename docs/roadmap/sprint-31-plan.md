@@ -2,7 +2,10 @@
 
 ## Planning status
 
-Scope confirmed. Updated 1 September 2026 to operate under the no-material-spend development gate in `docs/decisions/ADR-007-NO-SPEND-DEVELOPMENT-GATE.md`.
+Completed and locally verified on 2 September 2026. The Sprint operated under
+the no-material-spend development gate in
+`docs/decisions/ADR-007-NO-SPEND-DEVELOPMENT-GATE.md`. Formal closeout evidence
+is recorded in `docs/sprint-notes/sprint-31.md`.
 
 ## Recommendation
 

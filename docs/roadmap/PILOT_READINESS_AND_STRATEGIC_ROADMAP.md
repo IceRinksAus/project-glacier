@@ -1,8 +1,11 @@
 # Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Updated:** 28 August 2026
+**Updated:** 2 September 2026
 
-**Status:** Current strategic control document after Sprint 30; the supervised Flexible Ticket operating chain is complete and production/security hardening is now the primary delivery track
+**Status:** Current strategic control document after Sprint 31; local Phase 3
+production/security foundations are evidenced under the no-material-spend gate,
+while deployed infrastructure, external controls and professional approvals
+remain open
 
 **Purpose:** Record Glacier's current evidence-based position, define the controlled phases to a live pilot, and prevent delivery priorities from depending on chat history.
 
@@ -14,11 +17,16 @@
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 30, Glacier is best described as:
+After Sprint 31, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
-The software now supports most of the intended end-to-end journey locally. The remaining route to pilot is primarily about controlled operations, production infrastructure, real-device validation, security/privacy evidence and rehearsed support—not simply adding more product breadth.
+The software now supports most of the intended end-to-end journey locally and
+has reproducible release, isolation, restore, session-revocation and privacy
+control foundations. The remaining route to pilot is primarily about completing
+locally actionable security work, controlled infrastructure, real-device
+validation, external security/privacy evidence and rehearsed support—not simply
+adding more product breadth.
 
 Glacier must not begin a live customer pilot until the release gates in this document have passed.
 
@@ -44,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 30
+# 3. Delivered Foundation Through Sprint 31
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -72,14 +80,24 @@ The following are implemented foundations and should not be reopened without evi
 - controlled same-price whole-Booking Session rescheduling with replacement Tickets; and
 - versioned Organisation/Event Flexible Ticket governance, selective per-Ticket purchase, Payment activation and immutable entitlement evidence; and
 - possession-scoped Flexible Ticket requests, authorised review/decision, controlled refund or whole-Booking Session-change execution and exact post-completion use allocation.
+- fail-closed production environment and origin contracts with health/readiness probes;
+- portable container, complete release/migration and disposable tenant-isolation foundations;
+- privacy-safe request evidence, HTTP hardening, local abuse protection and tracked-secret scanning;
+- verified isolated local backup/restore across 12 critical tables;
+- hardened branding-file handling and server-revocable operator sessions; and
+- an actual-data privacy/retention/deletion register with unresolved controls retained as production blockers.
 
-Current verified baseline at Sprint 30 closeout:
+Current verified baseline at Sprint 31 closeout:
 
-- 43 current Prisma migrations;
-- 81 API suites / 555 passing tests;
-- 28 web test files / 84 passing tests;
+- 44 current Prisma migrations;
+- 87 API suites / 599 passing tests;
+- 30 web test files / 88 passing tests;
 - passing API and web production builds; and
-- authenticated/public browser acceptance of Flexible Ticket governance, selective purchase, successful Payment activation, secure request/withdraw/status presentation, controlled decline, a successful `$24.00` Stripe test refund and a successful whole-Booking Session change with exact entitlement-use consumption, in addition to the previously accepted reporting, access controls, walk-up and merchandise commerce, partial Ticket adjustment/refund and rescheduling foundations.
+- 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
+  scan across 604 files and an isolated restore matching 12 critical tables;
+- authenticated/public browser acceptance of the previously delivered Flexible
+  Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
+  rescheduling foundations.
 
 This proves the local application baseline. It does not prove production readiness, legal approval, penetration resistance or event-day reliability.
 
@@ -128,7 +146,12 @@ Merchandise-only sales now use the Event Product/Variant catalogue, enforce fini
 
 ## 4.4 Production environment and reliability
 
-No live environment is yet evidenced. Readiness requires controlled hosting, domains, HTTPS, managed secrets, explicit CORS, edge rate limiting, central logs, monitoring, backups, restore evidence, deployment/migration procedures, rollback and incident ownership.
+No live environment is yet evidenced. Local environment, container,
+release/migration, observability-shape and restore foundations now pass.
+Readiness still requires controlled hosting, domains, HTTPS, managed secrets,
+real-origin CORS verification, coordinated edge limiting, central logs,
+monitoring/alerts, managed backup/point-in-time restore, rollback execution and
+incident ownership.
 
 ## 4.5 Physical device and event-day operations
 
@@ -136,7 +159,13 @@ The scanner and customer experience require physical iPhone Safari, Android Chro
 
 ## 4.6 Security, privacy, legal and storage
 
-The formal Security and Privacy Gate remains open. Production-like tenant isolation, dependency review, access recovery/MFA policy, upload controls, Australian-region managed storage, retention/deletion policy, Waiver/legal approval and privacy review require evidence and sign-off.
+The formal Security and Privacy Gate remains open. Local tenant isolation,
+dependency disposition, session revocation, upload hardening and the privacy
+data-flow register now have evidence. Privileged MFA/recovery delivery,
+coordinated edge controls, Australian-region managed storage, approved
+retention/deletion and legal holds, Waiver/legal approval, central monitoring,
+Ticket credential redesign and independent review still require implementation
+or sign-off.
 
 ## 4.7 Representative operational acceptance
 
@@ -308,29 +337,29 @@ Reached only after pilot findings are resolved and Glacier has repeatable deploy
 
 # 7. Capability and Gate Matrix
 
-| Capability | Current position | Required next evidence | Phase |
-|---|---|---|---|
-| Core Event, Session and schedule | Implemented | Representative operator UAT | 4 |
-| Ticket Types, Products, Variants and Rules | Implemented | Capacity/inventory acceptance | 4 |
-| Public routed booking | Implemented locally | Accessibility, resilience, customer UAT | 4 |
-| Stripe Payment and Tickets | Implemented foundation | Production alerts and reconciliation | 3–4 |
-| Event Waivers | Implemented foundation | Legal/privacy and storage approval | 3–4 |
-| Event setup and branding | Implemented foundation | Clean setup UAT, managed media | 3–4 |
-| Staff Scanner | Implemented foundation | Device, concurrency, network sign-off | 4 |
-| Booking and Customer lookup | Implemented | Support runbook and UAT | 2–4 |
-| Refund/cancellation | Controlled per-Ticket cancellation/refund implemented | Approved terms plus representative operator/provider UAT | 1–4 |
-| Flexible Tickets | Versioned policy, selective purchase, immutable entitlement, secure request and supervised use implemented | Commercial/legal approval plus representative operator/provider UAT | 1–4 |
-| Access levels | OWNER, MANAGER, STAFF and SCANNER foundations implemented | Representative assignment/denial UAT and audit review | 4 |
-| Rescheduling | Controlled same-price whole-Booking workflow implemented | Representative OWNER/MANAGER operational UAT | 4 |
-| Walk-up sales | Shared-catalogue Cash/standalone EFTPOS Ticket flow implemented and browser accepted | Physical till/device UAT and reconciliation | 4 |
-| Merchandise-only POS | Implemented foundation | Physical till/device UAT and reconciliation | 4 |
-| Reporting and Event Groups | Implemented beyond minimum | Group/export reconciliation | 4 |
-| Operational portfolio dashboard | Introductory landing page plus authoritative reporting foundations | Bounded decision-support dashboard after critical transaction sources stabilise | 2–4 |
-| Production deployment | Not evidenced | Controlled deployed environment | 3 |
-| Logs, monitoring and alerts | Design/checklist only | Working alerts and ownership | 3 |
-| Backup and restore | Not evidenced | Successful restore drill | 3 |
-| Security and Privacy Gate | Open | Review, remediation, sign-off | 3 |
-| Event-day operations | Not formally rehearsed | Complete timed simulation | 4 |
+| Capability                                 | Current position                                                                                           | Required next evidence                                                          | Phase |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ----- |
+| Core Event, Session and schedule           | Implemented                                                                                                | Representative operator UAT                                                     | 4     |
+| Ticket Types, Products, Variants and Rules | Implemented                                                                                                | Capacity/inventory acceptance                                                   | 4     |
+| Public routed booking                      | Implemented locally                                                                                        | Accessibility, resilience, customer UAT                                         | 4     |
+| Stripe Payment and Tickets                 | Implemented foundation                                                                                     | Production alerts and reconciliation                                            | 3–4   |
+| Event Waivers                              | Implemented foundation                                                                                     | Legal/privacy and storage approval                                              | 3–4   |
+| Event setup and branding                   | Implemented foundation                                                                                     | Clean setup UAT, managed media                                                  | 3–4   |
+| Staff Scanner                              | Implemented foundation                                                                                     | Device, concurrency, network sign-off                                           | 4     |
+| Booking and Customer lookup                | Implemented                                                                                                | Support runbook and UAT                                                         | 2–4   |
+| Refund/cancellation                        | Controlled per-Ticket cancellation/refund implemented                                                      | Approved terms plus representative operator/provider UAT                        | 1–4   |
+| Flexible Tickets                           | Versioned policy, selective purchase, immutable entitlement, secure request and supervised use implemented | Commercial/legal approval plus representative operator/provider UAT             | 1–4   |
+| Access levels                              | OWNER, MANAGER, STAFF and SCANNER foundations implemented                                                  | Representative assignment/denial UAT and audit review                           | 4     |
+| Rescheduling                               | Controlled same-price whole-Booking workflow implemented                                                   | Representative OWNER/MANAGER operational UAT                                    | 4     |
+| Walk-up sales                              | Shared-catalogue Cash/standalone EFTPOS Ticket flow implemented and browser accepted                       | Physical till/device UAT and reconciliation                                     | 4     |
+| Merchandise-only POS                       | Implemented foundation                                                                                     | Physical till/device UAT and reconciliation                                     | 4     |
+| Reporting and Event Groups                 | Implemented beyond minimum                                                                                 | Group/export reconciliation                                                     | 4     |
+| Operational portfolio dashboard            | Introductory landing page plus authoritative reporting foundations                                         | Bounded decision-support dashboard after critical transaction sources stabilise | 2–4   |
+| Production deployment                      | Reproducible local environment/container/release foundations                                               | Controlled deployed environment                                                 | 3     |
+| Logs, monitoring and alerts                | Privacy-safe local evidence shape                                                                          | Central delivery, working alerts and ownership                                  | 3     |
+| Backup and restore                         | Isolated local restore passed across 12 critical tables                                                    | Managed backup/PITR and deployed restore drill                                  | 3     |
+| Security and Privacy Gate                  | Local isolation, sessions, files, abuse and privacy-register evidence; gate remains open                   | Remaining remediation, external review and sign-off                             | 3     |
+| Event-day operations                       | Not formally rehearsed                                                                                     | Complete timed simulation                                                       | 4     |
 
 ---
 
@@ -386,13 +415,30 @@ Commercialisation—including the B2B website and SaaS billing—should follow a
 
 # 12. Immediate Next Action
 
-Sprints 24–30 have established role/assignment authority, walk-up and merchandise commerce, controlled per-Ticket adjustment/refund, whole-Booking Session rescheduling and the complete supervised Flexible Ticket chain from policy and purchase through request, decision, mutation and exact use consumption.
+Sprints 24–30 established role/assignment authority, walk-up and merchandise
+commerce, controlled per-Ticket adjustment/refund, whole-Booking Session
+rescheduling and the complete supervised Flexible Ticket chain. Sprint 31 added
+the cost-controlled local production/security foundation and converted unknown
+deployment/privacy assumptions into explicit evidence and gates.
 
-Sprint 30 completed possession-scoped customer requests and controlled operator consumption against the proven Sprint 27 refund and Sprint 28 reschedule ledgers. The resulting workflow remains bounded by purchased entitlement snapshots, current operational facts, role/assignment controls and explicit Payment consequences.
+The immediate next action is to plan the next no-spend Phase 3 Sprint around the
+highest-risk locally actionable findings—particularly Ticket possession-token
+storage and other security lifecycle work—without starting paid infrastructure
+or broad product expansion. Deployment-edge, managed-storage, monitoring,
+professional-review and real-device work remains queued behind the Product
+Comfort Gate and explicit expenditure approval.
 
-The remaining Phase 1 choices—exact commercial/legal values and wording, EFTPOS hardware, pilot Event/devices/volume and named operational owners—must still be closed before production rehearsal. They do not justify inventing entitlement rights from the legacy Booking Boolean.
+The remaining Phase 1 choices—exact commercial/legal values and wording,
+EFTPOS hardware, pilot Event/devices/volume and named operational owners—must
+still be closed before production rehearsal. They do not justify weakening the
+implemented entitlement, Payment, Ticket or access-control authorities.
 
-Phase 3 production/security work is now the primary track. The next Sprint should establish a deployable-environment and security-hardening plan covering hosting topology, managed secrets, explicit origins, logs/alerts, backups/restore, deployment/migration controls and production-like tenant-isolation evidence. The operational dashboard remains approved but must not displace production readiness.
+Phase 3 production/security work remains the primary track. Sprint 31 completed
+the local deployable-environment and security-hardening foundation; subsequent
+Sprints should close locally actionable findings, then activate deployed
+controls only after their ownership and expenditure are approved. The
+operational dashboard remains approved but must not displace production
+readiness.
 
 ---
 
