@@ -225,6 +225,17 @@ The complete gate passed with 87 API suites / 599 tests, 30 web test files / 88
 tests, both production builds, all 44 migrations current and 5 / 5 disposable
 database integration checks including immediate post-revocation denial.
 
+The privacy data-flow review now maps operator access, public Event discovery,
+online Booking, Payment/refund, POS, Ticket scanning, Waivers, Flexible Ticket
+support, files, reporting, observability and recovery to the actual stored data
+and access boundaries. It records current deletion constraints and supplies a
+controlled access/correction/export, pseudonymisation, legal-hold and backup
+ageing design. No statutory period has been invented: customer, participant,
+financial, Ticket, Waiver, log, file and backup periods remain explicit
+legal/accounting/insurance/privacy decisions before representative staging data
+or live operation. The absence of implemented lifecycle controls is retained as
+an open High finding rather than described as complete compliance.
+
 ## Strategic result
 
 Sprint 31 moves Glacier from a strong localhost operating system toward a deployment-ready controlled service without forcing premature expenditure. It makes later infrastructure actions deliberate and reversible while Glacier is provisionally incubated inside Ice Rinks Australia, rather than allowing domain, IP, merchant and customer-data ownership to be inherited accidentally or paid for before the product comfort gate passes.

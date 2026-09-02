@@ -23,7 +23,13 @@
 - implement the approved password recovery and privileged MFA contract
 - verify current-session and all-session revocation through deployed instances
 - define and operate expired/revoked authentication-session retention
-- privacy review
+- approve the data-class retention schedule in `docs/privacy/PRIVACY_DATA_FLOW_RETENTION_AND_DELETION_REGISTER.md`
+- implement and test tenant-scoped access, correction, export and transactional pseudonymisation/deletion workflows
+- implement authorised legal holds and prove every retention/deletion job fails closed for held records
+- review raw-at-rest Ticket possession credentials and implement the approved rotation/hash-compatible design
+- prove personal-data deletion across denormalised snapshots, files, logs, subprocessors and restored backups
+- approve customer-facing privacy notices, subprocessors/data locations and children's/Waiver handling
+- privacy/legal/accounting/insurance review and named privacy-request owner
 - tenant-isolation integration verification against a production-like database
 - dependency vulnerability review
 - current tracked-secret scan passes with `npm run verify:secrets`

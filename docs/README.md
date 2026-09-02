@@ -83,6 +83,8 @@ Sprint 17's approved contract:
 
 - `security/API_ENDPOINT_REGISTER.md`
 - `security/AUTHENTICATION_ABUSE_CONTROLS.md`
+- `security/SECURITY_AND_PRIVACY_FINDINGS.md`
+- `privacy/PRIVACY_DATA_FLOW_RETENTION_AND_DELETION_REGISTER.md`
 - `operations/PRODUCTION_CHECKLIST.md`
 
 Earlier Sprint releases are stored under:
