@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TicketController } from './ticket.controller';
 import { TicketService } from './ticket.service';
 import { AccessControlService } from '../access-control/access-control.service';
+import { TicketCredentialRotationService } from './ticket-credential-rotation.service';
 
 describe('TicketController', () => {
   let controller: TicketController;
@@ -26,6 +27,9 @@ describe('TicketController', () => {
     assertTicketAccessByToken: jest.fn(),
     assertTicketAccessById: jest.fn(),
   };
+  const credentialRotationMock = {
+    rotate: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -39,6 +43,10 @@ describe('TicketController', () => {
         {
           provide: AccessControlService,
           useValue: accessControlMock,
+        },
+        {
+          provide: TicketCredentialRotationService,
+          useValue: credentialRotationMock,
         },
       ],
     }).compile();
@@ -67,6 +75,20 @@ describe('TicketController', () => {
       'a'.repeat(64),
     );
     expect(result).toBeInstanceOf(StreamableFile);
+  });
+
+  it('passes trusted identity context to credential rotation', async () => {
+    credentialRotationMock.rotate.mockResolvedValue({
+      credential: 'new-token',
+    });
+    const manager = { ...user, role: 'MANAGER' as const };
+
+    await controller.rotateCredential('ticket-1', manager);
+
+    expect(credentialRotationMock.rotate).toHaveBeenCalledWith(
+      'ticket-1',
+      manager,
+    );
   });
 
   it('uses trusted organization context for Ticket validation', async () => {

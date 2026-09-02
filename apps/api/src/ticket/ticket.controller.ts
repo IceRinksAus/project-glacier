@@ -19,6 +19,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { OPERATOR_ROLES } from '../auth/roles/organization-role';
+import { MANAGEMENT_ROLES } from '../auth/roles/organization-role';
+import { TicketCredentialRotationService } from './ticket-credential-rotation.service';
 import { TicketService } from './ticket.service';
 
 type AuthenticatedUser = AuthenticatedAccessContext;
@@ -28,11 +30,22 @@ export class TicketController {
   constructor(
     private readonly ticketService: TicketService,
     private readonly accessControl: AccessControlService,
+    private readonly credentialRotation: TicketCredentialRotationService,
   ) {}
 
   @Get('token/:token')
   getTicketByToken(@Param('token') token: string) {
     return this.ticketService.getTicketByToken(token);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(...MANAGEMENT_ROLES)
+  @Post(':id/credential/rotate')
+  rotateCredential(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.credentialRotation.rotate(id, user);
   }
 
   @Get('token/:token/qr')

@@ -149,6 +149,7 @@ model Organization {
   flexibleTicketPolicies        FlexibleTicketPolicy[]
   flexibleTicketEntitlements    FlexibleTicketEntitlement[]
   flexibleTicketRequests        FlexibleTicketRequest[]
+  ticketCredentialRotations     TicketCredentialRotationAudit[]
 }
 
 model User {
@@ -179,6 +180,7 @@ model User {
   accessChangesMade               OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
   accessChangesReceived           OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
   authenticationSessions          AuthenticationSession[]
+  ticketCredentialRotations       TicketCredentialRotationAudit[] @relation("TicketCredentialRotationActor")
 }
 
 model AuthenticationSession {
@@ -326,6 +328,7 @@ model Event {
   ticketScanAttempts            TicketScanAttempt[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   eventGroupMemberships         EventGroupEvent[]
+  ticketCredentialRotations     TicketCredentialRotationAudit[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
@@ -1507,9 +1510,36 @@ model Ticket {
   replacementRescheduleMapping     BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
   initialFlexibleTicketEntitlement FlexibleTicketEntitlement?
   flexibleTicketRequestItems       FlexibleTicketRequestItem[]
+  credentialRotations              TicketCredentialRotationAudit[]
 
   @@index([participantId])
   @@index([credentialKeyId])
+}
+
+model TicketCredentialRotationAudit {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  actorUserId String
+  actorUser   User   @relation("TicketCredentialRotationActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  previousKeyId            String
+  newKeyId                 String
+  legacyCredentialRevoked  Boolean
+  rotatedAt                DateTime @default(now())
+
+  @@index([organizationId, rotatedAt])
+  @@index([eventId, rotatedAt])
+  @@index([ticketId, rotatedAt])
+  @@index([actorUserId, rotatedAt])
 }
 
 model TicketScanAttempt {

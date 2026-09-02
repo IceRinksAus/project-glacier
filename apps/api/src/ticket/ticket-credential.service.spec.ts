@@ -40,6 +40,21 @@ describe('TicketCredentialService', () => {
     expect(first.token).not.toBe(second.token);
   });
 
+  it('invalidates the previous current and legacy credentials after rotation', () => {
+    const service = createService();
+    const previous = service.issue('ticket-1');
+    const legacyToken = 'a'.repeat(64);
+    const rotated = service.issue('ticket-1');
+    const storedAfterRotation = {
+      ...rotated,
+      legacyCredentialHash: null,
+    };
+
+    expect(service.matches(storedAfterRotation, rotated.token)).toBe(true);
+    expect(service.matches(storedAfterRotation, previous.token)).toBe(false);
+    expect(service.matches(storedAfterRotation, legacyToken)).toBe(false);
+  });
+
   it('reconstructs and verifies the current credential', () => {
     const service = createService();
     const credential = service.issue('ticket-1');
