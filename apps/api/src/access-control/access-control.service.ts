@@ -6,6 +6,7 @@ import type {
   OrganizationRole,
 } from '../auth/roles/organization-role';
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 export interface AuthenticatedAccessContext {
   userId: string;
@@ -16,7 +17,10 @@ export interface AuthenticatedAccessContext {
 
 @Injectable()
 export class AccessControlService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ticketCredentials: TicketCredentialService,
+  ) {}
 
   eventWhere(
     access: AuthenticatedAccessContext,
@@ -108,7 +112,25 @@ export class AccessControlService {
     token: string,
     access: AuthenticatedAccessContext,
   ): Promise<void> {
-    await this.assertEventContainingTicket({ secureToken: token }, access);
+    const credentialWhere = this.ticketCredentials.lookupWhere(token);
+    if (!credentialWhere) throw new NotFoundException('Ticket not found');
+
+    const ticket = await this.prisma.ticket.findFirst({
+      where: {
+        ...credentialWhere,
+        booking: { event: this.eventWhere(access) },
+      },
+      select: {
+        id: true,
+        credentialSelector: true,
+        credentialKeyId: true,
+        legacyCredentialHash: true,
+      },
+    });
+
+    if (!ticket || !this.ticketCredentials.matches(ticket, token)) {
+      throw new NotFoundException('Ticket not found');
+    }
   }
 
   private async assertEventContainingTicket(

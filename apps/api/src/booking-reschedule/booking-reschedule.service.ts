@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 
 import {
   BadRequestException,
@@ -14,6 +14,7 @@ import {
 } from '../access-control/access-control.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RuleEvaluationService } from '../rule/rule-evaluation/rule-evaluation.service';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 import { PreviewBookingRescheduleDto } from './dto/preview-booking-reschedule.dto';
 import { ExecuteBookingRescheduleDto } from './dto/execute-booking-reschedule.dto';
@@ -71,6 +72,7 @@ export class BookingRescheduleService {
     private readonly prisma: PrismaService,
     private readonly accessControl: AccessControlService,
     private readonly ruleEvaluation: RuleEvaluationService,
+    private readonly ticketCredentials: TicketCredentialService,
   ) {}
 
   async context(access: AuthenticatedAccessContext, bookingId: string) {
@@ -466,14 +468,19 @@ export class BookingRescheduleService {
       ]),
     );
     for (const ticket of currentTickets) {
+      const replacementTicketId = randomUUID();
+      const credential = this.ticketCredentials.issue(replacementTicketId);
       const replacement = await transaction.ticket.create({
         data: {
+          id: replacementTicketId,
           bookingId,
           participantId: ticket.participant.id,
           ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
             .toString('hex')
             .toUpperCase()}`,
-          secureToken: randomBytes(32).toString('hex'),
+          secureToken: null,
+          credentialSelector: credential.credentialSelector,
+          credentialKeyId: credential.credentialKeyId,
           status: 'ACTIVE',
         },
       });

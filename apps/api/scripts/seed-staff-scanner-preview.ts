@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -19,6 +20,14 @@ async function main() {
   const ticketId = 'dev-sprint18-scanner-ticket';
   const userId = 'dev-sprint18-scanner-user';
   const ownerUserId = 'dev-sprint18-owner-user';
+  const previewTicketToken = 'b'.repeat(64);
+  const previewTicketSelector = createHash('sha256')
+    .update(`${ticketId}:${previewTicketToken}`)
+    .digest('hex')
+    .slice(0, 32);
+  const previewTicketTokenHash = createHash('sha256')
+    .update(previewTicketToken)
+    .digest('hex');
   const now = new Date();
   const sessionStart = new Date(now.getTime() + 15 * 60_000);
   const sessionEnd = new Date(now.getTime() + 75 * 60_000);
@@ -186,12 +195,18 @@ async function main() {
     update: {
       status: 'ACTIVE',
       checkedInAt: null,
-      secureToken: 'b'.repeat(64),
+      secureToken: null,
+      credentialSelector: previewTicketSelector,
+      credentialKeyId: 'local-v1',
+      legacyCredentialHash: previewTicketTokenHash,
     },
     create: {
       id: ticketId,
       ticketNumber: 'TKT-SPRINT18-PREVIEW',
-      secureToken: 'b'.repeat(64),
+      secureToken: null,
+      credentialSelector: previewTicketSelector,
+      credentialKeyId: 'local-v1',
+      legacyCredentialHash: previewTicketTokenHash,
       status: 'ACTIVE',
       bookingId,
       participantId,

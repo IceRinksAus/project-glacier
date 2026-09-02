@@ -12,6 +12,15 @@ describe('ScannerTicketDto', () => {
     await expect(validate(dto)).resolves.toEqual([]);
   });
 
+  it('accepts the current signed Ticket credential format', async () => {
+    const dto = Object.assign(new ScannerTicketDto(), {
+      token: `gt1_${'a'.repeat(32)}_${'A'.repeat(43)}`,
+      mode: TicketScanMode.TICKET_LOOKUP,
+    });
+
+    await expect(validate(dto)).resolves.toEqual([]);
+  });
+
   it('rejects malformed tokens and unknown modes', async () => {
     const dto = Object.assign(new ScannerTicketDto(), {
       token: 'not-a-ticket-token',

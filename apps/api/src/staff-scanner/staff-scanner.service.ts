@@ -9,6 +9,7 @@ import {
 import { ScannerTicketDto } from './dto/scanner-ticket.dto';
 import { ScannerClock } from './scanner-clock';
 import { ScannerTicketResult } from './staff-scanner.types';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 type ScannerTicket = Prisma.TicketGetPayload<{
   include: {
@@ -35,6 +36,7 @@ export class StaffScannerService {
     private readonly prisma: PrismaService,
     private readonly clock: ScannerClock,
     private readonly accessControl: AccessControlService,
+    private readonly ticketCredentials: TicketCredentialService,
   ) {}
 
   findActiveEvents(access: AuthenticatedAccessContext) {
@@ -166,16 +168,26 @@ export class StaffScannerService {
     token: string,
     prisma: PrismaService | Prisma.TransactionClient = this.prisma,
   ): Promise<ScannerTicket | null> {
-    return prisma.ticket.findFirst({
-      where: { secureToken: token, booking: { event: { organizationId } } },
-      include: {
-        participant: { include: { ticketType: true } },
-        booking: { include: { event: true, session: true } },
-        originalRescheduleMapping: {
-          select: { replacementTicketNumberSnapshot: true },
+    const credentialWhere = this.ticketCredentials.lookupWhere(token);
+    if (!credentialWhere) return Promise.resolve(null);
+
+    return prisma.ticket
+      .findFirst({
+        where: {
+          ...credentialWhere,
+          booking: { event: { organizationId } },
         },
-      },
-    });
+        include: {
+          participant: { include: { ticketType: true } },
+          booking: { include: { event: true, session: true } },
+          originalRescheduleMapping: {
+            select: { replacementTicketNumberSnapshot: true },
+          },
+        },
+      })
+      .then((ticket) =>
+        ticket && this.ticketCredentials.matches(ticket, token) ? ticket : null,
+      );
   }
 
   private buildResult(

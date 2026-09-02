@@ -1480,10 +1480,10 @@ model Ticket {
   id String @id @default(cuid())
 
   ticketNumber String @unique
-  secureToken  String @unique
+  secureToken  String? @unique
 
-  credentialSelector   String? @unique
-  credentialKeyId      String?
+  credentialSelector   String @unique
+  credentialKeyId      String
   legacyCredentialHash String? @unique
 
   status TicketStatus @default(ACTIVE)

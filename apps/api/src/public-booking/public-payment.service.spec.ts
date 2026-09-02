@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 
 import { PaymentService } from '../payment/payment.service';
 import { PublicPaymentService } from './public-payment.service';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 describe('PublicPaymentService', () => {
   let service: PublicPaymentService;
@@ -16,6 +17,9 @@ describe('PublicPaymentService', () => {
   const paymentService = {
     createPayment: jest.fn(),
   };
+  const ticketCredentials = {
+    present: jest.fn(() => 'current-ticket-token'),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -23,6 +27,7 @@ describe('PublicPaymentService', () => {
     service = new PublicPaymentService(
       prisma as never,
       paymentService as unknown as PaymentService,
+      ticketCredentials as unknown as TicketCredentialService,
     );
   });
 
@@ -169,8 +174,10 @@ describe('PublicPaymentService', () => {
 
   it('should expose issued Ticket presentation credentials only after confirmation', async () => {
     const ticket = {
+      id: 'ticket-1',
       ticketNumber: 'TKT-1',
-      secureToken: 'ticket-token',
+      credentialSelector: 'a'.repeat(32),
+      credentialKeyId: 'local-v1',
       status: 'ACTIVE',
       participant: { firstName: 'Jamie', lastName: 'Test' },
     };
@@ -193,7 +200,14 @@ describe('PublicPaymentService', () => {
       'valid-public-token',
     );
 
-    expect(result.tickets).toEqual([ticket]);
+    expect(result.tickets).toEqual([
+      {
+        ticketNumber: 'TKT-1',
+        secureToken: 'current-ticket-token',
+        status: 'ACTIVE',
+        participant: { firstName: 'Jamie', lastName: 'Test' },
+      },
+    ]);
   });
 
   it('should reject a status request with the same non-enumerating response', async () => {

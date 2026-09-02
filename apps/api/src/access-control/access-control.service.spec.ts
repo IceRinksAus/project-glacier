@@ -5,6 +5,7 @@ import {
   AccessControlService,
   AuthenticatedAccessContext,
 } from './access-control.service';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 describe('AccessControlService', () => {
   const prismaMock = {
@@ -15,10 +16,18 @@ describe('AccessControlService', () => {
     eventGroup: {
       findFirst: jest.fn(),
     },
+    ticket: {
+      findFirst: jest.fn(),
+    },
+  };
+  const ticketCredentials = {
+    lookupWhere: jest.fn(() => ({ legacyCredentialHash: 'legacy-hash' })),
+    matches: jest.fn(() => true),
   };
 
   const service = new AccessControlService(
     prismaMock as unknown as PrismaService,
+    ticketCredentials as unknown as TicketCredentialService,
   );
 
   const assignedStaff: AuthenticatedAccessContext = {
@@ -96,26 +105,23 @@ describe('AccessControlService', () => {
   });
 
   it('requires the Ticket to belong to an assigned Event', async () => {
-    prismaMock.event.findFirst.mockResolvedValue({ id: 'event-1' });
+    prismaMock.ticket.findFirst.mockResolvedValue({
+      id: 'ticket-1',
+      credentialSelector: 'a'.repeat(32),
+      credentialKeyId: 'local-v1',
+      legacyCredentialHash: 'legacy-hash',
+    });
 
     await service.assertTicketAccessByToken('secure-token', assignedStaff);
 
-    expect(prismaMock.event.findFirst).toHaveBeenCalledWith({
-      where: expect.objectContaining({
-        AND: expect.arrayContaining([
-          expect.objectContaining({
-            bookings: {
-              some: {
-                tickets: {
-                  some: { secureToken: 'secure-token' },
-                },
-              },
-            },
-          }),
-        ]),
+    expect(prismaMock.ticket.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          legacyCredentialHash: 'legacy-hash',
+          booking: { event: expect.any(Object) },
+        }),
       }),
-      select: { id: true },
-    });
+    );
   });
 
   it('does not reveal a Ticket from an inaccessible Event', async () => {

@@ -186,7 +186,9 @@ export default function StaffScannerPage() {
     async (rawToken: string) => {
       const token = rawToken.trim().toLowerCase();
       if (!eventId || isWorking || result) return;
-      if (!/^[a-f0-9]{64}$/.test(token)) {
+      if (
+        !/^(?:[a-f0-9]{64}|gt1_[a-f0-9]{32}_[A-Za-z0-9_-]{43})$/.test(token)
+      ) {
         setError("Enter or scan a valid Glacier Ticket code.");
         return;
       }

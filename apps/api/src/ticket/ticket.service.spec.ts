@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketScanResult } from './dto/ticket-scan-response.dto';
+import { TicketCredentialService } from './ticket-credential.service';
 import { TicketService } from './ticket.service';
 
 jest.mock('qrcode', () => ({
@@ -17,6 +18,9 @@ describe('TicketService', () => {
     id: 'ticket-1',
     ticketNumber: 'TKT-1',
     secureToken: token,
+    credentialSelector: 'b'.repeat(32),
+    credentialKeyId: 'local-v1',
+    legacyCredentialHash: 'legacy-hash',
     status: 'ACTIVE',
     checkedInAt: new Date('2026-08-20T00:00:00.000Z'),
     participant: {
@@ -49,6 +53,19 @@ describe('TicketService', () => {
       updateMany: jest.fn(),
     },
   };
+  const credentialMock = {
+    lookupWhere: jest.fn(() => ({
+      legacyCredentialHash: 'legacy-hash',
+    })),
+    matches: jest.fn(() => true),
+    present: jest.fn(() => `gt1_${'b'.repeat(32)}_${'A'.repeat(43)}`),
+    issue: jest.fn((id: string) => ({
+      id,
+      credentialSelector: 'b'.repeat(32),
+      credentialKeyId: 'local-v1',
+      token: `gt1_${'b'.repeat(32)}_${'A'.repeat(43)}`,
+    })),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -59,6 +76,10 @@ describe('TicketService', () => {
           provide: PrismaService,
           useValue: prismaMock,
         },
+        {
+          provide: TicketCredentialService,
+          useValue: credentialMock,
+        },
       ],
     }).compile();
 
@@ -67,6 +88,32 @@ describe('TicketService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('issues new Tickets with stored verification metadata and no raw credential', async () => {
+    prismaMock.booking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      participants: [{ id: 'participant-1' }],
+      tickets: [],
+    });
+    prismaMock.ticket.createMany.mockResolvedValue({ count: 1 });
+    prismaMock.ticket.findMany.mockResolvedValue([]);
+
+    await service.issueTicketsForBooking('booking-1');
+
+    expect(prismaMock.ticket.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          id: expect.any(String),
+          bookingId: 'booking-1',
+          participantId: 'participant-1',
+          secureToken: null,
+          credentialSelector: 'b'.repeat(32),
+          credentialKeyId: 'local-v1',
+          status: 'ACTIVE',
+        }),
+      ],
+    });
   });
 
   it('activates pending Flexible Ticket entitlements against issued Tickets and Payment', async () => {
@@ -101,6 +148,7 @@ describe('TicketService', () => {
   });
 
   it('rejects malformed public possession tokens before querying', async () => {
+    credentialMock.lookupWhere.mockReturnValueOnce(null as never);
     await expect(service.getTicketByToken('not-a-token')).rejects.toThrow(
       NotFoundException,
     );
@@ -114,7 +162,7 @@ describe('TicketService', () => {
 
     expect(prismaMock.ticket.findUnique).toHaveBeenCalledWith({
       where: {
-        secureToken: token,
+        legacyCredentialHash: 'legacy-hash',
       },
       select: expect.objectContaining({
         ticketNumber: true,
@@ -128,14 +176,36 @@ describe('TicketService', () => {
     expect(JSON.stringify(query)).not.toContain('customer');
   });
 
+  it('resolves a current signed credential by selector and verifies its MAC', async () => {
+    const currentToken = `gt1_${'b'.repeat(32)}_${'A'.repeat(43)}`;
+    credentialMock.lookupWhere.mockReturnValueOnce({
+      credentialSelector: 'b'.repeat(32),
+    });
+    prismaMock.ticket.findUnique.mockResolvedValue(ticket);
+
+    await service.getTicketByToken(currentToken);
+
+    expect(prismaMock.ticket.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { credentialSelector: 'b'.repeat(32) },
+      }),
+    );
+    expect(credentialMock.matches).toHaveBeenCalledWith(ticket, currentToken);
+  });
+
   it('generates a public QR only for a valid possession token', async () => {
-    prismaMock.ticket.findUnique.mockResolvedValue({ secureToken: token });
+    prismaMock.ticket.findUnique.mockResolvedValue(ticket);
 
     const result = await service.generatePublicQrCode(token);
 
     expect(prismaMock.ticket.findUnique).toHaveBeenCalledWith({
-      where: { secureToken: token },
-      select: { secureToken: true },
+      where: { legacyCredentialHash: 'legacy-hash' },
+      select: {
+        id: true,
+        credentialSelector: true,
+        credentialKeyId: true,
+        legacyCredentialHash: true,
+      },
     });
     expect(result).toEqual(Buffer.from('qr-code'));
   });
@@ -167,7 +237,7 @@ describe('TicketService', () => {
     expect(prismaMock.ticket.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          secureToken: token,
+          legacyCredentialHash: 'legacy-hash',
           booking: {
             event: {
               organizationId: 'organization-1',
@@ -208,7 +278,7 @@ describe('TicketService', () => {
 
     expect(prismaMock.ticket.updateMany).toHaveBeenCalledWith({
       where: {
-        secureToken: token,
+        id: 'ticket-1',
         status: 'ACTIVE',
         booking: {
           event: {
@@ -241,7 +311,8 @@ describe('TicketService', () => {
       },
       select: {
         id: true,
-        secureToken: true,
+        credentialSelector: true,
+        credentialKeyId: true,
       },
     });
   });

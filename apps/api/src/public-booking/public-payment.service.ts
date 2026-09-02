@@ -3,12 +3,14 @@ import { createHash } from 'node:crypto';
 
 import { PaymentService } from '../payment/payment.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 @Injectable()
 export class PublicPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentService: PaymentService,
+    private readonly ticketCredentials: TicketCredentialService,
   ) {}
 
   async createPayment(bookingId: string, publicAccessToken: string) {
@@ -65,8 +67,10 @@ export class PublicPaymentService {
         },
         tickets: {
           select: {
+            id: true,
             ticketNumber: true,
-            secureToken: true,
+            credentialSelector: true,
+            credentialKeyId: true,
             status: true,
             participant: {
               select: {
@@ -123,7 +127,14 @@ export class PublicPaymentService {
         slug: booking.event.slug,
         waiverPublicSlug: booking.event.waiver?.publicSlug ?? null,
       },
-      tickets: confirmed ? booking.tickets : [],
+      tickets: confirmed
+        ? booking.tickets.map((ticket) => ({
+            ticketNumber: ticket.ticketNumber,
+            secureToken: this.ticketCredentials.present(ticket),
+            status: ticket.status,
+            participant: ticket.participant,
+          }))
+        : [],
       flexibleTicketEntitlements: confirmed
         ? booking.flexibleTicketEntitlements.map((entitlement) => ({
             ...entitlement,

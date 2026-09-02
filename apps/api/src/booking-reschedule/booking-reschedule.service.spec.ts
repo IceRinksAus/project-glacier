@@ -229,6 +229,14 @@ describe('BookingRescheduleService', () => {
       prisma as never,
       accessControl as never,
       ruleEvaluation as never,
+      {
+        issue: (id: string) => ({
+          id,
+          credentialSelector: 'a'.repeat(32),
+          credentialKeyId: 'local-v1',
+          token: `gt1_${'a'.repeat(32)}_${'A'.repeat(43)}`,
+        }),
+      } as never,
     );
   });
 

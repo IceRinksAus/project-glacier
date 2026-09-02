@@ -3,10 +3,14 @@ import {
   TicketScanResult,
 } from './dto/ticket-scan-response.dto';
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import * as QRCode from 'qrcode';
 
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  StoredTicketCredential,
+  TicketCredentialService,
+} from './ticket-credential.service';
 import {
   TicketValidationReason,
   TicketValidationResponseDto,
@@ -14,7 +18,10 @@ import {
 
 @Injectable()
 export class TicketService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly credentials: TicketCredentialService,
+  ) {}
 
   async issueTicketsForBooking(bookingId: string) {
     const booking = await this.prisma.booking.findUnique({
@@ -44,15 +51,22 @@ export class TicketService {
     }
 
     await this.prisma.ticket.createMany({
-      data: participantsWithoutTickets.map((participant) => ({
-        bookingId: booking.id,
-        participantId: participant.id,
-        ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
-          .toString('hex')
-          .toUpperCase()}`,
-        secureToken: randomBytes(32).toString('hex'),
-        status: 'ACTIVE',
-      })),
+      data: participantsWithoutTickets.map((participant) => {
+        const id = randomUUID();
+        const credential = this.credentials.issue(id);
+        return {
+          id,
+          bookingId: booking.id,
+          participantId: participant.id,
+          ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
+            .toString('hex')
+            .toUpperCase()}`,
+          secureToken: null,
+          credentialSelector: credential.credentialSelector,
+          credentialKeyId: credential.credentialKeyId,
+          status: 'ACTIVE' as const,
+        };
+      }),
     });
 
     return this.prisma.ticket.findMany({
@@ -127,13 +141,15 @@ export class TicketService {
   }
 
   async getTicketByToken(token: string) {
-    this.validateSecureToken(token);
+    const where = this.credentialWhereOrThrow(token);
 
     const ticket = await this.prisma.ticket.findUnique({
-      where: {
-        secureToken: token,
-      },
+      where,
       select: {
+        id: true,
+        credentialSelector: true,
+        credentialKeyId: true,
+        legacyCredentialHash: true,
         ticketNumber: true,
         status: true,
         checkedInAt: true,
@@ -169,18 +185,26 @@ export class TicketService {
       throw new NotFoundException('Ticket not found');
     }
 
-    return ticket;
+    this.assertCredentialMatch(ticket, token);
+    const {
+      id: _id,
+      credentialSelector: _selector,
+      credentialKeyId: _keyId,
+      legacyCredentialHash: _legacyHash,
+      ...presentation
+    } = ticket;
+    return presentation;
   }
 
   async validateTicket(
     organizationId: string,
     token: string,
   ): Promise<TicketValidationResponseDto> {
-    this.validateSecureToken(token);
+    const where = this.credentialWhereOrThrow(token);
 
     const ticket = await this.prisma.ticket.findFirst({
       where: {
-        secureToken: token,
+        ...where,
         booking: {
           event: {
             organizationId,
@@ -204,6 +228,7 @@ export class TicketService {
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
+    this.assertCredentialMatch(ticket, token);
 
     const alreadyScanned = ticket.status === 'SCANNED';
     const cancelled = ticket.status === 'CANCELLED';
@@ -256,12 +281,27 @@ export class TicketService {
     organizationId: string,
     token: string,
   ): Promise<TicketScanResponseDto> {
-    this.validateSecureToken(token);
+    const where = this.credentialWhereOrThrow(token);
     const checkedInAt = new Date();
+
+    const resolved = await this.prisma.ticket.findFirst({
+      where: {
+        ...where,
+        booking: { event: { organizationId } },
+      },
+      select: {
+        id: true,
+        credentialSelector: true,
+        credentialKeyId: true,
+        legacyCredentialHash: true,
+      },
+    });
+    if (!resolved) throw new NotFoundException('Ticket not found');
+    this.assertCredentialMatch(resolved, token);
 
     const updateResult = await this.prisma.ticket.updateMany({
       where: {
-        secureToken: token,
+        id: resolved.id,
         status: 'ACTIVE',
         booking: {
           event: {
@@ -278,7 +318,7 @@ export class TicketService {
     if (updateResult.count === 1) {
       const ticket = await this.prisma.ticket.findFirst({
         where: {
-          secureToken: token,
+          id: resolved.id,
           booking: {
             event: {
               organizationId,
@@ -320,7 +360,7 @@ export class TicketService {
 
     const ticket = await this.prisma.ticket.findFirst({
       where: {
-        secureToken: token,
+        id: resolved.id,
         booking: {
           event: {
             organizationId,
@@ -409,7 +449,8 @@ export class TicketService {
       },
       select: {
         id: true,
-        secureToken: true,
+        credentialSelector: true,
+        credentialKeyId: true,
       },
     });
 
@@ -417,7 +458,7 @@ export class TicketService {
       throw new NotFoundException('Ticket not found');
     }
 
-    return QRCode.toBuffer(ticket.secureToken, {
+    return QRCode.toBuffer(this.credentials.present(ticket), {
       type: 'png',
       errorCorrectionLevel: 'H',
       width: 512,
@@ -426,22 +467,24 @@ export class TicketService {
   }
 
   async generatePublicQrCode(token: string): Promise<Buffer> {
-    this.validateSecureToken(token);
+    const where = this.credentialWhereOrThrow(token);
 
     const ticket = await this.prisma.ticket.findUnique({
-      where: {
-        secureToken: token,
-      },
+      where,
       select: {
-        secureToken: true,
+        id: true,
+        credentialSelector: true,
+        credentialKeyId: true,
+        legacyCredentialHash: true,
       },
     });
 
     if (!ticket) {
       throw new NotFoundException('Ticket not found');
     }
+    this.assertCredentialMatch(ticket, token);
 
-    return QRCode.toBuffer(ticket.secureToken, {
+    return QRCode.toBuffer(this.credentials.present(ticket), {
       type: 'png',
       errorCorrectionLevel: 'H',
       width: 512,
@@ -449,8 +492,18 @@ export class TicketService {
     });
   }
 
-  private validateSecureToken(token: string) {
-    if (!/^[a-f0-9]{64}$/.test(token)) {
+  presentCredential(ticket: StoredTicketCredential): string {
+    return this.credentials.present(ticket);
+  }
+
+  private credentialWhereOrThrow(token: string) {
+    const where = this.credentials.lookupWhere(token);
+    if (!where) throw new NotFoundException('Ticket not found');
+    return where;
+  }
+
+  private assertCredentialMatch(ticket: StoredTicketCredential, token: string) {
+    if (!this.credentials.matches(ticket, token)) {
       throw new NotFoundException('Ticket not found');
     }
   }

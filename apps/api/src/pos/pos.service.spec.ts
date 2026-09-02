@@ -41,6 +41,7 @@ describe('PosService', () => {
   };
   const ticketService = {
     issueTicketsForBooking: jest.fn(),
+    presentCredential: jest.fn(() => 'current-ticket-token'),
   };
   const ruleEvaluationService = {
     evaluate: jest.fn(),

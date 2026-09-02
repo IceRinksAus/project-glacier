@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 const CURRENT_TOKEN_PATTERN = /^gt1_([a-f0-9]{32})_([A-Za-z0-9_-]{43})$/;
@@ -25,11 +26,20 @@ type ParsedTicketCredential =
 
 export type StoredTicketCredential = {
   id: string;
+  credentialSelector: string | null;
+  credentialKeyId: string | null;
+  legacyCredentialHash?: string | null;
+};
+
+type CurrentStoredTicketCredential = Omit<
+  StoredTicketCredential,
+  'credentialSelector' | 'credentialKeyId'
+> & {
   credentialSelector: string;
   credentialKeyId: string;
 };
 
-export type IssuedTicketCredential = StoredTicketCredential & {
+export type IssuedTicketCredential = CurrentStoredTicketCredential & {
   token: string;
 };
 
@@ -61,11 +71,17 @@ export class TicketCredentialService {
   }
 
   present(ticket: StoredTicketCredential): string {
-    this.assertSelector(ticket.credentialSelector);
-    this.assertKeyId(ticket.credentialKeyId);
+    const credentialSelector = ticket.credentialSelector;
+    const credentialKeyId = ticket.credentialKeyId;
+    this.assertSelector(credentialSelector);
+    this.assertKeyId(credentialKeyId);
 
-    const mac = this.createMac(ticket);
-    return `gt1_${ticket.credentialSelector}_${mac}`;
+    const mac = this.createMac({
+      ...ticket,
+      credentialSelector,
+      credentialKeyId,
+    });
+    return `gt1_${credentialSelector}_${mac}`;
   }
 
   parse(token: string): ParsedTicketCredential | null {
@@ -88,11 +104,33 @@ export class TicketCredentialService {
     return null;
   }
 
+  lookupWhere(token: string): Prisma.TicketWhereUniqueInput | null {
+    const parsed = this.parse(token);
+    if (!parsed) return null;
+
+    return parsed.kind === 'current'
+      ? { credentialSelector: parsed.selector }
+      : { legacyCredentialHash: parsed.hash };
+  }
+
+  matches(ticket: StoredTicketCredential, token: string): boolean {
+    const parsed = this.parse(token);
+    if (!parsed) return false;
+
+    if (parsed.kind === 'legacy') {
+      return ticket.legacyCredentialHash === parsed.hash;
+    }
+
+    return this.verifyCurrent(ticket, token);
+  }
+
   verifyCurrent(ticket: StoredTicketCredential, token: string): boolean {
     const parsed = this.parse(token);
     if (
       !parsed ||
       parsed.kind !== 'current' ||
+      !ticket.credentialSelector ||
+      !ticket.credentialKeyId ||
       parsed.selector !== ticket.credentialSelector
     ) {
       return false;
@@ -102,7 +140,10 @@ export class TicketCredentialService {
     let suppliedMac: Buffer;
 
     try {
-      expectedMac = Buffer.from(this.createMac(ticket), 'base64url');
+      expectedMac = Buffer.from(
+        this.createMac(ticket as CurrentStoredTicketCredential),
+        'base64url',
+      );
       suppliedMac = Buffer.from(parsed.mac, 'base64url');
     } catch {
       return false;
@@ -126,7 +167,7 @@ export class TicketCredentialService {
     return this.activeKeyId;
   }
 
-  private createMac(ticket: StoredTicketCredential): string {
+  private createMac(ticket: CurrentStoredTicketCredential): string {
     const signingKey = this.signingKeys.get(ticket.credentialKeyId);
     if (!signingKey) {
       throw new Error(
@@ -216,14 +257,14 @@ export class TicketCredentialService {
     return { activeKeyId, signingKeys };
   }
 
-  private assertSelector(selector: string) {
-    if (!/^[a-f0-9]{32}$/.test(selector)) {
+  private assertSelector(selector: string | null): asserts selector is string {
+    if (!selector || !/^[a-f0-9]{32}$/.test(selector)) {
       throw new Error('Ticket credential selector is invalid.');
     }
   }
 
-  private assertKeyId(keyId: string) {
-    if (!KEY_ID_PATTERN.test(keyId)) {
+  private assertKeyId(keyId: string | null): asserts keyId is string {
+    if (!keyId || !KEY_ID_PATTERN.test(keyId)) {
       throw new Error('Ticket signing-key identifier is invalid.');
     }
   }

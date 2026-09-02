@@ -470,7 +470,8 @@ export class PosService {
           select: {
             id: true,
             ticketNumber: true,
-            secureToken: true,
+            credentialSelector: true,
+            credentialKeyId: true,
             status: true,
             participant: {
               select: {
@@ -492,6 +493,13 @@ export class PosService {
 
     return {
       ...booking,
+      tickets: booking.tickets.map((ticket) => ({
+        id: ticket.id,
+        ticketNumber: ticket.ticketNumber,
+        secureToken: this.ticketService.presentCredential(ticket),
+        status: ticket.status,
+        participant: ticket.participant,
+      })),
       total: booking.total.toNumber(),
       payments: booking.payments.map((payment) => ({
         ...payment,

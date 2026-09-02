@@ -6,6 +6,7 @@ import { ScannerClock } from './scanner-clock';
 import { AccessControlService } from '../access-control/access-control.service';
 import { StaffScannerService } from './staff-scanner.service';
 import { ScannerTicketResult } from './staff-scanner.types';
+import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 describe('StaffScannerService', () => {
   const token = 'a'.repeat(64);
@@ -26,6 +27,9 @@ describe('StaffScannerService', () => {
     issuedAt: new Date('2027-08-20T00:00:00.000Z'),
     status: 'ACTIVE',
     checkedInAt: null,
+    credentialSelector: 'b'.repeat(32),
+    credentialKeyId: 'local-v1',
+    legacyCredentialHash: 'legacy-hash',
     participant: {
       firstName: 'Alex',
       lastName: 'Test',
@@ -51,6 +55,10 @@ describe('StaffScannerService', () => {
     $transaction: jest.fn((callback) => callback(transactionMock)),
   };
   const clockMock = { now: jest.fn(() => now) };
+  const ticketCredentials = {
+    lookupWhere: jest.fn(() => ({ legacyCredentialHash: 'legacy-hash' })),
+    matches: jest.fn(() => true),
+  };
   let service: StaffScannerService;
   const scannerAccess = {
     userId: 'user-1',
@@ -82,6 +90,10 @@ describe('StaffScannerService', () => {
               where: Record<string, unknown> = {},
             ) => ({ organizationId: access.organizationId, ...where }),
           },
+        },
+        {
+          provide: TicketCredentialService,
+          useValue: ticketCredentials,
         },
       ],
     }).compile();
