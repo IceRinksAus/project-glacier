@@ -14,6 +14,7 @@ This runbook covers Event-day use of Glacier's authenticated Staff Scanner. It d
 6. Set POS/help-desk devices to **Ticket Lookup — Detailed POS view**.
 7. Confirm the rear camera is permitted, or connect and test the hand scanner.
 8. Test eligible, too-early, already-scanned and wrong-Event Tickets before admitting customers.
+9. If an OWNER or assigned MANAGER reissues a compromised Ticket link, confirm the old QR is rejected and only the newly delivered QR is accepted. Never copy either credential into notes, chat or incident logs.
 
 ## Gate Entry
 

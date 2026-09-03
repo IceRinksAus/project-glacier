@@ -26,7 +26,8 @@
 - approve the data-class retention schedule in `docs/privacy/PRIVACY_DATA_FLOW_RETENTION_AND_DELETION_REGISTER.md`
 - implement and test tenant-scoped access, correction, export and transactional pseudonymisation/deletion workflows
 - implement authorised legal holds and prove every retention/deletion job fails closed for held records
-- review raw-at-rest Ticket possession credentials and implement the approved rotation/hash-compatible design
+- verify the Sprint 32 Ticket key ring is supplied by approved managed secret storage, the active key exists, retained keys are still referenced, and PostgreSQL contains zero raw Ticket possession credentials
+- exercise authorised Ticket-link rotation and prove the former current and legacy links both fail without changing Ticket, Booking, Payment or scan history
 - prove personal-data deletion across denormalised snapshots, files, logs, subprocessors and restored backups
 - approve customer-facing privacy notices, subprocessors/data locations and children's/Waiver handling
 - privacy/legal/accounting/insurance review and named privacy-request owner

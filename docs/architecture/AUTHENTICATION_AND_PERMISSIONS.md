@@ -52,8 +52,9 @@ Cross-tenant identifiers receive a privacy-safe not-found or forbidden response 
 ## Public and external boundaries
 
 - Customer Booking and Waiver routes use dedicated `/public/...` APIs with strict DTOs and minimised responses.
-- Public Ticket presentation relies on a high-entropy possession token and returns presentation-only data.
+- Public Ticket presentation relies on a versioned HMAC possession credential and returns presentation-only data. PostgreSQL stores only a random selector, key ID and optional one-way legacy hash; the signing key remains in application configuration.
 - Dedicated Staff Scanner validation and admission require JWT authentication, an explicit scanner-capable role and current Event scope.
+- Ticket credential rotation is restricted to OWNER or MANAGER and repeats role plus Organisation/Event-assignment enforcement inside the service. Rotation replaces the selector/key reference, clears legacy acceptance and writes non-secret attributable evidence; STAFF and SCANNER cannot reissue Ticket authority.
 - Stripe webhooks use Stripe signature verification and raw request-body access rather than Glacier JWT authentication.
 
 ## Abuse controls

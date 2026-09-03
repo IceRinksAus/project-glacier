@@ -2,7 +2,7 @@
 
 ## Status and authority
 
-Sprint 31 engineering register, prepared from the current Prisma schema, API
+Sprint 32 engineering register, prepared from the current Prisma schema, API
 boundaries and operational documentation on 2 September 2026.
 
 This register describes what Glacier currently stores and establishes the
@@ -27,9 +27,10 @@ approval.
 - Authentication sessions expire after eight hours and can be revoked, but
   expired/revoked rows are not yet cleaned up.
 - Public Booking access, Waiver verification and Ticket presentation use
-  possession credentials. Booking and Waiver credentials are stored as hashes;
-  the current Ticket `secureToken` is stored as a raw unique value and therefore
-  requires strict database protection and future credential-storage review.
+  possession credentials. Booking and Waiver credentials are stored as hashes.
+  Current Ticket authority is an HMAC credential reconstructed from a public
+  selector/key ID and a separately held signing key; PostgreSQL stores no usable
+  raw Ticket credential. Legacy local acceptance uses only a one-way hash.
 - Glacier records provider references and authoritative amounts, but does not
   intentionally store card numbers, CVC values or online card credentials.
 - Merchandise-only POS deliberately avoids creating a placeholder Customer.
@@ -65,7 +66,7 @@ workflow is activated.
 | B. Authentication and access evidence (`AuthenticationSession`, `OrganizationAccessAudit`)           | Session identifier, expiry/revocation, actor/target, before/after role state                                   | Access enforcement, incident investigation and accountability                        | Sessions expire/revoke but rows persist; access audit is restricted from cascade deletion                       | Automate short, defined session cleanup after the security investigation window; retain access-change evidence for the approved audit window, then delete or pseudonymise where lawful                        | Security/privacy approval and incident-evidence requirement                 |
 | C. Customer and Booking identity (`Customer`, `Booking`)                                             | Name, email, phone, booking number and service history                                                         | Contract/service delivery, support, communications and reconciliation                | Persists indefinitely; Customer may be shared by multiple Bookings                                              | Preserve Booking/financial evidence; after the approved operational/legal window, remove or pseudonymise direct contact identity when no hold or unresolved matter applies                                    | Legal/privacy/accounting approval and customer-rights procedure             |
 | D. Participant and child data (`BookingParticipant`)                                                 | Name and integer age; Ticket relationship                                                                      | Eligibility, product rules, fulfilment, admission and support                        | Persists indefinitely; some commerce/support evidence stores participant-name snapshots                         | Collect only fields required by the Event; minimise identity after operational, incident, refund and legal windows; ensure every denormalised snapshot is included                                            | Children's privacy/legal and insurer approval                               |
-| E. Ticket and scan evidence (`Ticket`, `TicketScanAttempt`)                                          | Ticket number/token, participant link, attendance time, operator and scan result                               | Admission, fraud prevention, support and event-day evidence                          | Persists indefinitely; scan record retains attribution and can survive Ticket deletion with `ticketId` set null | Retain credential/state while usable; invalidate after lifecycle; retain minimised scan evidence only for approved incident/operational window                                                                | Security, privacy, insurer and event-operations approval                    |
+| E. Ticket and scan evidence (`Ticket`, `TicketScanAttempt`, `TicketCredentialRotationAudit`)         | Ticket number, non-secret credential selector/key ID, legacy hash, participant link, attendance time, operator and scan/rotation result | Admission, fraud prevention, controlled reissue, support and event-day evidence | Persists indefinitely; restrictive rotation-audit relationships deliberately preserve attribution | Retain credential/state while usable; rotate/invalidate after compromise or lifecycle; retain minimised scan and rotation evidence only for the approved incident/operational window | Security, privacy, insurer and event-operations approval |
 | F. Payments, refunds and reconciliation (`Payment`, `PaymentRefund`, `PaymentReconciliationAttempt`) | Amount, method/status, provider reference, failure details, operator                                           | Payment fulfilment, accounting, dispute/fraud handling and reconciliation            | Persists with Booking/Retail Sale; adjustment relationships deliberately restrict deletion                      | Preserve financial ledger and provider references for the approved statutory/dispute period; minimise free-text failure detail and customer linkage when permitted                                            | Accountant, payment provider and legal/privacy approval                     |
 | G. Adjustments, reschedules and Flexible Tickets                                                     | Participant/Ticket snapshots, operator notes/reasons, refund and entitlement history                           | Authoritative support decisions, inventory/capacity restoration and dispute evidence | Append-only/restrict relationships intentionally prevent casual deletion                                        | Retain with underlying Booking/financial evidence; redact prohibited note content; pseudonymise identity only through a designed transaction that preserves monetary and operational truth                    | Legal/privacy/accounting and support-policy approval                        |
 | H. Waiver evidence (`EventWaiver`, `WaiverVersion`, `WaiverSubmission`, `WaiverMinor`)               | Signatory name, signature data, acceptance time, minor full name/date of birth                                 | Evidence of disclosed wording and acceptance                                         | Persists indefinitely; minor rows cascade only with submission; no legal hold field                             | Apply the longest approved jurisdiction/insurance/claim period; legal hold overrides ordinary expiry; at expiry securely remove signature and identity while retaining only approved non-identifying evidence | Australian lawyer, insurer and privacy adviser; approved Waiver wording     |
@@ -152,8 +153,9 @@ not make it visible to ordinary operators who could not otherwise access it.
 5. Add legal-hold storage, authorisation, audit and deletion-job enforcement.
 6. Add configured cleanup for expired/revoked authentication sessions,
    abandoned reservations and eligible temporary data.
-7. Review Ticket credential storage and replace raw-at-rest possession material
-   with a rotation/hash design where the presentation workflow permits it.
+7. Maintain the Sprint 32 no-raw-Ticket-credential invariant, rotate signing keys
+   through the approved production secret process and retire legacy hashes once
+   rehearsal evidence proves they are no longer required.
 8. Configure managed object, log and backup lifecycle rules and prove object
    deletion plus backup ageing.
 9. Inventory approved subprocessors, regions, purposes, contract terms,

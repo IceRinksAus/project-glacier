@@ -233,6 +233,8 @@ Sprint 17 extended and standardised that pattern:
 - legacy public Booking, Customer, Rule Evaluation and Payment entry points were removed;
 - public Booking mutations use bounded DTOs and reject unknown fields;
 - public Ticket presentation is minimised while scan/detail operations are authenticated and tenant-scoped; and
+- current Ticket possession authority uses a strict versioned selector/HMAC credential whose signing key is not stored in PostgreSQL; legacy credentials are matched only through SHA-256 hashes;
+- OWNER/assigned-MANAGER Ticket reissue is atomic, invalidates former current and legacy credentials and records attributable evidence without recording credential material; and
 - every route is classified in `docs/security/API_ENDPOINT_REGISTER.md`.
 
 The global request policy transforms DTO input, strips no unknown values silently and rejects non-whitelisted fields. Stripe raw-body signature verification remains a separate external boundary.

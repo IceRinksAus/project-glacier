@@ -2,7 +2,7 @@
 
 ## Status
 
-Sprint 31 operational contract. This document names configuration but must never contain real secret values.
+Sprint 32 operational contract. This document names configuration but must never contain real secret values.
 
 ## Environment isolation
 
@@ -39,6 +39,11 @@ or when Ticket signing-key configuration is incomplete or invalid. Ticket keys
 must be separate from JWT, Stripe, webhook and database credentials. Key IDs may
 appear in controlled operational evidence; key values and Ticket credentials
 must never appear in logs.
+
+Ticket-key rotation uses an overlap window: add the new key, make its ID active,
+reissue or naturally replace affected Ticket credentials, confirm no Ticket row
+references the retiring key, and only then remove it. Removing a referenced key
+would make Glacier unable to reconstruct that Ticket's current credential.
 
 ## Web configuration
 

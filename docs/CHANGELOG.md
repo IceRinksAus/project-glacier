@@ -1,5 +1,30 @@
 # Changelog
 
+# Sprint 32 – Ticket Possession-Credential Hardening
+
+## Complete
+
+- Replaced raw Ticket bearer values at rest with versioned selector/HMAC credentials whose signing keys remain outside PostgreSQL.
+- Added fail-closed production key-ring configuration, constant-time MAC verification and a stable local-only development key.
+- Migrated existing local Tickets to unique selectors, key IDs and one-way legacy hashes, cleared every raw value and enforced the null invariant in PostgreSQL.
+- Refactored online issuance, POS, rescheduling, public Ticket/QR, Access Control, Scanner and legacy validate/check-in paths through one credential authority.
+- Added OWNER/assigned-MANAGER atomic credential reissue, immediate former-current/legacy invalidation and append-only non-secret audit evidence.
+
+## Verification
+
+- API: 89 suites / 622 tests passed; production build passed.
+- Web: 30 files / 88 tests passed; production build passed.
+- All 47 migrations applied locally and from empty state.
+- Disposable tenant/role isolation passed 5 / 5 checks.
+- Tracked-secret scan passed across 613 files and 6 rules.
+- Complete local release gate passed.
+- Isolated PostgreSQL restore matched all 12 critical tables.
+- Browser acceptance proved legacy/current presentation and immediate former-link invalidation after authorised rotation using only fictional local data.
+
+## Boundary
+
+Managed production key custody, deployed origin/device acceptance, legacy-hash retirement and independent security review remain pre-live evidence. No paid infrastructure, live data or real payment was used.
+
 # Sprint 31 – Production Architecture, Security and Entity-Control Foundations
 
 ## Complete

@@ -1,8 +1,8 @@
 # Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Updated:** 2 September 2026
+**Updated:** 3 September 2026
 
-**Status:** Current strategic control document after Sprint 31; local Phase 3
+**Status:** Current strategic control document after Sprint 32; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 31, Glacier is best described as:
+After Sprint 32, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 31
+# 3. Delivered Foundation Through Sprint 32
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -86,18 +86,20 @@ The following are implemented foundations and should not be reopened without evi
 - verified isolated local backup/restore across 12 critical tables;
 - hardened branding-file handling and server-revocable operator sessions; and
 - an actual-data privacy/retention/deletion register with unresolved controls retained as production blockers.
+- signed Ticket possession credentials with no usable raw credential stored in PostgreSQL, one-way legacy compatibility and audited OWNER/assigned-MANAGER reissue.
 
-Current verified baseline at Sprint 31 closeout:
+Current verified baseline at Sprint 32 closeout:
 
-- 44 current Prisma migrations;
-- 87 API suites / 599 passing tests;
+- 47 current Prisma migrations;
+- 89 API suites / 622 passing tests;
 - 30 web test files / 88 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 604 files and an isolated restore matching 12 critical tables;
+  scan across 613 files and an isolated restore matching 12 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
+- browser acceptance of current, migrated-legacy and rotated Ticket presentation, including immediate safe rejection of both former credentials.
 
 This proves the local application baseline. It does not prove production readiness, legal approval, penetration resistance or event-day reliability.
 
@@ -164,8 +166,8 @@ dependency disposition, session revocation, upload hardening and the privacy
 data-flow register now have evidence. Privileged MFA/recovery delivery,
 coordinated edge controls, Australian-region managed storage, approved
 retention/deletion and legal holds, Waiver/legal approval, central monitoring,
-Ticket credential redesign and independent review still require implementation
-or sign-off.
+Ticket credential redesign is locally implemented. Managed key custody and
+independent review still require implementation or sign-off.
 
 ## 4.7 Representative operational acceptance
 
@@ -421,10 +423,15 @@ rescheduling and the complete supervised Flexible Ticket chain. Sprint 31 added
 the cost-controlled local production/security foundation and converted unknown
 deployment/privacy assumptions into explicit evidence and gates.
 
-The immediate next action is to plan the next no-spend Phase 3 Sprint around the
-highest-risk locally actionable findings—particularly Ticket possession-token
-storage and other security lifecycle work—without starting paid infrastructure
-or broad product expansion. Deployment-edge, managed-storage, monitoring,
+Sprint 32 closed the locally actionable raw Ticket-credential-at-rest finding.
+Ticket links now use selector/HMAC authority held outside PostgreSQL, legacy
+local links use one-way hashes, and controlled reissue immediately invalidates
+former authority with append-only non-secret audit evidence.
+
+The immediate next action is to plan the next no-spend Phase 3 Sprint around
+privileged MFA enrolment, challenge and recovery-code authority for OWNER and
+MANAGER, without starting paid infrastructure or broad product expansion.
+Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.
 
