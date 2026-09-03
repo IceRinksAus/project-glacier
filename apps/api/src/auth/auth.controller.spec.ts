@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MfaManagementService } from './mfa-management.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -19,6 +20,10 @@ describe('AuthController', () => {
         {
           provide: AuthService,
           useValue: serviceMock,
+        },
+        {
+          provide: MfaManagementService,
+          useValue: {},
         },
       ],
     }).compile();

@@ -10,11 +10,13 @@ import {
   createApplicationValidationPipe,
 } from '../src/config/application-security';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { MfaCryptoService } from '../src/auth/mfa-crypto.service';
 
 describe('Tenant and role isolation (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   const password = 'Isolation-test-password-31!';
+  const recoveryCodesByEmail = new Map<string, string[]>();
 
   async function login(email: string) {
     const response = await request(app.getHttpServer())
@@ -22,7 +24,30 @@ describe('Tenant and role isolation (e2e)', () => {
       .send({ email, password })
       .expect(201);
 
-    return response.body.accessToken as string;
+    if (response.body.status === 'AUTHENTICATED') {
+      return response.body.accessToken as string;
+    }
+
+    const savedRecoveryCode = recoveryCodesByEmail.get(email)?.shift();
+    let secret = response.body.setup?.secret as string | undefined;
+    if (!secret) {
+      const membership = await prisma.userOrganization.findFirstOrThrow({
+        where: { user: { email } },
+        include: { mfaFactors: { where: { status: 'ACTIVE' }, take: 1 } },
+      });
+      secret = app.get(MfaCryptoService).decryptSecret(membership.mfaFactors[0]);
+    }
+    const mfaCrypto = app.get(MfaCryptoService);
+    const code = savedRecoveryCode ??
+      mfaCrypto.createTotp(secret!, Math.floor(Date.now() / 30_000));
+    const completed = await request(app.getHttpServer())
+      .post('/auth/mfa/challenge')
+      .send({ challengeToken: response.body.challengeToken, code })
+      .expect(201);
+    if (completed.body.recoveryCodes?.length) {
+      recoveryCodesByEmail.set(email, completed.body.recoveryCodes);
+    }
+    return completed.body.accessToken as string;
   }
 
   beforeAll(async () => {

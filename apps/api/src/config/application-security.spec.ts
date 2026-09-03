@@ -84,6 +84,11 @@ describe('application security configuration', () => {
         TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
           'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
         }),
+        MFA_ACTIVE_KEY_ID: 'mfa-v1',
+        MFA_ENCRYPTION_KEYS: JSON.stringify({
+          'mfa-v1': Buffer.alloc(32, 2).toString('base64url'),
+        }),
+        MFA_RECOVERY_CODE_PEPPER: Buffer.alloc(32, 3).toString('base64url'),
       }),
     ).not.toThrow();
   });
@@ -92,7 +97,7 @@ describe('application security configuration', () => {
     expect(() =>
       validateApplicationEnvironment({ NODE_ENV: 'production' }),
     ).toThrow(
-      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS, TRUST_PROXY_HOPS, TICKET_TOKEN_ACTIVE_KEY_ID, TICKET_TOKEN_SIGNING_KEYS.',
+      'Missing required production environment variables: DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, WEB_APP_URL, CORS_ORIGINS, TRUST_PROXY_HOPS, TICKET_TOKEN_ACTIVE_KEY_ID, TICKET_TOKEN_SIGNING_KEYS, MFA_ACTIVE_KEY_ID, MFA_ENCRYPTION_KEYS, MFA_RECOVERY_CODE_PEPPER.',
     );
   });
 
@@ -111,6 +116,11 @@ describe('application security configuration', () => {
         TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
           'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
         }),
+        MFA_ACTIVE_KEY_ID: 'mfa-v1',
+        MFA_ENCRYPTION_KEYS: JSON.stringify({
+          'mfa-v1': Buffer.alloc(32, 2).toString('base64url'),
+        }),
+        MFA_RECOVERY_CODE_PEPPER: Buffer.alloc(32, 3).toString('base64url'),
       }),
     ).toThrow('JWT_SECRET must contain at least 32 characters in production.');
   });
@@ -129,6 +139,11 @@ describe('application security configuration', () => {
       TICKET_TOKEN_SIGNING_KEYS: JSON.stringify({
         'primary-v1': Buffer.alloc(32, 1).toString('base64url'),
       }),
+      MFA_ACTIVE_KEY_ID: 'mfa-v1',
+      MFA_ENCRYPTION_KEYS: JSON.stringify({
+        'mfa-v1': Buffer.alloc(32, 2).toString('base64url'),
+      }),
+      MFA_RECOVERY_CODE_PEPPER: Buffer.alloc(32, 3).toString('base64url'),
     };
 
     expect(() => validateApplicationEnvironment(environment)).toThrow(

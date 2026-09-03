@@ -144,6 +144,7 @@ model Organization {
   eventGroups                   EventGroup[]
   accessAuditEntries            OrganizationAccessAudit[]
   authenticationSessions        AuthenticationSession[]
+  mfaAuditEntries               MfaAudit[]
   ticketAdjustments             TicketAdjustment[]
   bookingReschedules            BookingReschedule[]
   flexibleTicketPolicies        FlexibleTicketPolicy[]
@@ -169,17 +170,19 @@ model User {
   ticketScanAttempts              TicketScanAttempt[]
   createdFileAssets               FileAsset[]
   paymentReconciliationAttempts   PaymentReconciliationAttempt[]
-  paymentsReceived                Payment[]                      @relation("PaymentReceivedBy")
-  retailSalesCreated              RetailSale[]                   @relation("RetailSaleCreatedBy")
-  retailSalesCompleted            RetailSale[]                   @relation("RetailSaleCompletedBy")
-  ticketAdjustmentsRequested      TicketAdjustment[]             @relation("TicketAdjustmentRequestedBy")
-  bookingReschedulesRequested     BookingReschedule[]            @relation("BookingRescheduleRequestedBy")
-  flexibleTicketPoliciesCreated   FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyCreatedBy")
-  flexibleTicketPoliciesPublished FlexibleTicketPolicy[]         @relation("FlexibleTicketPolicyPublishedBy")
-  flexibleTicketRequestsReviewed  FlexibleTicketRequest[]        @relation("FlexibleTicketRequestReviewedBy")
-  accessChangesMade               OrganizationAccessAudit[]      @relation("OrganizationAccessAuditActor")
-  accessChangesReceived           OrganizationAccessAudit[]      @relation("OrganizationAccessAuditTarget")
+  paymentsReceived                Payment[]                       @relation("PaymentReceivedBy")
+  retailSalesCreated              RetailSale[]                    @relation("RetailSaleCreatedBy")
+  retailSalesCompleted            RetailSale[]                    @relation("RetailSaleCompletedBy")
+  ticketAdjustmentsRequested      TicketAdjustment[]              @relation("TicketAdjustmentRequestedBy")
+  bookingReschedulesRequested     BookingReschedule[]             @relation("BookingRescheduleRequestedBy")
+  flexibleTicketPoliciesCreated   FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyCreatedBy")
+  flexibleTicketPoliciesPublished FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyPublishedBy")
+  flexibleTicketRequestsReviewed  FlexibleTicketRequest[]         @relation("FlexibleTicketRequestReviewedBy")
+  accessChangesMade               OrganizationAccessAudit[]       @relation("OrganizationAccessAuditActor")
+  accessChangesReceived           OrganizationAccessAudit[]       @relation("OrganizationAccessAuditTarget")
   authenticationSessions          AuthenticationSession[]
+  mfaAuditEntriesMade             MfaAudit[]                      @relation("MfaAuditActor")
+  mfaAuditEntriesReceived         MfaAudit[]                      @relation("MfaAuditTarget")
   ticketCredentialRotations       TicketCredentialRotationAudit[] @relation("TicketCredentialRotationActor")
 }
 
@@ -195,6 +198,10 @@ model AuthenticationSession {
   expiresAt    DateTime
   revokedAt    DateTime?
   revokeReason String?
+
+  mfaVerifiedAt       DateTime?
+  mfaMethod           String?
+  mfaFactorGeneration Int?
 
   createdAt DateTime @default(now())
 
@@ -246,10 +253,93 @@ model UserOrganization {
   accessScope    OrganizationAccessScope @default(ALL_EVENTS)
   createdAt      DateTime                @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  user         User         @relation(fields: [userId], references: [id])
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  mfaFactors    MfaFactor[]
+  mfaChallenges MfaChallenge[]
 
   @@unique([userId, organizationId])
+}
+
+model MfaFactor {
+  id String @id @default(cuid())
+
+  userOrganizationId String
+  userOrganization   UserOrganization @relation(fields: [userOrganizationId], references: [id], onDelete: Cascade)
+
+  type       String @default("TOTP")
+  status     String @default("PENDING")
+  generation Int    @default(1)
+
+  encryptionKeyId String
+  encryptedSecret String
+  encryptionNonce String
+  encryptionTag   String
+
+  lastUsedCounter Int?
+  activatedAt     DateTime?
+  revokedAt       DateTime?
+  revokeReason    String?
+  createdAt       DateTime  @default(now())
+
+  recoveryCodes MfaRecoveryCode[]
+  challenges    MfaChallenge[]
+
+  @@index([userOrganizationId, status])
+}
+
+model MfaRecoveryCode {
+  id String @id @default(cuid())
+
+  factorId String
+  factor   MfaFactor @relation(fields: [factorId], references: [id], onDelete: Cascade)
+
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([factorId, usedAt])
+}
+
+model MfaChallenge {
+  id String @id @default(cuid())
+
+  tokenHash String @unique
+  purpose   String
+
+  userOrganizationId String
+  userOrganization   UserOrganization @relation(fields: [userOrganizationId], references: [id], onDelete: Cascade)
+
+  factorId String?
+  factor   MfaFactor? @relation(fields: [factorId], references: [id], onDelete: Cascade)
+
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userOrganizationId, expiresAt])
+  @@index([factorId, expiresAt])
+}
+
+model MfaAudit {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  actorUserId String
+  actorUser   User   @relation("MfaAuditActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  targetUserId String
+  targetUser   User   @relation("MfaAuditTarget", fields: [targetUserId], references: [id], onDelete: Restrict)
+
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([targetUserId, createdAt])
 }
 
 model OrganizationAccessAudit {
@@ -1482,10 +1572,10 @@ model UserEventAccess {
 model Ticket {
   id String @id @default(cuid())
 
-  ticketNumber String @unique
+  ticketNumber String  @unique
   secureToken  String? @unique
 
-  credentialSelector   String @unique
+  credentialSelector   String  @unique
   credentialKeyId      String
   legacyCredentialHash String? @unique
 
@@ -1506,8 +1596,8 @@ model Ticket {
 
   scanAttempts                     TicketScanAttempt[]
   adjustmentAllocation             TicketAdjustmentAllocation?
-  originalRescheduleMapping        BookingRescheduleTicket?    @relation("BookingRescheduleOriginalTicket")
-  replacementRescheduleMapping     BookingRescheduleTicket?    @relation("BookingRescheduleReplacementTicket")
+  originalRescheduleMapping        BookingRescheduleTicket?        @relation("BookingRescheduleOriginalTicket")
+  replacementRescheduleMapping     BookingRescheduleTicket?        @relation("BookingRescheduleReplacementTicket")
   initialFlexibleTicketEntitlement FlexibleTicketEntitlement?
   flexibleTicketRequestItems       FlexibleTicketRequestItem[]
   credentialRotations              TicketCredentialRotationAudit[]
@@ -1531,10 +1621,10 @@ model TicketCredentialRotationAudit {
   actorUserId String
   actorUser   User   @relation("TicketCredentialRotationActor", fields: [actorUserId], references: [id], onDelete: Restrict)
 
-  previousKeyId            String
-  newKeyId                 String
-  legacyCredentialRevoked  Boolean
-  rotatedAt                DateTime @default(now())
+  previousKeyId           String
+  newKeyId                String
+  legacyCredentialRevoked Boolean
+  rotatedAt               DateTime @default(now())
 
   @@index([organizationId, rotatedAt])
   @@index([eventId, rotatedAt])

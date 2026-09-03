@@ -24,6 +24,13 @@ export const ABUSE_LIMIT_POLICIES: RateLimitPolicy[] = [
     matches: (method, path) => method === 'POST' && path === '/auth/login',
   },
   {
+    id: 'operator-mfa-challenge',
+    limit: 30,
+    windowMs: 15 * MINUTE,
+    matches: (method, path) =>
+      method === 'POST' && path === '/auth/mfa/challenge',
+  },
+  {
     id: 'public-commerce-write',
     limit: 120,
     windowMs: MINUTE,

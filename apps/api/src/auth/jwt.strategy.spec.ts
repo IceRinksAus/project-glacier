@@ -36,6 +36,8 @@ describe('JwtStrategy', () => {
       organizationId: 'organization-1',
       expiresAt: new Date(Date.now() + 60_000),
       revokedAt: null,
+      mfaVerifiedAt: null,
+      mfaFactorGeneration: null,
     });
   });
 
@@ -45,6 +47,7 @@ describe('JwtStrategy', () => {
       accessScope: 'ASSIGNED_EVENTS',
       user: { isActive: true },
       organization: { status: 'ACTIVE' },
+      mfaFactors: [],
     });
 
     await expect(strategy.validate(payload)).resolves.toEqual({
@@ -65,12 +68,39 @@ describe('JwtStrategy', () => {
     );
   });
 
+  it('rejects privileged sessions without current MFA evidence', async () => {
+    prismaMock.userOrganization.findUnique.mockResolvedValue({
+      role: 'OWNER',
+      accessScope: 'ALL_EVENTS',
+      user: { isActive: true },
+      organization: { status: 'ACTIVE' },
+      mfaFactors: [{ generation: 2 }],
+    });
+
+    await expect(strategy.validate(payload)).rejects.toThrow(
+      'Authentication access is no longer active',
+    );
+
+    prismaMock.authenticationSession.findUnique.mockResolvedValue({
+      userId: 'user-1',
+      organizationId: 'organization-1',
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+      mfaVerifiedAt: new Date(),
+      mfaFactorGeneration: 2,
+    });
+    await expect(strategy.validate(payload)).resolves.toMatchObject({
+      role: 'OWNER',
+    });
+  });
+
   it('rejects missing, revoked, expired or mismatched sessions', async () => {
     prismaMock.userOrganization.findUnique.mockResolvedValue({
       role: 'OWNER',
       accessScope: 'ALL_EVENTS',
       user: { isActive: true },
       organization: { status: 'ACTIVE' },
+      mfaFactors: [{ generation: 1 }],
     });
 
     for (const session of [
@@ -80,18 +110,24 @@ describe('JwtStrategy', () => {
         organizationId: 'organization-1',
         expiresAt: new Date(Date.now() + 60_000),
         revokedAt: new Date(),
+        mfaVerifiedAt: new Date(),
+        mfaFactorGeneration: 1,
       },
       {
         userId: 'user-1',
         organizationId: 'organization-1',
         expiresAt: new Date(Date.now() - 1),
         revokedAt: null,
+        mfaVerifiedAt: new Date(),
+        mfaFactorGeneration: 1,
       },
       {
         userId: 'different-user',
         organizationId: 'organization-1',
         expiresAt: new Date(Date.now() + 60_000),
         revokedAt: null,
+        mfaVerifiedAt: new Date(),
+        mfaFactorGeneration: 1,
       },
     ]) {
       prismaMock.authenticationSession.findUnique.mockResolvedValueOnce(
@@ -109,6 +145,7 @@ describe('JwtStrategy', () => {
       accessScope: 'ALL_EVENTS',
       user: { isActive: false },
       organization: { status: 'ACTIVE' },
+      mfaFactors: [{ generation: 1 }],
     });
 
     await expect(strategy.validate(payload)).rejects.toThrow(
@@ -120,6 +157,7 @@ describe('JwtStrategy', () => {
       accessScope: 'ALL_EVENTS',
       user: { isActive: true },
       organization: { status: 'ARCHIVED' },
+      mfaFactors: [{ generation: 1 }],
     });
 
     await expect(strategy.validate(payload)).rejects.toThrow(

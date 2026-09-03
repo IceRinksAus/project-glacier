@@ -14,6 +14,9 @@ const PRODUCTION_REQUIRED_VARIABLES = [
   'TRUST_PROXY_HOPS',
   'TICKET_TOKEN_ACTIVE_KEY_ID',
   'TICKET_TOKEN_SIGNING_KEYS',
+  'MFA_ACTIVE_KEY_ID',
+  'MFA_ENCRYPTION_KEYS',
+  'MFA_RECOVERY_CODE_PEPPER',
 ] as const;
 
 function requireHttpsUrl(name: string, value: string) {

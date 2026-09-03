@@ -32,6 +32,9 @@ describe('OrganizationService', () => {
     organizationAccessAudit: {
       create: jest.fn(),
     },
+    authenticationSession: {
+      updateMany: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -197,6 +200,16 @@ describe('OrganizationService', () => {
           role: 'MANAGER',
           eventIds: ['event-1'],
         }),
+      }),
+    });
+    expect(prismaMock.authenticationSession.updateMany).toHaveBeenCalledWith({
+      where: expect.objectContaining({
+        userId: 'user-1',
+        organizationId: 'organization-1',
+        revokedAt: null,
+      }),
+      data: expect.objectContaining({
+        revokeReason: 'MFA_REQUIRED_AFTER_ROLE_CHANGE',
       }),
     });
   });

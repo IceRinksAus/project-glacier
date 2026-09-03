@@ -4,6 +4,7 @@ import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
+import { MfaCryptoService } from './mfa-crypto.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -15,11 +16,43 @@ describe('AuthService', () => {
       delete: jest.fn(),
       updateMany: jest.fn(),
     },
+    mfaFactor: {
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+      create: jest.fn(),
+    },
+    mfaChallenge: {
+      updateMany: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    mfaAudit: { create: jest.fn() },
+    mfaRecoveryCode: {
+      findUnique: jest.fn(),
+      updateMany: jest.fn(),
+      createMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
   const jwtServiceMock = { signAsync: jest.fn() };
+  const mfaCryptoMock = {
+    generateChallengeToken: jest.fn().mockReturnValue('c'.repeat(43)),
+    hashChallengeToken: jest.fn().mockReturnValue('challenge-hash'),
+    generateSecret: jest.fn().mockReturnValue('A'.repeat(32)),
+    encryptSecret: jest.fn().mockReturnValue({
+      encryptionKeyId: 'test-v1',
+      encryptedSecret: 'encrypted',
+      encryptionNonce: 'nonce',
+      encryptionTag: 'tag',
+    }),
+    createOtpAuthUri: jest.fn().mockReturnValue('otpauth://test'),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    prismaMock.$transaction.mockImplementation(
+      (callback: (transaction: typeof prismaMock) => unknown) => callback(prismaMock),
+    );
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -30,6 +63,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: jwtServiceMock,
+        },
+        {
+          provide: MfaCryptoService,
+          useValue: mfaCryptoMock,
         },
       ],
     }).compile();
@@ -55,8 +92,9 @@ describe('AuthService', () => {
       isActive: true,
       organizations: [
         {
+          id: 'membership-1',
           organizationId: 'organization-1',
-          role: 'OWNER',
+          role: 'STAFF',
           accessScope: 'ALL_EVENTS',
         },
       ],
@@ -97,8 +135,9 @@ describe('AuthService', () => {
       isActive: true,
       organizations: [
         {
+          id: 'membership-1',
           organizationId: 'organization-1',
-          role: 'OWNER',
+          role: 'STAFF',
           accessScope: 'ALL_EVENTS',
         },
       ],
@@ -113,6 +152,44 @@ describe('AuthService', () => {
     ).rejects.toThrow('signing unavailable');
     expect(prismaMock.authenticationSession.delete).toHaveBeenCalledWith({
       where: { id: expect.any(String) },
+    });
+  });
+
+  it('does not issue a privileged session before an active factor challenge', async () => {
+    const passwordHash = await bcrypt.hash('valid-password', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1', email: 'owner@example.com', name: 'Owner', passwordHash,
+      isActive: true,
+      organizations: [{ id: 'membership-1', organizationId: 'organization-1', role: 'OWNER', accessScope: 'ALL_EVENTS' }],
+      eventRoles: [],
+    });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue({ id: 'factor-1' });
+
+    await expect(service.login({ email: 'owner@example.com', password: 'valid-password' }))
+      .resolves.toMatchObject({ status: 'MFA_REQUIRED', challengeToken: 'c'.repeat(43) });
+    expect(prismaMock.authenticationSession.create).not.toHaveBeenCalled();
+    expect(jwtServiceMock.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('starts controlled enrolment without issuing a privileged session', async () => {
+    const passwordHash = await bcrypt.hash('valid-password', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1', email: 'owner@example.com', name: 'Owner', passwordHash,
+      isActive: true,
+      organizations: [{ id: 'membership-1', organizationId: 'organization-1', role: 'OWNER', accessScope: 'ALL_EVENTS' }],
+      eventRoles: [],
+    });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue(null);
+    prismaMock.mfaFactor.create.mockResolvedValue({ id: 'factor-1' });
+
+    await expect(service.login({ email: 'owner@example.com', password: 'valid-password' }))
+      .resolves.toMatchObject({
+        status: 'MFA_ENROLLMENT_REQUIRED',
+        setup: { secret: 'A'.repeat(32) },
+      });
+    expect(prismaMock.authenticationSession.create).not.toHaveBeenCalled();
+    expect(prismaMock.mfaAudit.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'ENROLLMENT_STARTED' }),
     });
   });
 

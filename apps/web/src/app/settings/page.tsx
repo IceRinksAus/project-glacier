@@ -6,6 +6,7 @@ import { ShieldCheck, UserRoundCog } from "lucide-react";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { OrganizationFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
 import { Button } from "@/components/ui/button";
+import { AccountSecurityPanel } from "@/components/security/AccountSecurityPanel";
 import {
   getAuthRoleSnapshot,
   getServerAuthRoleSnapshot,
@@ -19,6 +20,7 @@ import {
   type TeamMember,
   type UpdateTeamAccess,
 } from "@/services/team-access.service";
+import { mfaSecurityService } from "@/services/mfa-security.service";
 
 const roleDescriptions: Record<OrganizationRole, string> = {
   OWNER: "Full organisation governance and access to every Event.",
@@ -91,6 +93,8 @@ export default function SettingsPage() {
         </header>
 
         <RoleGuide />
+
+        <AccountSecurityPanel />
 
         {role === "OWNER" ? <OrganizationFlexibleTicketSettings /> : null}
 
@@ -173,6 +177,7 @@ function MemberAccessCard({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [resetReason, setResetReason] = useState("");
 
   function changeRole(nextRole: UpdateTeamAccess["role"]) {
     setDraftRole(nextRole);
@@ -209,6 +214,24 @@ function MemberAccessCard({
           ? requestError.message
           : "Unable to save access.",
       );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function resetManagerMfa() {
+    if (resetReason.trim().length < 3) {
+      setMessage("Enter a short reason before resetting MFA.");
+      return;
+    }
+    setIsSaving(true);
+    setMessage("");
+    try {
+      await mfaSecurityService.resetManager(member.user.id, resetReason);
+      setResetReason("");
+      setMessage("Manager MFA reset. Their sessions were revoked and they must enrol again.");
+    } catch (requestError) {
+      setMessage(requestError instanceof Error ? requestError.message : "Unable to reset Manager MFA.");
     } finally {
       setIsSaving(false);
     }
@@ -315,6 +338,26 @@ function MemberAccessCard({
               </p>
             ) : null}
           </div>
+          {member.role === "MANAGER" ? (
+            <div className="rounded-lg border border-destructive/20 p-4">
+              <p className="text-sm font-medium">Reset Manager MFA</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Revokes this Manager&apos;s sessions, authenticator and recovery codes. Owners cannot be reset here.
+              </p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={resetReason}
+                  onChange={(event) => setResetReason(event.target.value)}
+                  placeholder="Reason for reset"
+                  maxLength={200}
+                  className="h-10 flex-1 rounded-lg border bg-background px-3 text-sm"
+                />
+                <Button variant="outline" onClick={resetManagerMfa} disabled={isSaving}>
+                  Reset MFA
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </article>

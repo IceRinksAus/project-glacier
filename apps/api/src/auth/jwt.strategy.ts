@@ -41,6 +41,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           organizationId: true,
           expiresAt: true,
           revokedAt: true,
+          mfaVerifiedAt: true,
+          mfaFactorGeneration: true,
         },
       }),
       this.prisma.userOrganization.findUnique({
@@ -63,6 +65,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
               status: true,
             },
           },
+          mfaFactors: {
+            where: { status: 'ACTIVE' },
+            select: { generation: true },
+            take: 1,
+          },
         },
       }),
     ]);
@@ -75,7 +82,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       session.expiresAt <= new Date() ||
       !membership ||
       !membership.user.isActive ||
-      membership.organization.status !== 'ACTIVE'
+      membership.organization.status !== 'ACTIVE' ||
+      (['OWNER', 'MANAGER'].includes(membership.role) &&
+        (!session.mfaVerifiedAt ||
+          session.mfaFactorGeneration === null ||
+          membership.mfaFactors[0]?.generation !==
+            session.mfaFactorGeneration))
     ) {
       throw new UnauthorizedException(
         'Authentication access is no longer active',

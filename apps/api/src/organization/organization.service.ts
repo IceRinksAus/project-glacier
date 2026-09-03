@@ -156,6 +156,23 @@ export class OrganizationService {
           where: { id: membership.id },
           data: { role, accessScope },
         });
+        if (
+          !['OWNER', 'MANAGER'].includes(membership.role) &&
+          ['OWNER', 'MANAGER'].includes(role)
+        ) {
+          await transaction.authenticationSession.updateMany({
+            where: {
+              userId: targetUserId,
+              organizationId,
+              revokedAt: null,
+              expiresAt: { gt: new Date() },
+            },
+            data: {
+              revokedAt: new Date(),
+              revokeReason: 'MFA_REQUIRED_AFTER_ROLE_CHANGE',
+            },
+          });
+        }
         await transaction.userEventAccess.deleteMany({
           where: { userId: targetUserId, event: { organizationId } },
         });
