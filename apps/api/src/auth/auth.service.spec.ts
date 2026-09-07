@@ -171,6 +171,12 @@ describe('AuthService', () => {
       .resolves.toMatchObject({ status: 'MFA_REQUIRED', challengeToken: 'c'.repeat(43) });
     expect(prismaMock.authenticationSession.create).not.toHaveBeenCalled();
     expect(jwtServiceMock.signAsync).not.toHaveBeenCalled();
+    expect(prismaMock.mfaChallenge.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userOrganizationId: 'membership-1',
+        OR: [{ expiresAt: { lte: expect.any(Date) } }, { consumedAt: { not: null } }],
+      },
+    });
   });
 
   it('starts controlled enrolment without issuing a privileged session', async () => {

@@ -65,6 +65,7 @@ export class AuthService {
     if (factor?.status === 'ACTIVE') {
       await this.prisma.$transaction(async (tx) => {
         await this.consumeOutstandingChallenges(tx, membership.id);
+        await this.cleanupChallenges(tx, membership.id, new Date());
         await tx.mfaChallenge.create({
           data: { ...commonChallenge, purpose: 'LOGIN', factorId: factor.id },
         });
