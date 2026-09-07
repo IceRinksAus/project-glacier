@@ -116,4 +116,9 @@
 
 ## Current Dependency Note
 
-The 1 September 2026 audit reports zero known web vulnerabilities and one underlying High API advisory propagated through four Prisma-related package entries. See `docs/security/DEPENDENCY_AUDIT_2026-09-01.md`. A compatible upstream fix is not currently available; recheck weekly and before exposure. Do not force breaking transitive overrides merely to clear a report.
+The 8 September 2026 API and web audits report zero known vulnerabilities after
+verified exact transitive overrides. See
+`docs/security/DEPENDENCY_AUDIT_2026-09-08.md`. Repeat both audits after every
+lockfile change and before exposure; remove overrides when their direct parents
+adopt patched versions. Do not use forced downgrades or unverified prereleases
+merely to clear a report.
