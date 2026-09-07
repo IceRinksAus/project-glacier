@@ -116,8 +116,9 @@ export class MfaCryptoService {
     return null;
   }
 
-  createOtpAuthUri(secret: string, email: string): string {
-    const label = encodeURIComponent(`Glacier:${email}`);
+  createOtpAuthUri(secret: string, email: string, organizationName?: string): string {
+    const account = organizationName ? `${organizationName}:${email}` : email;
+    const label = encodeURIComponent(`Glacier:${account}`);
     return `otpauth://totp/${label}?secret=${secret}&issuer=Glacier&algorithm=SHA1&digits=6&period=30`;
   }
 

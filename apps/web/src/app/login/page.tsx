@@ -31,9 +31,7 @@ export default function LoginPage() {
     router.push(data.user.role === "SCANNER" ? "/staff/scanner" : "/events");
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function performLogin(restartMfaEnrollment = false) {
     setError("");
     setIsSubmitting(true);
 
@@ -46,6 +44,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email,
           password,
+          restartMfaEnrollment,
         }),
       });
 
@@ -70,6 +69,11 @@ export default function LoginPage() {
     }
   }
 
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await performLogin();
+  }
+
   async function handleChallenge(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -78,7 +82,10 @@ export default function LoginPage() {
       const response = await fetch(`${API_URL}/auth/mfa/challenge`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeToken, code: challengeCode }),
+        body: JSON.stringify({
+          challengeToken,
+          code: challengeCode.replace(/\s/g, ""),
+        }),
       });
       if (!response.ok) throw new Error("That code could not be verified.");
       const data = await response.json();
@@ -129,6 +136,9 @@ export default function LoginPage() {
           {setup ? (
             <div className="mt-5 space-y-4 text-sm">
               <p>Scan this QR code with your authenticator app, then enter the six-digit code.</p>
+              <p className="text-muted-foreground">
+                If the code is about to change, wait for the next one. Restarting setup invalidates any earlier Glacier QR code.
+              </p>
               {/* The setup secret is deliberately kept only in component memory. */}
               <img className="mx-auto size-60" src={setup.qrCodeDataUrl} alt="Authenticator setup QR code" />
               <p className="break-all rounded-lg border bg-muted/30 p-3 font-mono">{setup.secret}</p>
@@ -146,6 +156,7 @@ export default function LoginPage() {
                 value={challengeCode}
                 onChange={(event) => setChallengeCode(event.target.value)}
                 autoComplete="one-time-code"
+                inputMode={setup ? "numeric" : "text"}
                 className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
                 required
               />
@@ -154,6 +165,17 @@ export default function LoginPage() {
             <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Verifying…" : setup ? "Finish setup" : "Verify and sign in"}
             </Button>
+            {setup ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isSubmitting}
+                onClick={() => void performLogin(true)}
+              >
+                Restart authenticator setup
+              </Button>
+            ) : null}
           </form>
         </div>
       </main>

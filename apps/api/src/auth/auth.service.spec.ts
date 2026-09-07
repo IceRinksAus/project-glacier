@@ -23,6 +23,7 @@ describe('AuthService', () => {
     },
     mfaChallenge: {
       updateMany: jest.fn(),
+      deleteMany: jest.fn(),
       create: jest.fn(),
       findUnique: jest.fn(),
     },
@@ -46,6 +47,7 @@ describe('AuthService', () => {
       encryptionTag: 'tag',
     }),
     createOtpAuthUri: jest.fn().mockReturnValue('otpauth://test'),
+    decryptSecret: jest.fn().mockReturnValue('A'.repeat(32)),
   };
 
   beforeEach(async () => {
@@ -163,7 +165,7 @@ describe('AuthService', () => {
       organizations: [{ id: 'membership-1', organizationId: 'organization-1', role: 'OWNER', accessScope: 'ALL_EVENTS' }],
       eventRoles: [],
     });
-    prismaMock.mfaFactor.findFirst.mockResolvedValue({ id: 'factor-1' });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue({ id: 'factor-1', status: 'ACTIVE' });
 
     await expect(service.login({ email: 'owner@example.com', password: 'valid-password' }))
       .resolves.toMatchObject({ status: 'MFA_REQUIRED', challengeToken: 'c'.repeat(43) });
@@ -191,6 +193,94 @@ describe('AuthService', () => {
     expect(prismaMock.mfaAudit.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ action: 'ENROLLMENT_STARTED' }),
     });
+  });
+
+  it('resumes a recent pending enrolment without replacing its factor', async () => {
+    const now = new Date('2031-01-01T00:05:00.000Z');
+    jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
+    const passwordHash = await bcrypt.hash('valid-password', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1', email: 'owner@example.com', name: 'Owner', passwordHash,
+      isActive: true,
+      organizations: [{
+        id: 'membership-1', organizationId: 'organization-1', role: 'OWNER',
+        accessScope: 'ALL_EVENTS', organization: { name: 'Example Rink' },
+      }],
+      eventRoles: [],
+    });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue({
+      id: 'factor-1', status: 'PENDING', createdAt: new Date('2031-01-01T00:00:00.000Z'),
+    });
+
+    await expect(service.login({ email: 'owner@example.com', password: 'valid-password' }))
+      .resolves.toMatchObject({ status: 'MFA_ENROLLMENT_REQUIRED' });
+
+    expect(mfaCryptoMock.decryptSecret).toHaveBeenCalled();
+    expect(prismaMock.mfaFactor.create).not.toHaveBeenCalled();
+    expect(prismaMock.mfaChallenge.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ factorId: 'factor-1' }),
+    });
+    expect(prismaMock.mfaAudit.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'ENROLLMENT_RESUMED' }),
+    });
+  });
+
+  it('explicitly restarts and revokes a pending enrolment', async () => {
+    const now = new Date('2031-01-01T00:05:00.000Z');
+    jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
+    const passwordHash = await bcrypt.hash('valid-password', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1', email: 'owner@example.com', name: 'Owner', passwordHash,
+      isActive: true,
+      organizations: [{
+        id: 'membership-1', organizationId: 'organization-1', role: 'OWNER',
+        accessScope: 'ALL_EVENTS', organization: { name: 'Example Rink' },
+      }],
+      eventRoles: [],
+    });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue({
+      id: 'factor-old', status: 'PENDING', createdAt: new Date('2031-01-01T00:00:00.000Z'),
+    });
+    prismaMock.mfaFactor.create.mockResolvedValue({ id: 'factor-new' });
+
+    await service.login({
+      email: 'owner@example.com', password: 'valid-password', restartMfaEnrollment: true,
+    });
+
+    expect(prismaMock.mfaFactor.updateMany).toHaveBeenCalledWith({
+      where: { userOrganizationId: 'membership-1', status: 'PENDING' },
+      data: expect.objectContaining({ revokeReason: 'ENROLLMENT_RESTARTED' }),
+    });
+    expect(prismaMock.mfaChallenge.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ factorId: 'factor-new' }),
+    });
+  });
+
+  it('replaces an expired pending enrolment', async () => {
+    const now = new Date('2031-01-01T00:11:00.000Z');
+    jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
+    const passwordHash = await bcrypt.hash('valid-password', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1', email: 'owner@example.com', name: 'Owner', passwordHash,
+      isActive: true,
+      organizations: [{
+        id: 'membership-1', organizationId: 'organization-1', role: 'OWNER',
+        accessScope: 'ALL_EVENTS', organization: { name: 'Example Rink' },
+      }],
+      eventRoles: [],
+    });
+    prismaMock.mfaFactor.findFirst.mockResolvedValue({
+      id: 'factor-old', status: 'PENDING', createdAt: new Date('2031-01-01T00:00:00.000Z'),
+    });
+    prismaMock.mfaFactor.create.mockResolvedValue({ id: 'factor-new' });
+
+    await service.login({ email: 'owner@example.com', password: 'valid-password' });
+
+    expect(prismaMock.mfaFactor.updateMany).toHaveBeenCalledWith({
+      where: { userOrganizationId: 'membership-1', status: 'PENDING' },
+      data: expect.objectContaining({ revokeReason: 'ENROLLMENT_EXPIRED' }),
+    });
+    expect(mfaCryptoMock.decryptSecret).not.toHaveBeenCalled();
   });
 
   it('revokes the current session or every active session without deleting evidence', async () => {

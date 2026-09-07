@@ -11,6 +11,7 @@ import { MfaCryptoService } from './mfa-crypto.service';
 
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const CHALLENGE_MS = 5 * 60 * 1000;
+const PENDING_ENROLLMENT_MS = 10 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const PRIVILEGED_ROLES = new Set(['OWNER', 'MANAGER']);
 
@@ -25,7 +26,10 @@ export class AuthService {
   async login(input: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: input.email.trim().toLowerCase() },
-      include: { organizations: true, eventRoles: true },
+      include: {
+        organizations: { include: { organization: true } },
+        eventRoles: true,
+      },
     });
     if (!user?.passwordHash) {
       throw new UnauthorizedException('Invalid email or password');
@@ -44,8 +48,12 @@ export class AuthService {
       return this.issuePasswordSession(user, membership);
     }
 
-    const activeFactor = await this.prisma.mfaFactor.findFirst({
-      where: { userOrganizationId: membership.id, status: 'ACTIVE' },
+    const factor = await this.prisma.mfaFactor.findFirst({
+      where: {
+        userOrganizationId: membership.id,
+        status: { in: ['ACTIVE', 'PENDING'] },
+      },
+      orderBy: { createdAt: 'desc' },
     });
     const challengeToken = this.mfaCrypto.generateChallengeToken();
     const commonChallenge = {
@@ -54,11 +62,11 @@ export class AuthService {
       expiresAt: new Date(Date.now() + CHALLENGE_MS),
     };
 
-    if (activeFactor) {
+    if (factor?.status === 'ACTIVE') {
       await this.prisma.$transaction(async (tx) => {
         await this.consumeOutstandingChallenges(tx, membership.id);
         await tx.mfaChallenge.create({
-          data: { ...commonChallenge, purpose: 'LOGIN', factorId: activeFactor.id },
+          data: { ...commonChallenge, purpose: 'LOGIN', factorId: factor.id },
         });
       });
       return {
@@ -68,34 +76,52 @@ export class AuthService {
       };
     }
 
-    const secret = this.mfaCrypto.generateSecret();
+    const canReusePending = Boolean(
+      factor?.status === 'PENDING' &&
+      !input.restartMfaEnrollment &&
+      factor.createdAt.getTime() > Date.now() - PENDING_ENROLLMENT_MS,
+    );
+    const secret = canReusePending
+      ? this.mfaCrypto.decryptSecret(factor!)
+      : this.mfaCrypto.generateSecret();
     const encrypted = this.mfaCrypto.encryptSecret(secret);
+    let factorId = canReusePending ? factor!.id : '';
     await this.prisma.$transaction(async (tx) => {
       await this.consumeOutstandingChallenges(tx, membership.id);
-      await tx.mfaFactor.updateMany({
-        where: { userOrganizationId: membership.id, status: 'PENDING' },
-        data: {
-          status: 'REVOKED',
-          revokedAt: new Date(),
-          revokeReason: 'ENROLLMENT_RESTARTED',
-        },
-      });
-      const factor = await tx.mfaFactor.create({
-        data: { userOrganizationId: membership.id, ...encrypted },
-      });
+      await this.cleanupChallenges(tx, membership.id, new Date());
+      if (!canReusePending) {
+        await tx.mfaFactor.updateMany({
+          where: { userOrganizationId: membership.id, status: 'PENDING' },
+          data: {
+            status: 'REVOKED',
+            revokedAt: new Date(),
+            revokeReason: input.restartMfaEnrollment
+              ? 'ENROLLMENT_RESTARTED'
+              : 'ENROLLMENT_EXPIRED',
+          },
+        });
+        const createdFactor = await tx.mfaFactor.create({
+          data: { userOrganizationId: membership.id, ...encrypted },
+        });
+        factorId = createdFactor.id;
+      }
       await tx.mfaChallenge.create({
-        data: { ...commonChallenge, purpose: 'ENROLLMENT', factorId: factor.id },
+        data: { ...commonChallenge, purpose: 'ENROLLMENT', factorId },
       });
       await tx.mfaAudit.create({
         data: {
           organizationId: membership.organizationId,
           actorUserId: user.id,
           targetUserId: user.id,
-          action: 'ENROLLMENT_STARTED',
+          action: canReusePending ? 'ENROLLMENT_RESUMED' : 'ENROLLMENT_STARTED',
         },
       });
     });
-    const otpAuthUri = this.mfaCrypto.createOtpAuthUri(secret, user.email);
+    const otpAuthUri = this.mfaCrypto.createOtpAuthUri(
+      secret,
+      user.email,
+      membership.organization?.name,
+    );
     return {
       status: 'MFA_ENROLLMENT_REQUIRED',
       challengeToken,
@@ -300,6 +326,15 @@ export class AuthService {
     return tx.mfaChallenge.updateMany({
       where: { userOrganizationId: membershipId, consumedAt: null },
       data: { consumedAt: new Date() },
+    });
+  }
+
+  private cleanupChallenges(tx: any, membershipId: string, now: Date) {
+    return tx.mfaChallenge.deleteMany({
+      where: {
+        userOrganizationId: membershipId,
+        OR: [{ expiresAt: { lte: now } }, { consumedAt: { not: null } }],
+      },
     });
   }
 

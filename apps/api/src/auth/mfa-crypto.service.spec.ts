@@ -73,6 +73,9 @@ describe('MfaCryptoService', () => {
     expect(service.createOtpAuthUri('ABC234', 'owner+test@example.com')).toBe(
       'otpauth://totp/Glacier%3Aowner%2Btest%40example.com?secret=ABC234&issuer=Glacier&algorithm=SHA1&digits=6&period=30',
     );
+    expect(service.createOtpAuthUri('ABC234', 'owner@example.com', 'Example Rink')).toContain(
+      'Glacier%3AExample%20Rink%3Aowner%40example.com',
+    );
   });
 
   it('uses a stable local-only configuration outside production', () => {
