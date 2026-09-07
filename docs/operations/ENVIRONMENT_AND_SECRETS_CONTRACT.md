@@ -2,7 +2,7 @@
 
 ## Status
 
-Sprint 32 operational contract. This document names configuration but must never contain real secret values.
+Sprint 33 operational contract. This document names configuration but must never contain real secret values.
 
 ## Environment isolation
 
@@ -31,6 +31,9 @@ No database, Stripe secret, webhook secret, object store or authentication secre
 | `TRUST_PROXY_HOPS`           | No     | Defaults to `0`                                             | Required integer `0`–`3`, matching the verified reverse-proxy topology                                        |
 | `TICKET_TOKEN_ACTIVE_KEY_ID` | No     | Defaults to the local-only `local-v1`                       | Required identifier for the active Ticket HMAC key                                                            |
 | `TICKET_TOKEN_SIGNING_KEYS`  | Yes    | Stable local-only key when both Ticket variables are absent | Required JSON key ring containing 1–4 unpadded base64url 256-bit keys; active and retained previous keys only |
+| `MFA_ACTIVE_KEY_ID`          | No     | Stable local-only ID when all MFA variables are absent       | Required identifier for the active MFA encryption key                                                        |
+| `MFA_ENCRYPTION_KEYS`        | Yes    | Stable local-only key ring when all MFA variables are absent | Required JSON key ring containing 1–4 unpadded base64url 256-bit AES-GCM keys                                  |
+| `MFA_RECOVERY_CODE_PEPPER`   | Yes    | Stable local-only value when all MFA variables are absent    | Required independent unpadded base64url 256-bit recovery-code hashing pepper                                  |
 | `EMAIL_API_KEY`              | Yes    | Optional until email provider work                          | Environment-specific when email delivery is enabled                                                           |
 
 The API refuses to start in production when required variables are missing,
@@ -39,6 +42,12 @@ or when Ticket signing-key configuration is incomplete or invalid. Ticket keys
 must be separate from JWT, Stripe, webhook and database credentials. Key IDs may
 appear in controlled operational evidence; key values and Ticket credentials
 must never appear in logs.
+
+MFA keys and the recovery-code pepper must be separate from each other and all
+other Glacier secrets. Retain an old encryption key until no factor references
+it. Factor rotation installs authority under the active key and revokes affected
+sessions. Key values, TOTP secrets, setup URIs and recovery codes must never
+enter logs or operational evidence.
 
 Ticket-key rotation uses an overlap window: add the new key, make its ID active,
 reissue or naturally replace affected Ticket credentials, confirm no Ticket row

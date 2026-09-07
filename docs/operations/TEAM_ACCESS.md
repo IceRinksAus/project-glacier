@@ -28,6 +28,10 @@ There is no active MEMBER role. Legacy MEMBER records migrate to STAFF with all-
 
 Scanner automatically uses selected-Event scope. OWNER access is displayed read-only and cannot be changed in the ordinary Team interface.
 
+Promoting a STAFF or SCANNER membership to MANAGER revokes that person's
+existing sessions. The new MANAGER must sign in again and complete privileged
+MFA enrolment or challenge before receiving MANAGER authority.
+
 ## Access reduction and incident response
 
 Removing an Event assignment or changing a role takes effect on the next protected request, even if the person still holds an unexpired login token. Deactivating the underlying User also prevents access through current-membership validation.
@@ -45,6 +49,13 @@ Glacier refuses to demote the final OWNER. Ordinary Team management also cannot 
 
 If the only OWNER loses access, use the approved support/recovery process once established. Until that production process exists, pilot operation must confirm OWNER access before an Event and retain an authorised escalation contact.
 
+An authenticated OWNER may use **Settings → Team and Access** to reset MFA for
+a MANAGER in the same Organisation. This revokes the Manager's factor,
+recovery codes, pending challenges and sessions. The Manager must sign in and
+enrol again. This control cannot reset another OWNER, cannot cross an
+Organisation boundary and does not replace the future dual-control OWNER
+recovery process.
+
 ## Audit evidence
 
 Every successful Team membership or access update records:
@@ -56,6 +67,10 @@ Every successful Team membership or access update records:
 - previous role, scope and Event IDs where applicable;
 - resulting role, scope and Event IDs; and
 - server timestamp.
+
+MFA enrolment, factor replacement, recovery-code regeneration and authorised
+Manager reset also create attributable security-audit evidence without storing
+the TOTP secret, recovery codes, password, JWT or challenge credential.
 
 The audit is append-only application evidence. It excludes passwords, JWTs and unrelated personal or customer information.
 

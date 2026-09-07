@@ -27,6 +27,7 @@ The application safety layer currently covers:
 | Policy | Scope | Limit |
 | --- | --- | ---: |
 | Operator login | `POST /auth/login` | 20 per source address per 15 minutes |
+| Privileged MFA challenge | `POST /auth/mfa/challenge` | 20 per source address per 15 minutes |
 | Public commerce writes | customer/Booking creation, Payment/status requests and Flexible Ticket request mutation | 120 per source address per minute |
 | Waiver submission | public Waiver submission | 30 per source address per minute |
 | Possession lookup | public Ticket/QR and Waiver verification lookups | 120 per source address per minute |
@@ -34,6 +35,11 @@ The application safety layer currently covers:
 Limited responses return HTTP `429`, bounded `RateLimit-*` evidence and a
 `Retry-After` value. Logs record only the policy and retry interval; they do not
 record the source address, token, credential, Booking ID or raw path.
+
+Each privileged MFA challenge is also short-lived, stored only as a hash and
+tracks bounded failed attempts in PostgreSQL. This limits guessing within a
+challenge even if an application instance restarts. Coordinated cross-instance
+source limiting and alerting remain deployment-edge evidence.
 
 `TRUST_PROXY_HOPS` controls which reverse-proxy hop Express trusts when deriving
 the source address. Local development defaults to `0`. Production refuses to

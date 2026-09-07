@@ -2,10 +2,11 @@
 
 ## Status
 
-Sprint 31 security foundation. Persisted authentication sessions and immediate
-revocation are implemented locally. Password recovery and privileged MFA are
-specified here but remain blocked from live operator access until their delivery,
-storage and recovery controls are implemented and tested.
+Sprint 33 local security foundation. Persisted sessions, immediate revocation
+and membership-scoped TOTP MFA for OWNER and MANAGER are implemented locally.
+Password recovery remains blocked until approved email delivery and account
+ownership exist. Managed production secret custody and independent review are
+still required before live access.
 
 ## Implemented session authority
 
@@ -54,19 +55,28 @@ must then:
 Glacier must not return a development recovery token through the public API,
 write it to logs or reveal whether an email address has an account.
 
-## Privileged MFA decision
+## Implemented privileged MFA authority
 
-OWNER and MANAGER access requires MFA before live operator use. The preferred
-primary factor is WebAuthn/passkeys because it is phishing resistant. TOTP may
-be supported as a controlled compatibility fallback; SMS is not an approved
-primary privileged factor.
+OWNER and MANAGER sessions now require MFA. Successful password verification
+creates only a five-minute, hash-at-rest challenge; the normal session and JWT
+are created after TOTP or one unused recovery code succeeds. STAFF and SCANNER
+retain the password-only flow.
 
-The future login flow must verify password first but must not issue the normal
-access JWT until the MFA challenge completes. Enrolment and factor removal
-require recent authentication. TOTP secrets and WebAuthn credential material
-must use managed encryption/secret controls appropriate to the factor. Recovery
-codes must be high entropy, individually hashed, displayed once and consumed
-once; regeneration invalidates every older code.
+MFA belongs to the `UserOrganization` membership, preserving Organisation
+boundaries for users with multiple memberships. TOTP secrets are protected with
+AES-256-GCM and a configured key ID. Recovery codes contain 128 random bits,
+are keyed-hashed individually, displayed once and consumed once. Regeneration,
+rotation and reset invalidate former authority. TOTP counters are updated
+atomically to prevent replay, including concurrent use.
+
+Promotion to MANAGER revokes existing password-only sessions. Every protected
+request independently requires current factor-generation evidence for OWNER or
+MANAGER, so a role change cannot elevate an old session. A same-Organisation
+OWNER may reset a MANAGER, which revokes the factor, codes, challenges and
+sessions. Ordinary workflows cannot reset an OWNER.
+
+Passkeys/WebAuthn remain the preferred future phishing-resistant factor. SMS is
+not approved as a primary privileged factor.
 
 Privileged recovery must not allow an ordinary STAFF account or a single
 support action to grant OWNER authority. Lost-factor recovery requires a
@@ -78,7 +88,9 @@ notification to existing trusted channels.
 - expose **sign out everywhere** in account security settings;
 - choose and implement the email provider without committing spend prematurely;
 - implement hashed, single-use recovery tokens and notifications;
-- implement and test passkey/TOTP enrolment, challenge and recovery-code flows;
+- place MFA keys/pepper in approved managed production secret storage and prove
+  rotation through deployed instances;
+- add passkeys/WebAuthn as the preferred phishing-resistant factor;
 - define expired/revoked session retention and cleanup after privacy review;
 - move browser authentication away from JavaScript-readable storage or prove a
   sufficiently strong XSS/CSP boundary before production;

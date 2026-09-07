@@ -428,9 +428,11 @@ Ticket links now use selector/HMAC authority held outside PostgreSQL, legacy
 local links use one-way hashes, and controlled reissue immediately invalidates
 former authority with append-only non-secret audit evidence.
 
-The immediate next action is to plan the next no-spend Phase 3 Sprint around
-privileged MFA enrolment, challenge and recovery-code authority for OWNER and
-MANAGER, without starting paid infrastructure or broad product expansion.
+Sprint 33 completed the local no-spend privileged MFA boundary: membership-
+scoped OWNER/MANAGER enrolment, pre-session challenge, single-use recovery
+codes, factor rotation, bounded OWNER-to-MANAGER reset and session enforcement.
+The next Phase 3 action should select another locally actionable production
+finding without starting paid infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.

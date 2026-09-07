@@ -1,5 +1,38 @@
 # Changelog
 
+# Sprint 33 – Privileged MFA Foundation
+
+## Complete
+
+- Added membership-scoped TOTP enrolment and password-then-MFA challenge for
+  OWNER and MANAGER without issuing a privileged JWT early.
+- Added AES-256-GCM factor protection, fail-closed production configuration,
+  atomic TOTP replay prevention and individually keyed-hashed recovery codes.
+- Added recovery-code regeneration, confirm-before-replace factor rotation,
+  session revocation, same-Organisation OWNER-to-MANAGER reset and append-only
+  non-secret MFA audit evidence.
+- Added Account Security, QR/manual setup, recovery-code handoff and Manager
+  reset interfaces while preserving STAFF/SCANNER login behavior.
+
+## Verification
+
+- API: 91 suites / 641 tests passed; production build passed.
+- Web: 30 files / 88 tests passed; production build passed.
+- All 48 migrations applied locally and replayed from empty state.
+- Disposable authenticated tenant/role/MFA isolation passed 5 / 5 checks.
+- Tracked-secret scan passed across 624 files and 6 rules.
+- Complete local release gate passed.
+- Isolated PostgreSQL restore matched all 16 critical tables.
+- Browser acceptance proved enrolment, recovery-code sign-in and one-use
+  recovery enforcement with fictional local data.
+
+## Boundary
+
+Email password recovery, passkeys, OWNER lost-factor dual control, managed
+production secret custody, deployed monitoring/device evidence and independent
+security review remain pre-live work. No paid infrastructure or real data was
+used.
+
 # Sprint 32 – Ticket Possession-Credential Hardening
 
 ## Complete

@@ -19,8 +19,14 @@
 - test the configured limit response and alert destination
 - audit logging
 - formal role matrix
-- MFA for privileged users
-- implement the approved password recovery and privileged MFA contract
+- retain the passing Sprint 33 local OWNER/MANAGER MFA evidence
+- configure the MFA encryption key ring and recovery-code pepper in approved
+  managed production secret storage; rehearse retained-key rotation
+- verify deployed OWNER/MANAGER enrolment, TOTP, recovery-code, rotation and
+  same-Organisation OWNER-to-MANAGER reset
+- implement approved password recovery only after email provider/domain/account
+  ownership exists
+- approve and test dual-control OWNER lost-factor recovery; no support bypass
 - verify current-session and all-session revocation through deployed instances
 - define and operate expired/revoked authentication-session retention
 - approve the data-class retention schedule in `docs/privacy/PRIVACY_DATA_FLOW_RETENTION_AND_DELETION_REGISTER.md`

@@ -167,6 +167,16 @@ Production requirements should include:
 - Multi-Factor Authentication for privileged users
 - stronger controls for OWNER / administrative roles
 
+Sprint 33 implements the local privileged boundary for OWNER and MANAGER.
+Password verification creates only a short-lived hash-at-rest challenge;
+privileged session authority follows successful membership-scoped TOTP or
+single-use recovery-code verification. Factor material is encrypted outside
+the database key boundary, factor replacement and authorised reset revoke
+sessions, and every privileged request revalidates current role and MFA
+generation. Managed production key custody, deployed-device/edge evidence,
+OWNER dual-control recovery and independent security review remain pre-live
+requirements.
+
 Customer authentication should be introduced only when required by the Customer Portal phase.
 
 Public booking should not require an operator authentication mechanism.
