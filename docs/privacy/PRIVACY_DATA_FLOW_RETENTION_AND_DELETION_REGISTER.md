@@ -2,8 +2,8 @@
 
 ## Status and authority
 
-Sprint 32 engineering register, prepared from the current Prisma schema, API
-boundaries and operational documentation on 2 September 2026.
+Sprint 34 engineering register, prepared from the current Prisma schema, API
+boundaries and operational documentation and updated on 8 September 2026.
 
 This register describes what Glacier currently stores and establishes the
 control decisions that must be completed before real customer data is used. It
@@ -26,6 +26,9 @@ approval.
   the database remains. There is no approved time limit or minimisation job.
 - Authentication sessions expire after eight hours and can be revoked, but
   expired/revoked rows are not yet cleaned up.
+- MFA challenges expire after five minutes; expired and consumed rows are
+  cleaned during later authentication for that membership. This temporary-
+  authority cleanup does not remove the separate attributable MFA audit.
 - Public Booking access, Waiver verification and Ticket presentation use
   possession credentials. Booking and Waiver credentials are stored as hashes.
   Current Ticket authority is an HMAC credential reconstructed from a public

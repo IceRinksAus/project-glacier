@@ -1,8 +1,8 @@
 # Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Updated:** 3 September 2026
+**Updated:** 8 September 2026
 
-**Status:** Current strategic control document after Sprint 32; local Phase 3
+**Status:** Current strategic control document after Sprint 34; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 32, Glacier is best described as:
+After Sprint 34, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 32
+# 3. Delivered Foundation Through Sprint 34
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -88,14 +88,18 @@ The following are implemented foundations and should not be reopened without evi
 - an actual-data privacy/retention/deletion register with unresolved controls retained as production blockers.
 - signed Ticket possession credentials with no usable raw credential stored in PostgreSQL, one-way legacy compatibility and audited OWNER/assigned-MANAGER reissue.
 
-Current verified baseline at Sprint 32 closeout:
+Sprint 34 additionally stabilised privileged MFA enrolment continuity and
+locally resolved the audited dependency findings with verified exact patched
+transitive versions.
 
-- 47 current Prisma migrations;
-- 89 API suites / 622 passing tests;
-- 30 web test files / 88 passing tests;
+Current verified baseline at Sprint 34 closeout:
+
+- 48 current Prisma migrations;
+- 91 API suites / 644 passing tests;
+- 31 web test files / 90 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 613 files and an isolated restore matching 12 critical tables;
+  scan across 628 files and an isolated restore matching 16 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
@@ -431,6 +435,10 @@ former authority with append-only non-secret audit evidence.
 Sprint 33 completed the local no-spend privileged MFA boundary: membership-
 scoped OWNER/MANAGER enrolment, pre-session challenge, single-use recovery
 codes, factor rotation, bounded OWNER-to-MANAGER reset and session enforcement.
+Sprint 34 stabilised enrolment continuity, made replacement deliberate,
+cleaned temporary challenge authority and locally closed the current dependency
+audit findings without adopting a forced downgrade or prerelease.
+
 The next Phase 3 action should select another locally actionable production
 finding without starting paid infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,

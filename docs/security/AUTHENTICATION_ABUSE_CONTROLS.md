@@ -41,6 +41,12 @@ tracks bounded failed attempts in PostgreSQL. This limits guessing within a
 challenge even if an application instance restarts. Coordinated cross-instance
 source limiting and alerting remain deployment-edge evidence.
 
+Repeated password verification resumes a pending enrolment only for ten
+minutes. An expired or explicitly restarted enrolment revokes the former
+factor, and only one pending factor is permitted per membership. Expired and
+consumed challenge rows are deleted during later authentication; this does not
+delete the separate attributable MFA audit record.
+
 `TRUST_PROXY_HOPS` controls which reverse-proxy hop Express trusts when deriving
 the source address. Local development defaults to `0`. Production refuses to
 start without an explicit value from `0` to `3`. The deployed value must equal

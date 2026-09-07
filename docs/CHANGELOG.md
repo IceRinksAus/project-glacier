@@ -1,5 +1,35 @@
 # Changelog
 
+# Sprint 34 – Authentication Reliability and Dependency Hardening
+
+## Complete
+
+- Stabilised pending privileged MFA setup for a bounded ten-minute window so
+  repeated password sign-in no longer silently replaces a recent QR secret.
+- Added deliberate setup restart, Organisation-aware labels, clear replacement
+  guidance, safe pasted-code whitespace handling and focused browser tests.
+- Cleaned expired/consumed MFA challenges during subsequent authentication
+  while preserving attributable MFA audit evidence.
+- Retained Prisma 7.9.1 and installed exact patched transitive versions for the
+  audited `deepmerge-ts`, `fast-uri`, `mysql2` and `qs` findings.
+
+## Verification
+
+- API: 91 suites / 644 tests passed; production build passed.
+- Web: 31 files / 90 tests passed; production build passed.
+- API and web npm audits reported zero known vulnerabilities.
+- All 48 migrations remained current and replayed from empty state.
+- Disposable authenticated tenant/role/MFA isolation passed 5 / 5 checks.
+- Complete local release gate and fictional browser acceptance passed.
+- Tracked-secret scan passed across 628 files and 6 rules.
+- Isolated PostgreSQL restore matched all 16 critical tables.
+
+## Boundary
+
+Transitive overrides require rechecking after every lockfile change. Managed
+production controls, real devices, email/OWNER recovery and independent review
+remain pre-live work. No paid infrastructure or live data was used.
+
 # Sprint 33 – Privileged MFA Foundation
 
 ## Complete

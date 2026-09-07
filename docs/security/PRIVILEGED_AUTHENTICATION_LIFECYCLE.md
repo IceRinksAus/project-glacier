@@ -2,7 +2,7 @@
 
 ## Status
 
-Sprint 33 local security foundation. Persisted sessions, immediate revocation
+Sprint 34 local security foundation. Persisted sessions, immediate revocation
 and membership-scoped TOTP MFA for OWNER and MANAGER are implemented locally.
 Password recovery remains blocked until approved email delivery and account
 ownership exist. Managed production secret custody and independent review are
@@ -74,6 +74,15 @@ request independently requires current factor-generation evidence for OWNER or
 MANAGER, so a role change cannot elevate an old session. A same-Organisation
 OWNER may reset a MANAGER, which revokes the factor, codes, challenges and
 sessions. Ordinary workflows cannot reset an OWNER.
+
+Pending first enrolment is stable for a bounded ten-minute window after factor
+creation, so repeated password verification resumes the same QR authority.
+Explicit restart or expiry revokes the former pending factor before issuing a
+replacement, and the database permits only one pending factor per membership.
+Expired and consumed challenges are cleaned during later authentication while
+the non-secret `MfaAudit` record remains. The browser explains replacement and
+code timing and strips harmless whitespace before server-side six-digit
+validation.
 
 Passkeys/WebAuthn remain the preferred future phishing-resistant factor. SMS is
 not approved as a primary privileged factor.

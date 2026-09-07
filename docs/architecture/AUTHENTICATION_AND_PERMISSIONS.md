@@ -7,6 +7,14 @@ active membership. STAFF/SCANNER receive the existing persisted eight-hour
 session. OWNER/MANAGER receive only a hash-at-rest five-minute challenge and do
 not receive a JWT until TOTP or an unused recovery code succeeds.
 
+For first enrolment, a recent pending membership factor is resumed for a
+bounded ten-minute setup window rather than silently creating another
+authenticator secret on every password login. Expiry or an explicit restart
+revokes the former pending factor before replacement. Authenticator labels
+include Organisation context; only one pending factor may exist per membership.
+Expired and consumed challenges are disposable authority and are cleaned during
+later authentication, while `MfaAudit` remains the durable non-secret record.
+
 The request passes through Glacier's global strict validation boundary. Email is a valid, bounded address and password is a non-empty bounded string; unknown fields are rejected before authentication work. Successful responses and JWT claims do not contain passwords or password hashes.
 
 ## JWT claims and current authority

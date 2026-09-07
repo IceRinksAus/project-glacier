@@ -2,7 +2,7 @@
 
 ## Status
 
-Sprint 33 working register. This is a repository and local-configuration review, not an independent penetration test, legal opinion or production security certification.
+Sprint 34 working register. This is a repository and local-configuration review, not an independent penetration test, legal opinion or production security certification.
 
 ## Severity and closure rules
 
