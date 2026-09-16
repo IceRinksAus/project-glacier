@@ -22,13 +22,14 @@ export default function LoginPage() {
     qrCodeDataUrl: string;
   } | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [recoveryDestination, setRecoveryDestination] = useState("/");
 
   function finishAuthentication(data: {
     accessToken: string;
     user: { role: string };
   }) {
     setAuthSession(data.accessToken, data.user);
-    router.push(data.user.role === "SCANNER" ? "/staff/scanner" : "/events");
+    router.push(getPostLoginDestination(data.user.role));
   }
 
   async function performLogin(restartMfaEnrollment = false) {
@@ -91,6 +92,7 @@ export default function LoginPage() {
       const data = await response.json();
       if (data.recoveryCodes?.length) {
         setRecoveryCodes(data.recoveryCodes);
+        setRecoveryDestination(getPostLoginDestination(data.user.role));
         setAuthSession(data.accessToken, data.user);
       } else {
         finishAuthentication(data);
@@ -117,7 +119,7 @@ export default function LoginPage() {
           <ul className="mt-6 grid gap-2 rounded-xl border bg-muted/30 p-5 font-mono text-sm sm:grid-cols-2">
             {recoveryCodes.map((code) => <li key={code}>{code}</li>)}
           </ul>
-          <Button className="mt-6 w-full" size="lg" onClick={() => router.push("/events")}>
+          <Button className="mt-6 w-full" size="lg" onClick={() => router.push(recoveryDestination)}>
             I have saved these codes
           </Button>
         </div>
@@ -249,4 +251,8 @@ export default function LoginPage() {
       </div>
     </main>
   );
+}
+
+export function getPostLoginDestination(role: string) {
+  return role === "SCANNER" ? "/staff/scanner" : "/";
 }

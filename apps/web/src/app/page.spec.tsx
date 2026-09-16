@@ -17,7 +17,7 @@ vi.mock("@/components/layout/PlatformShell", () => ({ PlatformShell: ({ children
 describe("DashboardPage", () => {
   it("renders trusted operational totals and Event attention links", () => {
     render(<DashboardPage />);
-    expect(screen.getByText("Organisation overview")).toBeVisible();
+    expect(screen.getByText("Your Glacier dashboard")).toBeVisible();
     expect(screen.getByText("$500.00")).toBeVisible();
     expect(screen.getByText("Winter Festival")).toBeVisible();
     expect(screen.getByRole("link", { name: /Winter Festival/ })).toHaveAttribute("href", "/events/event-1");

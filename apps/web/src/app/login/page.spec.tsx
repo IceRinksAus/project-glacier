@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import LoginPage from "./page";
+import LoginPage, { getPostLoginDestination } from "./page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/auth", () => ({ setAuthSession: vi.fn() }));
@@ -51,5 +51,17 @@ describe("LoginPage privileged enrolment", () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[1][1]!.body as string)).toMatchObject({
       code: "123456",
     });
+  });
+});
+
+describe("getPostLoginDestination", () => {
+  it("takes organiser roles to the dashboard", () => {
+    expect(getPostLoginDestination("OWNER")).toBe("/");
+    expect(getPostLoginDestination("MANAGER")).toBe("/");
+    expect(getPostLoginDestination("STAFF")).toBe("/");
+  });
+
+  it("keeps scanner accounts in the dedicated scanner experience", () => {
+    expect(getPostLoginDestination("SCANNER")).toBe("/staff/scanner");
   });
 });
