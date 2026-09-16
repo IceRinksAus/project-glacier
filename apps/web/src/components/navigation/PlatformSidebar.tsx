@@ -13,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const navigationItems = [
@@ -67,15 +68,15 @@ export function PlatformSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
-      <div className="flex h-16 items-center border-b border-sidebar-border px-6">
-        <Link href="/" className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-sidebar-primary text-sm font-black text-sidebar-primary-foreground">G</span>
-          <span>Glacier</span>
+    <aside className="hidden w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
+      <div className="flex h-16 items-center border-b border-sidebar-border px-5">
+        <Link href="/" className="flex items-center gap-2.5 text-lg font-bold tracking-[0.08em]">
+          <Image src="/glacier-mark.svg" width={32} height={26} alt="" priority />
+          <span>GLACIER</span>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 p-3">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -85,7 +86,7 @@ export function PlatformSidebar() {
               key={item.label}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 active
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -98,11 +99,11 @@ export function PlatformSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-3">
         <Link
           href="/settings"
           aria-current={pathname.startsWith("/settings") ? "page" : undefined}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
             pathname.startsWith("/settings")
               ? "bg-sidebar-primary text-sidebar-primary-foreground"
               : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"

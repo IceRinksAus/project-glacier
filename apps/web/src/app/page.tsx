@@ -19,9 +19,7 @@ export default function DashboardPage() {
   return (
     <PlatformShell>
       <div className="flex flex-col gap-8">
-        <div className="glacier-panel relative overflow-hidden p-6 sm:p-8">
-          <div className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
             <p className="glacier-kicker">
               {new Intl.DateTimeFormat("en-AU", { dateStyle: "full" }).format(new Date())}
@@ -39,7 +37,6 @@ export default function DashboardPage() {
           {role === "OWNER" ? (
             <Button size="lg" onClick={() => router.push("/events/new")}>Create new event</Button>
           ) : null}
-          </div>
         </div>
 
         {isLoading ? <StateCard>Loading dashboard...</StateCard> : null}
@@ -87,7 +84,7 @@ export default function DashboardPage() {
 }
 
 function Metric({ label, value, compact = false }: { label: string; value: string | number; compact?: boolean }) {
-  return <div className={compact ? "" : "glacier-panel border-l-4 border-l-primary p-6"}><p className="text-sm text-muted-foreground">{label}</p><p className="mt-2 text-3xl font-semibold">{value}</p></div>;
+  return <div className={compact ? "" : "glacier-panel p-5"}><p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold">{value}</p></div>;
 }
 
 function StateCard({ children, error = false }: { children: React.ReactNode; error?: boolean }) {
