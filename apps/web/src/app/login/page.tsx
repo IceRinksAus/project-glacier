@@ -108,8 +108,8 @@ export default function LoginPage() {
 
   if (recoveryCodes.length) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-muted/30 px-6 py-10">
-        <div className="w-full max-w-lg rounded-2xl border bg-card p-8 shadow-sm">
+      <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,var(--accent),transparent_45%),var(--background)] px-6 py-10">
+        <div className="w-full max-w-lg rounded-3xl border bg-card p-8 shadow-xl shadow-primary/10">
           <h1 className="text-3xl font-semibold tracking-tight">Save your recovery codes</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             Store these somewhere safe. Each code works once and will not be shown again.
@@ -127,9 +127,9 @@ export default function LoginPage() {
 
   if (challengeToken) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-muted/30 px-6 py-10">
-        <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
-          <p className="text-sm font-medium text-muted-foreground">Glacier Platform</p>
+      <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,var(--accent),transparent_45%),var(--background)] px-6 py-10">
+        <div className="w-full max-w-md rounded-3xl border bg-card p-8 shadow-xl shadow-primary/10">
+          <p className="glacier-kicker">Glacier Platform</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             {setup ? "Secure your account" : "Enter your security code"}
           </h1>
@@ -183,10 +183,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-muted/30 px-6">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-sm">
+    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top_right,var(--accent),transparent_45%),var(--background)] px-6">
+      <div className="w-full max-w-md rounded-3xl border bg-card p-8 shadow-xl shadow-primary/10">
         <div className="mb-8">
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="glacier-kicker">
             Glacier Platform
           </p>
 

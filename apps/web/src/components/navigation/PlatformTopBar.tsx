@@ -29,13 +29,13 @@ export function PlatformTopBar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card/90 px-4 backdrop-blur sm:px-6">
       <div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs font-semibold uppercase tracking-wider text-primary">
           Organisation
         </p>
 
-        <button className="flex items-center gap-1 text-sm font-semibold">
+        <button className="flex items-center gap-1 text-sm font-semibold text-foreground">
           Ice Rinks Australia
           <ChevronDown className="size-4 text-muted-foreground" />
         </button>

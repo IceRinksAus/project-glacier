@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { PlatformSidebar } from "@/components/navigation/PlatformSidebar";
+import { PlatformMobileNav, PlatformSidebar } from "@/components/navigation/PlatformSidebar";
 import { PlatformTopBar } from "@/components/navigation/PlatformTopBar";
 
 interface PlatformShellProps {
@@ -16,6 +16,7 @@ export function PlatformShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="print:hidden"><PlatformTopBar /></div>
+        <div className="print:hidden"><PlatformMobileNav /></div>
 
         <main className="flex-1 p-6 print:p-0 lg:p-8">
           <div className="mx-auto w-full max-w-7xl print:max-w-none">
