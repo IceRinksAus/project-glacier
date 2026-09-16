@@ -70,6 +70,7 @@ export function addMonths(monthKey: string, amount: number) {
 
 export function calendarDays(monthKey: string) {
   const [year, month] = monthKey.split("-").map(Number);
+  if (!year || !month) return [];
   const first = new Date(Date.UTC(year, month - 1, 1));
   const mondayOffset = (first.getUTCDay() + 6) % 7;
   const start = new Date(first);

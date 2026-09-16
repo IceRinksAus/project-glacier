@@ -93,10 +93,12 @@ if (selectedPattern) {
         </section>
 
         <SessionsTimeline
-  key={refreshKey}
-  eventId={eventId}
-  eventTimezone={eventTimezone}
-/>
+          key={refreshKey}
+          eventId={eventId}
+          eventStartDate={eventStartDate}
+          eventEndDate={eventEndDate}
+          eventTimezone={eventTimezone}
+        />
       </div>
 
       <CreateScheduleDialog
