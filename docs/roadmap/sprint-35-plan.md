@@ -1,6 +1,6 @@
 # Sprint 35 Plan — Glacier UX Foundation and Organiser Home
 
-**Status:** Approved 16 September 2026
+**Status:** Complete 17 September 2026
 
 ## Outcome
 
@@ -105,4 +105,3 @@ This Sprint can prove local application/database/browser behavior only. Managed
 production secrets, deployed origins, domains/HTTPS, real POS/Scanner devices,
 central monitoring and independent security/accessibility review remain future
 evidence.
-

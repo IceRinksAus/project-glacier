@@ -1,8 +1,8 @@
 # Project Glacier — Pilot Readiness and Strategic Roadmap
 
-**Updated:** 8 September 2026
+**Updated:** 17 September 2026
 
-**Status:** Current strategic control document after Sprint 34; local Phase 3
+**Status:** Current strategic control document after Sprint 35; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 34, Glacier is best described as:
+After Sprint 35, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 34
+# 3. Delivered Foundation Through Sprint 35
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -83,7 +83,7 @@ The following are implemented foundations and should not be reopened without evi
 - fail-closed production environment and origin contracts with health/readiness probes;
 - portable container, complete release/migration and disposable tenant-isolation foundations;
 - privacy-safe request evidence, HTTP hardening, local abuse protection and tracked-secret scanning;
-- verified isolated local backup/restore across 12 critical tables;
+- verified isolated local backup/restore across 16 critical tables;
 - hardened branding-file handling and server-revocable operator sessions; and
 - an actual-data privacy/retention/deletion register with unresolved controls retained as production blockers.
 - signed Ticket possession credentials with no usable raw credential stored in PostgreSQL, one-way legacy compatibility and audited OWNER/assigned-MANAGER reissue.
@@ -92,14 +92,19 @@ Sprint 34 additionally stabilised privileged MFA enrolment continuity and
 locally resolved the audited dependency findings with verified exact patched
 transitive versions.
 
-Current verified baseline at Sprint 34 closeout:
+Sprint 35 established the Glacier organiser visual foundation, made the
+tenant-scoped Dashboard the normal organiser home, added lifecycle/search Event
+navigation, surfaced authoritative Event activity and separated authenticated
+DRAFT Website preview from genuinely public ACTIVE Event links.
+
+Current verified baseline at Sprint 35 closeout:
 
 - 48 current Prisma migrations;
 - 91 API suites / 644 passing tests;
-- 31 web test files / 90 passing tests;
+- 32 web test files / 96 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 628 files and an isolated restore matching 16 critical tables;
+  scan across 634 files and an isolated restore matching 16 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
@@ -363,7 +368,7 @@ Reached only after pilot findings are resolved and Glacier has repeatable deploy
 | Operational portfolio dashboard            | Introductory landing page plus authoritative reporting foundations                                         | Bounded decision-support dashboard after critical transaction sources stabilise | 2–4   |
 | Production deployment                      | Reproducible local environment/container/release foundations                                               | Controlled deployed environment                                                 | 3     |
 | Logs, monitoring and alerts                | Privacy-safe local evidence shape                                                                          | Central delivery, working alerts and ownership                                  | 3     |
-| Backup and restore                         | Isolated local restore passed across 12 critical tables                                                    | Managed backup/PITR and deployed restore drill                                  | 3     |
+| Backup and restore                         | Isolated local restore passed across 16 critical tables                                                    | Managed backup/PITR and deployed restore drill                                  | 3     |
 | Security and Privacy Gate                  | Local isolation, sessions, files, abuse and privacy-register evidence; gate remains open                   | Remaining remediation, external review and sign-off                             | 3     |
 | Event-day operations                       | Not formally rehearsed                                                                                     | Complete timed simulation                                                       | 4     |
 
@@ -439,8 +444,19 @@ Sprint 34 stabilised enrolment continuity, made replacement deliberate,
 cleaned temporary challenge authority and locally closed the current dependency
 audit findings without adopting a forced downgrade or prerelease.
 
-The next Phase 3 action should select another locally actionable production
-finding without starting paid infrastructure or broad product expansion.
+Sprint 35 completed the first guided Product Comfort Gate slice: a recognisable
+Glacier organiser shell, Dashboard-first authentication, searchable lifecycle
+Events, operational Event Overview and clear DRAFT-versus-public Website
+presentation. The supplied organiser/customer/device concepts now provide a
+visual direction, but do not promote their unimplemented functionality into a
+delivery claim.
+
+The next Sprint should be selected with the organiser from the recorded guided
+walkthrough backlog. Strong candidates are the Session calendar/date workflow
+or a bounded Products usability redesign; neither should be combined with POS,
+Scanner hardware or broad customer-account work. Phase 3 should also continue
+with another locally actionable production finding without starting paid
+infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.
