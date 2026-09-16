@@ -26,6 +26,7 @@ const props = {
   eventSlug: "winter-night",
   eventName: "Winter Night",
   eventDescription: "A fictional Event",
+  eventStatus: "DRAFT",
   initialBranding: null,
 };
 
@@ -62,5 +63,25 @@ describe("EventBrandingWorkspace", () => {
     expect(screen.getByText(/Members can preview branding/)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Save branding" })).toBeNull();
     expect(screen.getByLabelText("Hero headline")).toBeDisabled();
+  });
+
+  it("keeps draft previews private and does not offer a public URL", () => {
+    render(<EventBrandingWorkspace {...props} />);
+
+    expect(screen.getByText("Private draft preview")).toBeVisible();
+    expect(screen.getByText("Authenticated design preview")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Copy public URL" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Open public site" })).not.toBeInTheDocument();
+  });
+
+  it("uses the current web origin for an active Event public URL", () => {
+    render(<EventBrandingWorkspace {...props} eventStatus="ACTIVE" />);
+
+    expect(screen.getByText("Public website is live")).toBeVisible();
+    expect(screen.getByText(`${window.location.origin}/event/winter-night`)).toBeVisible();
+    expect(screen.getByRole("link", { name: "Open public site" })).toHaveAttribute(
+      "href",
+      `${window.location.origin}/event/winter-night`,
+    );
   });
 });

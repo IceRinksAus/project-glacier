@@ -119,6 +119,7 @@ export default function EventWorkspacePage({
                 eventSlug={event.slug}
                 eventName={event.name}
                 eventDescription={event.description}
+                eventStatus={event.status}
                 initialBranding={event.branding}
               />
             ) : null}

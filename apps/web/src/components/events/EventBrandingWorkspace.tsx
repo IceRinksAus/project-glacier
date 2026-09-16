@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { getAuthUser } from "@/lib/auth";
 import {
   EventBranding,
@@ -64,12 +64,14 @@ export function EventBrandingWorkspace({
   eventSlug,
   eventName,
   eventDescription,
+  eventStatus,
   initialBranding,
 }: {
   eventId: string;
   eventSlug: string;
   eventName: string;
   eventDescription: string | null;
+  eventStatus: string;
   initialBranding: PersistedEventBranding | null;
 }) {
   const canEdit = getAuthUser()?.role === "OWNER";
@@ -84,9 +86,10 @@ export function EventBrandingWorkspace({
     () =>
       typeof window === "undefined"
         ? `/event/${eventSlug}`
-        : `${window.location.origin.replace(/:3002$/, ":3001")}/event/${eventSlug}`,
+        : `${window.location.origin}/event/${eventSlug}`,
     [eventSlug],
   );
+  const isPublished = eventStatus === "ACTIVE";
 
   function update<K extends keyof EventBranding>(key: K, value: EventBranding[K]) {
     setBranding((current) => ({ ...current, [key]: value }));
@@ -132,10 +135,27 @@ export function EventBrandingWorkspace({
               Your Event keeps Glacier&apos;s booking structure while using this controlled visual identity.
             </p>
           </div>
-          <Button variant="outline" onClick={() => void navigator.clipboard.writeText(publicUrl)}>
-            Copy public URL
-          </Button>
+          {isPublished ? (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => void navigator.clipboard.writeText(publicUrl)}>
+                Copy public URL
+              </Button>
+              <a className={buttonVariants({ variant: "outline" })} href={publicUrl} target="_blank" rel="noreferrer">Open public site</a>
+            </div>
+          ) : null}
         </div>
+
+        {isPublished ? (
+          <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+            <p className="font-medium">Public website is live</p>
+            <p className="mt-1 break-all text-muted-foreground">{publicUrl}</p>
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-medium">Private draft preview</p>
+            <p className="mt-1 text-amber-900/80">This authenticated preview is visible to your team. A public URL will be available after the Event is activated.</p>
+          </div>
+        )}
 
         {!canEdit ? <p className="mt-4 rounded-lg bg-muted p-3 text-sm">Members can preview branding. Only an owner can change it.</p> : null}
 
@@ -190,7 +210,7 @@ export function EventBrandingWorkspace({
       </section>
 
       <section className="rounded-xl border bg-card p-5 shadow-sm">
-        <p className="text-sm font-medium">Live public preview</p>
+        <p className="text-sm font-medium">{isPublished ? "Public website preview" : "Authenticated design preview"}</p>
         <div className="mt-3 overflow-hidden rounded-2xl border" style={{ backgroundColor: branding.backgroundColor, color: branding.textColor }}>
           <div className="relative min-h-80 p-7" style={{ backgroundColor: branding.primaryColor, color: branding.backgroundColor }}>
             <ImagePreview eventId={eventId} asset={hero} alt="" className="absolute inset-0 size-full object-cover opacity-30" />
