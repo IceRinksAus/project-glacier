@@ -110,6 +110,16 @@ export function EventBrandingWorkspace({
     } finally { setBusy(false); }
   }
 
+  async function copyPublicUrl() {
+    setMessage(""); setError("");
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setMessage("Public URL copied.");
+    } catch {
+      setError("Unable to copy the public URL. You can select it from the live website panel instead.");
+    }
+  }
+
   async function upload(
     purpose: "EVENT_LOGO" | "EVENT_HERO",
     file: File | undefined,
@@ -137,7 +147,7 @@ export function EventBrandingWorkspace({
           </div>
           {isPublished ? (
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => void navigator.clipboard.writeText(publicUrl)}>
+              <Button variant="outline" onClick={() => void copyPublicUrl()}>
                 Copy public URL
               </Button>
               <a className={buttonVariants({ variant: "outline" })} href={publicUrl} target="_blank" rel="noreferrer">Open public site</a>

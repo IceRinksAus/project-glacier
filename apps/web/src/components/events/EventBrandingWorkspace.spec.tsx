@@ -1,12 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EventBrandingWorkspace } from "./EventBrandingWorkspace";
 
-const { updateBranding, authRole } = vi.hoisted(() => ({
+const { updateBranding, authRole, writeText } = vi.hoisted(() => ({
   updateBranding: vi.fn(),
   authRole: { value: "OWNER" },
+  writeText: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -34,6 +35,12 @@ describe("EventBrandingWorkspace", () => {
   beforeEach(() => {
     updateBranding.mockReset();
     updateBranding.mockResolvedValue({});
+    writeText.mockReset();
+    writeText.mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
     authRole.value = "OWNER";
   });
 
@@ -74,7 +81,7 @@ describe("EventBrandingWorkspace", () => {
     expect(screen.queryByRole("link", { name: "Open public site" })).not.toBeInTheDocument();
   });
 
-  it("uses the current web origin for an active Event public URL", () => {
+  it("uses the current web origin for an active Event public URL", async () => {
     render(<EventBrandingWorkspace {...props} eventStatus="ACTIVE" />);
 
     expect(screen.getByText("Public website is live")).toBeVisible();
@@ -83,5 +90,8 @@ describe("EventBrandingWorkspace", () => {
       "href",
       `${window.location.origin}/event/winter-night`,
     );
+    fireEvent.click(screen.getByRole("button", { name: "Copy public URL" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/event/winter-night`));
+    expect(screen.getByRole("status")).toHaveTextContent("Public URL copied");
   });
 });
