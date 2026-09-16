@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { setAuthSession } from "@/lib/auth";
+import { getPostLoginDestination } from "@/lib/auth-destination";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -251,8 +252,4 @@ export default function LoginPage() {
       </div>
     </main>
   );
-}
-
-export function getPostLoginDestination(role: string) {
-  return role === "SCANNER" ? "/staff/scanner" : "/";
 }

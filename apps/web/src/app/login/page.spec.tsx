@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import LoginPage, { getPostLoginDestination } from "./page";
+import { getPostLoginDestination } from "@/lib/auth-destination";
+
+import LoginPage from "./page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/auth", () => ({ setAuthSession: vi.fn() }));
