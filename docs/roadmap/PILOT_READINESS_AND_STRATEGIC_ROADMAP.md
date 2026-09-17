@@ -2,7 +2,7 @@
 
 **Updated:** 17 September 2026
 
-**Status:** Current strategic control document after Sprint 37; local Phase 3
+**Status:** Current strategic control document after Sprint 38; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 37, Glacier is best described as:
+After Sprint 38, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 37
+# 3. Delivered Foundation Through Sprint 38
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -105,14 +105,19 @@ Sprint 37 made Products the primary visual catalogue, added secure local
 Product/Ticket Type presentation assets and editable Product requirement
 evidence, and delivered bounded tenant/Event-scoped Customer lookup.
 
-Current verified baseline at Sprint 37 closeout:
+Sprint 38 added the touch-first POS catalogue and order rail, removed
+participant-name entry from ordinary walk-up sales, connected read-only Ticket
+lookup to separately confirmed atomic admission, and separated organiser
+Scanner readiness from the dedicated SCANNER device surface.
+
+Current verified baseline at Sprint 38 closeout:
 
 - 49 current Prisma migrations;
-- 92 API suites / 659 passing tests;
-- 35 web test files / 106 passing tests;
+- 92 API suites / 660 passing tests;
+- 36 web test files / 109 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 652 files and an isolated restore matching 16 critical tables;
+  scan across 656 files and an isolated restore matching 16 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
@@ -468,11 +473,10 @@ can now manage visual Product/Ticket Type presentation, see and maintain the
 Rule connecting a Product such as Kanga to qualifying Ticket Types, and search
 authorised Customers without weakening commerce or privacy boundaries.
 
-The strongest bounded next candidate from the guided walkthrough is Sprint 38:
-the touch-first POS and scanner-connected Ticket service. It should consume the
-new catalogue presentation while preserving shared Rules, pricing, capacity,
-inventory and deliberate admission authority. It must not broaden into Scanner
-hardware provisioning, customer accounts or managed production media. Phase 3
+Sprint 38 completed the touch-first POS and scanner-connected Ticket service.
+The next bounded Product Comfort Gate should be selected from the Sprint 39
+deep dives: Settings, Reports, Website, Waiver and Gate Entry. These should be
+reviewed separately rather than combined into one broad redesign. Phase 3
 should also continue with another locally actionable production finding without
 starting paid infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,

@@ -70,5 +70,6 @@
   presentation. The customer calendar remains a later customer-journey slice.
 - Sprint 37 completed: Product-first catalogue, editable Product requirement
   Rules, Product/Ticket Type visuals and Bookings/Customers lookup entry.
-- Sprint 38: touch-first POS and scanner-connected Ticket service.
+- Sprint 38 completed: touch-first POS, participant-name-free walk-up sales,
+  scanner-connected Ticket lookup/admission and organiser Scanner readiness.
 - Sprint 39: Settings, Reports, Website, Waiver and Gate Entry deep dives.

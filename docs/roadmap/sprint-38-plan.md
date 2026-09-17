@@ -1,6 +1,6 @@
 # Sprint 38 Plan — Touch-first POS and Connected Ticket Service
 
-**Status:** Approved 17 September 2026 — implementation in progress
+**Status:** Complete 17 September 2026
 
 ## Outcome
 
