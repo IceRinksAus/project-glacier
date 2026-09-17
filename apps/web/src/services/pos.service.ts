@@ -113,6 +113,12 @@ export interface PosTicketLookup {
   checkedInAt?: string | null;
 }
 
+export interface PosBookingTicketLookup {
+  referenceType: "BOOKING";
+  bookingNumber: string;
+  tickets: PosTicketLookup[];
+}
+
 export interface RetailProductVariant {
   id: string;
   name: string;
@@ -243,10 +249,13 @@ export const posService = {
     ),
 
   lookupTicket: (eventId: string, token: string) =>
-    api.post<PosTicketLookup>(`/pos/events/${eventId}/tickets/lookup`, {
-      token,
-      mode: "TICKET_LOOKUP",
-    }),
+    api.post<PosTicketLookup | PosBookingTicketLookup>(
+      `/pos/events/${eventId}/tickets/lookup`,
+      {
+        token,
+        mode: "TICKET_LOOKUP",
+      },
+    ),
 
   admitTicket: (eventId: string, token: string) =>
     api.post<PosTicketLookup>(`/pos/events/${eventId}/tickets/admit`, {

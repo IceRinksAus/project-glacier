@@ -51,6 +51,7 @@ describe('StaffScannerService', () => {
   };
   const prismaMock = {
     event: { findMany: jest.fn(), findFirst: jest.fn() },
+    booking: { findFirst: jest.fn() },
     ticket: { findFirst: jest.fn() },
     $transaction: jest.fn((callback) => callback(transactionMock)),
   };
@@ -122,6 +123,58 @@ describe('StaffScannerService', () => {
     });
     expect(transactionMock.ticket.updateMany).not.toHaveBeenCalled();
     expect(transactionMock.ticketScanAttempt.create).not.toHaveBeenCalled();
+  });
+
+  it('looks up a human-readable Ticket number within the authenticated organization', async () => {
+    const result = await service.lookup(scannerAccess, 'event-1', {
+      token: 'TKT-123',
+      mode: TicketScanMode.TICKET_LOOKUP,
+    });
+
+    expect(prismaMock.ticket.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          ticketNumber: 'TKT-123',
+          booking: { event: { organizationId: 'organization-1' } },
+        },
+      }),
+    );
+    expect(ticketCredentials.lookupWhere).not.toHaveBeenCalled();
+    expect(result.result).toBe(ScannerTicketResult.READY_TO_ADMIT);
+  });
+
+  it('lists every Ticket for an Event-scoped Booking lookup', async () => {
+    prismaMock.booking.findFirst.mockResolvedValue({
+      bookingNumber: 'PG-1234',
+      tickets: [{ ticketNumber: 'TKT-123' }, { ticketNumber: 'TKT-456' }],
+    });
+
+    const result = await service.lookupBooking(
+      scannerAccess,
+      'event-1',
+      'PG-1234',
+    );
+
+    expect(prismaMock.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          bookingNumber: 'PG-1234',
+          event: {
+            organizationId: 'organization-1',
+            id: 'event-1',
+            status: 'ACTIVE',
+          },
+        },
+      }),
+    );
+    expect(result).toMatchObject({
+      referenceType: 'BOOKING',
+      bookingNumber: 'PG-1234',
+      tickets: [
+        { result: ScannerTicketResult.READY_TO_ADMIT },
+        { result: ScannerTicketResult.READY_TO_ADMIT },
+      ],
+    });
   });
 
   it('reports too early using the injected server clock', async () => {

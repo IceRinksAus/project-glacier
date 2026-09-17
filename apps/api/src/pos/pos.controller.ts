@@ -26,6 +26,7 @@ import { CreateRetailSaleDto } from './dto/create-retail-sale.dto';
 import { SearchRetailSalesQueryDto } from './dto/search-retail-sales-query.dto';
 import { ScannerTicketDto } from '../staff-scanner/dto/scanner-ticket.dto';
 import { StaffScannerService } from '../staff-scanner/staff-scanner.service';
+import { PosTicketReferenceDto } from './dto/pos-ticket-reference.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...OPERATOR_ROLES)
@@ -41,8 +42,15 @@ export class PosController {
   lookupTicket(
     @CurrentUser() user: AuthenticatedAccessContext,
     @Param('eventId') eventId: string,
-    @Body() data: ScannerTicketDto,
+    @Body() data: PosTicketReferenceDto,
   ) {
+    if (/^PG-/i.test(data.token)) {
+      return this.staffScannerService.lookupBooking(
+        user,
+        eventId,
+        data.token.toUpperCase(),
+      );
+    }
     return this.staffScannerService.lookup(user, eventId, data);
   }
 
@@ -50,7 +58,7 @@ export class PosController {
   admitTicket(
     @CurrentUser() user: AuthenticatedAccessContext,
     @Param('eventId') eventId: string,
-    @Body() data: ScannerTicketDto,
+    @Body() data: PosTicketReferenceDto,
   ) {
     return this.staffScannerService.admit(user, eventId, data);
   }

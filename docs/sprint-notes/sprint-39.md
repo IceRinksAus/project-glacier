@@ -108,3 +108,12 @@ preview whenever its Ticket selection changes. Required Products such as a
 Kanga appear immediately in the order with a `Required` label and are included
 in the displayed total. Reservation still repeats the authoritative server Rule
 evaluation, so the preview does not replace or weaken enforcement.
+
+POS Ticket service now accepts the human-readable Ticket number displayed after
+sale as well as the signed QR credential. It also accepts a Booking number and
+returns every Ticket in that Booking for the selected authorised Event. Booking
+results retain a separate confirmation action for each Ticket; lookup remains
+read-only and there is no bulk-admit shortcut. Organisation, Event assignment,
+entry-window, cancellation, duplicate-scan and atomic admission checks remain in
+the shared Scanner authority. Signed QR credentials preserve their original
+case so their MAC is not altered by the browser.

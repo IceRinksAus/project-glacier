@@ -30,6 +30,7 @@ describe('PosController', () => {
   };
   const staffScannerService = {
     lookup: jest.fn(),
+    lookupBooking: jest.fn(),
     admit: jest.fn(),
   };
   let controller: PosController;
@@ -72,6 +73,20 @@ describe('PosController', () => {
       'MANAGER',
       'STAFF',
     ]);
+  });
+
+  it('resolves a Booking number to its Event-scoped Ticket list', async () => {
+    await controller.lookupTicket(user, 'event-1', {
+      token: 'PG-1234',
+      mode: 'TICKET_LOOKUP',
+    });
+
+    expect(staffScannerService.lookupBooking).toHaveBeenCalledWith(
+      user,
+      'event-1',
+      'PG-1234',
+    );
+    expect(staffScannerService.lookup).not.toHaveBeenCalled();
   });
 
   it('passes current access context through every POS operation', async () => {

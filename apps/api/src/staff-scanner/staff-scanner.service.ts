@@ -30,6 +30,11 @@ interface ScannerEvent {
   entryClosesMinutesAfterEnd: number;
 }
 
+interface TicketReferenceInput {
+  token: string;
+  mode: ScannerTicketDto['mode'];
+}
+
 @Injectable()
 export class StaffScannerService {
   constructor(
@@ -81,17 +86,60 @@ export class StaffScannerService {
   async lookup(
     access: AuthenticatedAccessContext,
     eventId: string,
-    input: ScannerTicketDto,
+    input: TicketReferenceInput,
   ) {
     const event = await this.getEventContext(access, eventId);
     const ticket = await this.findTicket(access.organizationId, input.token);
     return this.buildResult(event, ticket, eventId, this.clock.now());
   }
 
+  async lookupBooking(
+    access: AuthenticatedAccessContext,
+    eventId: string,
+    bookingNumber: string,
+  ) {
+    const event = await this.getEventContext(access, eventId);
+    const booking = await this.prisma.booking.findFirst({
+      where: {
+        bookingNumber,
+        event: this.accessControl.eventWhere(access, {
+          id: eventId,
+          status: 'ACTIVE',
+        }),
+      },
+      select: {
+        bookingNumber: true,
+        tickets: {
+          orderBy: { issuedAt: 'asc' },
+          select: { ticketNumber: true },
+        },
+      },
+    });
+    if (!booking) {
+      return { referenceType: 'BOOKING' as const, bookingNumber, tickets: [] };
+    }
+    const now = this.clock.now();
+    const tickets = await Promise.all(
+      booking.tickets.map(async ({ ticketNumber }) =>
+        this.buildResult(
+          event,
+          await this.findTicket(access.organizationId, ticketNumber),
+          eventId,
+          now,
+        ),
+      ),
+    );
+    return {
+      referenceType: 'BOOKING' as const,
+      bookingNumber: booking.bookingNumber,
+      tickets,
+    };
+  }
+
   async admit(
     access: AuthenticatedAccessContext,
     eventId: string,
-    input: ScannerTicketDto,
+    input: TicketReferenceInput,
   ) {
     const event = await this.getEventContext(access, eventId);
     const now = this.clock.now();
@@ -168,6 +216,21 @@ export class StaffScannerService {
     token: string,
     prisma: PrismaService | Prisma.TransactionClient = this.prisma,
   ): Promise<ScannerTicket | null> {
+    if (/^TKT-[A-Z0-9-]{3,80}$/i.test(token)) {
+      return prisma.ticket.findFirst({
+        where: {
+          ticketNumber: token.toUpperCase(),
+          booking: { event: { organizationId } },
+        },
+        include: {
+          participant: { include: { ticketType: true } },
+          booking: { include: { event: true, session: true } },
+          originalRescheduleMapping: {
+            select: { replacementTicketNumberSnapshot: true },
+          },
+        },
+      });
+    }
     const credentialWhere = this.ticketCredentials.lookupWhere(token);
     if (!credentialWhere) return Promise.resolve(null);
 
