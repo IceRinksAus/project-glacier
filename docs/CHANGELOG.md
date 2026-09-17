@@ -1,5 +1,38 @@
 # Changelog
 
+# Sprint 40 – Reporting Hub and Core Reports
+
+## Complete
+
+- Replaced the Event Group administration-first Reports landing page with an
+  authoritative headline summary, selected-Event snapshot and clean grouped
+  report catalogue.
+- Added validated direct links into Ticket Type, Session, Event-date, Product,
+  booking-pace and overview reporting while retaining shared filters, CSV and
+  browser PDF behavior.
+- Added persisted Payment-method reporting for online card, POS Cash and POS
+  EFTPOS with gross, successful refunds and net collection kept distinct.
+- Retained Event Groups as OWNER-managed report configuration and preserved
+  read-only comparison for authorised operators.
+
+## Verification
+
+- API: 92 suites / 666 tests passed; production build passed.
+- Web: 37 files / 115 tests passed; production build passed.
+- All 50 migrations remained current and replayed from empty state.
+- Disposable authenticated tenant/role/Event/MFA isolation passed 5 / 5.
+- Tracked-secret scanning passed across 665 files and 6 rules.
+- Isolated PostgreSQL restore matched all 16 critical tables.
+- Complete local release gate and fictional responsive browser acceptance
+  passed.
+
+## Boundary
+
+Reporting remains operational rather than accounting or processor settlement.
+Forecasting, scheduled reports, customer profiling, unsupported refund
+allocation and production monitoring remain deferred. Managed production
+secrets, deployed infrastructure and independent review remain future evidence.
+
 # Sprint 34 – Authentication Reliability and Dependency Hardening
 
 ## Complete

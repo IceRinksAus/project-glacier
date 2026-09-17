@@ -39,6 +39,14 @@ Production operations should monitor report latency, errors, cap utilisation and
 
 ## Detailed Category Reports and Exports
 
+The authenticated Reports destination is the discovery hub. It presents an
+Organisation headline position from the bounded Organisation summary, a
+selected-Event snapshot and a grouped catalogue that opens directly into the
+existing Event report workspace. Event Group administration remains available
+as report configuration rather than occupying the primary reporting position.
+Catalogue entries distinguish available reports from planned capabilities; a
+planned label is not evidence that a calculation exists.
+
 Detailed reads currently group sales and operations by Ticket Type, Session, Event-local Session date, Product and Product Variant. Event-local date and Session filters reuse the same scope contract as the Event overview. Product reporting distinguishes confirmed units/gross item sales from current Event-wide inventory commitments and per-Session reusable capacity. Active `REQUIRE_PRODUCT` Rules identify required products separately from discretionary Add-ons.
 
 Booking pace uses Booking `createdAt` in the Event timezone for Bookings that are currently `CONFIRMED`, aligned to each selected Session's local calendar date. It does not use `confirmedAt` for bucket assignment and is not a website conversion, abandonment or marketing-attribution report.
@@ -50,6 +58,13 @@ CSV exports for Ticket Type, Session, Event-local date, Product/Variant, sales-p
 Browser print mode reuses the already loaded authoritative report, adds scope and generation context, and removes navigation, filter and editing controls. It supports browser print and Save as PDF; production-quality generated PDF and XLSX remain explicitly deferred to Sprint 24.
 
 Admission-state and further benchmark reporting remain planned, together with production XLSX and generated PDF. Future export formats must reuse the same tenant scope, metric definitions and bounded filtering as the browser report.
+
+Event overview reporting also groups successful Payments by their persisted
+`PaymentMethod`: `ONLINE_CARD`, `CASH` and `STANDALONE_EFTPOS`. Each row reports
+successful Payment count, gross collected, successful refunds and net
+collected. This is operational collection evidence only. It does not infer a
+channel from the UI used to view the report and does not claim processor
+settlement, bank reconciliation, payout, fees, tax or accounting authority.
 
 Category-level gross sales can use authoritative Booking Item or Booking Product prices. Category-level net sales requires an explicit refund-allocation design because PaymentRefund currently records an amount against a Payment, not against an individual Ticket Type or Product. Until that attribution exists, detailed exports must either report gross category sales with Event-level refunds separately or clearly disclose a reviewed allocation policy.
 

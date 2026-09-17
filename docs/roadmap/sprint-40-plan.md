@@ -1,6 +1,6 @@
 # Sprint 40 Plan — Reporting Hub and Core Reports
 
-**Status:** Approved 18 September 2026
+**Status:** Complete 18 September 2026
 
 ## Outcome
 
