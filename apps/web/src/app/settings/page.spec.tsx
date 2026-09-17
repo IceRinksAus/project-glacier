@@ -53,6 +53,17 @@ describe("SettingsPage Team and Access", () => {
     expect(screen.getByRole("heading", { name: "Scanner" })).toBeVisible();
   });
 
+  it("separates personal, Organisation and Event settings", async () => {
+    render(<SettingsPage />);
+    expect((await screen.findAllByRole("heading", { name: "My account and security" })).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "Organisation policies" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: "Event configuration" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /Melbourne Winter Festival/ })).toHaveAttribute(
+      "href",
+      "/events/event-1?tab=Settings",
+    );
+  });
+
   it("lets an Owner restrict a Manager to selected Events", async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);

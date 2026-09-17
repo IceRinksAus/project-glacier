@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { ShieldCheck, UserRoundCog } from "lucide-react";
+import Link from "next/link";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { OrganizationFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
@@ -50,11 +51,11 @@ export default function SettingsPage() {
   }
 
   useEffect(() => {
-    if (role !== "OWNER") {
-      return;
-    }
     let cancelled = false;
-    Promise.all([teamAccessService.getTeam(), eventService.getEvents()])
+    Promise.all([
+      role === "OWNER" ? teamAccessService.getTeam() : Promise.resolve([]),
+      eventService.getEvents(),
+    ])
       .then(([nextMembers, nextEvents]) => {
         if (!cancelled) {
           setMembers(nextMembers);
@@ -84,20 +85,58 @@ export default function SettingsPage() {
         <header>
           <p className="text-sm font-medium text-muted-foreground">Settings</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Team and Access
+            Glacier settings
           </h1>
           <p className="mt-2 max-w-3xl text-muted-foreground">
-            Decide what each person can do and which Events they can access.
-            Changes take effect against their current membership immediately.
+            Manage personal security, Organisation governance and configuration
+            for the Events you are authorised to operate.
           </p>
         </header>
 
+        <nav aria-label="Settings sections" className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            ["#my-security", "My account and security", "Personal setting", "MFA, recovery codes and active-session protection."],
+            ["#team-access", "Team and access", "Organisation setting", "Roles and Event assignments managed by the Owner."],
+            ["#organisation-policies", "Organisation policies", "Organisation setting", "Default Flexible Ticket governance and future policies."],
+            ["#event-configuration", "Event configuration", "Event setting", "Open configuration for an authorised Event."],
+          ].map(([href, title, scope, description]) => (
+            <a key={href} href={href} className="rounded-2xl border bg-card p-5 shadow-sm transition hover:border-primary/40 hover:shadow-md">
+              <span className="text-xs font-bold uppercase tracking-wide text-primary">{scope}</span>
+              <h2 className="mt-2 font-semibold">{title}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+            </a>
+          ))}
+        </nav>
+
+        <section id="my-security" className="scroll-mt-6 space-y-4">
+          <SectionHeading scope="Personal setting" title="My account and security" description="These controls apply to your own signed-in membership." />
+          <AccountSecurityPanel />
+        </section>
+
+        <section id="organisation-policies" className="scroll-mt-6 space-y-4">
+          <SectionHeading scope="Organisation setting" title="Organisation policies" description="Defaults apply across the Organisation unless an Event has an approved override." />
+          {role === "OWNER" ? (
+            <OrganizationFlexibleTicketSettings />
+          ) : (
+            <StateCard>Only the organisation Owner can change Organisation-wide policies.</StateCard>
+          )}
+        </section>
+
+        <section id="event-configuration" className="scroll-mt-6 space-y-4">
+          <SectionHeading scope="Event setting" title="Event configuration" description="Open the grouped settings workspace for an Event in your current access scope." />
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {events.map((event) => (
+              <Link key={event.id} href={`/events/${event.id}?tab=Settings`} className="rounded-xl border bg-card p-4 shadow-sm transition hover:border-primary/40">
+                <p className="font-semibold">{event.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{event.status} · Open Event settings</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section id="team-access" className="scroll-mt-6 space-y-4">
+        <SectionHeading scope="Organisation setting" title="Team and access" description="Decide what each person can do and which Events they can access." />
         <RoleGuide />
-
-        <AccountSecurityPanel />
-
-        {role === "OWNER" ? <OrganizationFlexibleTicketSettings /> : null}
-
         {role !== "OWNER" ? (
           <StateCard>
             Only the organisation Owner can change team access. Your current
@@ -130,8 +169,19 @@ export default function SettingsPage() {
             ))}
           </section>
         ) : null}
+        </section>
       </div>
     </PlatformShell>
+  );
+}
+
+function SectionHeading({ scope, title, description }: { scope: string; title: string; description: string }) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-wide text-primary">{scope}</p>
+      <h2 className="mt-1 text-2xl font-semibold">{title}</h2>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    </div>
   );
 }
 
