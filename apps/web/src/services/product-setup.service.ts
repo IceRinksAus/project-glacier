@@ -118,6 +118,17 @@ export interface CreateRequirementRule {
   stopProcessing: false;
 }
 
+export interface ProductRequirementRule {
+  id: string;
+  eventId: string;
+  ruleType: string;
+  status: string;
+  conditions: {
+    all?: Array<{ field?: string; operator?: string; value?: unknown }>;
+  };
+  actions: { type?: string; productSlug?: string };
+}
+
 export const productSetupService = {
   findForEvent: (eventId: string) =>
     api.get<ProductAdministration[]>(
@@ -152,6 +163,8 @@ export const productSetupService = {
 
   createRequirementRule: (data: CreateRequirementRule) =>
     api.post("/rule", data),
+
+  findRequirementRules: () => api.get<ProductRequirementRule[]>("/rule"),
 
   updateStatus: (productId: string, status: "DRAFT" | "ACTIVE" | "INACTIVE") =>
     api.patch<ProductAdministration>(`/product/${productId}/status`, {

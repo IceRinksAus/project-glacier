@@ -8,6 +8,7 @@ const {
   authState,
   findForEvent,
   findGroups,
+  findRequirementRules,
   createProduct,
   uploadImage,
   createVariant,
@@ -20,6 +21,7 @@ const {
   authState: { role: "OWNER" },
   findForEvent: vi.fn(),
   findGroups: vi.fn(),
+  findRequirementRules: vi.fn(),
   createProduct: vi.fn(),
   uploadImage: vi.fn(),
   createVariant: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock("@/services/product-setup.service", () => ({
   productSetupService: {
     findForEvent,
     findGroups,
+    findRequirementRules,
     createProduct,
     uploadImage,
     createVariant,
@@ -73,6 +76,7 @@ describe("ProductsWorkspace", () => {
     authState.role = "OWNER";
     findForEvent.mockResolvedValue([]);
     findGroups.mockResolvedValue([]);
+    findRequirementRules.mockResolvedValue([]);
     getSessions.mockResolvedValue([activeSession]);
     findTicketTypes.mockResolvedValue([
       {
@@ -101,6 +105,55 @@ describe("ProductsWorkspace", () => {
 
     expect(await screen.findByText("Read-only access")).toBeInTheDocument();
     expect(screen.queryByLabelText("Product name")).not.toBeInTheDocument();
+  });
+
+  it("shows the Ticket Type Rule connected to an existing Product", async () => {
+    findForEvent.mockResolvedValue([
+      {
+        id: "product-1",
+        eventId: "event-1",
+        name: "Kanga hire",
+        slug: "kanga-hire",
+        description: null,
+        productType: "ADD_ON",
+        price: "8.00",
+        status: "ACTIVE",
+        inventoryTracked: false,
+        inventoryQuantity: null,
+        capacityControlled: true,
+        capacity: 20,
+        requiresSession: true,
+        availableOnline: true,
+        availablePos: true,
+        sortOrder: 0,
+        productGroupId: null,
+        imageAsset: null,
+        variants: [],
+        sessionProducts: [{ id: "assignment-1" }],
+      },
+    ]);
+    findRequirementRules.mockResolvedValue([
+      {
+        id: "rule-1",
+        eventId: "event-1",
+        ruleType: "PRODUCT_REQUIREMENT",
+        status: "ACTIVE",
+        conditions: {
+          all: [
+            {
+              field: "ticketTypeId",
+              operator: "IN",
+              value: ["child-ticket"],
+            },
+          ],
+        },
+        actions: { type: "REQUIRE_PRODUCT", productSlug: "kanga-hire" },
+      },
+    ]);
+
+    render(<ProductsWorkspace eventId="event-1" />);
+
+    expect(await screen.findByText("Required for: Child")).toBeInTheDocument();
   });
 
   it("configures reusable per-Session capacity and a Ticket Type requirement", async () => {

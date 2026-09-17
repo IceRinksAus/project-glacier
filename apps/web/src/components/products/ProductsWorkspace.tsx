@@ -19,6 +19,7 @@ import {
 import {
   ProductAdministration,
   ProductGroupAdministration,
+  ProductRequirementRule,
   productSetupService,
 } from "@/services/product-setup.service";
 import { Session, sessionService } from "@/services/session.service";
@@ -69,6 +70,7 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   const [groups, setGroups] = useState<ProductGroupAdministration[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [requirementRules, setRequirementRules] = useState<ProductRequirementRule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -105,17 +107,26 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   }, [products, search, statusFilter]);
 
   const loadWorkspace = useCallback(async () => {
-    const [productResult, groupResult, sessionResult, ticketTypeResult] =
+    const [productResult, groupResult, sessionResult, ticketTypeResult, ruleResult] =
       await Promise.all([
         productSetupService.findForEvent(eventId),
         productSetupService.findGroups(eventId),
         sessionService.getSessions(eventId),
         ticketTypeService.findForEvent(eventId),
+        productSetupService.findRequirementRules(),
       ]);
     setProducts(productResult);
     setGroups(groupResult);
     setSessions(sessionResult.filter((session) => session.status === "ACTIVE"));
     setTicketTypes(ticketTypeResult.filter((ticketType) => ticketType.active));
+    setRequirementRules(
+      ruleResult.filter(
+        (rule) =>
+          rule.eventId === eventId &&
+          rule.ruleType === "PRODUCT_REQUIREMENT" &&
+          rule.status === "ACTIVE",
+      ),
+    );
   }, [eventId]);
 
   useEffect(() => {
@@ -205,6 +216,23 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
         ? selected.filter((candidate) => candidate !== value)
         : [...selected, value],
     );
+  }
+
+  function requirementLabels(product: ProductAdministration) {
+    const rule = requirementRules.find(
+      (candidate) => candidate.actions.productSlug === product.slug,
+    );
+    const ids = rule?.conditions.all
+      ?.filter(
+        (condition) =>
+          condition.field === "ticketTypeId" &&
+          condition.operator === "IN" &&
+          Array.isArray(condition.value),
+      )
+      .flatMap((condition) => condition.value as string[]);
+    return ticketTypes
+      .filter((ticketType) => ids?.includes(ticketType.id))
+      .map((ticketType) => ticketType.name);
   }
 
   async function createConfiguredProduct() {
@@ -406,6 +434,15 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                   {product.availableOnline ? "Online" : "Not online"} ·{" "}
                   {product.availablePos ? "POS" : "Not on POS"}
                 </p>
+                {requirementLabels(product).length > 0 ? (
+                  <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-xs font-medium text-sky-900">
+                    Required for: {requirementLabels(product).join(", ")}
+                  </p>
+                ) : (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    No Ticket Type requirement
+                  </p>
+                )}
               </div>
             </article>
           ))}
