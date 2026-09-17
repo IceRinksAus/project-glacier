@@ -73,6 +73,13 @@ export interface EventReport {
   bookings: { total: number; byStatus: Record<string, number> };
   payments: {
     byStatus: Record<string, number>;
+    byMethod: Array<{
+      method: "ONLINE_CARD" | "CASH" | "STANDALONE_EFTPOS";
+      successfulPayments: number;
+      grossCollected: number;
+      refunded: number;
+      netCollected: number;
+    }>;
     exceptionCount: number;
     exceptions: Array<{
       bookingId: string;

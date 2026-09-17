@@ -710,6 +710,7 @@ describe('ReportingService', () => {
           {
             id: 'payment-1',
             status: 'SUCCEEDED',
+            method: 'ONLINE_CARD',
             amount: 80,
             refunds: [{ status: 'SUCCEEDED', amount: 10 }],
           },
@@ -728,6 +729,7 @@ describe('ReportingService', () => {
           {
             id: 'payment-2',
             status: 'PENDING',
+            method: 'ONLINE_CARD',
             amount: 20,
             refunds: [],
           },
@@ -752,6 +754,7 @@ describe('ReportingService', () => {
           {
             id: 'payment-3',
             status: 'SUCCEEDED',
+            method: 'CASH',
             amount: 30,
             refunds: [{ status: 'SUCCEEDED', amount: 30 }],
           },
@@ -784,6 +787,29 @@ describe('ReportingService', () => {
       }),
     );
     expect(result.payments.exceptionCount).toBe(1);
+    expect(result.payments.byMethod).toEqual([
+      {
+        method: 'ONLINE_CARD',
+        successfulPayments: 1,
+        grossCollected: 80,
+        refunded: 10,
+        netCollected: 70,
+      },
+      {
+        method: 'CASH',
+        successfulPayments: 1,
+        grossCollected: 30,
+        refunded: 30,
+        netCollected: 0,
+      },
+      {
+        method: 'STANDALONE_EFTPOS',
+        successfulPayments: 0,
+        grossCollected: 0,
+        refunded: 0,
+        netCollected: 0,
+      },
+    ]);
     expect(result.payments.exceptions[0]).toEqual(
       expect.objectContaining({ bookingNumber: 'PG-2' }),
     );

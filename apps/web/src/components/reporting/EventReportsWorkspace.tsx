@@ -373,6 +373,35 @@ export function EventReportsWorkspace({
             </section>
           ) : null}
 
+          <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold">Sales by payment method</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Successful Glacier Payments split between online card, POS Cash
+                and standalone POS EFTPOS. This is operational collection data,
+                not processor settlement or bank reconciliation.
+              </p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-y bg-muted/40 text-muted-foreground">
+                  <tr><Th>Payment method</Th><Th>Successful Payments</Th><Th>Gross collected</Th><Th>Refunded</Th><Th>Net collected</Th></tr>
+                </thead>
+                <tbody>
+                  {report.payments.byMethod.map((row) => (
+                    <tr key={row.method} className="border-b last:border-0">
+                      <td className="px-5 py-4 font-medium">{paymentMethodLabel(row.method)}</td>
+                      <Td>{row.successfulPayments}</Td>
+                      <Td>{money.format(row.grossCollected)}</Td>
+                      <Td>{money.format(row.refunded)}</Td>
+                      <Td>{money.format(row.netCollected)}</Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           <section className="rounded-xl border bg-card p-6 shadow-sm">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
@@ -947,6 +976,14 @@ function reportLabel(view: ReportView) {
     DATES: "Sales by Event date",
     SALES_PACE: "Booking pace",
   }[view];
+}
+
+function paymentMethodLabel(method: EventReport["payments"]["byMethod"][number]["method"]) {
+  return {
+    ONLINE_CARD: "Online card",
+    CASH: "POS Cash",
+    STANDALONE_EFTPOS: "POS EFTPOS",
+  }[method];
 }
 function downloadFile(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

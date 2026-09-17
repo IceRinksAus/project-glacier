@@ -65,6 +65,11 @@ const report = {
   bookings: { total: 4, byStatus: { CONFIRMED: 4 } },
   payments: {
     byStatus: { SUCCEEDED: 4 },
+    byMethod: [
+      { method: "ONLINE_CARD", successfulPayments: 2, grossCollected: 120, refunded: 20, netCollected: 100 },
+      { method: "CASH", successfulPayments: 1, grossCollected: 60, refunded: 0, netCollected: 60 },
+      { method: "STANDALONE_EFTPOS", successfulPayments: 1, grossCollected: 40, refunded: 0, netCollected: 40 },
+    ],
     exceptionCount: 1,
     exceptions: [
       {
@@ -355,6 +360,8 @@ describe("EventReportsWorkspace", () => {
     expect(await screen.findByText("$200.00")).toBeVisible();
     expect(screen.getByText("50%")).toBeVisible();
     expect(screen.getByText("Completed Session changes")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Sales by payment method" })).toBeVisible();
+    expect(screen.getByText("POS Cash")).toBeVisible();
     expect(screen.getByText("CUSTOMER REQUEST")).toBeVisible();
     expect(screen.getByText("40%")).toBeVisible();
     expect(screen.getByRole("link", { name: /PG-1234/ })).toHaveAttribute(

@@ -276,6 +276,7 @@ export class ReportingService {
                 select: {
                   id: true,
                   status: true,
+                  method: true,
                   amount: true,
                   refunds: {
                     select: { status: true, amount: true },
@@ -321,6 +322,35 @@ export class ReportingService {
     const refunded = this.sum(
       successfulRefunds.map(({ amount }) => Number(amount)),
     );
+    const paymentMethods = [
+      'ONLINE_CARD',
+      'CASH',
+      'STANDALONE_EFTPOS',
+    ] as const;
+    const paymentsByMethod = paymentMethods.map((method) => {
+      const methodPayments = successfulPayments.filter(
+        (payment) => payment.method === method,
+      );
+      const methodRefunded = this.sum(
+        methodPayments.flatMap(({ refunds }) =>
+          refunds
+            .filter(({ status }) => status === 'SUCCEEDED')
+            .map(({ amount }) => Number(amount)),
+        ),
+      );
+      const methodGrossCollected = this.sum(
+        methodPayments.map(({ amount }) => Number(amount)),
+      );
+      return {
+        method,
+        successfulPayments: methodPayments.length,
+        grossCollected: methodGrossCollected,
+        refunded: methodRefunded,
+        netCollected: Number(
+          (methodGrossCollected - methodRefunded).toFixed(2),
+        ),
+      };
+    });
     const issuedTickets = confirmedBookings.flatMap(({ tickets }) => tickets);
     const admissions = issuedTickets.filter(
       ({ status, checkedInAt }) => status === 'SCANNED' || checkedInAt !== null,
@@ -407,6 +437,7 @@ export class ReportingService {
             payments.map(({ status }) => status),
           ),
         ),
+        byMethod: paymentsByMethod,
         exceptionCount: paymentExceptionBookings.length,
         exceptions: paymentExceptionBookings.slice(0, 25).map((booking) => ({
           bookingId: booking.id,

@@ -66,7 +66,7 @@ describe("ReportsPage Event Groups", () => {
     expect(screen.getByRole("heading", { name: "Tickets and operations" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Financial and reconciliation" })).toBeVisible();
     expect(screen.getByRole("link", { name: /Sales by Ticket Type/ })).toHaveAttribute("href", "/events/event-1?tab=Reports&report=TICKET_TYPES");
-    expect(screen.getByText("Sales by Channel").closest("div.rounded-xl")).toHaveTextContent("Planned");
+    expect(screen.getByRole("link", { name: /Sales by Channel/ })).toHaveAttribute("href", "/events/event-1?tab=Reports&report=OVERVIEW");
   });
 
   it("persists selected Event membership in organiser order", async () => {
