@@ -9,6 +9,7 @@ describe('CustomerController', () => {
   const serviceMock = {
     findAll: jest.fn(),
     findOne: jest.fn(),
+    search: jest.fn(),
   };
   const user = {
     userId: 'user-1',
@@ -50,5 +51,12 @@ describe('CustomerController', () => {
     await controller.findOne('customer-1', user);
 
     expect(serviceMock.findOne).toHaveBeenCalledWith(user, 'customer-1');
+  });
+
+  it('uses trusted access context for bounded Customer search', async () => {
+    const query = { search: 'Taylor', page: 1, pageSize: 25 };
+    await controller.search(user, query);
+
+    expect(serviceMock.search).toHaveBeenCalledWith(user, query);
   });
 });

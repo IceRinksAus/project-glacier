@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { use } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
@@ -143,10 +144,28 @@ export default function EventWorkspacePage({
               <EventReportsWorkspace eventId={event.id} />
             ) : null}
 
+            {activeTab === "Bookings" || activeTab === "Customers" ? (
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                <h2 className="text-lg font-semibold">{activeTab}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Open the operational {activeTab.toLowerCase()} workspace with{" "}
+                  {event.name} already selected.
+                </p>
+                <Link
+                  href={`/${activeTab.toLowerCase()}?eventId=${encodeURIComponent(event.id)}`}
+                  className="mt-5 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                >
+                  View Event {activeTab}
+                </Link>
+              </div>
+            ) : null}
+
             {activeTab !== "Overview" &&
             activeTab !== "Sessions" &&
             activeTab !== "Ticket Types" &&
             activeTab !== "Products" &&
+            activeTab !== "Bookings" &&
+            activeTab !== "Customers" &&
             activeTab !== "Waiver" &&
             activeTab !== "Website" &&
             activeTab !== "Reports" &&

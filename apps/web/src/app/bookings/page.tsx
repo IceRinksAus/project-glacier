@@ -41,6 +41,10 @@ export default function BookingsPage() {
     eventService.getEvents().then((response) => {
       if (!cancelled) setEvents(response);
     });
+    const scopedEventId = new URLSearchParams(window.location.search).get(
+      "eventId",
+    );
+    if (scopedEventId) setEventId(scopedEventId);
     return () => {
       cancelled = true;
     };
@@ -134,15 +138,22 @@ export default function BookingsPage() {
     <PlatformShell>
       <div className="space-y-8">
         <div>
-          <p className="text-sm font-medium text-muted-foreground">Operations</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">Bookings</h1>
+          <p className="text-sm font-medium text-muted-foreground">
+            Operations
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            Bookings
+          </h1>
           <p className="mt-2 text-muted-foreground">
             Find customer bookings, payment state and ticket issuance.
           </p>
         </div>
 
         <section className="rounded-xl border bg-card p-5 shadow-sm">
-          <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row">
+          <form
+            onSubmit={submitSearch}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
             <label className="flex-1 text-sm font-medium">
               Search bookings
               <input
@@ -152,7 +163,9 @@ export default function BookingsPage() {
                 className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
               />
             </label>
-            <Button type="submit" className="sm:mt-7">Search</Button>
+            <Button type="submit" className="sm:mt-7">
+              Search
+            </Button>
           </form>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -165,7 +178,9 @@ export default function BookingsPage() {
               >
                 <option value="">All Events</option>
                 {events.map((event) => (
-                  <option key={event.id} value={event.id}>{event.name}</option>
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
                 ))}
               </select>
             </label>
@@ -185,7 +200,8 @@ export default function BookingsPage() {
                 <option value="">All Sessions</option>
                 {sessions.map((session) => (
                   <option key={session.id} value={session.id}>
-                    {new Date(session.startDate).toLocaleString("en-AU")} · {session.name}
+                    {new Date(session.startDate).toLocaleString("en-AU")} ·{" "}
+                    {session.name}
                   </option>
                 ))}
               </select>
@@ -203,8 +219,16 @@ export default function BookingsPage() {
                 className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
               >
                 <option value="">All states</option>
-                {["PENDING", "RESERVED", "CONFIRMED", "CANCELLED", "EXPIRED"].map((status) => (
-                  <option key={status} value={status}>{status}</option>
+                {[
+                  "PENDING",
+                  "RESERVED",
+                  "CONFIRMED",
+                  "CANCELLED",
+                  "EXPIRED",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
                 ))}
               </select>
             </label>
@@ -221,9 +245,13 @@ export default function BookingsPage() {
                 className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
               >
                 <option value="">All states</option>
-                {["UNPAID", "PENDING", "PAID", "FAILED", "REFUNDED"].map((status) => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
+                {["UNPAID", "PENDING", "PAID", "FAILED", "REFUNDED"].map(
+                  (status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ),
+                )}
               </select>
             </label>
 
@@ -252,14 +280,26 @@ export default function BookingsPage() {
             <p className="text-sm text-muted-foreground">
               {totalItems} {totalItems === 1 ? "Booking" : "Bookings"} found
             </p>
-            <Button type="button" variant="ghost" onClick={clearFilters}>Clear filters</Button>
+            <Button type="button" variant="ghost" onClick={clearFilters}>
+              Clear filters
+            </Button>
           </div>
         </section>
 
-        {isLoading ? <div className="rounded-xl border bg-card p-6">Loading bookings...</div> : null}
-        {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">{error}</div> : null}
+        {isLoading ? (
+          <div className="rounded-xl border bg-card p-6">
+            Loading bookings...
+          </div>
+        ) : null}
+        {error ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
         {!isLoading && !error && bookings.length === 0 ? (
-          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">No bookings match these filters.</div>
+          <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
+            No bookings match these filters.
+          </div>
         ) : null}
 
         {!isLoading && !error && bookings.length > 0 ? (
@@ -268,8 +308,22 @@ export default function BookingsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="border-b bg-muted/50 text-muted-foreground">
                   <tr>
-                    {["Booking", "Source", "Customer", "Session", "Event", "Booking state", "Payment", "Total"].map((heading) => (
-                      <th key={heading} className={`px-5 py-3 font-medium ${heading === "Total" ? "text-right" : ""}`}>{heading}</th>
+                    {[
+                      "Booking",
+                      "Source",
+                      "Customer",
+                      "Session",
+                      "Event",
+                      "Booking state",
+                      "Payment",
+                      "Total",
+                    ].map((heading) => (
+                      <th
+                        key={heading}
+                        className={`px-5 py-3 font-medium ${heading === "Total" ? "text-right" : ""}`}
+                      >
+                        {heading}
+                      </th>
                     ))}
                   </tr>
                 </thead>
@@ -277,19 +331,34 @@ export default function BookingsPage() {
                   {bookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-muted/30">
                       <td className="px-5 py-4">
-                        <Link href={`/bookings/${booking.id}`} className="font-semibold underline-offset-4 hover:underline">{booking.bookingNumber}</Link>
-                        <p className="mt-1 text-xs text-muted-foreground">{new Date(booking.createdAt).toLocaleString("en-AU")}</p>
+                        <Link
+                          href={`/bookings/${booking.id}`}
+                          className="font-semibold underline-offset-4 hover:underline"
+                        >
+                          {booking.bookingNumber}
+                        </Link>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {new Date(booking.createdAt).toLocaleString("en-AU")}
+                        </p>
                       </td>
-                      <td className="px-5 py-4">{booking.source === "WALK_UP" ? "Walk-up" : "Online"}</td>
+                      <td className="px-5 py-4">
+                        {booking.source === "WALK_UP" ? "Walk-up" : "Online"}
+                      </td>
                       <td className="px-5 py-4">
                         {booking.customer.firstName} {booking.customer.lastName}
-                        <p className="mt-1 text-xs text-muted-foreground">{booking.customer.email ?? "No email recorded"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {booking.customer.email ?? "No email recorded"}
+                        </p>
                       </td>
-                      <td className="px-5 py-4">{booking.session?.name ?? "—"}</td>
+                      <td className="px-5 py-4">
+                        {booking.session?.name ?? "—"}
+                      </td>
                       <td className="px-5 py-4">{booking.event.name}</td>
                       <td className="px-5 py-4">{booking.status}</td>
                       <td className="px-5 py-4">{booking.paymentStatus}</td>
-                      <td className="px-5 py-4 text-right font-medium">{money(booking.total)}</td>
+                      <td className="px-5 py-4 text-right font-medium">
+                        {money(booking.total)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -299,16 +368,33 @@ export default function BookingsPage() {
         ) : null}
 
         {!isLoading && !error && totalPages > 1 ? (
-          <nav className="flex items-center justify-between" aria-label="Booking result pages">
-            <Button variant="outline" disabled={page <= 1} onClick={() => {
-              setPage((current) => current - 1);
-              setIsLoading(true);
-            }}>Previous</Button>
-            <p className="text-sm text-muted-foreground">Page {page} of {totalPages}</p>
-            <Button variant="outline" disabled={page >= totalPages} onClick={() => {
-              setPage((current) => current + 1);
-              setIsLoading(true);
-            }}>Next</Button>
+          <nav
+            className="flex items-center justify-between"
+            aria-label="Booking result pages"
+          >
+            <Button
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => {
+                setPage((current) => current - 1);
+                setIsLoading(true);
+              }}
+            >
+              Previous
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </p>
+            <Button
+              variant="outline"
+              disabled={page >= totalPages}
+              onClick={() => {
+                setPage((current) => current + 1);
+                setIsLoading(true);
+              }}
+            >
+              Next
+            </Button>
           </nav>
         ) : null}
       </div>

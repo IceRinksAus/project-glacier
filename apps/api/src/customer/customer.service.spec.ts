@@ -16,9 +16,13 @@ describe('CustomerService', () => {
 
   const prismaMock = {
     customer: {
+      count: jest.fn(),
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    $transaction: jest.fn((operations: Array<Promise<unknown>>) =>
+      Promise.all(operations),
+    ),
   };
 
   beforeEach(async () => {
@@ -103,6 +107,58 @@ describe('CustomerService', () => {
             },
           }),
         }),
+      }),
+    );
+  });
+
+  it('searches and paginates only Customers with authorised Event Bookings', async () => {
+    prismaMock.customer.count.mockResolvedValue(1);
+    prismaMock.customer.findMany.mockResolvedValue([
+      {
+        id: 'customer-1',
+        firstName: 'Taylor',
+        lastName: 'Example',
+        email: 'taylor@example.test',
+        phone: null,
+        createdAt: new Date('2026-09-01T00:00:00Z'),
+        _count: { bookings: 2 },
+        bookings: [
+          {
+            id: 'booking-1',
+            bookingNumber: 'GLA-TEST-1',
+            createdAt: new Date('2026-09-02T00:00:00Z'),
+            event: { id: 'event-1', name: 'Fictional Festival' },
+          },
+        ],
+      },
+    ]);
+
+    const result = await service.search(ownerAccess, {
+      search: 'Taylor Example',
+      eventId: 'event-1',
+      page: 1,
+      pageSize: 25,
+    });
+
+    expect(prismaMock.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          bookings: {
+            some: {
+              event: { organizationId: 'organization-1' },
+              eventId: 'event-1',
+            },
+          },
+        }),
+        take: 25,
+        skip: 0,
+      }),
+    );
+    expect(result.items[0]).toEqual(
+      expect.objectContaining({
+        id: 'customer-1',
+        bookingCount: 2,
+        latestBooking: expect.objectContaining({ id: 'booking-1' }),
       }),
     );
   });
