@@ -175,8 +175,8 @@ export class PosService {
 
     return this.prisma.customer.create({
       data: {
-        firstName: data.firstName.trim(),
-        lastName: data.lastName?.trim() ?? '',
+        firstName: 'Walk-up sale',
+        lastName: '',
         email: data.email?.trim().toLowerCase() || null,
         phone: data.phone?.trim() || null,
       },
@@ -274,6 +274,11 @@ export class PosService {
     return this.bookingService.create(
       {
         ...data,
+        participants: data.participants.map((participant, index) => ({
+          ...participant,
+          firstName: `Walk-up guest ${index + 1}`,
+          lastName: '',
+        })),
         eventId,
       },
       'WALK_UP',

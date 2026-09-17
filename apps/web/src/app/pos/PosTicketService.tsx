@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { ScanLine, ShieldCheck, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ScannerCamera } from "@/components/scanner/ScannerCamera";
 import { PosTicketLookup, posService } from "@/services/pos.service";
 
 const credentialPattern = /^(?:[a-f0-9]{64}|gt1_[a-f0-9]{32}_[A-Za-z0-9_-]{43})$/;
@@ -14,10 +15,10 @@ export function PosTicketService({ eventId }: { eventId: string }) {
   const [result, setResult] = useState<PosTicketLookup | null>(null);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
 
-  async function lookup(event: FormEvent) {
-    event.preventDefault();
-    const credential = token.trim().toLowerCase();
+  async function lookupCredential(rawToken: string) {
+    const credential = rawToken.trim().toLowerCase();
     if (!eventId) return setError("Choose an Event before scanning a Ticket.");
     if (!credentialPattern.test(credential))
       return setError("Enter or scan a valid Glacier Ticket code.");
@@ -27,11 +28,17 @@ export function PosTicketService({ eventId }: { eventId: string }) {
       setResult(await posService.lookupTicket(eventId, credential));
       setActiveToken(credential);
       setToken("");
+      setCameraActive(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Unable to look up this Ticket.");
     } finally {
       setWorking(false);
     }
+  }
+
+  function lookup(event: FormEvent) {
+    event.preventDefault();
+    void lookupCredential(token);
   }
 
   async function admit() {
@@ -81,6 +88,22 @@ export function PosTicketService({ eventId }: { eventId: string }) {
             {working ? "Checking…" : "Look up Ticket"}
           </Button>
         </form>
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3"
+          onClick={() => setCameraActive((current) => !current)}
+        >
+          {cameraActive ? "Close camera" : "Use camera"}
+        </Button>
+        {cameraActive ? (
+          <div className="mt-4 max-w-xl">
+            <ScannerCamera
+              active
+              onDetected={(detectedToken) => void lookupCredential(detectedToken)}
+            />
+          </div>
+        ) : null}
         <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
           Lookup is read-only. It never consumes a Ticket or grants entry.
         </div>

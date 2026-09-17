@@ -132,7 +132,7 @@ describe('PosService', () => {
     );
     expect(prisma.customer.create).toHaveBeenCalledWith({
       data: {
-        firstName: 'Jamie',
+        firstName: 'Walk-up sale',
         lastName: '',
         email: null,
         phone: null,
@@ -147,7 +147,7 @@ describe('PosService', () => {
     });
   });
 
-  it('creates the reservation through the shared Booking engine as WALK_UP', async () => {
+  it('creates trusted non-personal attendee labels through the shared Booking engine', async () => {
     const data = {
       customerId: 'customer-1',
       sessionId: 'session-1',
@@ -169,6 +169,14 @@ describe('PosService', () => {
     expect(bookingService.create).toHaveBeenCalledWith(
       {
         ...data,
+        participants: [
+          {
+            firstName: 'Walk-up guest 1',
+            lastName: '',
+            age: 35,
+            ticketTypeId: 'ticket-type-1',
+          },
+        ],
         eventId: 'event-1',
       },
       'WALK_UP',
