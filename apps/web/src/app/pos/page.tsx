@@ -12,6 +12,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
+import { CatalogueImage } from "@/components/catalogue/CatalogueImage";
 import { Button } from "@/components/ui/button";
 import { eventService, GlacierEvent } from "@/services/event.service";
 import {
@@ -159,10 +160,18 @@ export default function PosPage() {
   }
 
   function addTicket(ticketTypeId: string) {
-    setParticipants((current) => [
-      ...current,
-      { firstName: "", lastName: "", age: 18, ticketTypeId },
-    ]);
+    setParticipants((current) => {
+      const ordinal = current.length + 1;
+      return [
+        ...current,
+        {
+          firstName: `Walk-up guest ${ordinal}`,
+          lastName: "",
+          age: 18,
+          ticketTypeId,
+        },
+      ];
+    });
   }
 
   function removeTicket(index: number) {
@@ -203,8 +212,6 @@ export default function PosPage() {
   async function reserveSale() {
     if (!eventId || !sessionId || participants.length === 0)
       return setError("Choose a Session and at least one Ticket.");
-    if (participants.some((participant) => !participant.firstName.trim()))
-      return setError("Enter a first name for every participant.");
     setIsWorking(true);
     setError("");
     try {
@@ -231,8 +238,7 @@ export default function PosPage() {
       }
       setProducts(selectedProducts);
       const createdCustomer = await posService.createCustomer(eventId, {
-        firstName: participants[0].firstName,
-        lastName: participants[0].lastName || undefined,
+        firstName: "Walk-up sale",
       });
       const createdReservation = await posService.createReservation(eventId, {
         customerId: createdCustomer.id,
@@ -301,7 +307,7 @@ export default function PosPage() {
           </h1>
           <p className="mt-2 text-muted-foreground">
             {saleMode === "TICKETS"
-              ? "Sell walk-up Tickets and Session Products from Glacier's shared catalogue."
+              ? "Fast touch sales using Glacier's shared Tickets, Products and Rules."
               : "Sell Event merchandise without creating an admission Booking or Ticket."}
           </p>
           <Link
@@ -323,7 +329,7 @@ export default function PosPage() {
           >
             <span className="font-semibold">Ticket Sale</span>
             <span className="mt-1 block text-sm text-muted-foreground">
-              Session admission, participants and eligible Products
+              Session admission and eligible Products
             </span>
           </button>
           <button
@@ -409,23 +415,44 @@ export default function PosPage() {
           <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
             <div className="space-y-6">
               <section className="rounded-xl border bg-card p-5 shadow-sm">
-                <h2 className="text-xl font-semibold">Tickets</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <h2 className="text-xl font-semibold">Choose Tickets</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Tap a tile to add one Ticket to the order.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
                   {catalogue.ticketTypes.map((ticketType) => (
                     <button
                       key={ticketType.id}
                       type="button"
+                      aria-label={`Add Ticket ${ticketType.name}`}
                       onClick={() => addTicket(ticketType.id)}
-                      className="rounded-xl border p-5 text-left transition hover:border-primary hover:bg-muted/40"
+                      style={{
+                        borderColor: ticketType.tileColor || undefined,
+                      }}
+                      className="min-h-40 overflow-hidden rounded-2xl border-2 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30"
                     >
-                      <span className="block text-lg font-semibold">
-                        {ticketType.name}
-                      </span>
-                      <span className="mt-2 block text-2xl font-bold">
-                        {money(ticketType.price)}
-                      </span>
-                      <span className="mt-3 inline-flex items-center gap-2 text-sm font-medium">
-                        <Plus className="size-4" /> Add Ticket
+                      {ticketType.imageAsset ? (
+                        <div className="h-24">
+                          <CatalogueImage
+                            path={`/ticket-type/${ticketType.id}/image/${ticketType.imageAsset.id}`}
+                            alt={ticketType.name}
+                            fallbackLabel={ticketType.tileLabel || ticketType.name}
+                          />
+                        </div>
+                      ) : (
+                        <span
+                          className="flex h-24 items-center justify-center px-3 text-center text-xl font-black tracking-wide text-white"
+                          style={{ backgroundColor: ticketType.tileColor }}
+                        >
+                          {ticketType.tileLabel || ticketType.name.toUpperCase()}
+                        </span>
+                      )}
+                      <span className="flex items-center justify-between gap-2 p-3">
+                        <span>
+                          <span className="block font-semibold">{ticketType.name}</span>
+                          <span className="block text-lg font-bold">{money(ticketType.price)}</span>
+                        </span>
+                        <Plus className="size-6" />
                       </span>
                     </button>
                   ))}
@@ -434,7 +461,10 @@ export default function PosPage() {
 
               {participants.length > 0 ? (
                 <section className="rounded-xl border bg-card p-5 shadow-sm">
-                  <h2 className="text-xl font-semibold">Participants</h2>
+                  <h2 className="text-xl font-semibold">Ticket details</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Participant names are not required. Confirm age only where an Event Rule depends on it.
+                  </p>
                   <div className="mt-4 space-y-3">
                     {participants.map((participant, index) => {
                       const ticketType = catalogue.ticketTypes.find(
@@ -443,36 +473,16 @@ export default function PosPage() {
                       return (
                         <div
                           key={`${participant.ticketTypeId}-${index}`}
-                          className="grid gap-3 rounded-lg border p-4 md:grid-cols-[1fr_1fr_100px_auto]"
+                          className="grid items-end gap-3 rounded-lg border p-4 sm:grid-cols-[1fr_120px_auto]"
                         >
-                          <label className="text-sm">
-                            First name
-                            <input
-                              className="mt-1 w-full rounded-md border px-3 py-2"
-                              value={participant.firstName}
-                              onChange={(event) =>
-                                updateParticipant(index, {
-                                  firstName: event.target.value,
-                                })
-                              }
-                            />
-                          </label>
-                          <label className="text-sm">
-                            Last name
-                            <input
-                              className="mt-1 w-full rounded-md border px-3 py-2"
-                              value={participant.lastName ?? ""}
-                              onChange={(event) =>
-                                updateParticipant(index, {
-                                  lastName: event.target.value,
-                                })
-                              }
-                            />
-                          </label>
+                          <div>
+                            <p className="font-semibold">{ticketType?.name}</p>
+                            <p className="text-sm text-muted-foreground">Ticket {index + 1}</p>
+                          </div>
                           <label className="text-sm">
                             Age
                             <input
-                              className="mt-1 w-full rounded-md border px-3 py-2"
+                              className="mt-1 h-11 w-full rounded-md border px-3 py-2"
                               type="number"
                               min="0"
                               max="130"
@@ -487,7 +497,7 @@ export default function PosPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="self-end"
+                            className="h-11 self-end"
                             onClick={() => removeTicket(index)}
                           >
                             <Minus className="size-4" />
@@ -503,8 +513,8 @@ export default function PosPage() {
               ) : null}
 
               <section className="rounded-xl border bg-card p-5 shadow-sm">
-                <h2 className="text-xl font-semibold">Session Products</h2>
-                <div className="mt-4 space-y-3">
+                <h2 className="text-xl font-semibold">Products</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {catalogue.sessionProducts.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
                       No Products are available for this Session.
@@ -515,9 +525,18 @@ export default function PosPage() {
                       return (
                         <div
                           key={product.id}
-                          className="flex flex-col justify-between gap-3 rounded-lg border p-4 sm:flex-row sm:items-center"
+                          className="overflow-hidden rounded-xl border bg-white"
                         >
-                          <div>
+                          {product.imageAsset ? (
+                            <div className="h-32">
+                              <CatalogueImage
+                                path={`/product/${product.id}/image/${product.imageAsset.id}`}
+                                alt={product.name}
+                                fallbackLabel={product.name}
+                              />
+                            </div>
+                          ) : null}
+                          <div className="p-4">
                             <p className="font-semibold">{product.name}</p>
                             <p className="text-sm text-muted-foreground">
                               {money(product.price)}
@@ -546,7 +565,7 @@ export default function PosPage() {
                               </select>
                             ) : null}
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 border-t p-3">
                             <Button
                               type="button"
                               variant="outline"
@@ -585,15 +604,27 @@ export default function PosPage() {
               </section>
             </div>
 
-            <aside className="h-fit space-y-5 rounded-xl border bg-card p-5 shadow-sm xl:sticky xl:top-6">
+            <aside className="h-fit space-y-5 rounded-xl border bg-card p-5 shadow-lg xl:sticky xl:top-6">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="size-5" />
-                <h2 className="text-xl font-semibold">Sale</h2>
+                <h2 className="text-xl font-semibold">Order</h2>
+              </div>
+              <div className="space-y-2 border-y py-4 text-sm">
+                {catalogue.ticketTypes.map((ticketType) => {
+                  const quantity = participants.filter(
+                    (participant) => participant.ticketTypeId === ticketType.id,
+                  ).length;
+                  return quantity ? (
+                    <div key={ticketType.id} className="flex justify-between gap-3">
+                      <span>{quantity} × {ticketType.name}</span>
+                      <span>{money(Number(ticketType.price) * quantity)}</span>
+                    </div>
+                  ) : null;
+                })}
               </div>
               <p className="text-3xl font-bold">{money(estimatedTotal)}</p>
               <p className="border-t pt-4 text-sm text-muted-foreground">
-                No separate purchaser details are required. The first
-                participant is used as the Booking lookup name.
+                No purchaser or participant names are required for an ordinary walk-up sale.
               </p>
               <Button
                 className="w-full"

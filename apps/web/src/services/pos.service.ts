@@ -15,6 +15,9 @@ export interface PosTicketType {
   name: string;
   description: string | null;
   price: string | number;
+  tileLabel: string | null;
+  tileColor: string;
+  imageAsset: { id: string } | null;
   saleStart: string | null;
   saleEnd: string | null;
 }
@@ -45,6 +48,7 @@ export interface PosSessionProduct {
     capacity: number | null;
     inventoryTracked: boolean;
     inventoryQuantity: number | null;
+    imageAsset: { id: string } | null;
     productGroup: { id: string; name: string; sortOrder: number } | null;
     variants: PosProductVariant[];
   };

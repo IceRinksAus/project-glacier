@@ -77,6 +77,9 @@ const catalogue = {
       name: "Adult",
       description: null,
       price: 24,
+      tileLabel: "ADULT",
+      tileColor: "#0B6CE3",
+      imageAsset: null,
       saleStart: null,
       saleEnd: null,
     },
@@ -148,5 +151,16 @@ describe("PosPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Selling Session")).not.toBeInTheDocument();
     expect(await screen.findByText("10 remaining")).toBeInTheDocument();
+  });
+
+  it("adds an ordinary walk-up Ticket without participant name fields", async () => {
+    render(<PosPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Use recommendation" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add Ticket Adult" }));
+
+    expect(screen.queryByLabelText("First name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Last name")).not.toBeInTheDocument();
+    expect(screen.getByText("1 × Adult")).toBeInTheDocument();
+    expect(screen.getAllByText("$24.00").length).toBeGreaterThan(0);
   });
 });
