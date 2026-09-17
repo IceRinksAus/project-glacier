@@ -1,6 +1,6 @@
 # Sprint 37 Plan — Product Catalogue and Service Lookup
 
-**Status:** Approved 17 September 2026 — implementation in progress
+**Status:** Complete 17 September 2026
 
 ## Outcome
 
@@ -42,8 +42,10 @@ unchanged.
   existing privacy-safe cleanup pattern.
 - Add Ticket Type tile label and colour fields with bounded validation and safe
   defaults. Add optional current asset references to Product and Ticket Type.
-- Expose private organiser and public published-Event asset reads without
-  leaking storage keys or allowing cross-tenant/Event access.
+- Expose private organiser asset reads without leaking storage keys or allowing
+  cross-tenant/Event access. Public delivery is deliberately deferred until a
+  customer/POS consumer and managed-media contract are approved, avoiding an
+  unused public asset authority.
 - Preserve local filesystem storage for local/test evidence. Managed production
   object storage, retention policy, malware scanning and delivery/CDN evidence
   remain deployment requirements.

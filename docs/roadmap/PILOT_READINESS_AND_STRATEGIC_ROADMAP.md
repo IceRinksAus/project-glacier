@@ -2,7 +2,7 @@
 
 **Updated:** 17 September 2026
 
-**Status:** Current strategic control document after Sprint 36; local Phase 3
+**Status:** Current strategic control document after Sprint 37; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 36, Glacier is best described as:
+After Sprint 37, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 36
+# 3. Delivered Foundation Through Sprint 37
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -101,14 +101,18 @@ Sprint 36 added Event-timezone-aware organiser Session calendars, selected-day
 operational summaries and authoritative reserved-capacity status with accessible
 availability labels and bounded refresh behavior.
 
-Current verified baseline at Sprint 36 closeout:
+Sprint 37 made Products the primary visual catalogue, added secure local
+Product/Ticket Type presentation assets and editable Product requirement
+evidence, and delivered bounded tenant/Event-scoped Customer lookup.
 
-- 48 current Prisma migrations;
-- 91 API suites / 644 passing tests;
-- 34 web test files / 103 passing tests;
+Current verified baseline at Sprint 37 closeout:
+
+- 49 current Prisma migrations;
+- 92 API suites / 659 passing tests;
+- 35 web test files / 106 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 639 files and an isolated restore matching 16 critical tables;
+  scan across 652 files and an isolated restore matching 16 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
@@ -459,12 +463,18 @@ Sprint 36 completed the organiser Session-calendar slice. Operators can now
 select an Event-local date, scan a bounded daily agenda and see authoritative
 reserved-capacity status without weakening Session or Booking authority.
 
-The next Sprint should be selected with the organiser from the recorded guided
-walkthrough backlog. The strongest bounded candidate is the Products usability
-redesign; it should not be combined with POS, Scanner hardware or broad
-customer-account work. Phase 3 should also continue
-with another locally actionable production finding without starting paid
-infrastructure or broad product expansion.
+Sprint 37 completed the Product catalogue and service-lookup slice. Organisers
+can now manage visual Product/Ticket Type presentation, see and maintain the
+Rule connecting a Product such as Kanga to qualifying Ticket Types, and search
+authorised Customers without weakening commerce or privacy boundaries.
+
+The strongest bounded next candidate from the guided walkthrough is Sprint 38:
+the touch-first POS and scanner-connected Ticket service. It should consume the
+new catalogue presentation while preserving shared Rules, pricing, capacity,
+inventory and deliberate admission authority. It must not broaden into Scanner
+hardware provisioning, customer accounts or managed production media. Phase 3
+should also continue with another locally actionable production finding without
+starting paid infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.

@@ -66,7 +66,9 @@
 
 ## Directional follow-up
 
-- Sprint 36: organiser/customer calendars and early customer Rules guidance.
-- Sprint 37: Products redesign plus Bookings/Customers lookup UX.
+- Sprint 36 completed: organiser Session calendar and authoritative capacity
+  presentation. The customer calendar remains a later customer-journey slice.
+- Sprint 37 completed: Product-first catalogue, editable Product requirement
+  Rules, Product/Ticket Type visuals and Bookings/Customers lookup entry.
 - Sprint 38: touch-first POS and scanner-connected Ticket service.
 - Sprint 39: Settings, Reports, Website, Waiver and Gate Entry deep dives.
