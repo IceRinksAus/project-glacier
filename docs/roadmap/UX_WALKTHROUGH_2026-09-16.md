@@ -56,13 +56,15 @@
   evidence remains required for camera/reader behavior, outdoor visibility,
   poor connectivity and rapid/duplicate scans.
 
-## Defects observed
+## Defects observed during the walkthrough
 
-- Browser metadata still uses the framework placeholder.
-- Website “Copy public URL” rewrites port 3002 to 3001 and produces a broken
-  local link.
-- A DRAFT Event offers a public-link action without explaining that public access
-  correctly returns Event unavailable; an authorised private preview is needed.
+- Browser metadata used the framework placeholder. The Glacier metadata
+  baseline is now verified.
+- Website “Copy public URL” rewrote port 3002 to 3001 and produced a broken
+  local link. Sprint 39 now uses the current web origin consistently.
+- A DRAFT Event offered a public-link action without explaining that public
+  access correctly returns Event unavailable. Sprint 39 now distinguishes
+  authorised design preview from an ACTIVE Event's live website action.
 
 ## Directional follow-up
 
@@ -72,4 +74,8 @@
   Rules, Product/Ticket Type visuals and Bookings/Customers lookup entry.
 - Sprint 38 completed: touch-first POS, participant-name-free walk-up sales,
   scanner-connected Ticket lookup/admission and organiser Scanner readiness.
-- Sprint 39: Settings, Reports, Website, Waiver and Gate Entry deep dives.
+- Sprint 39 completed: scope-led Settings, grouped Event configuration, Gate
+  Entry readiness guidance and correct DRAFT-preview/ACTIVE-live Website
+  actions. Reports and Waiver internals remain dedicated future reviews.
+- Recommended Sprint 40: a focused Reports walkthrough and improvement slice,
+  preserving current calculations, Event Groups, exports and tenant authority.
