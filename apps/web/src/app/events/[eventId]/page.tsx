@@ -12,7 +12,10 @@ import { EventTabs, parseEventTab } from "@/components/events/EventTabs";
 import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ProductsWorkspace } from "@/components/products/ProductsWorkspace";
-import { EventReportsWorkspace } from "@/components/reporting/EventReportsWorkspace";
+import {
+  EventReportsWorkspace,
+  parseReportView,
+} from "@/components/reporting/EventReportsWorkspace";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
 import { TicketTypesWorkspace } from "@/components/ticket-types/TicketTypesWorkspace";
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
@@ -129,7 +132,10 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Reports" ? (
-              <EventReportsWorkspace eventId={event.id} />
+              <EventReportsWorkspace
+                eventId={event.id}
+                initialReport={parseReportView(searchParams.get("report"))}
+              />
             ) : null}
 
             {activeTab === "Bookings" || activeTab === "Customers" ? (

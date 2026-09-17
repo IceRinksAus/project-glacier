@@ -19,7 +19,7 @@ const money = new Intl.NumberFormat("en-AU", {
   style: "currency",
   currency: "AUD",
 });
-type ReportView =
+export type ReportView =
   | "OVERVIEW"
   | "TICKET_TYPES"
   | "SESSIONS"
@@ -27,7 +27,28 @@ type ReportView =
   | "DATES"
   | "SALES_PACE";
 
-export function EventReportsWorkspace({ eventId }: { eventId: string }) {
+const reportViews: ReportView[] = [
+  "OVERVIEW",
+  "TICKET_TYPES",
+  "SESSIONS",
+  "PRODUCTS",
+  "DATES",
+  "SALES_PACE",
+];
+
+export function parseReportView(value: string | null): ReportView {
+  return reportViews.includes(value as ReportView)
+    ? (value as ReportView)
+    : "OVERVIEW";
+}
+
+export function EventReportsWorkspace({
+  eventId,
+  initialReport = "OVERVIEW",
+}: {
+  eventId: string;
+  initialReport?: ReportView;
+}) {
   const [report, setReport] = useState<EventReport | null>(null);
   const [ticketTypeReport, setTicketTypeReport] =
     useState<TicketTypeSalesReport | null>(null);
@@ -40,7 +61,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
   const [dateReport, setDateReport] = useState<DateSalesReport | null>(null);
   const [salesPaceReport, setSalesPaceReport] =
     useState<SalesPaceReport | null>(null);
-  const [reportView, setReportView] = useState<ReportView>("OVERVIEW");
+  const [reportView, setReportView] = useState<ReportView>(initialReport);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [date, setDate] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -99,14 +120,31 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    const initialDetailedReport = initialReport === "TICKET_TYPES"
+      ? reportingService.getTicketTypeSales(eventId)
+      : initialReport === "SESSIONS"
+        ? reportingService.getSessionSales(eventId)
+        : initialReport === "PRODUCTS"
+          ? reportingService.getProductSales(eventId)
+          : initialReport === "DATES"
+            ? reportingService.getDateSales(eventId)
+            : initialReport === "SALES_PACE"
+              ? reportingService.getSalesPace(eventId)
+              : Promise.resolve(null);
     Promise.all([
       reportingService.getEventReport(eventId),
       sessionService.getSessions(eventId),
+      initialDetailedReport,
     ])
-      .then(([nextReport, nextSessions]) => {
+      .then(([nextReport, nextSessions, nextDetailedReport]) => {
         if (!cancelled) {
           setReport(nextReport);
           setSessions(nextSessions);
+          if (initialReport === "TICKET_TYPES") setTicketTypeReport(nextDetailedReport as TicketTypeSalesReport);
+          if (initialReport === "SESSIONS") setSessionReport(nextDetailedReport as SessionSalesReport);
+          if (initialReport === "PRODUCTS") setProductReport(nextDetailedReport as ProductSalesReport);
+          if (initialReport === "DATES") setDateReport(nextDetailedReport as DateSalesReport);
+          if (initialReport === "SALES_PACE") setSalesPaceReport(nextDetailedReport as SalesPaceReport);
           setError("");
         }
       })
@@ -124,7 +162,7 @@ export function EventReportsWorkspace({ eventId }: { eventId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [eventId]);
+  }, [eventId, initialReport]);
 
   function applyFilters(event: FormEvent) {
     event.preventDefault();
