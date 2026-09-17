@@ -2,7 +2,7 @@
 
 **Updated:** 17 September 2026
 
-**Status:** Current strategic control document after Sprint 35; local Phase 3
+**Status:** Current strategic control document after Sprint 36; local Phase 3
 production/security foundations are evidenced under the no-material-spend gate,
 while deployed infrastructure, external controls and professional approvals
 remain open
@@ -17,7 +17,7 @@ remain open
 
 Project Glacier is a multi-tenant event operating platform. Its first implementation is being shaped around session-based attractions and Ice Rinks Australia, but the product direction is broader than ticket selling.
 
-After Sprint 35, Glacier is best described as:
+After Sprint 36, Glacier is best described as:
 
 > **Approximately v0.75 — a functionally broad internal-pilot candidate, but not yet operationally or production ready.**
 
@@ -52,7 +52,7 @@ A future public B2B website will explain and sell Glacier to other operators. It
 
 ---
 
-# 3. Delivered Foundation Through Sprint 35
+# 3. Delivered Foundation Through Sprint 36
 
 The following are implemented foundations and should not be reopened without evidence of a defect, security risk or confirmed operational requirement:
 
@@ -97,14 +97,18 @@ tenant-scoped Dashboard the normal organiser home, added lifecycle/search Event
 navigation, surfaced authoritative Event activity and separated authenticated
 DRAFT Website preview from genuinely public ACTIVE Event links.
 
-Current verified baseline at Sprint 35 closeout:
+Sprint 36 added Event-timezone-aware organiser Session calendars, selected-day
+operational summaries and authoritative reserved-capacity status with accessible
+availability labels and bounded refresh behavior.
+
+Current verified baseline at Sprint 36 closeout:
 
 - 48 current Prisma migrations;
 - 91 API suites / 644 passing tests;
-- 32 web test files / 96 passing tests;
+- 34 web test files / 103 passing tests;
 - passing API and web production builds; and
 - 5 / 5 authenticated disposable-database tenant/role checks, a tracked-secret
-  scan across 634 files and an isolated restore matching 16 critical tables;
+  scan across 639 files and an isolated restore matching 16 critical tables;
 - authenticated/public browser acceptance of the previously delivered Flexible
   Ticket, reporting, access-control, walk-up, merchandise, partial-refund and
   rescheduling foundations.
@@ -451,10 +455,14 @@ presentation. The supplied organiser/customer/device concepts now provide a
 visual direction, but do not promote their unimplemented functionality into a
 delivery claim.
 
+Sprint 36 completed the organiser Session-calendar slice. Operators can now
+select an Event-local date, scan a bounded daily agenda and see authoritative
+reserved-capacity status without weakening Session or Booking authority.
+
 The next Sprint should be selected with the organiser from the recorded guided
-walkthrough backlog. Strong candidates are the Session calendar/date workflow
-or a bounded Products usability redesign; neither should be combined with POS,
-Scanner hardware or broad customer-account work. Phase 3 should also continue
+walkthrough backlog. The strongest bounded candidate is the Products usability
+redesign; it should not be combined with POS, Scanner hardware or broad
+customer-account work. Phase 3 should also continue
 with another locally actionable production finding without starting paid
 infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,

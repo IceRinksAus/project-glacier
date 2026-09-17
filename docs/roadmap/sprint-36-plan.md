@@ -1,6 +1,6 @@
 # Sprint 36 Plan — Calendar-led Session Operations
 
-**Status:** Approved 17 September 2026
+**Status:** Complete 17 September 2026
 
 ## Outcome
 
