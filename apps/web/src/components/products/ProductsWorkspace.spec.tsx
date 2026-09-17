@@ -9,6 +9,7 @@ const {
   findForEvent,
   findGroups,
   createProduct,
+  uploadImage,
   createVariant,
   assignToSession,
   createRequirementRule,
@@ -20,6 +21,7 @@ const {
   findForEvent: vi.fn(),
   findGroups: vi.fn(),
   createProduct: vi.fn(),
+  uploadImage: vi.fn(),
   createVariant: vi.fn(),
   assignToSession: vi.fn(),
   createRequirementRule: vi.fn(),
@@ -39,6 +41,7 @@ vi.mock("@/services/product-setup.service", () => ({
     findForEvent,
     findGroups,
     createProduct,
+    uploadImage,
     createVariant,
     assignToSession,
     createRequirementRule,
@@ -85,6 +88,7 @@ describe("ProductsWorkspace", () => {
       name: "Kanga hire",
       slug: "kanga-hire",
     });
+    uploadImage.mockResolvedValue({ id: "asset-1" });
     createVariant.mockResolvedValue({ id: "variant-1" });
     assignToSession.mockResolvedValue({ id: "assignment-1" });
     createRequirementRule.mockResolvedValue({ id: "rule-1" });
@@ -105,9 +109,16 @@ describe("ProductsWorkspace", () => {
 
     await user.type(await screen.findByLabelText("Product name"), "Kanga hire");
     await user.type(screen.getByLabelText("Base price (AUD)"), "8");
+    await user.upload(
+      screen.getByLabelText(/Product image/),
+      new File(["image"], "kanga.png", { type: "image/png" }),
+    );
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(screen.getByLabelText("Reusable per Session"));
-    await user.type(screen.getByLabelText("Default capacity per Session"), "20");
+    await user.type(
+      screen.getByLabelText("Default capacity per Session"),
+      "20",
+    );
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(screen.getByLabelText(/10am skating/));
     await user.click(screen.getByRole("button", { name: "Continue" }));
@@ -127,6 +138,10 @@ describe("ProductsWorkspace", () => {
       ),
     );
     expect(assignToSession).toHaveBeenCalledWith("session-1", "product-1");
+    expect(uploadImage).toHaveBeenCalledWith(
+      "product-1",
+      expect.objectContaining({ name: "kanga.png" }),
+    );
     expect(createRequirementRule).toHaveBeenCalledWith(
       expect.objectContaining({
         conditions: {
@@ -152,7 +167,10 @@ describe("ProductsWorkspace", () => {
     });
     render(<ProductsWorkspace eventId="event-1" />);
 
-    await user.type(await screen.findByLabelText("Product name"), "Event hoodie");
+    await user.type(
+      await screen.findByLabelText("Product name"),
+      "Event hoodie",
+    );
     await user.type(screen.getByLabelText("Base price (AUD)"), "50");
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(screen.getByLabelText("Finite Variant inventory"));
@@ -163,7 +181,9 @@ describe("ProductsWorkspace", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(screen.queryByLabelText("Child")).not.toBeInTheDocument();
-    expect(screen.getByText(/Variant merchandise remains optional/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Variant merchandise remains optional/),
+    ).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "Create and activate Product" }),
     );
@@ -195,11 +215,17 @@ describe("ProductsWorkspace", () => {
     ]);
     render(<ProductsWorkspace eventId="event-1" />);
 
-    await user.type(await screen.findByLabelText("Product name"), "All-day hire");
+    await user.type(
+      await screen.findByLabelText("Product name"),
+      "All-day hire",
+    );
     await user.type(screen.getByLabelText("Base price (AUD)"), "8");
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(screen.getByLabelText("Reusable per Session"));
-    await user.type(screen.getByLabelText("Default capacity per Session"), "20");
+    await user.type(
+      screen.getByLabelText("Default capacity per Session"),
+      "20",
+    );
     await user.click(screen.getByRole("button", { name: "Continue" }));
     await user.click(
       screen.getByRole("button", { name: "Apply to all active Sessions" }),

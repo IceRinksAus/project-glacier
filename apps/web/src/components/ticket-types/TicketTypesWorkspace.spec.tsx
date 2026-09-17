@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TicketTypesWorkspace } from "./TicketTypesWorkspace";
 
-const { authState, create, findForEvent } = vi.hoisted(() => ({
+const { authState, create, findForEvent, uploadImage } = vi.hoisted(() => ({
   authState: { role: "OWNER" },
   create: vi.fn(),
   findForEvent: vi.fn(),
+  uploadImage: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -17,7 +18,7 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/services/ticket-type.service", () => ({
-  ticketTypeService: { create, findForEvent },
+  ticketTypeService: { create, findForEvent, uploadImage },
 }));
 
 describe("TicketTypesWorkspace", () => {
@@ -26,6 +27,7 @@ describe("TicketTypesWorkspace", () => {
     authState.role = "OWNER";
     findForEvent.mockResolvedValue([]);
     create.mockResolvedValue({ id: "ticket-type-1" });
+    uploadImage.mockResolvedValue({ id: "asset-1" });
   });
 
   it("loads only the current Event Ticket Types", async () => {
@@ -38,6 +40,9 @@ describe("TicketTypesWorkspace", () => {
         capacity: 100,
         active: true,
         eventId: "event-1",
+        tileLabel: null,
+        tileColor: "#0B6CE3",
+        imageAsset: null,
       },
     ]);
 
@@ -45,7 +50,7 @@ describe("TicketTypesWorkspace", () => {
       <TicketTypesWorkspace eventId="event-1" onReturnToReadiness={vi.fn()} />,
     );
 
-    expect(await screen.findByText("Adult admission")).toBeInTheDocument();
+    expect(await screen.findAllByText("Adult admission")).toHaveLength(2);
     expect(findForEvent).toHaveBeenCalledWith("event-1");
     expect(screen.getByText("$25.00")).toBeInTheDocument();
   });
@@ -69,6 +74,7 @@ describe("TicketTypesWorkspace", () => {
         name: "Adult",
         price: 25,
         active: true,
+        tileColor: "#0B6CE3",
       }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(

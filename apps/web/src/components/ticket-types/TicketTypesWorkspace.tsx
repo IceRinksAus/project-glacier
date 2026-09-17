@@ -1,17 +1,21 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { Button } from "@/components/ui/button";
+import { CatalogueImage } from "@/components/catalogue/CatalogueImage";
 import {
   getAuthRoleSnapshot,
   getServerAuthRoleSnapshot,
   subscribeAuthSession,
 } from "@/lib/auth";
-import {
-  TicketType,
-  ticketTypeService,
-} from "@/services/ticket-type.service";
+import { TicketType, ticketTypeService } from "@/services/ticket-type.service";
 
 interface TicketTypesWorkspaceProps {
   eventId: string;
@@ -42,6 +46,9 @@ export function TicketTypesWorkspace({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [tileLabel, setTileLabel] = useState("");
+  const [tileColor, setTileColor] = useState("#0B6CE3");
+  const [image, setImage] = useState<File | null>(null);
 
   const loadTicketTypes = useCallback(async () => {
     try {
@@ -92,16 +99,22 @@ export function TicketTypesWorkspace({
     setSavedMessage("");
 
     try {
-      await ticketTypeService.create({
+      const ticketType = await ticketTypeService.create({
         eventId,
         name: cleanName,
         ...(description.trim() ? { description: description.trim() } : {}),
         price: parsedPrice,
         active: true,
+        ...(tileLabel.trim() ? { tileLabel: tileLabel.trim() } : {}),
+        tileColor,
       });
+      if (image) await ticketTypeService.uploadImage(ticketType.id, image);
       setName("");
       setDescription("");
       setPrice("");
+      setTileLabel("");
+      setTileColor("#0B6CE3");
+      setImage(null);
       setSavedMessage(
         "Active Ticket Type created. Event readiness will update automatically.",
       );
@@ -139,28 +152,49 @@ export function TicketTypesWorkspace({
         ) : ticketTypes.length ? (
           <div className="mt-6 space-y-3">
             {ticketTypes.map((ticketType) => (
-              <article key={ticketType.id} className="rounded-lg border p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="font-semibold">{ticketType.name}</h3>
-                    {ticketType.description ? (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {ticketType.description}
-                      </p>
-                    ) : null}
-                  </div>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                    {ticketType.active ? "ACTIVE" : "INACTIVE"}
-                  </span>
+              <article
+                key={ticketType.id}
+                className="overflow-hidden rounded-xl border"
+              >
+                <div
+                  className="flex h-28 items-center justify-center overflow-hidden"
+                  style={{ backgroundColor: ticketType.tileColor || "#0B6CE3" }}
+                >
+                  {ticketType.imageAsset ? (
+                    <CatalogueImage
+                      path={`/ticket-type/${ticketType.id}/image/${ticketType.imageAsset.id}`}
+                      alt={ticketType.imageAsset.displayName}
+                      fallbackLabel={ticketType.tileLabel || ticketType.name}
+                    />
+                  ) : (
+                    <span className="px-4 text-center text-2xl font-bold tracking-wide text-white">
+                      {ticketType.tileLabel || ticketType.name}
+                    </span>
+                  )}
                 </div>
-                <dl className="mt-4 text-sm">
-                  <div>
-                    <dt className="text-muted-foreground">Price</dt>
-                    <dd className="mt-1 font-semibold">
-                      {formatPrice(ticketType.price)}
-                    </dd>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold">{ticketType.name}</h3>
+                      {ticketType.description ? (
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {ticketType.description}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                      {ticketType.active ? "ACTIVE" : "INACTIVE"}
+                    </span>
                   </div>
-                </dl>
+                  <dl className="mt-4 text-sm">
+                    <div>
+                      <dt className="text-muted-foreground">Price</dt>
+                      <dd className="mt-1 font-semibold">
+                        {formatPrice(ticketType.price)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
               </article>
             ))}
           </div>
@@ -189,9 +223,7 @@ export function TicketTypesWorkspace({
             <p className="text-sm font-medium text-muted-foreground">
               Event setup
             </p>
-            <h2 className="mt-2 text-xl font-semibold">
-              Create a Ticket Type
-            </h2>
+            <h2 className="mt-2 text-xl font-semibold">Create a Ticket Type</h2>
             <form onSubmit={createTicketType} className="mt-6 space-y-5">
               <label className="block text-sm font-medium">
                 Name
@@ -226,18 +258,71 @@ export function TicketTypesWorkspace({
                 />
               </label>
 
+              <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
+                <label className="block text-sm font-medium">
+                  Tile label <span className="font-normal">(optional)</span>
+                  <input
+                    value={tileLabel}
+                    onChange={(event) => setTileLabel(event.target.value)}
+                    maxLength={24}
+                    placeholder={name || "ADULT"}
+                    className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
+                  />
+                </label>
+                <label className="block text-sm font-medium">
+                  Tile colour
+                  <input
+                    type="color"
+                    value={tileColor}
+                    onChange={(event) =>
+                      setTileColor(event.target.value.toUpperCase())
+                    }
+                    className="mt-2 h-10 w-full rounded-lg border bg-background p-1"
+                  />
+                </label>
+              </div>
+
+              <div
+                className="flex h-24 items-center justify-center rounded-xl text-xl font-bold tracking-wide text-white"
+                style={{ backgroundColor: tileColor }}
+              >
+                {tileLabel.trim() || name.trim() || "TICKET"}
+              </div>
+
+              <label className="block rounded-lg border border-dashed p-4 text-sm font-medium">
+                Ticket Type image{" "}
+                <span className="font-normal">(optional)</span>
+                <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                  Most Ticket Types work best as a clear text-and-colour tile.
+                </span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  onChange={(event) =>
+                    setImage(event.target.files?.[0] ?? null)
+                  }
+                  className="mt-3 block w-full text-xs"
+                />
+              </label>
+
               <div className="rounded-lg border bg-muted/40 p-4 text-sm leading-6">
                 Rink capacity is configured on Sessions and shared across Adult,
                 Child and other Ticket Types.
               </div>
 
               {error ? (
-                <p role="alert" className="text-sm font-medium text-destructive">
+                <p
+                  role="alert"
+                  className="text-sm font-medium text-destructive"
+                >
                   {error}
                 </p>
               ) : null}
               {savedMessage ? (
-                <p role="status" className="text-sm font-medium text-emerald-700">
+                <p
+                  role="status"
+                  className="text-sm font-medium text-emerald-700"
+                >
                   {savedMessage}
                 </p>
               ) : null}

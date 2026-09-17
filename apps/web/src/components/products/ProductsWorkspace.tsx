@@ -3,11 +3,13 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
 } from "react";
 
 import { Button } from "@/components/ui/button";
+import { CatalogueImage } from "@/components/catalogue/CatalogueImage";
 import { ProductOrganisation } from "@/components/products/ProductOrganisation";
 import {
   getAuthRoleSnapshot,
@@ -84,15 +86,32 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
     { name: "", inventoryQuantity: "", priceOverride: "" },
   ]);
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
-  const [requiredTicketTypeIds, setRequiredTicketTypeIds] = useState<string[]>([]);
+  const [requiredTicketTypeIds, setRequiredTicketTypeIds] = useState<string[]>(
+    [],
+  );
+  const [image, setImage] = useState<File | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const visibleProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return products.filter(
+      (product) =>
+        (statusFilter === "ALL" || product.status === statusFilter) &&
+        (!query ||
+          product.name.toLowerCase().includes(query) ||
+          product.description?.toLowerCase().includes(query)),
+    );
+  }, [products, search, statusFilter]);
 
   const loadWorkspace = useCallback(async () => {
-    const [productResult, groupResult, sessionResult, ticketTypeResult] = await Promise.all([
-      productSetupService.findForEvent(eventId),
-      productSetupService.findGroups(eventId),
-      sessionService.getSessions(eventId),
-      ticketTypeService.findForEvent(eventId),
-    ]);
+    const [productResult, groupResult, sessionResult, ticketTypeResult] =
+      await Promise.all([
+        productSetupService.findForEvent(eventId),
+        productSetupService.findGroups(eventId),
+        sessionService.getSessions(eventId),
+        ticketTypeService.findForEvent(eventId),
+      ]);
     setProducts(productResult);
     setGroups(groupResult);
     setSessions(sessionResult.filter((session) => session.status === "ACTIVE"));
@@ -127,6 +146,7 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
     setVariants([{ name: "", inventoryQuantity: "", priceOverride: "" }]);
     setSelectedSessionIds([]);
     setRequiredTicketTypeIds([]);
+    setImage(null);
   }
 
   function continueFromDetails() {
@@ -214,6 +234,10 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
       });
       draftId = product.id;
 
+      if (image) {
+        await productSetupService.uploadImage(product.id, image);
+      }
+
       if (availabilityModel === "VARIANT_INVENTORY") {
         for (const [index, variant] of variants.entries()) {
           await productSetupService.createVariant({
@@ -296,56 +320,104 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      {role === "OWNER" ? (
-        <ProductOrganisation
-          eventId={eventId}
-          groups={groups}
-          products={products.filter((product) => product.productType !== "ADMISSION")}
-          onSaved={loadWorkspace}
-        />
-      ) : null}
-      <section className="rounded-xl border bg-card p-6">
+    <div className="space-y-6">
+      <section className="rounded-xl border bg-card p-6 shadow-sm">
         <p className="text-sm font-medium text-muted-foreground">Catalogue</p>
         <h2 className="mt-2 text-2xl font-semibold">Products</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Products are optional extras and do not consume rink admission capacity.
+          Products are optional extras and do not consume rink admission
+          capacity.
         </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px]">
+          <label className="text-sm font-medium">
+            Search Products
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Name or description"
+              className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
+            />
+          </label>
+          <label className="text-sm font-medium">
+            Status
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="DRAFT">Draft</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </label>
+        </div>
         {isLoading ? <p className="mt-6 text-sm">Loading Products...</p> : null}
         {!isLoading && products.length === 0 ? (
           <p className="mt-6 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
             No Products configured for this Event.
           </p>
         ) : null}
-        <div className="mt-6 space-y-3">
-          {products.map((product) => (
-            <article key={product.id} className="rounded-lg border p-4">
-              <div className="flex justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold">{product.name}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {modelLabel(product)} · {product.sessionProducts.length} Session
-                    {product.sessionProducts.length === 1 ? "" : "s"}
-                  </p>
-                </div>
-                <span className="text-xs font-medium">{product.status}</span>
+        {!isLoading && products.length > 0 && visibleProducts.length === 0 ? (
+          <p className="mt-6 rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            No Products match this search and status.
+          </p>
+        ) : null}
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {visibleProducts.map((product) => (
+            <article
+              key={product.id}
+              className="overflow-hidden rounded-xl border bg-background"
+            >
+              <div className="aspect-[16/9] overflow-hidden border-b">
+                <CatalogueImage
+                  path={
+                    product.imageAsset
+                      ? `/product/${product.id}/image/${product.imageAsset.id}`
+                      : null
+                  }
+                  alt={product.imageAsset?.displayName ?? ""}
+                  fallbackLabel={product.name}
+                />
               </div>
-              <p className="mt-3 text-sm font-semibold">{formatPrice(product.price)}</p>
-              {product.variants.length > 0 ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {product.variants.length} Variant
-                  {product.variants.length === 1 ? "" : "s"}
+              <div className="p-4">
+                <div className="flex justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold">{product.name}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {modelLabel(product)} · {product.sessionProducts.length}{" "}
+                      Session
+                      {product.sessionProducts.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium">{product.status}</span>
+                </div>
+                <p className="mt-3 text-sm font-semibold">
+                  {formatPrice(product.price)}
                 </p>
-              ) : null}
+                {product.variants.length > 0 ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {product.variants.length} Variant
+                    {product.variants.length === 1 ? "" : "s"}
+                  </p>
+                ) : null}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {product.availableOnline ? "Online" : "Not online"} ·{" "}
+                  {product.availablePos ? "POS" : "Not on POS"}
+                </p>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-6">
+      <section className="rounded-xl border bg-card p-6 shadow-sm">
         {role !== "OWNER" ? (
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Read-only access</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              Read-only access
+            </p>
             <h2 className="mt-2 text-xl font-semibold">Product setup</h2>
             <p className="mt-3 text-sm text-muted-foreground">
               Event owners can configure and activate Products.
@@ -382,6 +454,25 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                     }}
                     className="mt-2 h-10 w-full rounded-lg border px-3"
                   />
+                </label>
+                <label className="block rounded-lg border border-dashed p-4 text-sm font-medium">
+                  Product image <span className="font-normal">(optional)</span>
+                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                    PNG or JPEG · maximum 5 MB · minimum 200 × 200 pixels
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={(event) =>
+                      setImage(event.target.files?.[0] ?? null)
+                    }
+                    className="mt-3 block w-full text-xs"
+                  />
+                  {image ? (
+                    <span className="mt-2 block text-xs">
+                      Selected: {image.name}
+                    </span>
+                  ) : null}
                 </label>
                 <label className="block text-sm font-medium">
                   Stable slug
@@ -420,20 +511,29 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
 
             {step === 2 ? (
               <div className="mt-6 space-y-5">
-                {([
-                  ["UNLIMITED", "Unlimited", "No Product-specific stock limit."],
+                {(
                   [
-                    "SESSION_CAPACITY",
-                    "Reusable per Session",
-                    "Kangas or hire equipment that resets for each Session.",
-                  ],
-                  [
-                    "VARIANT_INVENTORY",
-                    "Finite Variant inventory",
-                    "Merchandise sizes or options with independent global stock.",
-                  ],
-                ] as const).map(([value, label, help]) => (
-                  <label key={value} className="flex gap-3 rounded-lg border p-4">
+                    [
+                      "UNLIMITED",
+                      "Unlimited",
+                      "No Product-specific stock limit.",
+                    ],
+                    [
+                      "SESSION_CAPACITY",
+                      "Reusable per Session",
+                      "Kangas or hire equipment that resets for each Session.",
+                    ],
+                    [
+                      "VARIANT_INVENTORY",
+                      "Finite Variant inventory",
+                      "Merchandise sizes or options with independent global stock.",
+                    ],
+                  ] as const
+                ).map(([value, label, help]) => (
+                  <label
+                    key={value}
+                    className="flex gap-3 rounded-lg border p-4"
+                  >
                     <input
                       type="radio"
                       name="availability-model"
@@ -457,7 +557,9 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                       min={1}
                       step={1}
                       value={defaultCapacity}
-                      onChange={(event) => setDefaultCapacity(event.target.value)}
+                      onChange={(event) =>
+                        setDefaultCapacity(event.target.value)
+                      }
                       className="mt-2 h-10 w-full rounded-lg border px-3"
                     />
                   </label>
@@ -465,7 +567,10 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                 {availabilityModel === "VARIANT_INVENTORY" ? (
                   <div className="space-y-3">
                     {variants.map((variant, index) => (
-                      <div key={index} className="grid gap-3 rounded-lg border p-4 sm:grid-cols-3">
+                      <div
+                        key={index}
+                        className="grid gap-3 rounded-lg border p-4 sm:grid-cols-3"
+                      >
                         <input
                           aria-label={`Variant ${index + 1} name`}
                           placeholder="Size or option"
@@ -492,7 +597,10 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                             setVariants((current) =>
                               current.map((item, itemIndex) =>
                                 itemIndex === index
-                                  ? { ...item, inventoryQuantity: event.target.value }
+                                  ? {
+                                      ...item,
+                                      inventoryQuantity: event.target.value,
+                                    }
                                   : item,
                               ),
                             )
@@ -510,7 +618,10 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                             setVariants((current) =>
                               current.map((item, itemIndex) =>
                                 itemIndex === index
-                                  ? { ...item, priceOverride: event.target.value }
+                                  ? {
+                                      ...item,
+                                      priceOverride: event.target.value,
+                                    }
                                   : item,
                               ),
                             )
@@ -524,7 +635,11 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                       onClick={() =>
                         setVariants((current) => [
                           ...current,
-                          { name: "", inventoryQuantity: "", priceOverride: "" },
+                          {
+                            name: "",
+                            inventoryQuantity: "",
+                            priceOverride: "",
+                          },
                         ])
                       }
                     >
@@ -533,7 +648,9 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                   </div>
                 ) : null}
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+                  <Button variant="outline" onClick={() => setStep(1)}>
+                    Back
+                  </Button>
                   <Button onClick={continueFromAvailability}>Continue</Button>
                 </div>
               </div>
@@ -542,7 +659,8 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
             {step === 3 ? (
               <div className="mt-6 space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Choose every active Session where this Product can be selected.
+                  Choose every active Session where this Product can be
+                  selected.
                 </p>
                 {sessions.length > 0 ? (
                   <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 p-4">
@@ -574,7 +692,10 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                   </p>
                 )}
                 {sessions.map((session) => (
-                  <label key={session.id} className="flex gap-3 rounded-lg border p-4 text-sm">
+                  <label
+                    key={session.id}
+                    className="flex gap-3 rounded-lg border p-4 text-sm"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedSessionIds.includes(session.id)}
@@ -595,7 +716,9 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                   </label>
                 ))}
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+                  <Button variant="outline" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
                   <Button onClick={continueFromSessions}>Continue</Button>
                 </div>
               </div>
@@ -604,62 +727,106 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
             {step === 4 ? (
               <div className="mt-6 space-y-5">
                 {availabilityModel !== "VARIANT_INVENTORY" ? (
-                <div>
-                  <p className="text-sm font-medium">Required by Ticket Types</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Optional. One Product will be required per matching participant.
-                  </p>
-                  <div className="mt-3 space-y-2">
-                    {ticketTypes.map((ticketType) => (
-                      <label key={ticketType.id} className="flex gap-3 rounded-lg border p-3 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={requiredTicketTypeIds.includes(ticketType.id)}
-                          onChange={() =>
-                            toggleSelection(
+                  <div>
+                    <p className="text-sm font-medium">
+                      Required by Ticket Types
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Optional. One Product will be required per matching
+                      participant.
+                    </p>
+                    <div className="mt-3 space-y-2">
+                      {ticketTypes.map((ticketType) => (
+                        <label
+                          key={ticketType.id}
+                          className="flex gap-3 rounded-lg border p-3 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={requiredTicketTypeIds.includes(
                               ticketType.id,
-                              requiredTicketTypeIds,
-                              setRequiredTicketTypeIds,
-                            )
-                          }
-                        />
-                        {ticketType.name}
-                      </label>
-                    ))}
+                            )}
+                            onChange={() =>
+                              toggleSelection(
+                                ticketType.id,
+                                requiredTicketTypeIds,
+                                setRequiredTicketTypeIds,
+                              )
+                            }
+                          />
+                          {ticketType.name}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
                 ) : (
                   <div className="rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground">
-                    Variant merchandise remains optional so customers can choose their own size or option. Ticket Type requirements are available for unambiguous Products such as Kangas.
+                    Variant merchandise remains optional so customers can choose
+                    their own size or option. Ticket Type requirements are
+                    available for unambiguous Products such as Kangas.
                   </div>
                 )}
                 <div className="rounded-lg border bg-muted/40 p-4 text-sm leading-6">
-                  <strong>{name}</strong> · {formatPrice(Number(price))} · {availabilityModel.replaceAll("_", " ")} · {selectedSessionIds.length} Session
-                  {selectedSessionIds.length === 1 ? "" : "s"} · {requiredTicketTypeIds.length} requirement
+                  <strong>{name}</strong> · {formatPrice(Number(price))} ·{" "}
+                  {availabilityModel.replaceAll("_", " ")} ·{" "}
+                  {selectedSessionIds.length} Session
+                  {selectedSessionIds.length === 1 ? "" : "s"} ·{" "}
+                  {requiredTicketTypeIds.length} requirement
                   {requiredTicketTypeIds.length === 1 ? "" : "s"}
                 </div>
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => setStep(3)}>Back</Button>
-                  <Button disabled={isSaving} onClick={() => void createConfiguredProduct()}>
-                    {isSaving ? "Configuring..." : "Create and activate Product"}
+                  <Button variant="outline" onClick={() => setStep(3)}>
+                    Back
+                  </Button>
+                  <Button
+                    disabled={isSaving}
+                    onClick={() => void createConfiguredProduct()}
+                  >
+                    {isSaving
+                      ? "Configuring..."
+                      : "Create and activate Product"}
                   </Button>
                 </div>
               </div>
             ) : null}
 
             {error ? (
-              <p role="alert" className="mt-5 text-sm font-medium text-destructive">
+              <p
+                role="alert"
+                className="mt-5 text-sm font-medium text-destructive"
+              >
                 {error}
               </p>
             ) : null}
             {message ? (
-              <p role="status" className="mt-5 text-sm font-medium text-emerald-700">
+              <p
+                role="status"
+                className="mt-5 text-sm font-medium text-emerald-700"
+              >
                 {message}
               </p>
             ) : null}
           </>
         )}
       </section>
+
+      {role === "OWNER" && products.length > 0 ? (
+        <details className="rounded-xl border bg-card shadow-sm">
+          <summary className="cursor-pointer px-6 py-5 font-semibold">
+            Customer display groups and ordering
+          </summary>
+          <div className="border-t">
+            <ProductOrganisation
+              eventId={eventId}
+              groups={groups}
+              products={products.filter(
+                (product) => product.productType !== "ADMISSION",
+              )}
+              onSaved={loadWorkspace}
+            />
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

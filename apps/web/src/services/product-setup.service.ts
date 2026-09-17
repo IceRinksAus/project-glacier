@@ -42,8 +42,16 @@ export interface ProductAdministration {
   availablePos: boolean;
   sortOrder: number;
   productGroupId: string | null;
+  imageAsset: CatalogueAsset | null;
   variants: ProductVariantAdministration[];
   sessionProducts: SessionProductAdministration[];
+}
+
+export interface CatalogueAsset {
+  id: string;
+  displayName: string;
+  width: number;
+  height: number;
 }
 
 export interface ProductGroupAdministration {
@@ -119,6 +127,19 @@ export const productSetupService = {
   createProduct: (data: CreateProductAdministration) =>
     api.post<ProductAdministration>("/product", data),
 
+  uploadImage: (productId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("displayName", file.name);
+    return api.upload<CatalogueAsset>(`/product/${productId}/image`, form);
+  },
+
+  getImage: (productId: string, assetId: string) =>
+    api.blob(`/product/${productId}/image/${assetId}`),
+
+  removeImage: (productId: string) =>
+    api.delete<void>(`/product/${productId}/image`),
+
   createVariant: (data: CreateVariantAdministration) =>
     api.post<ProductVariantAdministration>("/product-variant", data),
 
@@ -132,10 +153,7 @@ export const productSetupService = {
   createRequirementRule: (data: CreateRequirementRule) =>
     api.post("/rule", data),
 
-  updateStatus: (
-    productId: string,
-    status: "DRAFT" | "ACTIVE" | "INACTIVE",
-  ) =>
+  updateStatus: (productId: string, status: "DRAFT" | "ACTIVE" | "INACTIVE") =>
     api.patch<ProductAdministration>(`/product/${productId}/status`, {
       status,
     }),
@@ -160,8 +178,9 @@ export const productSetupService = {
   updateProductOrder: (
     eventId: string,
     groups: Array<{ groupId: string | null; productIds: string[] }>,
-  ) => api.patch<ProductGroupAdministration[]>("/product-group/product-order", {
-    eventId,
-    groups,
-  }),
+  ) =>
+    api.patch<ProductGroupAdministration[]>("/product-group/product-order", {
+      eventId,
+      groups,
+    }),
 };
