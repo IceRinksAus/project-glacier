@@ -101,3 +101,10 @@ age-18 fallback rather than inferring policy from their names.
 The follow-up release gate passed with 50 migrations, 92 API suites / 663 tests,
 37 web files / 112 tests, both production builds and 5 of 5 disposable
 tenant/role/Event/MFA isolation checks.
+
+The same operator review also found that Rule-required Products were only added
+to the visible order after `Review payment`. POS now performs a non-mutating Rule
+preview whenever its Ticket selection changes. Required Products such as a
+Kanga appear immediately in the order with a `Required` label and are included
+in the displayed total. Reservation still repeats the authoritative server Rule
+evaluation, so the preview does not replace or weaken enforcement.

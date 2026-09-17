@@ -96,6 +96,12 @@ describe("PosPage", () => {
     localStorage.setItem("glacier_pos_event", "event-1");
     getEvents.mockResolvedValue([event]);
     getCatalogue.mockResolvedValue(catalogue);
+    evaluateRules.mockResolvedValue({
+      valid: true,
+      errors: [],
+      warnings: [],
+      requiredProducts: [],
+    });
     getMerchandiseCatalogue.mockResolvedValue({
       event: catalogue.event,
       products: [
@@ -204,5 +210,64 @@ describe("PosPage", () => {
 
     expect(screen.getAllByLabelText("Age")[0]).toHaveValue(4);
     expect(screen.getAllByLabelText("Age")[1]).toHaveValue(14);
+  });
+
+  it("shows a Rule-required Product in the order before payment review", async () => {
+    getCatalogue.mockResolvedValue({
+      ...catalogue,
+      ticketTypes: [
+        {
+          ...catalogue.ticketTypes[0],
+          id: "young-child",
+          name: "Young Child",
+          price: 15,
+          minimumAge: 0,
+          maximumAge: 4,
+        },
+      ],
+      sessionProducts: [
+        {
+          id: "assignment-1",
+          productId: "kanga-1",
+          capacityOverride: null,
+          sortOrder: 0,
+          product: {
+            id: "kanga-1",
+            name: "Kanga",
+            slug: "kanga",
+            description: null,
+            price: 10,
+            minQuantity: 0,
+            maxQuantity: null,
+            capacityControlled: false,
+            capacity: null,
+            inventoryTracked: false,
+            inventoryQuantity: null,
+            imageAsset: null,
+            productGroup: null,
+            variants: [],
+          },
+        },
+      ],
+    });
+    evaluateRules.mockResolvedValue({
+      valid: true,
+      errors: [],
+      warnings: [],
+      requiredProducts: [{ productSlug: "kanga", quantity: 1 }],
+    });
+
+    render(<PosPage />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Use recommendation" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add Ticket Young Child" }),
+    );
+
+    expect(await screen.findByText("1 × Kanga")).toBeInTheDocument();
+    expect(screen.getByText("Required")).toBeInTheDocument();
+    expect(screen.getByText("$25.00")).toBeInTheDocument();
+    expect(createReservation).not.toHaveBeenCalled();
   });
 });

@@ -65,6 +65,9 @@ export default function PosPage() {
   const [products, setProducts] = useState<
     Record<string, { quantity: number; productVariantId?: string }>
   >({});
+  const [requiredProductQuantities, setRequiredProductQuantities] = useState<
+    Record<string, number>
+  >({});
   const [reservation, setReservation] = useState<PosReservation | null>(null);
   const [completion, setCompletion] = useState<PosCompletion | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<
@@ -130,6 +133,19 @@ export default function PosPage() {
 
   const selectedSession =
     catalogue?.sessions.find((session) => session.id === sessionId) ?? null;
+  const effectiveProducts = useMemo(() => {
+    const result = { ...products };
+    for (const [productId, requiredQuantity] of Object.entries(
+      requiredProductQuantities,
+    )) {
+      const current = result[productId];
+      result[productId] = {
+        ...current,
+        quantity: Math.max(current?.quantity ?? 0, requiredQuantity),
+      };
+    }
+    return result;
+  }, [products, requiredProductQuantities]);
   const estimatedTotal = useMemo(() => {
     if (!catalogue) return 0;
     const tickets = participants.reduce((sum, participant) => {
@@ -139,7 +155,7 @@ export default function PosPage() {
       return sum + Number(ticketType?.price ?? 0);
     }, 0);
     const addons = catalogue.sessionProducts.reduce((sum, assignment) => {
-      const selection = products[assignment.productId];
+      const selection = effectiveProducts[assignment.productId];
       if (!selection?.quantity) return sum;
       const variant = assignment.product.variants.find(
         ({ id }) => id === selection.productVariantId,
@@ -151,7 +167,34 @@ export default function PosPage() {
       );
     }, 0);
     return tickets + addons;
-  }, [catalogue, participants, products]);
+  }, [catalogue, effectiveProducts, participants]);
+
+  useEffect(() => {
+    if (!eventId || !sessionId || !catalogue || participants.length === 0) {
+      setRequiredProductQuantities({});
+      return;
+    }
+    let cancelled = false;
+    posService
+      .evaluateRules(eventId, sessionId, participants)
+      .then((rules) => {
+        if (cancelled) return;
+        const next: Record<string, number> = {};
+        for (const required of rules.requiredProducts) {
+          const assignment = catalogue.sessionProducts.find(
+            ({ product }) => product.slug === required.productSlug,
+          );
+          if (assignment) next[assignment.productId] = required.quantity;
+        }
+        setRequiredProductQuantities(next);
+      })
+      .catch(() => {
+        if (!cancelled) setRequiredProductQuantities({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogue, eventId, participants, sessionId]);
 
   function selectEvent(value: string) {
     setEventId(value);
@@ -213,6 +256,7 @@ export default function PosPage() {
   function resetSale() {
     setParticipants([]);
     setProducts({});
+    setRequiredProductQuantities({});
     setReservation(null);
     setCompletion(null);
     setTerminalReference("");
@@ -554,7 +598,9 @@ export default function PosPage() {
                     </p>
                   ) : (
                     catalogue.sessionProducts.map(({ product }) => {
-                      const selection = products[product.id] ?? { quantity: 0 };
+                      const selection = effectiveProducts[product.id] ?? {
+                        quantity: 0,
+                      };
                       return (
                         <div
                           key={product.id}
@@ -658,6 +704,34 @@ export default function PosPage() {
                       <span>{money(Number(ticketType.price) * quantity)}</span>
                     </div>
                   ) : null;
+                })}
+                {catalogue.sessionProducts.map(({ product }) => {
+                  const selection = effectiveProducts[product.id];
+                  if (!selection?.quantity) return null;
+                  const variant = product.variants.find(
+                    ({ id }) => id === selection.productVariantId,
+                  );
+                  const unitPrice = Number(
+                    variant?.priceOverride ?? product.price,
+                  );
+                  const requiredQuantity =
+                    requiredProductQuantities[product.id] ?? 0;
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex justify-between gap-3"
+                    >
+                      <span>
+                        {selection.quantity} × {product.name}
+                        {requiredQuantity > 0 ? (
+                          <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-800">
+                            Required
+                          </span>
+                        ) : null}
+                      </span>
+                      <span>{money(unitPrice * selection.quantity)}</span>
+                    </div>
+                  );
                 })}
               </div>
               <p className="text-3xl font-bold">{money(estimatedTotal)}</p>
