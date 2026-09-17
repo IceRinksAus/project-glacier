@@ -22,6 +22,12 @@ vi.mock("@/components/scanner/ScannerCamera", () => ({
   ScannerCamera: () => <div data-testid="scanner-camera" />,
 }));
 
+vi.mock("@/components/layout/PlatformShell", () => ({
+  PlatformShell: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="platform-shell">{children}</div>
+  ),
+}));
+
 const token = "a".repeat(64);
 const scannerEvent = {
   id: "event-1",
@@ -61,8 +67,20 @@ async function submitToken(user: ReturnType<typeof userEvent.setup>) {
 describe("StaffScannerPage", () => {
   beforeEach(() => {
     localStorage.clear();
+    localStorage.setItem("glacier_user", JSON.stringify({ role: "SCANNER" }));
     apiGet.mockResolvedValue([scannerEvent]);
     apiPost.mockReset();
+  });
+
+  it("shows organiser readiness inside the dashboard instead of desktop scanning", async () => {
+    localStorage.setItem("glacier_user", JSON.stringify({ role: "OWNER" }));
+    render(<StaffScannerPage />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Staff Scanner readiness" }),
+    ).toBeVisible();
+    expect(screen.queryByTestId("scanner-camera")).not.toBeInTheDocument();
+    expect(apiGet).not.toHaveBeenCalled();
   });
 
   it("automatically admits a Gate Entry scan without a second action", async () => {

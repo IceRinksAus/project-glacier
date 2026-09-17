@@ -24,6 +24,8 @@ import { PosService } from './pos.service';
 import { RetailSaleService } from './retail-sale.service';
 import { CreateRetailSaleDto } from './dto/create-retail-sale.dto';
 import { SearchRetailSalesQueryDto } from './dto/search-retail-sales-query.dto';
+import { ScannerTicketDto } from '../staff-scanner/dto/scanner-ticket.dto';
+import { StaffScannerService } from '../staff-scanner/staff-scanner.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...OPERATOR_ROLES)
@@ -32,7 +34,26 @@ export class PosController {
   constructor(
     private readonly posService: PosService,
     private readonly retailSaleService: RetailSaleService,
+    private readonly staffScannerService: StaffScannerService,
   ) {}
+
+  @Post('events/:eventId/tickets/lookup')
+  lookupTicket(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('eventId') eventId: string,
+    @Body() data: ScannerTicketDto,
+  ) {
+    return this.staffScannerService.lookup(user, eventId, data);
+  }
+
+  @Post('events/:eventId/tickets/admit')
+  admitTicket(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('eventId') eventId: string,
+    @Body() data: ScannerTicketDto,
+  ) {
+    return this.staffScannerService.admit(user, eventId, data);
+  }
 
   @Get('events/:eventId/merchandise')
   findMerchandiseCatalogue(

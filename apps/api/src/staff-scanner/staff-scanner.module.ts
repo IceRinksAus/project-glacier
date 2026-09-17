@@ -7,5 +7,6 @@ import { StaffScannerService } from './staff-scanner.service';
 @Module({
   controllers: [StaffScannerController],
   providers: [StaffScannerService, ScannerClock],
+  exports: [StaffScannerService],
 })
 export class StaffScannerModule {}

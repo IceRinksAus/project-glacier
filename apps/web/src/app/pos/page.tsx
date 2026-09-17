@@ -23,6 +23,7 @@ import {
   posService,
 } from "@/services/pos.service";
 import { MerchandiseSaleMode } from "./MerchandiseSaleMode";
+import { PosTicketService } from "./PosTicketService";
 
 const EVENT_KEY = "glacier_pos_event";
 const SESSION_KEY = "glacier_pos_session";
@@ -46,7 +47,9 @@ function sessionLabel(
 }
 
 export default function PosPage() {
-  const [saleMode, setSaleMode] = useState<"TICKETS" | "MERCHANDISE">(
+  const [saleMode, setSaleMode] = useState<
+    "TICKETS" | "MERCHANDISE" | "TICKET_SERVICE"
+  >(
     "TICKETS",
   );
   const [events, setEvents] = useState<GlacierEvent[]>([]);
@@ -308,7 +311,9 @@ export default function PosPage() {
           <p className="mt-2 text-muted-foreground">
             {saleMode === "TICKETS"
               ? "Fast touch sales using Glacier's shared Tickets, Products and Rules."
-              : "Sell Event merchandise without creating an admission Booking or Ticket."}
+              : saleMode === "MERCHANDISE"
+                ? "Sell Event merchandise without creating an admission Booking or Ticket."
+                : "Look up a pre-purchased Ticket, then admit it only after confirmation."}
           </p>
           <Link
             href="/pos/sales"
@@ -320,7 +325,7 @@ export default function PosPage() {
 
         <section
           aria-label="Sale mode"
-          className="grid gap-3 rounded-xl border bg-card p-3 sm:grid-cols-2"
+          className="grid gap-3 rounded-xl border bg-card p-3 md:grid-cols-3"
         >
           <button
             type="button"
@@ -330,6 +335,16 @@ export default function PosPage() {
             <span className="font-semibold">Ticket Sale</span>
             <span className="mt-1 block text-sm text-muted-foreground">
               Session admission and eligible Products
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`rounded-lg border p-4 text-left ${saleMode === "TICKET_SERVICE" ? "border-primary bg-primary/5" : ""}`}
+            onClick={() => setSaleMode("TICKET_SERVICE")}
+          >
+            <span className="font-semibold">Scan existing Ticket</span>
+            <span className="mt-1 block text-sm text-muted-foreground">
+              Read-only lookup, then deliberate admission
             </span>
           </button>
           <button
@@ -741,6 +756,9 @@ export default function PosPage() {
 
         {saleMode === "MERCHANDISE" ? (
           <MerchandiseSaleMode eventId={eventId} />
+        ) : null}
+        {saleMode === "TICKET_SERVICE" ? (
+          <PosTicketService eventId={eventId} />
         ) : null}
       </div>
     </PlatformShell>

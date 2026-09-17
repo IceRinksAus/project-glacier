@@ -5,6 +5,7 @@ import { ROLES_KEY } from '../auth/decorators/roles.decorator';
 import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
 import { RetailSaleService } from './retail-sale.service';
+import { StaffScannerService } from '../staff-scanner/staff-scanner.service';
 
 describe('PosController', () => {
   const service = {
@@ -27,6 +28,10 @@ describe('PosController', () => {
     createReservation: jest.fn(),
     completePayment: jest.fn(),
   };
+  const staffScannerService = {
+    lookup: jest.fn(),
+    admit: jest.fn(),
+  };
   let controller: PosController;
 
   beforeEach(async () => {
@@ -36,9 +41,29 @@ describe('PosController', () => {
       providers: [
         { provide: PosService, useValue: service },
         { provide: RetailSaleService, useValue: retailSaleService },
+        { provide: StaffScannerService, useValue: staffScannerService },
       ],
     }).compile();
     controller = module.get(PosController);
+  });
+
+  it('keeps POS Ticket lookup read-only until a separate admission call', async () => {
+    const input = { token: 'a'.repeat(64), mode: 'TICKET_LOOKUP' as const };
+
+    await controller.lookupTicket(user, 'event-1', input);
+    expect(staffScannerService.lookup).toHaveBeenCalledWith(
+      user,
+      'event-1',
+      input,
+    );
+    expect(staffScannerService.admit).not.toHaveBeenCalled();
+
+    await controller.admitTicket(user, 'event-1', input);
+    expect(staffScannerService.admit).toHaveBeenCalledWith(
+      user,
+      'event-1',
+      input,
+    );
   });
 
   it('allows OWNER, MANAGER and STAFF while excluding SCANNER', () => {

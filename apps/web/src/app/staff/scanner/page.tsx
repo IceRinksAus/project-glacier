@@ -11,12 +11,25 @@ import {
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { ScannerCamera } from "@/components/scanner/ScannerCamera";
+import { PlatformShell } from "@/components/layout/PlatformShell";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
-import { endAuthSession } from "@/lib/auth";
+import {
+  endAuthSession,
+  getAuthRoleSnapshot,
+  getServerAuthRoleSnapshot,
+  subscribeAuthSession,
+} from "@/lib/auth";
 
 type ScannerMode = "GATE_ENTRY" | "TICKET_LOOKUP";
 type ScannerResult =
@@ -121,7 +134,7 @@ function formatDate(value?: string, timezone?: string | null) {
   }).format(new Date(value));
 }
 
-export default function StaffScannerPage() {
+function OperationalScanner() {
   const router = useRouter();
   const [events, setEvents] = useState<ScannerEvent[]>([]);
   const [eventId, setEventId] = useState("");
@@ -555,4 +568,50 @@ export default function StaffScannerPage() {
       </div>
     </main>
   );
+}
+
+function OrganiserScannerWorkspace() {
+  return (
+    <PlatformShell>
+      <div className="space-y-6">
+        <header>
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">
+            Gate Entry
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold">Staff Scanner readiness</h1>
+          <p className="mt-2 max-w-3xl text-muted-foreground">
+            Configure Event entry windows and assign dedicated Scanner users here. Operational scanning opens directly on the assigned Zebra, Android or iOS device.
+          </p>
+        </header>
+        <div className="grid gap-5 lg:grid-cols-3">
+          {[
+            ["1", "Configure entry", "Confirm each Event's opening and closing window before staff arrive."],
+            ["2", "Assign a Scanner user", "Use a dedicated SCANNER membership limited to its assigned Events."],
+            ["3", "Sign in on the device", "The device opens the full-screen scanner without the organiser dashboard."],
+          ].map(([number, title, body]) => (
+            <section key={number} className="rounded-2xl border bg-card p-5 shadow-sm">
+              <span className="flex size-9 items-center justify-center rounded-full bg-primary font-bold text-primary-foreground">{number}</span>
+              <h2 className="mt-4 text-lg font-semibold">{title}</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{body}</p>
+            </section>
+          ))}
+        </div>
+        <section className="rounded-2xl border border-sky-200 bg-sky-50 p-6 text-sky-950">
+          <h2 className="text-xl font-semibold">Lookup and admission are separate</h2>
+          <p className="mt-2 max-w-3xl text-sm">
+            Ticket Lookup is read-only. Gate Entry consumes an eligible individual Ticket atomically. POS can also perform a lookup followed by deliberate confirmed admission for customers seeking assistance at the counter.
+          </p>
+        </section>
+      </div>
+    </PlatformShell>
+  );
+}
+
+export default function StaffScannerPage() {
+  const role = useSyncExternalStore(
+    subscribeAuthSession,
+    getAuthRoleSnapshot,
+    getServerAuthRoleSnapshot,
+  );
+  return role === "SCANNER" ? <OperationalScanner /> : <OrganiserScannerWorkspace />;
 }

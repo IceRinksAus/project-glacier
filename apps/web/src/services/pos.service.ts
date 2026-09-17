@@ -92,6 +92,25 @@ export interface PosCompletion {
   }>;
 }
 
+export interface PosTicketLookup {
+  result:
+    | "READY_TO_ADMIT"
+    | "ENTRY_GRANTED"
+    | "ALREADY_SCANNED"
+    | "CANCELLED"
+    | "NOT_YET_VALID"
+    | "ENTRY_WINDOW_CLOSED"
+    | "INVALID_FOR_EVENT"
+    | "INVALID";
+  ticketNumber?: string;
+  ticketType?: string;
+  participantName?: string;
+  eventName?: string;
+  sessionName?: string | null;
+  status?: string;
+  checkedInAt?: string | null;
+}
+
 export interface RetailProductVariant {
   id: string;
   name: string;
@@ -220,6 +239,18 @@ export const posService = {
       `/pos/events/${eventId}/reservations/${bookingId}/complete`,
       input,
     ),
+
+  lookupTicket: (eventId: string, token: string) =>
+    api.post<PosTicketLookup>(`/pos/events/${eventId}/tickets/lookup`, {
+      token,
+      mode: "TICKET_LOOKUP",
+    }),
+
+  admitTicket: (eventId: string, token: string) =>
+    api.post<PosTicketLookup>(`/pos/events/${eventId}/tickets/admit`, {
+      token,
+      mode: "TICKET_LOOKUP",
+    }),
 
   getMerchandiseCatalogue: (eventId: string) =>
     api.get<RetailCatalogue>(`/pos/events/${eventId}/merchandise`),
