@@ -19,7 +19,7 @@ export class LocalStorageProvider implements StorageProvider {
 
   private resolveKey(storageKey: string) {
     if (
-      !/^event-branding\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\/[0-9a-f-]{36}\.(png|jpg)$/.test(
+      !/^(?:event-branding|catalogue-images)\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+\/[0-9a-f-]{36}\.(png|jpg)$/.test(
         storageKey,
       )
     ) {

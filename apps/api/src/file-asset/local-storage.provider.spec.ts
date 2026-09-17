@@ -30,6 +30,16 @@ describe('LocalStorageProvider', () => {
     ).resolves.toBe('image');
   });
 
+  it('writes only a server-generated catalogue key beneath its root', async () => {
+    const key =
+      'catalogue-images/org-1/event-1/123e4567-e89b-12d3-a456-426614174000.jpg';
+    await provider.put(key, Buffer.from('image'));
+
+    await expect(
+      readFile(join(root, key), 'utf8'),
+    ).resolves.toBe('image');
+  });
+
   it.each([
     '../outside.png',
     'event-branding/org-1/event-1/not-a-uuid.png',

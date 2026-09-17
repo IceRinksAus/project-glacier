@@ -42,6 +42,40 @@ describe('validateBrandingImage', () => {
     ).toEqual({ mimeType: 'image/png', width: 512, height: 512 });
   });
 
+  it('accepts a square Product catalogue image', () => {
+    const buffer = png(800, 800);
+
+    expect(
+      validateBrandingImage(
+        {
+          originalname: 'kanga.png',
+          mimetype: 'image/png',
+          size: buffer.length,
+          buffer,
+        },
+        FileAssetPurpose.PRODUCT_IMAGE,
+      ),
+    ).toEqual({ mimeType: 'image/png', width: 800, height: 800 });
+  });
+
+  it('rejects an undersized Ticket Type catalogue image', () => {
+    const buffer = png(199, 200);
+
+    expect(() =>
+      validateBrandingImage(
+        {
+          originalname: 'adult.png',
+          mimetype: 'image/png',
+          size: buffer.length,
+          buffer,
+        },
+        FileAssetPurpose.TICKET_TYPE_IMAGE,
+      ),
+    ).toThrow(
+      'Catalogue image dimensions must be between 200 × 200 and 6000 × 6000 pixels.',
+    );
+  });
+
   it('rejects content whose signature does not match its declared type', () => {
     const buffer = png(1200, 600);
 

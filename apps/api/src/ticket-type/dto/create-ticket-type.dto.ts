@@ -41,6 +41,17 @@ export class CreateTicketTypeDto {
   active?: boolean;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(24)
+  @Matches(/\S/)
+  tileLabel?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/)
+  tileColor?: string;
+
+  @IsOptional()
   @IsDateString()
   saleStart?: string;
 

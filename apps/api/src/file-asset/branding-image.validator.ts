@@ -16,6 +16,18 @@ const limits = {
     minHeight: 300,
     maxDimension: 6000,
   },
+  PRODUCT_IMAGE: {
+    maxBytes: 5 * 1024 * 1024,
+    minWidth: 200,
+    minHeight: 200,
+    maxDimension: 6000,
+  },
+  TICKET_TYPE_IMAGE: {
+    maxBytes: 5 * 1024 * 1024,
+    minWidth: 200,
+    minHeight: 200,
+    maxDimension: 6000,
+  },
 };
 
 function pngDimensions(buffer: Buffer) {
@@ -137,7 +149,7 @@ export function validateBrandingImage(
     dimensions.height > limit.maxDimension
   ) {
     throw new BadRequestException(
-      `${purpose === 'EVENT_LOGO' ? 'Logo' : 'Hero'} dimensions must be between ${limit.minWidth} × ${limit.minHeight} and ${limit.maxDimension} × ${limit.maxDimension} pixels.`,
+      `${purpose === 'EVENT_LOGO' ? 'Logo' : purpose === 'EVENT_HERO' ? 'Hero' : 'Catalogue image'} dimensions must be between ${limit.minWidth} × ${limit.minHeight} and ${limit.maxDimension} × ${limit.maxDimension} pixels.`,
     );
   }
   return { mimeType: detectedMime, ...dimensions };

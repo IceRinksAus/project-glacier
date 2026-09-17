@@ -456,6 +456,8 @@ model EventBranding {
 enum FileAssetPurpose {
   EVENT_LOGO
   EVENT_HERO
+  PRODUCT_IMAGE
+  TICKET_TYPE_IMAGE
 }
 
 enum FileAssetStatus {
@@ -486,8 +488,10 @@ model FileAsset {
   width            Int
   height           Int
 
-  usedAsLogo EventBranding? @relation("EventBrandingLogo")
-  usedAsHero EventBranding? @relation("EventBrandingHero")
+  usedAsLogo       EventBranding? @relation("EventBrandingLogo")
+  usedAsHero       EventBranding? @relation("EventBrandingHero")
+  usedAsProduct    Product?       @relation("ProductImage")
+  usedAsTicketType TicketType?    @relation("TicketTypeImage")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -598,6 +602,9 @@ model Product {
   sku      String?
   barcode  String?
   imageUrl String?
+
+  imageAssetId String?    @unique
+  imageAsset   FileAsset? @relation("ProductImage", fields: [imageAssetId], references: [id])
 
   status String @default("DRAFT")
 
@@ -748,6 +755,12 @@ model TicketType {
   capacity Int
 
   active Boolean @default(true)
+
+  tileLabel String?
+  tileColor String  @default("#0B6CE3")
+
+  imageAssetId String?    @unique
+  imageAsset   FileAsset? @relation("TicketTypeImage", fields: [imageAssetId], references: [id])
 
   saleStart DateTime?
   saleEnd   DateTime?
