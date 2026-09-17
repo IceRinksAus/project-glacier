@@ -46,7 +46,9 @@ function TicketTypePresentationEditor({
   const [color, setColor] = useState(ticketType.tileColor || "#0B6CE3");
   return (
     <details className="mt-4 border-t pt-3 text-sm">
-      <summary className="cursor-pointer font-medium">Manage appearance</summary>
+      <summary className="cursor-pointer font-medium">
+        Manage appearance
+      </summary>
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_90px]">
         <label>
           Tile label
@@ -100,6 +102,75 @@ function TicketTypePresentationEditor({
   );
 }
 
+function TicketTypeAgePolicyEditor({
+  ticketType,
+  disabled,
+  onSave,
+}: {
+  ticketType: TicketType;
+  disabled: boolean;
+  onSave: (
+    minimumAge: number | null,
+    maximumAge: number | null,
+  ) => Promise<void>;
+}) {
+  const [minimumAge, setMinimumAge] = useState(
+    ticketType.minimumAge?.toString() ?? "",
+  );
+  const [maximumAge, setMaximumAge] = useState(
+    ticketType.maximumAge?.toString() ?? "",
+  );
+  return (
+    <details className="mt-4 border-t pt-3 text-sm">
+      <summary className="cursor-pointer font-medium">Manage age range</summary>
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        POS uses a valid age from this range for walk-up Rules. Staff can still
+        correct it when the actual age matters.
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <label>
+          Minimum age
+          <input
+            aria-label={`${ticketType.name} minimum age`}
+            type="number"
+            min="0"
+            max="130"
+            value={minimumAge}
+            onChange={(event) => setMinimumAge(event.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border px-3"
+          />
+        </label>
+        <label>
+          Maximum age
+          <input
+            aria-label={`${ticketType.name} maximum age`}
+            type="number"
+            min="0"
+            max="130"
+            value={maximumAge}
+            onChange={(event) => setMaximumAge(event.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border px-3"
+          />
+        </label>
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        className="mt-3"
+        disabled={disabled}
+        onClick={() =>
+          void onSave(
+            minimumAge === "" ? null : Number(minimumAge),
+            maximumAge === "" ? null : Number(maximumAge),
+          )
+        }
+      >
+        Save age range
+      </Button>
+    </details>
+  );
+}
+
 export function TicketTypesWorkspace({
   eventId,
   onReturnToReadiness,
@@ -119,6 +190,8 @@ export function TicketTypesWorkspace({
   const [price, setPrice] = useState("");
   const [tileLabel, setTileLabel] = useState("");
   const [tileColor, setTileColor] = useState("#0B6CE3");
+  const [minimumAge, setMinimumAge] = useState("");
+  const [maximumAge, setMaximumAge] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [busyTicketTypeId, setBusyTicketTypeId] = useState("");
 
@@ -159,9 +232,18 @@ export function TicketTypesWorkspace({
     event.preventDefault();
     const cleanName = name.trim();
     const parsedPrice = Number(price);
+    const parsedMinimumAge = minimumAge === "" ? undefined : Number(minimumAge);
+    const parsedMaximumAge = maximumAge === "" ? undefined : Number(maximumAge);
 
-    if (!cleanName || !Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      setError("Enter a name and a non-negative price.");
+    if (
+      !cleanName ||
+      !Number.isFinite(parsedPrice) ||
+      parsedPrice < 0 ||
+      (parsedMinimumAge != null &&
+        parsedMaximumAge != null &&
+        parsedMinimumAge > parsedMaximumAge)
+    ) {
+      setError("Enter a name, non-negative price and a valid age range.");
       setSavedMessage("");
       return;
     }
@@ -179,6 +261,8 @@ export function TicketTypesWorkspace({
         active: true,
         ...(tileLabel.trim() ? { tileLabel: tileLabel.trim() } : {}),
         tileColor,
+        ...(parsedMinimumAge != null ? { minimumAge: parsedMinimumAge } : {}),
+        ...(parsedMaximumAge != null ? { maximumAge: parsedMaximumAge } : {}),
       });
       if (image) await ticketTypeService.uploadImage(ticketType.id, image);
       setName("");
@@ -186,6 +270,8 @@ export function TicketTypesWorkspace({
       setPrice("");
       setTileLabel("");
       setTileColor("#0B6CE3");
+      setMinimumAge("");
+      setMaximumAge("");
       setImage(null);
       setSavedMessage(
         "Active Ticket Type created. Event readiness will update automatically.",
@@ -217,7 +303,40 @@ export function TicketTypesWorkspace({
       await loadTicketTypes();
       setSavedMessage(`${ticketType.name} appearance updated.`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to update appearance.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to update appearance.",
+      );
+    } finally {
+      setBusyTicketTypeId("");
+    }
+  }
+
+  async function updateAgePolicy(
+    ticketType: TicketType,
+    nextMinimumAge: number | null,
+    nextMaximumAge: number | null,
+  ) {
+    if (
+      nextMinimumAge != null &&
+      nextMaximumAge != null &&
+      nextMinimumAge > nextMaximumAge
+    ) {
+      setError("Minimum age must not be greater than maximum age.");
+      return;
+    }
+    setBusyTicketTypeId(ticketType.id);
+    setError("");
+    try {
+      await ticketTypeService.updateAgePolicy(ticketType.id, {
+        minimumAge: nextMinimumAge,
+        maximumAge: nextMaximumAge,
+      });
+      await loadTicketTypes();
+      setSavedMessage(`${ticketType.name} age range updated.`);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Unable to update age range.",
+      );
     } finally {
       setBusyTicketTypeId("");
     }
@@ -231,7 +350,9 @@ export function TicketTypesWorkspace({
       await loadTicketTypes();
       setSavedMessage(`${ticketType.name} image updated.`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to update image.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to update image.",
+      );
     } finally {
       setBusyTicketTypeId("");
     }
@@ -244,7 +365,9 @@ export function TicketTypesWorkspace({
       await loadTicketTypes();
       setSavedMessage(`${ticketType.name} image removed.`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to remove image.");
+      setError(
+        cause instanceof Error ? cause.message : "Unable to remove image.",
+      );
     } finally {
       setBusyTicketTypeId("");
     }
@@ -313,17 +436,39 @@ export function TicketTypesWorkspace({
                         {formatPrice(ticketType.price)}
                       </dd>
                     </div>
+                    <div className="mt-3">
+                      <dt className="text-muted-foreground">Age range</dt>
+                      <dd className="mt-1 font-semibold">
+                        {ticketType.minimumAge == null &&
+                        ticketType.maximumAge == null
+                          ? "Not configured"
+                          : `${ticketType.minimumAge ?? 0}–${ticketType.maximumAge ?? "No maximum"}`}
+                      </dd>
+                    </div>
                   </dl>
                   {role === "OWNER" ? (
-                    <TicketTypePresentationEditor
-                      ticketType={ticketType}
-                      disabled={busyTicketTypeId === ticketType.id}
-                      onSave={(label, color) =>
-                        updatePresentation(ticketType, label, color)
-                      }
-                      onUpload={(file) => replaceImage(ticketType, file)}
-                      onRemoveImage={() => removeImage(ticketType)}
-                    />
+                    <>
+                      <TicketTypePresentationEditor
+                        ticketType={ticketType}
+                        disabled={busyTicketTypeId === ticketType.id}
+                        onSave={(label, color) =>
+                          updatePresentation(ticketType, label, color)
+                        }
+                        onUpload={(file) => replaceImage(ticketType, file)}
+                        onRemoveImage={() => removeImage(ticketType)}
+                      />
+                      <TicketTypeAgePolicyEditor
+                        ticketType={ticketType}
+                        disabled={busyTicketTypeId === ticketType.id}
+                        onSave={(nextMinimumAge, nextMaximumAge) =>
+                          updateAgePolicy(
+                            ticketType,
+                            nextMinimumAge,
+                            nextMaximumAge,
+                          )
+                        }
+                      />
+                    </>
                   ) : null}
                 </div>
               </article>
@@ -388,6 +533,41 @@ export function TicketTypesWorkspace({
                   className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
                 />
               </label>
+
+              <fieldset className="rounded-lg border p-4">
+                <legend className="px-1 text-sm font-medium">
+                  Age range (optional)
+                </legend>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Used to choose a valid walk-up age for Rules. For example,
+                  Toddler 0–4 defaults to 4, Child 5–14 defaults to 14, and
+                  Adult 18+ defaults to 18.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <label className="text-sm font-medium">
+                    Minimum age
+                    <input
+                      type="number"
+                      min="0"
+                      max="130"
+                      value={minimumAge}
+                      onChange={(event) => setMinimumAge(event.target.value)}
+                      className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
+                    />
+                  </label>
+                  <label className="text-sm font-medium">
+                    Maximum age
+                    <input
+                      type="number"
+                      min="0"
+                      max="130"
+                      value={maximumAge}
+                      onChange={(event) => setMaximumAge(event.target.value)}
+                      className="mt-2 h-10 w-full rounded-lg border bg-background px-3"
+                    />
+                  </label>
+                </div>
+              </fieldset>
 
               <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
                 <label className="block text-sm font-medium">

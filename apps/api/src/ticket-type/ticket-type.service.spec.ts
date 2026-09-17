@@ -123,6 +123,41 @@ describe('TicketTypeService', () => {
     });
   });
 
+  it('rejects an inverted Ticket Type age range', async () => {
+    await expect(
+      service.create('organization-1', {
+        name: 'Child',
+        price: 18,
+        eventId: 'event-1',
+        minimumAge: 14,
+        maximumAge: 5,
+      }),
+    ).rejects.toThrow('Minimum age must not be greater than maximum age');
+    expect(prismaMock.event.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('updates age policy only after tenant ownership is proven', async () => {
+    prismaMock.ticketType.findFirst.mockResolvedValue({ id: 'ticket-type-1' });
+    prismaMock.ticketType.update.mockResolvedValue({ id: 'ticket-type-1' });
+
+    await service.updateAgePolicy('organization-1', 'ticket-type-1', {
+      minimumAge: 5,
+      maximumAge: 14,
+    });
+
+    expect(prismaMock.ticketType.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'ticket-type-1',
+        event: { organizationId: 'organization-1' },
+      },
+      select: { id: true },
+    });
+    expect(prismaMock.ticketType.update).toHaveBeenCalledWith({
+      where: { id: 'ticket-type-1' },
+      data: { minimumAge: 5, maximumAge: 14 },
+    });
+  });
+
   it('updates presentation only after tenant ownership is proven', async () => {
     prismaMock.ticketType.findFirst.mockResolvedValue({ id: 'ticket-type-1' });
     prismaMock.ticketType.update.mockResolvedValue({ id: 'ticket-type-1' });

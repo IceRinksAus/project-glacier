@@ -10,6 +10,7 @@ describe('TicketTypeController', () => {
   const serviceMock = {
     findAll: jest.fn(),
     updatePresentation: jest.fn(),
+    updateAgePolicy: jest.fn(),
   };
   const fileAssetServiceMock = {
     createCatalogueAsset: jest.fn(),
@@ -86,6 +87,20 @@ describe('TicketTypeController', () => {
       'organization-1',
       'ticket-type-1',
       { tileLabel: 'ADULT', tileColor: '#0B6CE3' },
+    );
+  });
+
+  it('passes age-policy changes through trusted Organisation scope', () => {
+    controller.updateAgePolicy(
+      'ticket-type-1',
+      { minimumAge: 5, maximumAge: 14 },
+      { organizationId: 'organization-1', userId: 'user-1' },
+    );
+
+    expect(serviceMock.updateAgePolicy).toHaveBeenCalledWith(
+      'organization-1',
+      'ticket-type-1',
+      { minimumAge: 5, maximumAge: 14 },
     );
   });
 });

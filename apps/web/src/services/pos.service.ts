@@ -17,6 +17,8 @@ export interface PosTicketType {
   price: string | number;
   tileLabel: string | null;
   tileColor: string;
+  minimumAge: number | null;
+  maximumAge: number | null;
   imageAsset: { id: string } | null;
   saleStart: string | null;
   saleEnd: string | null;

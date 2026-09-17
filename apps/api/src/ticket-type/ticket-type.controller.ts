@@ -27,6 +27,7 @@ import { FileAssetService } from '../file-asset/file-asset.service';
 import type { BrandingImageUpload } from '../file-asset/file-asset.types';
 import { UploadCatalogueImageDto } from '../file-asset/dto/upload-catalogue-image.dto';
 import { UpdateTicketTypePresentationDto } from './dto/update-ticket-type-presentation.dto';
+import { UpdateTicketTypeAgePolicyDto } from './dto/update-ticket-type-age-policy.dto';
 
 interface AuthenticatedUser {
   organizationId: string;
@@ -122,6 +123,20 @@ export class TicketTypeController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.ticketTypeService.updatePresentation(
+      user.organizationId,
+      id,
+      data,
+    );
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/age-policy')
+  updateAgePolicy(
+    @Param('id') id: string,
+    @Body() data: UpdateTicketTypeAgePolicyDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ticketTypeService.updateAgePolicy(
       user.organizationId,
       id,
       data,

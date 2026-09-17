@@ -46,12 +46,17 @@ function sessionLabel(
   }).format(new Date(session.startDate))}`;
 }
 
+function defaultAgeForTicketType(
+  ticketType: PosCatalogue["ticketTypes"][number],
+) {
+  if (ticketType.maximumAge != null) return ticketType.maximumAge;
+  return ticketType.minimumAge ?? 18;
+}
+
 export default function PosPage() {
   const [saleMode, setSaleMode] = useState<
     "TICKETS" | "MERCHANDISE" | "TICKET_SERVICE"
-  >(
-    "TICKETS",
-  );
+  >("TICKETS");
   const [events, setEvents] = useState<GlacierEvent[]>([]);
   const [eventId, setEventId] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -163,6 +168,9 @@ export default function PosPage() {
   }
 
   function addTicket(ticketTypeId: string) {
+    const ticketType = catalogue?.ticketTypes.find(
+      ({ id }) => id === ticketTypeId,
+    );
     setParticipants((current) => {
       const ordinal = current.length + 1;
       return [
@@ -170,7 +178,7 @@ export default function PosPage() {
         {
           firstName: `Walk-up guest ${ordinal}`,
           lastName: "",
-          age: 18,
+          age: ticketType ? defaultAgeForTicketType(ticketType) : 18,
           ticketTypeId,
         },
       ];
@@ -451,7 +459,9 @@ export default function PosPage() {
                           <CatalogueImage
                             path={`/ticket-type/${ticketType.id}/image/${ticketType.imageAsset.id}`}
                             alt={ticketType.name}
-                            fallbackLabel={ticketType.tileLabel || ticketType.name}
+                            fallbackLabel={
+                              ticketType.tileLabel || ticketType.name
+                            }
                           />
                         </div>
                       ) : (
@@ -459,13 +469,18 @@ export default function PosPage() {
                           className="flex h-24 items-center justify-center px-3 text-center text-xl font-black tracking-wide text-white"
                           style={{ backgroundColor: ticketType.tileColor }}
                         >
-                          {ticketType.tileLabel || ticketType.name.toUpperCase()}
+                          {ticketType.tileLabel ||
+                            ticketType.name.toUpperCase()}
                         </span>
                       )}
                       <span className="flex items-center justify-between gap-2 p-3">
                         <span>
-                          <span className="block font-semibold">{ticketType.name}</span>
-                          <span className="block text-lg font-bold">{money(ticketType.price)}</span>
+                          <span className="block font-semibold">
+                            {ticketType.name}
+                          </span>
+                          <span className="block text-lg font-bold">
+                            {money(ticketType.price)}
+                          </span>
                         </span>
                         <Plus className="size-6" />
                       </span>
@@ -478,7 +493,8 @@ export default function PosPage() {
                 <section className="rounded-xl border bg-card p-5 shadow-sm">
                   <h2 className="text-xl font-semibold">Ticket details</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Participant names are not required. Confirm age only where an Event Rule depends on it.
+                    Participant names are not required. Confirm age only where
+                    an Event Rule depends on it.
                   </p>
                   <div className="mt-4 space-y-3">
                     {participants.map((participant, index) => {
@@ -492,7 +508,9 @@ export default function PosPage() {
                         >
                           <div>
                             <p className="font-semibold">{ticketType?.name}</p>
-                            <p className="text-sm text-muted-foreground">Ticket {index + 1}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Ticket {index + 1}
+                            </p>
                           </div>
                           <label className="text-sm">
                             Age
@@ -630,8 +648,13 @@ export default function PosPage() {
                     (participant) => participant.ticketTypeId === ticketType.id,
                   ).length;
                   return quantity ? (
-                    <div key={ticketType.id} className="flex justify-between gap-3">
-                      <span>{quantity} × {ticketType.name}</span>
+                    <div
+                      key={ticketType.id}
+                      className="flex justify-between gap-3"
+                    >
+                      <span>
+                        {quantity} × {ticketType.name}
+                      </span>
                       <span>{money(Number(ticketType.price) * quantity)}</span>
                     </div>
                   ) : null;
@@ -639,7 +662,8 @@ export default function PosPage() {
               </div>
               <p className="text-3xl font-bold">{money(estimatedTotal)}</p>
               <p className="border-t pt-4 text-sm text-muted-foreground">
-                No purchaser or participant names are required for an ordinary walk-up sale.
+                No purchaser or participant names are required for an ordinary
+                walk-up sale.
               </p>
               <Button
                 className="w-full"

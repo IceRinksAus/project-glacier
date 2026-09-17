@@ -10,6 +10,8 @@ export interface TicketType {
   active: boolean;
   tileLabel: string | null;
   tileColor: string;
+  minimumAge: number | null;
+  maximumAge: number | null;
   imageAsset: CatalogueAsset | null;
   saleStart: string | null;
   saleEnd: string | null;
@@ -24,6 +26,8 @@ export interface CreateTicketType {
   active: boolean;
   tileLabel?: string;
   tileColor?: string;
+  minimumAge?: number;
+  maximumAge?: number;
 }
 
 export const ticketTypeService = {
@@ -39,6 +43,11 @@ export const ticketTypeService = {
     ticketTypeId: string,
     data: { tileLabel?: string; tileColor: string },
   ) => api.patch<TicketType>(`/ticket-type/${ticketTypeId}/presentation`, data),
+
+  updateAgePolicy: (
+    ticketTypeId: string,
+    data: { minimumAge: number | null; maximumAge: number | null },
+  ) => api.patch<TicketType>(`/ticket-type/${ticketTypeId}/age-policy`, data),
 
   uploadImage: (ticketTypeId: string, file: File) => {
     const form = new FormData();

@@ -759,6 +759,9 @@ model TicketType {
   tileLabel String?
   tileColor String  @default("#0B6CE3")
 
+  minimumAge Int?
+  maximumAge Int?
+
   imageAssetId String?    @unique
   imageAsset   FileAsset? @relation("TicketTypeImage", fields: [imageAssetId], references: [id])
 

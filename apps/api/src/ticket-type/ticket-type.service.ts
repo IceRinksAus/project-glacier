@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketTypeDto } from './dto/create-ticket-type.dto';
 import { UpdateTicketTypePresentationDto } from './dto/update-ticket-type-presentation.dto';
+import { UpdateTicketTypeAgePolicyDto } from './dto/update-ticket-type-age-policy.dto';
 
 @Injectable()
 export class TicketTypeService {
@@ -34,6 +39,7 @@ export class TicketTypeService {
   }
 
   async create(organizationId: string, data: CreateTicketTypeDto) {
+    this.assertValidAgePolicy(data.minimumAge, data.maximumAge);
     const event = await this.prisma.event.findFirst({
       where: {
         id: data.eventId,
@@ -56,6 +62,37 @@ export class TicketTypeService {
         saleEnd: data.saleEnd ? new Date(data.saleEnd) : undefined,
       },
     });
+  }
+
+  async updateAgePolicy(
+    organizationId: string,
+    id: string,
+    data: UpdateTicketTypeAgePolicyDto,
+  ) {
+    this.assertValidAgePolicy(data.minimumAge, data.maximumAge);
+    const ticketType = await this.prisma.ticketType.findFirst({
+      where: { id, event: { organizationId } },
+      select: { id: true },
+    });
+    if (!ticketType) throw new NotFoundException('Ticket Type not found');
+    return this.prisma.ticketType.update({
+      where: { id },
+      data: {
+        minimumAge: data.minimumAge ?? null,
+        maximumAge: data.maximumAge ?? null,
+      },
+    });
+  }
+
+  private assertValidAgePolicy(
+    minimumAge?: number | null,
+    maximumAge?: number | null,
+  ) {
+    if (minimumAge != null && maximumAge != null && minimumAge > maximumAge) {
+      throw new BadRequestException(
+        'Minimum age must not be greater than maximum age',
+      );
+    }
   }
 
   async updatePresentation(

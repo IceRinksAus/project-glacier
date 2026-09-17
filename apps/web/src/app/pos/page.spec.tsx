@@ -79,6 +79,8 @@ const catalogue = {
       price: 24,
       tileLabel: "ADULT",
       tileColor: "#0B6CE3",
+      minimumAge: 18,
+      maximumAge: null,
       imageAsset: null,
       saleStart: null,
       saleEnd: null,
@@ -155,12 +157,52 @@ describe("PosPage", () => {
 
   it("adds an ordinary walk-up Ticket without participant name fields", async () => {
     render(<PosPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Use recommendation" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Add Ticket Adult" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Use recommendation" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add Ticket Adult" }),
+    );
 
     expect(screen.queryByLabelText("First name")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Last name")).not.toBeInTheDocument();
     expect(screen.getByText("1 × Adult")).toBeInTheDocument();
     expect(screen.getAllByText("$24.00").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Age")).toHaveValue(18);
+  });
+
+  it("uses a valid configured Ticket Type age instead of a universal age", async () => {
+    getCatalogue.mockResolvedValue({
+      ...catalogue,
+      ticketTypes: [
+        {
+          ...catalogue.ticketTypes[0],
+          id: "toddler",
+          name: "Toddler",
+          minimumAge: 0,
+          maximumAge: 4,
+        },
+        {
+          ...catalogue.ticketTypes[0],
+          id: "child",
+          name: "Child",
+          minimumAge: 5,
+          maximumAge: 14,
+        },
+      ],
+    });
+    render(<PosPage />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Use recommendation" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add Ticket Toddler" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add Ticket Child" }),
+    );
+
+    expect(screen.getAllByLabelText("Age")[0]).toHaveValue(4);
+    expect(screen.getAllByLabelText("Age")[1]).toHaveValue(14);
   });
 });

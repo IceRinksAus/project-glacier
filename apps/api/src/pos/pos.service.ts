@@ -87,6 +87,8 @@ export class PosService {
           price: true,
           tileLabel: true,
           tileColor: true,
+          minimumAge: true,
+          maximumAge: true,
           imageAsset: { select: { id: true } },
           saleStart: true,
           saleEnd: true,

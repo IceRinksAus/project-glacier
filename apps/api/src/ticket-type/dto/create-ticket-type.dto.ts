@@ -7,6 +7,7 @@ import {
   IsString,
   Matches,
   MaxLength,
+  Max,
   Min,
   MinLength,
 } from 'class-validator';
@@ -50,6 +51,18 @@ export class CreateTicketTypeDto {
   @IsString()
   @Matches(/^#[0-9A-Fa-f]{6}$/)
   tileColor?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(130)
+  minimumAge?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(130)
+  maximumAge?: number;
 
   @IsOptional()
   @IsDateString()

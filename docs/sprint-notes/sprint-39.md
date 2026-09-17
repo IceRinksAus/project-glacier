@@ -83,3 +83,21 @@ rescheduling, Flexible Tickets, POS and Scanner foundations were not weakened.
 Managed production secrets, deployed infrastructure, monitoring, media
 delivery, real Zebra/Android/iOS/POS device validation and independent
 accessibility, legal, privacy and security review remain future evidence.
+
+## Post-closeout POS age correction — 18 September 2026
+
+Operator review identified that walk-up POS assigned age 18 to every Ticket
+Type. Ticket Types did not previously persist an age range, so this could make
+an age-sensitive required-Product Rule evaluate against an unsuitable default.
+
+Ticket Types now support optional OWNER-managed minimum and maximum ages with
+API and database validation. POS selects a valid representative age when a tile
+is tapped: it uses the configured maximum where present (for example Toddler
+0–4 becomes 4 and Child 5–14 becomes 14), otherwise the configured minimum
+(Adult 18+ becomes 18). Staff can still correct the age before reservation when
+the actual age matters. Unconfigured legacy Ticket Types retain the compatible
+age-18 fallback rather than inferring policy from their names.
+
+The follow-up release gate passed with 50 migrations, 92 API suites / 663 tests,
+37 web files / 112 tests, both production builds and 5 of 5 disposable
+tenant/role/Event/MFA isolation checks.
