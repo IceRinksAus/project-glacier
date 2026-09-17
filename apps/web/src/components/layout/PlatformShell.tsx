@@ -12,7 +12,9 @@ export function PlatformShell({
 }: PlatformShellProps) {
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="print:hidden"><PlatformSidebar /></div>
+      <div className="hidden shrink-0 self-stretch bg-sidebar print:hidden lg:flex">
+        <PlatformSidebar />
+      </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="print:hidden"><PlatformTopBar /></div>

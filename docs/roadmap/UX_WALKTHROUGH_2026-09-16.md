@@ -46,7 +46,12 @@
 
 - Organiser surfaces should provide Gate Entry configuration, readiness and
   operating guidance, not promote desktop scanning.
+- The organiser-facing Staff Scanner navigation item should retain the standard
+  dashboard shell and open a configuration/how-it-works workspace covering
+  device onboarding, Event assignment, credential status and operating guidance.
 - Zebra/Android/iOS users should sign in directly to the dedicated scanner.
+- Dedicated SCANNER credentials should continue to bypass the organiser shell
+  and land directly in the full-screen scanner-only interface.
 - Current scanner interaction is close to the intended direction; real-device
   evidence remains required for camera/reader behavior, outdoor visibility,
   poor connectivity and rapid/duplicate scans.
@@ -65,4 +70,3 @@
 - Sprint 37: Products redesign plus Bookings/Customers lookup UX.
 - Sprint 38: touch-first POS and scanner-connected Ticket service.
 - Sprint 39: Settings, Reports, Website, Waiver and Gate Entry deep dives.
-

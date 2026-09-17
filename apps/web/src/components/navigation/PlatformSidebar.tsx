@@ -68,7 +68,7 @@ export function PlatformSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:flex-col">
+    <aside className="hidden min-h-screen w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:h-full lg:flex-col">
       <div className="flex h-16 items-center border-b border-sidebar-border px-5">
         <Link href="/" className="flex items-center gap-2.5 text-lg font-bold tracking-[0.08em]">
           <Image src="/glacier-mark.svg" width={32} height={26} alt="" priority />
