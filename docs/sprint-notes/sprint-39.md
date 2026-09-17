@@ -117,3 +117,18 @@ read-only and there is no bulk-admit shortcut. Organisation, Event assignment,
 entry-window, cancellation, duplicate-scan and atomic admission checks remain in
 the shared Scanner authority. Signed QR credentials preserve their original
 case so their MAC is not altered by the browser.
+
+Operator discussion established the next POS usability decision. A family
+adding a dependent guest after its first purchase should use a planned **Add to
+existing visit** flow. Glacier will use a scanned Ticket or Booking number to
+recognise the same Event/Session and qualifying earlier Adult Ticket, then issue
+and charge for the new Young Child Ticket and required Kanga without repeating
+customer setup. This keeps the fast path to a scan, one tile and payment while
+still consuming capacity and preserving admission/reporting evidence.
+
+A future Manager exception is a secondary fallback, not a general Rule bypass.
+It requires re-authenticated OWNER/authorised-MANAGER approval, a reason and
+attributable audit evidence, and can apply only to Rules explicitly marked as
+overridable. Capacity, inventory, pricing, Payment, tenant/Event access and
+admission safety remain non-overridable. This decision is documented but not
+implemented in Sprint 39.

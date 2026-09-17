@@ -41,6 +41,15 @@
   individual-Ticket admission. Lookup must not itself consume a Ticket.
 - Preserve shared Rules, pricing, capacity, inventory, Payment and audit
   authority, with tenant/role/Event checks unchanged.
+- Add a queue-friendly **Add to existing visit** path: scan an existing Ticket
+  or enter its Booking number, inherit the verified Event/Session and qualifying
+  companion evidence, tap the additional Ticket and take payment. A dependent
+  guest must still receive a Ticket and consume capacity; selling only the
+  required Product is not an acceptable substitute.
+- Keep Manager Rule exceptions secondary and bounded: re-authenticated
+  OWNER/authorised-MANAGER approval, mandatory reason and attributable audit.
+  Rules opt into override individually; capacity, inventory, pricing, Payment,
+  tenant/Event access and admission controls remain non-overridable.
 
 ## Scanner
 

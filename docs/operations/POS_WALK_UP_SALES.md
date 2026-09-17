@@ -43,18 +43,62 @@ The server remains authoritative for:
 
 The browser evaluates Rules before reservation and adds the required Product quantity once. The Booking engine evaluates the Rules again. A browser omission or modification therefore cannot bypass the requirement.
 
+## Planned fast follow-up sale
+
+**Status:** Agreed product/operating decision; not yet implemented.
+
+The normal solution for a dependent guest joining an existing group must be a
+fast linked follow-up sale, not a broad Rule bypass. The target counter flow is:
+
+1. tap **Add to existing visit**;
+2. scan any existing family Ticket or enter its Booking number;
+3. let Glacier identify the authorised Event, Session and qualifying earlier
+   Ticket evidence;
+4. tap the additional Ticket Type, such as **Young Child**;
+5. automatically add required Products, such as a Kanga, and show the complete
+   total; and
+6. take payment and issue the new Ticket.
+
+The prior qualifying Ticket may already be admitted. It still provides evidence
+that the group purchased the required accompanying admission for the same Event
+and Session. The new dependent Ticket must create its own admission authority,
+consume Session capacity and retain its own Product, Payment, reporting and any
+Waiver evidence.
+
+Selling only the required Product is not an acceptable substitute when the new
+guest will participate. Although the price may happen to match, that workaround
+would omit capacity, Ticket issuance, attendance and Ticket-specific evidence.
+
+The speed target is one scan or Booking-number entry, one Ticket tile and
+payment. The Event and Session should carry forward from the verified earlier
+purchase without asking staff to re-enter customer details.
+
+### Bounded Manager exception
+
+A Manager exception may be added for genuine cases where qualifying earlier
+evidence cannot be located. It must not be a general **Ignore Rules** control.
+
+- Only OWNER or an authorised MANAGER may approve it.
+- Approval must re-authenticate the approver without signing out the POS
+  operator; no shared override PIN is permitted.
+- A reason is mandatory and the overridden Rule, operator, approver, Event,
+  time and affected sale must be recorded.
+- Each Rule must explicitly declare whether it is overridable.
+- Capacity, inventory, server pricing, Payment completion, tenant/Event access,
+  cancelled Tickets, admission windows and atomic admission are never
+  overridable through this workflow.
+
+This exception remains secondary. The linked follow-up sale is the intended
+queue-friendly everyday path.
+
 ## Customer and Participant Details
 
-POS does not request a separate purchaser name, email address or phone number.
-
-Participant details remain because they may be required for:
-
-- Ticket identity and presentation;
-- age-based Ticket and Product Rules;
-- Waiver handoff; and
-- staff lookup and customer assistance.
-
-The first participant name is reused as the internal Booking lookup identity. No invented email address or additional purchaser identity is required. Online booking continues to collect and validate purchaser details under its existing contract.
+POS does not request purchaser or participant names for an ordinary walk-up
+sale. It stores bounded non-personal walk-up labels. Ticket Type age ranges
+provide a valid initial Rule input, and staff can correct age where an Event
+Rule genuinely depends on the guest's actual age. No invented email address or
+phone number is required. Online booking continues to collect and validate
+purchaser details under its existing contract.
 
 ## Reservation
 
