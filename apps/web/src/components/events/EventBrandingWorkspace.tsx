@@ -150,9 +150,11 @@ export function EventBrandingWorkspace({
               <Button variant="outline" onClick={() => void copyPublicUrl()}>
                 Copy public URL
               </Button>
-              <a className={buttonVariants({ variant: "outline" })} href={publicUrl} target="_blank" rel="noreferrer">Open public site</a>
+              <a className={buttonVariants({ variant: "outline" })} href={publicUrl} target="_blank" rel="noreferrer">Open live website</a>
             </div>
-          ) : null}
+          ) : (
+            <a className={buttonVariants({ variant: "outline" })} href="#website-design-preview">Preview design</a>
+          )}
         </div>
 
         {isPublished ? (
@@ -168,6 +170,12 @@ export function EventBrandingWorkspace({
         )}
 
         {!canEdit ? <p className="mt-4 rounded-lg bg-muted p-3 text-sm">Members can preview branding. Only an owner can change it.</p> : null}
+
+        <div className="mt-4 grid gap-2 sm:grid-cols-3" aria-label="Website readiness">
+          <ReadinessState label="Event logo" ready={Boolean(logo)} />
+          <ReadinessState label="Hero image" ready={Boolean(hero)} />
+          <ReadinessState label="Hero copy" ready={Boolean(branding.heroHeadline?.trim() || eventName)} />
+        </div>
 
         <fieldset disabled={!canEdit || busy} className="mt-6 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -219,7 +227,7 @@ export function EventBrandingWorkspace({
         {error ? <p role="alert" className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
       </section>
 
-      <section className="rounded-xl border bg-card p-5 shadow-sm">
+      <section id="website-design-preview" className="scroll-mt-6 rounded-xl border bg-card p-5 shadow-sm">
         <p className="text-sm font-medium">{isPublished ? "Public website preview" : "Authenticated design preview"}</p>
         <div className="mt-3 overflow-hidden rounded-2xl border" style={{ backgroundColor: branding.backgroundColor, color: branding.textColor }}>
           <div className="relative min-h-80 p-7" style={{ backgroundColor: branding.primaryColor, color: branding.backgroundColor }}>
@@ -236,5 +244,13 @@ export function EventBrandingWorkspace({
         </div>
       </section>
     </div>
+  );
+}
+
+function ReadinessState({ label, ready }: { label: string; ready: boolean }) {
+  return (
+    <p className={`rounded-lg border p-3 text-sm ${ready ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+      <strong>{label}:</strong> {ready ? "Ready" : "Needs attention"}
+    </p>
   );
 }

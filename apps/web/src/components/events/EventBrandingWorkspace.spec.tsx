@@ -77,8 +77,9 @@ describe("EventBrandingWorkspace", () => {
 
     expect(screen.getByText("Private draft preview")).toBeVisible();
     expect(screen.getByText("Authenticated design preview")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Preview design" })).toHaveAttribute("href", "#website-design-preview");
     expect(screen.queryByRole("button", { name: "Copy public URL" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Open public site" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Open live website" })).not.toBeInTheDocument();
   });
 
   it("uses the current web origin for an active Event public URL", async () => {
@@ -86,7 +87,7 @@ describe("EventBrandingWorkspace", () => {
 
     expect(screen.getByText("Public website is live")).toBeVisible();
     expect(screen.getByText(`${window.location.origin}/event/winter-night`)).toBeVisible();
-    expect(screen.getByRole("link", { name: "Open public site" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open live website" })).toHaveAttribute(
       "href",
       `${window.location.origin}/event/winter-night`,
     );

@@ -5,8 +5,7 @@ import Link from "next/link";
 import { use } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
-import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
-import { EventFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
+import { EventSettingsWorkspace } from "@/components/events/EventSettingsWorkspace";
 import { EventOverview } from "@/components/events/EventOverview";
 import { EventBrandingWorkspace } from "@/components/events/EventBrandingWorkspace";
 import { EventTabs, parseEventTab } from "@/components/events/EventTabs";
@@ -126,18 +125,7 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Settings" ? (
-              <div className="space-y-6">
-                <EventFlexibleTicketSettings eventId={event.id} />
-                <EventEntryPolicySettings
-                  eventId={event.id}
-                  initialOpensMinutesBeforeStart={
-                    event.entryOpensMinutesBeforeStart
-                  }
-                  initialClosesMinutesAfterEnd={
-                    event.entryClosesMinutesAfterEnd
-                  }
-                />
-              </div>
+              <EventSettingsWorkspace event={event} onNavigate={selectTab} />
             ) : null}
 
             {activeTab === "Reports" ? (
