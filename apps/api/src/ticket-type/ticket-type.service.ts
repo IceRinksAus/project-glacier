@@ -17,6 +17,14 @@ export class TicketTypeService {
       },
       include: {
         event: true,
+        imageAsset: {
+          select: {
+            id: true,
+            displayName: true,
+            width: true,
+            height: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'asc',

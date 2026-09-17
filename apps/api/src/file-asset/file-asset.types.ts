@@ -22,3 +22,14 @@ export interface CreateBrandingAssetInput {
   displayName?: string;
   file: BrandingImageUpload;
 }
+
+export type CatalogueAssetTarget = 'PRODUCT' | 'TICKET_TYPE';
+
+export interface CreateCatalogueAssetInput {
+  target: CatalogueAssetTarget;
+  targetId: string;
+  organizationId: string;
+  userId: string;
+  displayName?: string;
+  file: BrandingImageUpload;
+}

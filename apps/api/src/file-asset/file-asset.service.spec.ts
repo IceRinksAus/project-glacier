@@ -37,9 +37,13 @@ describe('FileAssetService', () => {
   const transaction = {
     eventBranding: { findUnique: jest.fn(), upsert: jest.fn() },
     fileAsset: { create: jest.fn(), update: jest.fn() },
+    product: { findUnique: jest.fn(), update: jest.fn() },
+    ticketType: { findUnique: jest.fn(), update: jest.fn() },
   };
   const prisma = {
     event: { findFirst: jest.fn() },
+    product: { findFirst: jest.fn() },
+    ticketType: { findFirst: jest.fn() },
     fileAsset: { findFirst: jest.fn() },
     $transaction: jest.fn((callback: (client: typeof transaction) => unknown) =>
       callback(transaction),
@@ -226,7 +230,9 @@ describe('FileAssetService', () => {
 
     await expect(
       service.getPublicBrandingAsset('active-event', 'asset-1'),
-    ).resolves.toEqual(expect.objectContaining({ content: Buffer.from('image') }));
+    ).resolves.toEqual(
+      expect.objectContaining({ content: Buffer.from('image') }),
+    );
     expect(prisma.event.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -247,5 +253,111 @@ describe('FileAssetService', () => {
       service.getPublicBrandingAsset('inactive-event', 'old-asset'),
     ).rejects.toThrow('Branding asset not found');
     expect(storage.get).not.toHaveBeenCalled();
+  });
+
+  it('stores and connects a tenant-owned Product image', async () => {
+    prisma.product.findFirst.mockResolvedValue({
+      id: 'product-1',
+      eventId: 'event-1',
+    });
+    transaction.product.findUnique.mockResolvedValue(null);
+    transaction.fileAsset.create.mockResolvedValue({ id: 'asset-1' });
+
+    await service.createCatalogueAsset({
+      target: 'PRODUCT',
+      targetId: 'product-1',
+      organizationId: 'organization-1',
+      userId: 'user-1',
+      displayName: 'Blue Kanga',
+      file: logoFile(),
+    });
+
+    expect(prisma.product.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'product-1',
+        event: { organizationId: 'organization-1' },
+      },
+      select: { id: true, eventId: true },
+    });
+    expect(transaction.fileAsset.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purpose: FileAssetPurpose.PRODUCT_IMAGE,
+        eventId: 'event-1',
+        displayName: 'Blue Kanga',
+      }),
+    });
+    expect(transaction.product.update).toHaveBeenCalledWith({
+      where: { id: 'product-1' },
+      data: { imageAssetId: 'asset-1' },
+    });
+  });
+
+  it('does not store a catalogue image for another tenant item', async () => {
+    prisma.ticketType.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.createCatalogueAsset({
+        target: 'TICKET_TYPE',
+        targetId: 'ticket-type-1',
+        organizationId: 'organization-2',
+        userId: 'user-2',
+        file: logoFile(),
+      }),
+    ).rejects.toThrow('Catalogue item not found');
+    expect(storage.put).not.toHaveBeenCalled();
+  });
+
+  it('serves only the selected tenant-owned catalogue image', async () => {
+    prisma.fileAsset.findFirst.mockResolvedValue({
+      storageKey: 'catalogue-images/org/event/asset.png',
+      mimeType: 'image/png',
+      displayName: 'Kanga',
+      checksum: 'checksum',
+    });
+    storage.get.mockResolvedValue(Buffer.from('image'));
+
+    await service.getCatalogueAsset(
+      'PRODUCT',
+      'product-1',
+      'asset-1',
+      'organization-1',
+    );
+
+    expect(prisma.fileAsset.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'asset-1',
+          organizationId: 'organization-1',
+          purpose: 'PRODUCT_IMAGE',
+          usedAsProduct: { id: 'product-1' },
+        }),
+      }),
+    );
+  });
+
+  it('disconnects and retires a selected Product image before cleanup', async () => {
+    prisma.product.findFirst.mockResolvedValue({
+      id: 'product-1',
+      imageAssetId: 'asset-1',
+      imageAsset: { storageKey: 'catalogue-images/org/event/asset.png' },
+    });
+
+    await service.removeCatalogueAsset(
+      'PRODUCT',
+      'product-1',
+      'organization-1',
+    );
+
+    expect(transaction.product.update).toHaveBeenCalledWith({
+      where: { id: 'product-1' },
+      data: { imageAssetId: null },
+    });
+    expect(transaction.fileAsset.update).toHaveBeenCalledWith({
+      where: { id: 'asset-1' },
+      data: { status: 'REPLACED' },
+    });
+    expect(storage.remove).toHaveBeenCalledWith(
+      'catalogue-images/org/event/asset.png',
+    );
   });
 });

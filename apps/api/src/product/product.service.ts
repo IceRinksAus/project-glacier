@@ -13,10 +13,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    organizationId: string,
-    createProductDto: CreateProductDto,
-  ) {
+  async create(organizationId: string, createProductDto: CreateProductDto) {
     const {
       eventId,
       categoryId,
@@ -37,9 +34,7 @@ export class ProductService {
     });
 
     if (!event) {
-      throw new NotFoundException(
-        'Event was not found in your organization.',
-      );
+      throw new NotFoundException('Event was not found in your organization.');
     }
 
     if (categoryId) {
@@ -54,9 +49,7 @@ export class ProductService {
       });
 
       if (!category) {
-        throw new NotFoundException(
-          'Category was not found for this event.',
-        );
+        throw new NotFoundException('Category was not found for this event.');
       }
     }
 
@@ -93,19 +86,13 @@ export class ProductService {
 
     const tracksInventory = inventoryTracked ?? false;
 
-    if (
-      tracksInventory &&
-      inventoryQuantity === undefined
-    ) {
+    if (tracksInventory && inventoryQuantity === undefined) {
       throw new BadRequestException(
         'inventoryQuantity is required when inventoryTracked is true.',
       );
     }
 
-    if (
-      !tracksInventory &&
-      inventoryQuantity !== undefined
-    ) {
+    if (!tracksInventory && inventoryQuantity !== undefined) {
       throw new BadRequestException(
         'inventoryQuantity can only be supplied when inventoryTracked is true.',
       );
@@ -113,19 +100,13 @@ export class ProductService {
 
     const controlsCapacity = capacityControlled ?? false;
 
-    if (
-      controlsCapacity &&
-      capacity === undefined
-    ) {
+    if (controlsCapacity && capacity === undefined) {
       throw new BadRequestException(
         'capacity is required when capacityControlled is true.',
       );
     }
 
-    if (
-      !controlsCapacity &&
-      capacity !== undefined
-    ) {
+    if (!controlsCapacity && capacity !== undefined) {
       throw new BadRequestException(
         'capacity can only be supplied when capacityControlled is true.',
       );
@@ -133,10 +114,7 @@ export class ProductService {
 
     const minimumQuantity = minQuantity ?? 0;
 
-    if (
-      maxQuantity !== undefined &&
-      maxQuantity < minimumQuantity
-    ) {
+    if (maxQuantity !== undefined && maxQuantity < minimumQuantity) {
       throw new BadRequestException(
         'maxQuantity cannot be less than minQuantity.',
       );
@@ -151,9 +129,7 @@ export class ProductService {
         eventId: event.id,
         categoryId,
         inventoryTracked: tracksInventory,
-        inventoryQuantity: tracksInventory
-          ? inventoryQuantity
-          : null,
+        inventoryQuantity: tracksInventory ? inventoryQuantity : null,
         capacityControlled: controlsCapacity,
         capacity: controlsCapacity ? capacity : null,
         minQuantity: minimumQuantity,
@@ -161,6 +137,14 @@ export class ProductService {
       },
       include: {
         category: true,
+        imageAsset: {
+          select: {
+            id: true,
+            displayName: true,
+            width: true,
+            height: true,
+          },
+        },
         variants: true,
         sessionProducts: true,
       },
@@ -179,6 +163,14 @@ export class ProductService {
         event: true,
         category: true,
         productGroup: true,
+        imageAsset: {
+          select: {
+            id: true,
+            displayName: true,
+            width: true,
+            height: true,
+          },
+        },
         variants: {
           orderBy: [
             {
@@ -206,10 +198,7 @@ export class ProductService {
     });
   }
 
-  async findOne(
-    id: string,
-    organizationId: string,
-  ) {
+  async findOne(id: string, organizationId: string) {
     const product = await this.prisma.product.findFirst({
       where: {
         id,
@@ -218,6 +207,14 @@ export class ProductService {
         },
       },
       include: {
+        imageAsset: {
+          select: {
+            id: true,
+            displayName: true,
+            width: true,
+            height: true,
+          },
+        },
         event: true,
         category: true,
         productGroup: true,
@@ -252,18 +249,17 @@ export class ProductService {
     organizationId: string,
     updateProductDto: UpdateProductDto,
   ) {
-    const existingProduct =
-      await this.prisma.product.findFirst({
-        where: {
-          id,
-          event: {
-            organizationId,
-          },
+    const existingProduct = await this.prisma.product.findFirst({
+      where: {
+        id,
+        event: {
+          organizationId,
         },
-        include: {
-          event: true,
-        },
-      });
+      },
+      include: {
+        event: true,
+      },
+    });
 
     if (!existingProduct) {
       throw new NotFoundException('Product not found.');
@@ -281,15 +277,11 @@ export class ProductService {
       });
 
       if (!category) {
-        throw new NotFoundException(
-          'Category was not found for this event.',
-        );
+        throw new NotFoundException('Category was not found for this event.');
       }
     }
 
-    const slug =
-      updateProductDto.slug?.trim() ??
-      existingProduct.slug;
+    const slug = updateProductDto.slug?.trim() ?? existingProduct.slug;
 
     const duplicateSlug = await this.prisma.product.findFirst({
       where: {
@@ -331,72 +323,54 @@ export class ProductService {
     }
 
     const inventoryTracked =
-      updateProductDto.inventoryTracked ??
-      existingProduct.inventoryTracked;
+      updateProductDto.inventoryTracked ?? existingProduct.inventoryTracked;
 
     const inventoryQuantity =
       updateProductDto.inventoryQuantity !== undefined
         ? updateProductDto.inventoryQuantity
         : existingProduct.inventoryQuantity;
 
-    if (
-      inventoryTracked &&
-      inventoryQuantity === null
-    ) {
+    if (inventoryTracked && inventoryQuantity === null) {
       throw new BadRequestException(
         'inventoryQuantity is required when inventoryTracked is true.',
       );
     }
 
-    if (
-      !inventoryTracked &&
-      updateProductDto.inventoryQuantity !== undefined
-    ) {
+    if (!inventoryTracked && updateProductDto.inventoryQuantity !== undefined) {
       throw new BadRequestException(
         'inventoryQuantity can only be supplied when inventoryTracked is true.',
       );
     }
 
     const capacityControlled =
-      updateProductDto.capacityControlled ??
-      existingProduct.capacityControlled;
+      updateProductDto.capacityControlled ?? existingProduct.capacityControlled;
 
     const capacity =
       updateProductDto.capacity !== undefined
         ? updateProductDto.capacity
         : existingProduct.capacity;
 
-    if (
-      capacityControlled &&
-      capacity === null
-    ) {
+    if (capacityControlled && capacity === null) {
       throw new BadRequestException(
         'capacity is required when capacityControlled is true.',
       );
     }
 
-    if (
-      !capacityControlled &&
-      updateProductDto.capacity !== undefined
-    ) {
+    if (!capacityControlled && updateProductDto.capacity !== undefined) {
       throw new BadRequestException(
         'capacity can only be supplied when capacityControlled is true.',
       );
     }
 
     const minQuantity =
-      updateProductDto.minQuantity ??
-      existingProduct.minQuantity;
+      updateProductDto.minQuantity ?? existingProduct.minQuantity;
 
     const maxQuantity =
       updateProductDto.maxQuantity !== undefined
         ? updateProductDto.maxQuantity
         : existingProduct.maxQuantity;
 
-    if (
-      maxQuantity !== null &&
-      maxQuantity < minQuantity
-    ) {
+    if (maxQuantity !== null && maxQuantity < minQuantity) {
       throw new BadRequestException(
         'maxQuantity cannot be less than minQuantity.',
       );
@@ -408,22 +382,14 @@ export class ProductService {
       },
       data: {
         ...updateProductDto,
-        name:
-          updateProductDto.name?.trim() ??
-          existingProduct.name,
+        name: updateProductDto.name?.trim() ?? existingProduct.name,
         slug,
         sku,
-        categoryId:
-          updateProductDto.categoryId ??
-          existingProduct.categoryId,
+        categoryId: updateProductDto.categoryId ?? existingProduct.categoryId,
         inventoryTracked,
-        inventoryQuantity: inventoryTracked
-          ? inventoryQuantity
-          : null,
+        inventoryQuantity: inventoryTracked ? inventoryQuantity : null,
         capacityControlled,
-        capacity: capacityControlled
-          ? capacity
-          : null,
+        capacity: capacityControlled ? capacity : null,
         minQuantity,
         maxQuantity,
       },
@@ -503,14 +469,8 @@ export class ProductService {
     });
   }
 
-  async remove(
-    id: string,
-    organizationId: string,
-  ) {
-    const product = await this.findOne(
-      id,
-      organizationId,
-    );
+  async remove(id: string, organizationId: string) {
+    const product = await this.findOne(id, organizationId);
 
     if (product.variants.length > 0) {
       throw new BadRequestException(

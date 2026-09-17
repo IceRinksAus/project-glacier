@@ -7,8 +7,14 @@ import {
   Patch,
   Post,
   Query,
+  Res,
+  StreamableFile,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,6 +26,9 @@ import { ListProductsQueryDto } from './dto/list-products-query.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 import { ProductService } from './product.service';
+import { FileAssetService } from '../file-asset/file-asset.service';
+import type { BrandingImageUpload } from '../file-asset/file-asset.types';
+import { UploadCatalogueImageDto } from '../file-asset/dto/upload-catalogue-image.dto';
 
 interface AuthenticatedUser {
   userId: string;
@@ -31,7 +40,10 @@ interface AuthenticatedUser {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('product')
 export class ProductController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly fileAssetService: FileAssetService,
+  ) {}
 
   @Roles('OWNER')
   @Post()
@@ -39,10 +51,7 @@ export class ProductController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() createProductDto: CreateProductDto,
   ) {
-    return this.productService.create(
-      user.organizationId,
-      createProductDto,
-    );
+    return this.productService.create(user.organizationId, createProductDto);
   }
 
   @Get()
@@ -53,15 +62,65 @@ export class ProductController {
     return this.productService.findAll(user.organizationId, query.eventId);
   }
 
-  @Get(':id')
-  findOne(
+  @Roles('OWNER')
+  @Post(':id/image')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }),
+  )
+  uploadImage(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UploadCatalogueImageDto,
+    @UploadedFile() file: BrandingImageUpload,
   ) {
-    return this.productService.findOne(
+    return this.fileAssetService.createCatalogueAsset({
+      target: 'PRODUCT',
+      targetId: id,
+      organizationId: user.organizationId,
+      userId: user.userId,
+      displayName: data.displayName,
+      file,
+    });
+  }
+
+  @Get(':id/image/:assetId')
+  async getImage(
+    @Param('id') id: string,
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const asset = await this.fileAssetService.getCatalogueAsset(
+      'PRODUCT',
+      id,
+      assetId,
+      user.organizationId,
+    );
+    response.set({
+      'Content-Type': asset.mimeType,
+      'Content-Disposition': 'inline',
+      'Cache-Control': 'private, max-age=300',
+      ETag: `"${asset.checksum}"`,
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return new StreamableFile(asset.content);
+  }
+
+  @Roles('OWNER')
+  @Delete(':id/image')
+  removeImage(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.fileAssetService.removeCatalogueAsset(
+      'PRODUCT',
       id,
       user.organizationId,
     );
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.productService.findOne(id, user.organizationId);
   }
 
   @Roles('OWNER')
@@ -94,13 +153,7 @@ export class ProductController {
 
   @Roles('OWNER')
   @Delete(':id')
-  remove(
-    @Param('id') id: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    return this.productService.remove(
-      id,
-      user.organizationId,
-    );
+  remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.productService.remove(id, user.organizationId);
   }
 }
