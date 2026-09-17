@@ -12,7 +12,9 @@ describe('TicketTypeService', () => {
     },
     ticketType: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
+      update: jest.fn(),
     },
   };
 
@@ -118,6 +120,28 @@ describe('TicketTypeService', () => {
         eventId: 'event-1',
         capacity: 0,
       }),
+    });
+  });
+
+  it('updates presentation only after tenant ownership is proven', async () => {
+    prismaMock.ticketType.findFirst.mockResolvedValue({ id: 'ticket-type-1' });
+    prismaMock.ticketType.update.mockResolvedValue({ id: 'ticket-type-1' });
+
+    await service.updatePresentation('organization-1', 'ticket-type-1', {
+      tileLabel: '  ADULT  ',
+      tileColor: '#0b6ce3',
+    });
+
+    expect(prismaMock.ticketType.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'ticket-type-1',
+        event: { organizationId: 'organization-1' },
+      },
+      select: { id: true },
+    });
+    expect(prismaMock.ticketType.update).toHaveBeenCalledWith({
+      where: { id: 'ticket-type-1' },
+      data: { tileLabel: 'ADULT', tileColor: '#0B6CE3' },
     });
   });
 });

@@ -9,6 +9,7 @@ describe('TicketTypeController', () => {
 
   const serviceMock = {
     findAll: jest.fn(),
+    updatePresentation: jest.fn(),
   };
   const fileAssetServiceMock = {
     createCatalogueAsset: jest.fn(),
@@ -72,5 +73,19 @@ describe('TicketTypeController', () => {
       displayName: 'Adult tile',
       file,
     });
+  });
+
+  it('passes presentation changes through trusted Organisation scope', () => {
+    controller.updatePresentation(
+      'ticket-type-1',
+      { tileLabel: 'ADULT', tileColor: '#0B6CE3' },
+      { organizationId: 'organization-1', userId: 'user-1' },
+    );
+
+    expect(serviceMock.updatePresentation).toHaveBeenCalledWith(
+      'organization-1',
+      'ticket-type-1',
+      { tileLabel: 'ADULT', tileColor: '#0B6CE3' },
+    );
   });
 });

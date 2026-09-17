@@ -35,6 +35,11 @@ export const ticketTypeService = {
   create: (data: CreateTicketType) =>
     api.post<TicketType>("/ticket-type", data),
 
+  updatePresentation: (
+    ticketTypeId: string,
+    data: { tileLabel?: string; tileColor: string },
+  ) => api.patch<TicketType>(`/ticket-type/${ticketTypeId}/presentation`, data),
+
   uploadImage: (ticketTypeId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);

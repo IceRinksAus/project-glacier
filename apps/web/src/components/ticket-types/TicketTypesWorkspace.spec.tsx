@@ -4,11 +4,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TicketTypesWorkspace } from "./TicketTypesWorkspace";
 
-const { authState, create, findForEvent, uploadImage } = vi.hoisted(() => ({
+const {
+  authState,
+  create,
+  findForEvent,
+  updatePresentation,
+  uploadImage,
+  removeImage,
+} = vi.hoisted(() => ({
   authState: { role: "OWNER" },
   create: vi.fn(),
   findForEvent: vi.fn(),
+  updatePresentation: vi.fn(),
   uploadImage: vi.fn(),
+  removeImage: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
@@ -18,7 +27,13 @@ vi.mock("@/lib/auth", () => ({
 }));
 
 vi.mock("@/services/ticket-type.service", () => ({
-  ticketTypeService: { create, findForEvent, uploadImage },
+  ticketTypeService: {
+    create,
+    findForEvent,
+    updatePresentation,
+    uploadImage,
+    removeImage,
+  },
 }));
 
 describe("TicketTypesWorkspace", () => {
@@ -27,7 +42,9 @@ describe("TicketTypesWorkspace", () => {
     authState.role = "OWNER";
     findForEvent.mockResolvedValue([]);
     create.mockResolvedValue({ id: "ticket-type-1" });
+    updatePresentation.mockResolvedValue({ id: "ticket-type-1" });
     uploadImage.mockResolvedValue({ id: "asset-1" });
+    removeImage.mockResolvedValue(undefined);
   });
 
   it("loads only the current Event Ticket Types", async () => {
@@ -91,6 +108,39 @@ describe("TicketTypesWorkspace", () => {
       await screen.findByText(/Session capacity remains the shared rink limit/),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Capacity")).not.toBeInTheDocument();
+  });
+
+  it("lets an OWNER update an existing Ticket Type appearance", async () => {
+    const user = userEvent.setup();
+    findForEvent.mockResolvedValue([
+      {
+        id: "ticket-type-1",
+        name: "Adult admission",
+        description: null,
+        price: "25.00",
+        capacity: 100,
+        active: true,
+        eventId: "event-1",
+        tileLabel: null,
+        tileColor: "#0B6CE3",
+        imageAsset: null,
+      },
+    ]);
+
+    render(
+      <TicketTypesWorkspace eventId="event-1" onReturnToReadiness={vi.fn()} />,
+    );
+
+    await user.click(await screen.findByText("Manage appearance"));
+    await user.type(screen.getByLabelText("Tile label"), "ADULT");
+    await user.click(screen.getByRole("button", { name: "Save appearance" }));
+
+    await waitFor(() =>
+      expect(updatePresentation).toHaveBeenCalledWith("ticket-type-1", {
+        tileLabel: "ADULT",
+        tileColor: "#0B6CE3",
+      }),
+    );
   });
 
   it("keeps MEMBER access read-only", async () => {

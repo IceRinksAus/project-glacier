@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketTypeDto } from './dto/create-ticket-type.dto';
+import { UpdateTicketTypePresentationDto } from './dto/update-ticket-type-presentation.dto';
 
 @Injectable()
 export class TicketTypeService {
@@ -53,6 +54,25 @@ export class TicketTypeService {
         capacity: data.capacity ?? 0,
         saleStart: data.saleStart ? new Date(data.saleStart) : undefined,
         saleEnd: data.saleEnd ? new Date(data.saleEnd) : undefined,
+      },
+    });
+  }
+
+  async updatePresentation(
+    organizationId: string,
+    id: string,
+    data: UpdateTicketTypePresentationDto,
+  ) {
+    const ticketType = await this.prisma.ticketType.findFirst({
+      where: { id, event: { organizationId } },
+      select: { id: true },
+    });
+    if (!ticketType) throw new NotFoundException('Ticket Type not found');
+    return this.prisma.ticketType.update({
+      where: { id },
+      data: {
+        tileLabel: data.tileLabel?.trim() || null,
+        tileColor: data.tileColor.toUpperCase(),
       },
     });
   }

@@ -29,6 +29,77 @@ function formatPrice(price: string | number) {
   }).format(Number(price));
 }
 
+function TicketTypePresentationEditor({
+  ticketType,
+  disabled,
+  onSave,
+  onUpload,
+  onRemoveImage,
+}: {
+  ticketType: TicketType;
+  disabled: boolean;
+  onSave: (label: string, color: string) => Promise<void>;
+  onUpload: (file?: File) => Promise<void>;
+  onRemoveImage: () => Promise<void>;
+}) {
+  const [label, setLabel] = useState(ticketType.tileLabel ?? "");
+  const [color, setColor] = useState(ticketType.tileColor || "#0B6CE3");
+  return (
+    <details className="mt-4 border-t pt-3 text-sm">
+      <summary className="cursor-pointer font-medium">Manage appearance</summary>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_90px]">
+        <label>
+          Tile label
+          <input
+            value={label}
+            maxLength={24}
+            onChange={(event) => setLabel(event.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border px-3"
+          />
+        </label>
+        <label>
+          Colour
+          <input
+            type="color"
+            value={color}
+            onChange={(event) => setColor(event.target.value.toUpperCase())}
+            className="mt-1 h-9 w-full rounded-lg border p-1"
+          />
+        </label>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button
+          size="sm"
+          disabled={disabled}
+          onClick={() => void onSave(label, color)}
+        >
+          Save appearance
+        </Button>
+        <label className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium">
+          {ticketType.imageAsset ? "Replace image" : "Add image"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            className="sr-only"
+            disabled={disabled}
+            onChange={(event) => void onUpload(event.target.files?.[0])}
+          />
+        </label>
+        {ticketType.imageAsset ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={disabled}
+            onClick={() => void onRemoveImage()}
+          >
+            Remove image
+          </Button>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
 export function TicketTypesWorkspace({
   eventId,
   onReturnToReadiness,
@@ -49,6 +120,7 @@ export function TicketTypesWorkspace({
   const [tileLabel, setTileLabel] = useState("");
   const [tileColor, setTileColor] = useState("#0B6CE3");
   const [image, setImage] = useState<File | null>(null);
+  const [busyTicketTypeId, setBusyTicketTypeId] = useState("");
 
   const loadTicketTypes = useCallback(async () => {
     try {
@@ -130,6 +202,54 @@ export function TicketTypesWorkspace({
     }
   }
 
+  async function updatePresentation(
+    ticketType: TicketType,
+    label: string,
+    color: string,
+  ) {
+    setBusyTicketTypeId(ticketType.id);
+    setError("");
+    try {
+      await ticketTypeService.updatePresentation(ticketType.id, {
+        ...(label.trim() ? { tileLabel: label.trim() } : {}),
+        tileColor: color,
+      });
+      await loadTicketTypes();
+      setSavedMessage(`${ticketType.name} appearance updated.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update appearance.");
+    } finally {
+      setBusyTicketTypeId("");
+    }
+  }
+
+  async function replaceImage(ticketType: TicketType, file?: File) {
+    if (!file) return;
+    setBusyTicketTypeId(ticketType.id);
+    try {
+      await ticketTypeService.uploadImage(ticketType.id, file);
+      await loadTicketTypes();
+      setSavedMessage(`${ticketType.name} image updated.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update image.");
+    } finally {
+      setBusyTicketTypeId("");
+    }
+  }
+
+  async function removeImage(ticketType: TicketType) {
+    setBusyTicketTypeId(ticketType.id);
+    try {
+      await ticketTypeService.removeImage(ticketType.id);
+      await loadTicketTypes();
+      setSavedMessage(`${ticketType.name} image removed.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to remove image.");
+    } finally {
+      setBusyTicketTypeId("");
+    }
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="rounded-xl border bg-card p-6">
@@ -194,6 +314,17 @@ export function TicketTypesWorkspace({
                       </dd>
                     </div>
                   </dl>
+                  {role === "OWNER" ? (
+                    <TicketTypePresentationEditor
+                      ticketType={ticketType}
+                      disabled={busyTicketTypeId === ticketType.id}
+                      onSave={(label, color) =>
+                        updatePresentation(ticketType, label, color)
+                      }
+                      onUpload={(file) => replaceImage(ticketType, file)}
+                      onRemoveImage={() => removeImage(ticketType)}
+                    />
+                  ) : null}
                 </div>
               </article>
             ))}

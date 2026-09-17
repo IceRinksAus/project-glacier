@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Res,
@@ -25,6 +26,7 @@ import { TicketTypeService } from './ticket-type.service';
 import { FileAssetService } from '../file-asset/file-asset.service';
 import type { BrandingImageUpload } from '../file-asset/file-asset.types';
 import { UploadCatalogueImageDto } from '../file-asset/dto/upload-catalogue-image.dto';
+import { UpdateTicketTypePresentationDto } from './dto/update-ticket-type-presentation.dto';
 
 interface AuthenticatedUser {
   organizationId: string;
@@ -110,5 +112,19 @@ export class TicketTypeController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.ticketTypeService.create(user.organizationId, data);
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/presentation')
+  updatePresentation(
+    @Param('id') id: string,
+    @Body() data: UpdateTicketTypePresentationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ticketTypeService.updatePresentation(
+      user.organizationId,
+      id,
+      data,
+    );
   }
 }
