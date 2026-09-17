@@ -166,6 +166,16 @@ export const productSetupService = {
 
   findRequirementRules: () => api.get<ProductRequirementRule[]>("/rule"),
 
+  updateRequirementRule: (
+    ruleId: string,
+    data: {
+      status: "ACTIVE" | "INACTIVE";
+      conditions?: CreateRequirementRule["conditions"];
+      actions?: CreateRequirementRule["actions"];
+      message?: string;
+    },
+  ) => api.patch<ProductRequirementRule>(`/rule/${ruleId}`, data),
+
   updateStatus: (productId: string, status: "DRAFT" | "ACTIVE" | "INACTIVE") =>
     api.patch<ProductAdministration>(`/product/${productId}/status`, {
       status,

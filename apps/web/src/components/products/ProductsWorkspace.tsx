@@ -60,6 +60,58 @@ function modelLabel(product: ProductAdministration) {
   return "Unlimited availability";
 }
 
+function ProductRequirementEditor({
+  product,
+  ticketTypes,
+  selectedIds,
+  disabled,
+  onSave,
+}: {
+  product: ProductAdministration;
+  ticketTypes: TicketType[];
+  selectedIds: string[];
+  disabled: boolean;
+  onSave: (ticketTypeIds: string[]) => Promise<void>;
+}) {
+  const [selection, setSelection] = useState(selectedIds);
+  useEffect(() => setSelection(selectedIds), [selectedIds]);
+  return (
+    <details className="mt-4 border-t pt-3 text-sm">
+      <summary className="cursor-pointer font-medium">Manage requirement</summary>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Require one {product.name} for each matching Ticket participant.
+      </p>
+      <div className="mt-3 space-y-2">
+        {ticketTypes.map((ticketType) => (
+          <label key={ticketType.id} className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selection.includes(ticketType.id)}
+              onChange={() =>
+                setSelection((current) =>
+                  current.includes(ticketType.id)
+                    ? current.filter((id) => id !== ticketType.id)
+                    : [...current, ticketType.id],
+                )
+              }
+            />
+            {ticketType.name}
+          </label>
+        ))}
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        className="mt-3"
+        disabled={disabled}
+        onClick={() => void onSave(selection)}
+      >
+        Save requirement
+      </Button>
+    </details>
+  );
+}
+
 export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   const role = useSyncExternalStore(
     subscribeAuthSession,
@@ -94,6 +146,7 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   const [image, setImage] = useState<File | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [busyProductId, setBusyProductId] = useState("");
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -123,8 +176,7 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
       ruleResult.filter(
         (rule) =>
           rule.eventId === eventId &&
-          rule.ruleType === "PRODUCT_REQUIREMENT" &&
-          rule.status === "ACTIVE",
+          rule.ruleType === "PRODUCT_REQUIREMENT",
       ),
     );
   }, [eventId]);
@@ -219,9 +271,8 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
   }
 
   function requirementLabels(product: ProductAdministration) {
-    const rule = requirementRules.find(
-      (candidate) => candidate.actions.productSlug === product.slug,
-    );
+    const rule = requirementRule(product);
+    if (!rule || rule.status !== "ACTIVE") return [];
     const ids = rule?.conditions.all
       ?.filter(
         (condition) =>
@@ -233,6 +284,137 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
     return ticketTypes
       .filter((ticketType) => ids?.includes(ticketType.id))
       .map((ticketType) => ticketType.name);
+  }
+
+  function requirementRule(product: ProductAdministration) {
+    return requirementRules.find(
+      (candidate) => candidate.actions.productSlug === product.slug,
+    );
+  }
+
+  function requirementTicketTypeIds(product: ProductAdministration) {
+    if (requirementRule(product)?.status !== "ACTIVE") return [];
+    return (
+      requirementRule(product)?.conditions.all
+        ?.filter(
+          (condition) =>
+            condition.field === "ticketTypeId" &&
+            condition.operator === "IN" &&
+            Array.isArray(condition.value),
+        )
+        .flatMap((condition) => condition.value as string[]) ?? []
+    );
+  }
+
+  async function saveExistingRequirement(
+    product: ProductAdministration,
+    ticketTypeIds: string[],
+  ) {
+    setBusyProductId(product.id);
+    setError("");
+    const rule = requirementRule(product);
+    try {
+      if (rule) {
+        await productSetupService.updateRequirementRule(rule.id, {
+          status: ticketTypeIds.length ? "ACTIVE" : "INACTIVE",
+          ...(ticketTypeIds.length
+            ? {
+                conditions: {
+                  all: [
+                    {
+                      field: "ticketTypeId",
+                      operator: "IN",
+                      value: ticketTypeIds,
+                    },
+                  ],
+                },
+                actions: {
+                  type: "REQUIRE_PRODUCT",
+                  productSlug: product.slug,
+                  quantityPerMatchingItem: 1,
+                },
+                message: `${product.name} is required for this Ticket Type.`,
+              }
+            : {}),
+        });
+      } else if (ticketTypeIds.length) {
+        await productSetupService.createRequirementRule({
+          eventId,
+          name: `${product.name} requirement`,
+          slug: `${product.slug}-required-by-ticket-type`,
+          description: `Requires one ${product.name} for each matching Ticket Type participant.`,
+          ruleType: "PRODUCT_REQUIREMENT",
+          scope: "PARTICIPANT",
+          status: "ACTIVE",
+          priority: 100,
+          conditions: {
+            all: [
+              {
+                field: "ticketTypeId",
+                operator: "IN",
+                value: ticketTypeIds,
+              },
+            ],
+          },
+          actions: {
+            type: "REQUIRE_PRODUCT",
+            productSlug: product.slug,
+            quantityPerMatchingItem: 1,
+          },
+          message: `${product.name} is required for this Ticket Type.`,
+          stopProcessing: false,
+        });
+      }
+      await loadWorkspace();
+      setMessage(`${product.name} requirement updated.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update requirement.");
+    } finally {
+      setBusyProductId("");
+    }
+  }
+
+  async function replaceProductImage(product: ProductAdministration, file?: File) {
+    if (!file) return;
+    setBusyProductId(product.id);
+    try {
+      await productSetupService.uploadImage(product.id, file);
+      await loadWorkspace();
+      setMessage(`${product.name} image updated.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update image.");
+    } finally {
+      setBusyProductId("");
+    }
+  }
+
+  async function removeProductImage(product: ProductAdministration) {
+    setBusyProductId(product.id);
+    try {
+      await productSetupService.removeImage(product.id);
+      await loadWorkspace();
+      setMessage(`${product.name} image removed.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to remove image.");
+    } finally {
+      setBusyProductId("");
+    }
+  }
+
+  async function toggleProductStatus(product: ProductAdministration) {
+    setBusyProductId(product.id);
+    try {
+      await productSetupService.updateStatus(
+        product.id,
+        product.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+      );
+      await loadWorkspace();
+      setMessage(`${product.name} status updated.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to update status.");
+    } finally {
+      setBusyProductId("");
+    }
   }
 
   async function createConfiguredProduct() {
@@ -443,6 +625,51 @@ export function ProductsWorkspace({ eventId }: ProductsWorkspaceProps) {
                     No Ticket Type requirement
                   </p>
                 )}
+                {role === "OWNER" ? (
+                  <div className="mt-4 border-t pt-3">
+                    <div className="flex flex-wrap gap-2">
+                      <label className="cursor-pointer rounded-lg border px-3 py-2 text-xs font-medium">
+                        {product.imageAsset ? "Replace image" : "Add image"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          className="sr-only"
+                          disabled={busyProductId === product.id}
+                          onChange={(event) =>
+                            void replaceProductImage(product, event.target.files?.[0])
+                          }
+                        />
+                      </label>
+                      {product.imageAsset ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busyProductId === product.id}
+                          onClick={() => void removeProductImage(product)}
+                        >
+                          Remove image
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={busyProductId === product.id}
+                        onClick={() => void toggleProductStatus(product)}
+                      >
+                        {product.status === "ACTIVE" ? "Make inactive" : "Activate"}
+                      </Button>
+                    </div>
+                    <ProductRequirementEditor
+                      product={product}
+                      ticketTypes={ticketTypes}
+                      selectedIds={requirementTicketTypeIds(product)}
+                      disabled={busyProductId === product.id}
+                      onSave={(ids) => saveExistingRequirement(product, ids)}
+                    />
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}

@@ -15,6 +15,8 @@ const {
   assignToSession,
   createRequirementRule,
   updateStatus,
+  updateRequirementRule,
+  removeImage,
   getSessions,
   findTicketTypes,
 } = vi.hoisted(() => ({
@@ -28,6 +30,8 @@ const {
   assignToSession: vi.fn(),
   createRequirementRule: vi.fn(),
   updateStatus: vi.fn(),
+  updateRequirementRule: vi.fn(),
+  removeImage: vi.fn(),
   getSessions: vi.fn(),
   findTicketTypes: vi.fn(),
 }));
@@ -49,6 +53,8 @@ vi.mock("@/services/product-setup.service", () => ({
     assignToSession,
     createRequirementRule,
     updateStatus,
+    updateRequirementRule,
+    removeImage,
   },
 }));
 
@@ -97,6 +103,8 @@ describe("ProductsWorkspace", () => {
     assignToSession.mockResolvedValue({ id: "assignment-1" });
     createRequirementRule.mockResolvedValue({ id: "rule-1" });
     updateStatus.mockResolvedValue({ id: "product-1", status: "ACTIVE" });
+    updateRequirementRule.mockResolvedValue({ id: "rule-1" });
+    removeImage.mockResolvedValue(undefined);
   });
 
   it("keeps MEMBER access read-only", async () => {
@@ -108,6 +116,7 @@ describe("ProductsWorkspace", () => {
   });
 
   it("shows the Ticket Type Rule connected to an existing Product", async () => {
+    const user = userEvent.setup();
     findForEvent.mockResolvedValue([
       {
         id: "product-1",
@@ -154,6 +163,15 @@ describe("ProductsWorkspace", () => {
     render(<ProductsWorkspace eventId="event-1" />);
 
     expect(await screen.findByText("Required for: Child")).toBeInTheDocument();
+    await user.click(screen.getByText("Manage requirement"));
+    await user.click(screen.getByLabelText("Child"));
+    await user.click(screen.getByRole("button", { name: "Save requirement" }));
+
+    await waitFor(() =>
+      expect(updateRequirementRule).toHaveBeenCalledWith("rule-1", {
+        status: "INACTIVE",
+      }),
+    );
   });
 
   it("configures reusable per-Session capacity and a Ticket Type requirement", async () => {
