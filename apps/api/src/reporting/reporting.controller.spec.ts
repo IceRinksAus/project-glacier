@@ -11,6 +11,7 @@ describe('ReportingController', () => {
   const service = {
     getEventReport: jest.fn(),
     getOrganizationSummary: jest.fn(),
+    getPortfolioReport: jest.fn(),
     getTicketTypeSales: jest.fn(),
     getSessionSales: jest.fn(),
     getProductSales: jest.fn(),
@@ -63,6 +64,16 @@ describe('ReportingController', () => {
 
     expect(service.getOrganizationSummary).toHaveBeenCalledWith(
       user('organization-1'),
+    );
+  });
+
+  it('passes the trusted access context to portfolio reporting', async () => {
+    const query = { scope: 'ALL' as const };
+    await controller.getPortfolioReport('ticket-types', user('org-1'), query);
+    expect(service.getPortfolioReport).toHaveBeenCalledWith(
+      user('org-1'),
+      'ticket-types',
+      query,
     );
   });
 

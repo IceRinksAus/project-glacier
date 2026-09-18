@@ -13,6 +13,7 @@ vi.mock("@/services/event.service", () => ({ eventService: { getEvents } }));
 vi.mock("@/services/reporting.service", () => ({ reportingService: { getOrganizationSummary, getEventGroupComparison, downloadEventGroupComparisonCsv } }));
 vi.mock("@/lib/auth", () => ({ subscribeAuthSession: () => () => undefined, getAuthRoleSnapshot: () => "OWNER", getServerAuthRoleSnapshot: () => "OWNER" }));
 vi.mock("@/components/layout/PlatformShell", () => ({ PlatformShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
 
 const events = [
   { id: "event-1", name: "Melbourne", startDate: "2027-06-01T00:00:00.000Z" },
@@ -65,8 +66,8 @@ describe("ReportsPage Event Groups", () => {
     expect(screen.getByRole("heading", { name: "Sales and revenue" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Tickets and operations" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Financial and reconciliation" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Sales by Ticket Type/ })).toHaveAttribute("href", "/events/event-1?tab=Reports&report=TICKET_TYPES");
-    expect(screen.getByRole("link", { name: /Sales by Channel/ })).toHaveAttribute("href", "/events/event-1?tab=Reports&report=OVERVIEW");
+    expect(screen.getByRole("link", { name: /Sales by Ticket Type/ })).toHaveAttribute("href", "/reports?report=TICKET_TYPES&scope=ALL");
+    expect(screen.getByRole("link", { name: /Sales by Channel/ })).toHaveAttribute("href", "/reports?report=OVERVIEW&scope=ALL");
   });
 
   it("persists selected Event membership in organiser order", async () => {

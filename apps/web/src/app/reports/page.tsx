@@ -13,9 +13,14 @@ import {
   UsersRound,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useState, useSyncExternalStore } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 
 import { PlatformShell } from "@/components/layout/PlatformShell";
+import {
+  parsePortfolioReportView,
+  PortfolioReportsWorkspace,
+} from "@/components/reporting/PortfolioReportsWorkspace";
 import { Button } from "@/components/ui/button";
 import { getAuthRoleSnapshot, getServerAuthRoleSnapshot, subscribeAuthSession } from "@/lib/auth";
 import { EventGroup, EventGroupType, eventGroupService } from "@/services/event-group.service";
@@ -90,6 +95,19 @@ const reportCategories: Array<{
 ];
 
 export default function ReportsPage() {
+  return <Suspense fallback={<PlatformShell><StateCard>Loading Reports...</StateCard></PlatformShell>}><ReportsPageContent /></Suspense>;
+}
+
+function ReportsPageContent() {
+  const searchParams = useSearchParams();
+  const activePortfolioReport = parsePortfolioReportView(searchParams.get("report"));
+  const requestedScope = searchParams.get("scope");
+  const requestedScopeId = searchParams.get("scopeId");
+  const initialPortfolioScope = requestedScope === "GROUP" && requestedScopeId
+    ? `GROUP:${requestedScopeId}`
+    : requestedScope === "EVENT" && requestedScopeId
+      ? `EVENT:${requestedScopeId}`
+      : "ALL";
   const role = useSyncExternalStore(subscribeAuthSession, getAuthRoleSnapshot, getServerAuthRoleSnapshot);
   const [groups, setGroups] = useState<EventGroup[]>([]);
   const [events, setEvents] = useState<GlacierEvent[]>([]);
@@ -174,6 +192,8 @@ export default function ReportsPage() {
         {error ? <StateCard error>{error}</StateCard> : null}
         {!isLoading && summary ? <ReportingOverview summary={summary} selectedEventId={selectedEventId} /> : null}
 
+        {!isLoading && activePortfolioReport ? <PortfolioReportsWorkspace events={events} groups={groups} initialView={activePortfolioReport} initialScope={initialPortfolioScope} /> : null}
+
         <section aria-labelledby="report-library-heading" className="space-y-7">
           <div>
             <p className="text-sm font-semibold text-primary">Report library</p>
@@ -222,7 +242,7 @@ function ReportingOverview({ summary, selectedEventId }: { summary: Organization
       <HeadlineMetric label="Payment exceptions" value={summary.totals.paymentExceptions.toLocaleString("en-AU")} note={summary.totals.paymentExceptions > 0 ? "Needs review" : "No current exceptions"} alert={summary.totals.paymentExceptions > 0} />
     </div>
     {selectedEvent ? <div className="rounded-xl border bg-card p-5 shadow-sm">
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Selected Event snapshot</p><h3 className="mt-1 text-lg font-semibold">{selectedEvent.event.name}</h3><p className="mt-1 text-sm text-muted-foreground">{selectedEvent.lifecycle.toLowerCase()} · {selectedEvent.sessions.total} Sessions · {selectedEvent.bookings.confirmed} confirmed bookings</p></div><Link href={`/events/${encodeURIComponent(selectedEvent.event.id)}?tab=Reports`} className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">Open Event reports</Link></div>
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Selected Event snapshot</p><h3 className="mt-1 text-lg font-semibold">{selectedEvent.event.name}</h3><p className="mt-1 text-sm text-muted-foreground">{selectedEvent.lifecycle.toLowerCase()} · {selectedEvent.sessions.total} Sessions · {selectedEvent.bookings.confirmed} confirmed bookings</p></div><Link href={`/reports?report=OVERVIEW&scope=EVENT&scopeId=${encodeURIComponent(selectedEvent.event.id)}`} className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground">Open Event reports</Link></div>
       <div className="mt-5 grid gap-4 md:grid-cols-[1fr_auto] md:items-center"><div><div className="mb-2 flex justify-between text-sm"><span>Capacity utilisation</span><span className="font-semibold">{selectedEvent.sessions.utilisationPercent}%</span></div><div className="h-3 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(selectedEvent.sessions.utilisationPercent, 100)}%` }} /></div></div><div className="grid grid-cols-3 gap-5 text-sm"><SnapshotValue label="Net" value={money.format(selectedEvent.commercial.netCollected)} /><SnapshotValue label="Tickets" value={selectedEvent.tickets.issued} /><SnapshotValue label="Admissions" value={selectedEvent.tickets.admissions} /></div></div>
     </div> : <StateCard>No authorised Events are available for detailed reporting.</StateCard>}
     <p className="text-xs text-muted-foreground">Operational reporting only. Figures are not processor settlement, payout, accounting, profit or tax records.</p>
@@ -239,7 +259,7 @@ function ReportCard({ report, selectedEventId }: { report: ReportCardDefinition;
   const content = <><div className="flex items-start justify-between gap-4"><span className="rounded-lg bg-primary/10 p-2 text-primary"><Icon aria-hidden="true" className="h-6 w-6" /></span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Available" ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground"}`}>{status}</span></div><h4 className="mt-5 text-base font-semibold">{report.title}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{report.description}</p></>;
   if (report.title === "Event Comparison") return <a href="#event-groups" className="rounded-xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{content}</a>;
   if (status === "Planned" || !selectedEventId || !report.view) return <div className="rounded-xl border bg-card p-5 opacity-80">{content}</div>;
-  return <Link href={`/events/${encodeURIComponent(selectedEventId)}?tab=Reports&report=${report.view}`} className="rounded-xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{content}</Link>;
+  return <Link href={`/reports?report=${report.view}&scope=ALL`} className="rounded-xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{content}</Link>;
 }
 
 function HeadlineMetric({ label, value, note, featured = false, alert = false }: { label: string; value: string | number; note: string; featured?: boolean; alert?: boolean }) { return <div className={`rounded-xl border p-5 shadow-sm ${featured ? "border-primary/30 bg-primary text-primary-foreground" : alert ? "border-amber-300 bg-amber-50" : "bg-card"}`}><p className={`text-xs font-semibold uppercase tracking-[0.12em] ${featured ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{label}</p><p className="mt-3 text-2xl font-semibold">{value}</p><p className={`mt-1 text-xs ${featured ? "text-primary-foreground/75" : "text-muted-foreground"}`}>{note}</p></div>; }

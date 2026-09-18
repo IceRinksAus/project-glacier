@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { OPERATOR_ROLES } from '../auth/roles/organization-role';
 import { EventReportQueryDto } from './dto/event-report-query.dto';
+import { PortfolioReportQueryDto } from './dto/portfolio-report-query.dto';
 import { ReportingService } from './reporting.service';
 
 type AuthenticatedUser = AuthenticatedAccessContext;
@@ -35,6 +36,15 @@ export class ReportingController {
   @Get('organization')
   getOrganizationSummary(@CurrentUser() user: AuthenticatedUser) {
     return this.reportingService.getOrganizationSummary(user);
+  }
+
+  @Get('portfolio/:reportType')
+  getPortfolioReport(
+    @Param('reportType') reportType: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: PortfolioReportQueryDto,
+  ) {
+    return this.reportingService.getPortfolioReport(user, reportType, query);
   }
 
   @Get('events/:eventId')

@@ -30,6 +30,7 @@ describe('ReportingService', () => {
             eventWhere: (access: { organizationId: string }) => ({
               organizationId: access.organizationId,
             }),
+            assertEventGroupAccess: jest.fn(),
           },
         },
       ],
@@ -60,6 +61,43 @@ describe('ReportingService', () => {
     prisma.product.findMany.mockResolvedValue([]);
     prisma.rule.findMany.mockResolvedValue([]);
     prisma.eventGroup.findFirst.mockResolvedValue(null);
+  });
+
+  it('builds a portfolio report only from Events in the authenticated access scope', async () => {
+    prisma.event.findMany.mockResolvedValue([
+      { id: 'event-1', name: 'Melbourne', timezone: 'Australia/Melbourne' },
+      { id: 'event-2', name: 'Sydney', timezone: 'Australia/Sydney' },
+    ]);
+    const getTicketTypeSales = jest
+      .spyOn(service, 'getTicketTypeSales')
+      .mockImplementation(async (_organizationId, eventId) => ({
+        event: { id: eventId, name: eventId, timezone: 'Australia/Melbourne' },
+        filter: { date: null, sessionId: null },
+        totals: {},
+        refundAllocation: 'UNALLOCATED_AT_EVENT_OR_SESSION_LEVEL',
+        rows: [],
+      }) as never);
+
+    const access = {
+      userId: 'user-1',
+      organizationId: 'org-1',
+      role: 'STAFF' as const,
+      accessScope: 'ASSIGNED_EVENTS' as const,
+    };
+    const result = await service.getPortfolioReport(
+      access,
+      'ticket-types',
+      { scope: 'ALL' },
+    );
+
+    expect(prisma.event.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { organizationId: 'org-1' } }),
+    );
+    expect(getTicketTypeSales).toHaveBeenCalledTimes(2);
+    expect(result.reports.map(({ event }) => event.id)).toEqual([
+      'event-1',
+      'event-2',
+    ]);
   });
 
   it('reports Ticket Type gross, allocated refund and net sales separately', async () => {

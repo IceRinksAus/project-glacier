@@ -11,6 +11,7 @@ import {
   AuthenticatedAccessContext,
 } from '../access-control/access-control.service';
 import { EventReportQueryDto } from './dto/event-report-query.dto';
+import { PortfolioReportQueryDto } from './dto/portfolio-report-query.dto';
 
 @Injectable()
 export class ReportingService {
@@ -18,6 +19,88 @@ export class ReportingService {
     private readonly prisma: PrismaService,
     private readonly accessControl: AccessControlService,
   ) {}
+
+  async getPortfolioReport(
+    access: AuthenticatedAccessContext,
+    reportType: string,
+    query: PortfolioReportQueryDto,
+  ) {
+    const supported = [
+      'overview',
+      'ticket-types',
+      'sessions',
+      'products',
+      'dates',
+      'sales-pace',
+    ];
+    if (!supported.includes(reportType)) {
+      throw new BadRequestException('Unsupported portfolio report type.');
+    }
+    if (query.scope !== 'ALL' && !query.scopeId) {
+      throw new BadRequestException('A scope ID is required.');
+    }
+
+    let scopedIds: string[] | undefined;
+    let scopeName = 'All authorised Events';
+    if (query.scope === 'EVENT') {
+      scopedIds = [query.scopeId!];
+    } else if (query.scope === 'GROUP') {
+      await this.accessControl.assertEventGroupAccess(query.scopeId!, access);
+      const group = await this.prisma.eventGroup.findFirst({
+        where: { id: query.scopeId, organizationId: access.organizationId },
+        select: {
+          name: true,
+          events: {
+            select: { eventId: true },
+            orderBy: [{ sortOrder: 'asc' }, { eventId: 'asc' }],
+          },
+        },
+      });
+      if (!group) throw new NotFoundException('Event Group not found.');
+      scopeName = group.name;
+      scopedIds = group.events.map(({ eventId }) => eventId);
+    }
+
+    const events = await this.prisma.event.findMany({
+      where: this.accessControl.eventWhere(access, {
+        ...(scopedIds ? { id: { in: scopedIds } } : {}),
+      }),
+      select: { id: true, name: true, timezone: true },
+      orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      take: 100,
+    });
+    if (query.scope === 'EVENT' && events.length !== 1) {
+      throw new NotFoundException('Event not found.');
+    }
+    if (query.scope === 'EVENT') scopeName = events[0].name;
+
+    const filters = { date: query.date };
+    const reports = await Promise.all(
+      events.map(async (event) => {
+        const report =
+          reportType === 'ticket-types'
+            ? await this.getTicketTypeSales(access.organizationId, event.id, filters)
+            : reportType === 'sessions'
+              ? await this.getSessionSales(access.organizationId, event.id, filters)
+              : reportType === 'products'
+                ? await this.getProductSales(access.organizationId, event.id, filters)
+                : reportType === 'dates'
+                  ? await this.getDateSales(access.organizationId, event.id, filters)
+                  : reportType === 'sales-pace'
+                    ? await this.getSalesPace(access.organizationId, event.id, filters)
+                    : await this.getEventReport(access.organizationId, event.id, filters);
+        return { event, report };
+      }),
+    );
+
+    return {
+      generatedAt: new Date(),
+      reportType,
+      scope: { type: query.scope, id: query.scopeId ?? null, name: scopeName },
+      filter: { date: query.date ?? null },
+      reports,
+    };
+  }
 
   async getOrganizationSummary(
     access: AuthenticatedAccessContext,

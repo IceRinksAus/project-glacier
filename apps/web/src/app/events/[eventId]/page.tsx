@@ -12,10 +12,6 @@ import { EventTabs, parseEventTab } from "@/components/events/EventTabs";
 import type { EventTab } from "@/components/events/EventTabs";
 import { PlatformShell } from "@/components/layout/PlatformShell";
 import { ProductsWorkspace } from "@/components/products/ProductsWorkspace";
-import {
-  EventReportsWorkspace,
-  parseReportView,
-} from "@/components/reporting/EventReportsWorkspace";
 import { SessionsWorkspace } from "@/components/sessions/SessionsWorkspace";
 import { TicketTypesWorkspace } from "@/components/ticket-types/TicketTypesWorkspace";
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
@@ -132,10 +128,11 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Reports" ? (
-              <EventReportsWorkspace
-                eventId={event.id}
-                initialReport={parseReportView(searchParams.get("report"))}
-              />
+              <div className="rounded-xl border bg-card p-6 shadow-sm">
+                <h2 className="text-xl font-semibold">Event reports have moved</h2>
+                <p className="mt-2 text-sm text-muted-foreground">Open this Event inside the organisational Reports workspace, where you can switch between this Event, an Event Group or all authorised Events without leaving reporting.</p>
+                <Link href={`/reports?report=${encodeURIComponent(searchParams.get("report") || "OVERVIEW")}&scope=EVENT&scopeId=${encodeURIComponent(event.id)}`} className="mt-5 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Open {event.name} reports</Link>
+              </div>
             ) : null}
 
             {activeTab === "Bookings" || activeTab === "Customers" ? (

@@ -326,6 +326,25 @@ export interface EventGroupComparisonReport {
   }>;
 }
 
+export type PortfolioReportData =
+  | EventReport
+  | TicketTypeSalesReport
+  | SessionSalesReport
+  | ProductSalesReport
+  | DateSalesReport
+  | SalesPaceReport;
+
+export interface PortfolioReport {
+  generatedAt: string;
+  reportType: string;
+  scope: { type: "ALL" | "GROUP" | "EVENT"; id: string | null; name: string };
+  filter: { date: string | null };
+  reports: Array<{
+    event: { id: string; name: string; timezone: string };
+    report: PortfolioReportData;
+  }>;
+}
+
 function eventReportPath(
   eventId: string,
   suffix = "",
@@ -349,6 +368,19 @@ function eventExportPath(
 export const reportingService = {
   getOrganizationSummary: () =>
     api.get<OrganizationReport>("/reporting/organization"),
+  getPortfolioReport: (
+    reportType: string,
+    scope: "ALL" | "GROUP" | "EVENT",
+    scopeId?: string,
+    date?: string,
+  ) => {
+    const query = new URLSearchParams({ scope });
+    if (scopeId) query.set("scopeId", scopeId);
+    if (date) query.set("date", date);
+    return api.get<PortfolioReport>(
+      `/reporting/portfolio/${reportType}?${query.toString()}`,
+    );
+  },
   getEventReport: (
     eventId: string,
     filters: { date?: string; sessionId?: string } = {},

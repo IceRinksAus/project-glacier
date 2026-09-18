@@ -2,6 +2,26 @@
 
 **Status:** Complete 18 September 2026
 
+## Approved post-closeout refinement — Organisational report workspace
+
+Operator acceptance identified that report cards should not leave the Reports
+destination and open a separate Event workspace. The approved refinement is:
+
+- keep report selection, filters and results under `/reports`;
+- support all authorised Events, a fully authorised Event Group or one
+  authorised Event as the report scope;
+- include Event identity in multi-Event results rather than merging similarly
+  named Ticket Types, Products or Sessions;
+- reuse each Event's existing authoritative calculation and timezone semantics;
+- make the Event Reports tab a shortcut into this shared organisational
+  workspace; and
+- retain bounds, role/Event-assignment access, exports and accounting
+  limitations.
+
+This is a calculation and navigation refinement, not merely a route change.
+Multi-Event retrieval must resolve scope on the server so the browser cannot
+expand an assigned operator's Event authority.
+
 ## Outcome
 
 Make Glacier reporting easy to discover and useful at a glance. Combine a
