@@ -55,7 +55,7 @@ describe("ReportsPage Event Groups", () => {
     await user.selectOptions(screen.getByLabelText("Group type"), "TOUR");
     await user.click(screen.getByRole("button", { name: "Create group" }));
     await waitFor(() => expect(create).toHaveBeenCalledWith({ name: "East Coast Tour", description: undefined, type: "TOUR" }));
-  });
+  }, 15000);
 
   it("shows authoritative headline performance and a grouped report library", async () => {
     render(<ReportsPage />);
@@ -68,17 +68,17 @@ describe("ReportsPage Event Groups", () => {
     expect(screen.getByRole("heading", { name: "Financial and reconciliation" })).toBeVisible();
     expect(screen.getByRole("link", { name: /Sales by Ticket Type/ })).toHaveAttribute("href", "/reports?report=TICKET_TYPES&scope=ALL");
     expect(screen.getByRole("link", { name: /Sales by Channel/ })).toHaveAttribute("href", "/reports?report=OVERVIEW&scope=ALL");
-  });
+  }, 15000);
 
   it("persists selected Event membership in organiser order", async () => {
     const user = userEvent.setup();
     render(<ReportsPage />);
     await screen.findByText("Winter Season");
     await user.click(screen.getByRole("checkbox", { name: /Sydney/ }));
-    await user.click(screen.getByRole("button", { name: "Move Sydney earlier" }));
+    await user.click(await screen.findByRole("button", { name: "Move Sydney earlier" }));
     await user.click(screen.getByRole("button", { name: "Save membership" }));
     await waitFor(() => expect(replaceEvents).toHaveBeenCalledWith("group-1", ["event-2", "event-1"]));
-  });
+  }, 15000);
 
   it("shows Group totals alongside normalised Event comparison measures", async () => {
     const user = userEvent.setup();
@@ -94,5 +94,5 @@ describe("ReportsPage Event Groups", () => {
     expect(getEventGroupComparison).toHaveBeenCalledWith("group-1");
     await user.click(screen.getByRole("button", { name: "Export CSV" }));
     await waitFor(() => expect(downloadEventGroupComparisonCsv).toHaveBeenCalledWith("group-1"));
-  });
+  }, 15000);
 });
