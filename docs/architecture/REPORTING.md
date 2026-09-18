@@ -59,6 +59,13 @@ authoritative reporting methods used by the single-Event APIs. Responses retain
 Event id, name, timezone and per-Event report context; they do not merge
 different local dates or timezones into a fabricated universal day.
 
+The Reports UI presents Event scope as a checklist. Operators may select any
+combination of authorised Events, select all, clear the selection or use an
+accessible Event Group as a checklist shortcut. A custom combination is sent
+as `SELECTED` with a bounded explicit Event-id list. The server applies the
+authenticated Event predicate to the entire list and fails the request when
+any requested Event is unavailable; it never returns a silent partial report.
+
 The Event Reports tab is now a contextual route into this workspace with the
 Event scope preselected. It is not a second reporting implementation.
 

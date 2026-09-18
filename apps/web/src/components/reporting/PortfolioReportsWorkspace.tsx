@@ -50,7 +50,8 @@ export function PortfolioReportsWorkspace({
   initialScope?: string;
 }) {
   const [view, setView] = useState(initialView);
-  const [scopeValue, setScopeValue] = useState(initialScope);
+  const initialEventIds = selectionFromScope(initialScope, events, groups);
+  const [selectedEventIds, setSelectedEventIds] = useState(initialEventIds);
   const [date, setDate] = useState("");
   const [report, setReport] = useState<PortfolioReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,44 +63,46 @@ export function PortfolioReportsWorkspace({
       group.events.every(({ event }) => authorisedEventIds.has(event.id)),
   );
 
-  function scopeParts(value = scopeValue) {
-    if (value.startsWith("GROUP:")) return { scope: "GROUP" as const, id: value.slice(6) };
-    if (value.startsWith("EVENT:")) return { scope: "EVENT" as const, id: value.slice(6) };
-    return { scope: "ALL" as const, id: undefined };
-  }
-
-  function load(nextView = view, nextScope = scopeValue, nextDate = date) {
-    const scope = scopeParts(nextScope);
+  function load(nextView = view, nextSelection = selectedEventIds, nextDate = date) {
+    if (nextSelection.length === 0) { setReport(null); setError("Select at least one Event."); return; }
+    const allSelected = nextSelection.length === events.length && events.every(({ id }) => nextSelection.includes(id));
     setIsLoading(true);
     setError("");
-    reportingService.getPortfolioReport(reportPaths[nextView], scope.scope, scope.id, nextDate || undefined)
+    reportingService.getPortfolioReport(reportPaths[nextView], allSelected ? "ALL" : "SELECTED", undefined, nextDate || undefined, allSelected ? undefined : nextSelection)
       .then(setReport)
       .catch((requestError: unknown) => setError(requestError instanceof Error ? requestError.message : "Unable to load this organisational report."))
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(() => { load(initialView, initialScope, ""); }, [initialView, initialScope]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const selection = selectionFromScope(initialScope, events, groups); setSelectedEventIds(selection); load(initialView, selection, ""); }, [initialView, initialScope]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function changeView(next: PortfolioReportView) { setView(next); load(next); }
-  function changeScope(next: string) { setScopeValue(next); load(view, next); }
+  function toggleEvent(eventId: string) { setSelectedEventIds((current) => current.includes(eventId) ? current.filter((id) => id !== eventId) : [...current, eventId]); }
+  function choose(selection: string[]) { setSelectedEventIds(selection); }
 
   return <section className="space-y-6" aria-labelledby="organisational-report-heading">
     <div className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
       <p className="text-sm font-semibold text-primary">Organisational reporting workspace</p>
       <h2 id="organisational-report-heading" className="mt-1 text-2xl font-semibold">{reportLabel(view)}</h2>
       <p className="mt-2 text-sm text-muted-foreground">Compare authorised Events without leaving Reports. Each Event retains its own timezone and authoritative records.</p>
-      <div className="mt-5 grid gap-4 md:grid-cols-3 print:hidden">
+      <div className="mt-5 grid gap-4 md:grid-cols-2 print:hidden">
         <label className="text-sm font-medium">Report<select aria-label="Organisational report" value={view} onChange={(event) => changeView(event.target.value as PortfolioReportView)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Sales Summary</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="DATES">Sales by Event Date</option><option value="PRODUCTS">Product and Add-on Performance</option><option value="SALES_PACE">Booking Pace</option></select></label>
-        <label className="text-sm font-medium">Reporting scope<select aria-label="Reporting scope" value={scopeValue} onChange={(event) => changeScope(event.target.value)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal"><option value="ALL">All authorised Events</option>{accessibleGroups.map((group) => <option key={group.id} value={`GROUP:${group.id}`}>Group — {group.name}</option>)}{events.map((event) => <option key={event.id} value={`EVENT:${event.id}`}>Event — {event.name}</option>)}</select></label>
         <label className="text-sm font-medium">Event-local date<input aria-label="Portfolio Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal" /></label>
       </div>
-      <div className="mt-4 flex gap-3 print:hidden"><Button onClick={() => load()}>Apply date</Button><Button variant="outline" onClick={() => { setDate(""); load(view, scopeValue, ""); }}>Clear date</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
+      <fieldset className="mt-5 rounded-lg border p-4 print:hidden"><legend className="px-1 text-sm font-medium">Reporting scope</legend><p className="text-xs text-muted-foreground">Select one or more Events to include.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => choose(events.map(({ id }) => id))}>All Events</Button><Button type="button" size="sm" variant="outline" onClick={() => choose([])}>Clear</Button>{accessibleGroups.map((group) => <Button key={group.id} type="button" size="sm" variant="outline" onClick={() => choose(group.events.map(({ event }) => event.id))}>{group.name}</Button>)}</div><div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{events.map((event) => <label key={event.id} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background p-3 text-sm"><input type="checkbox" checked={selectedEventIds.includes(event.id)} onChange={() => toggleEvent(event.id)} className="mt-0.5 h-4 w-4" /><span><span className="font-medium">{event.name}</span><span className="block text-xs text-muted-foreground">{event.timezone}</span></span></label>)}</div></fieldset>
+      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button onClick={() => load()}>Apply selection</Button><Button variant="outline" onClick={() => { setDate(""); load(view, selectedEventIds, ""); }}>Clear date</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
       {report ? <p className="mt-4 text-xs text-muted-foreground">Scope: {report.scope.name} · {report.reports.length} Event{report.reports.length === 1 ? "" : "s"}{report.filter.date ? ` · ${report.filter.date} in each Event timezone` : ""}</p> : null}
     </div>
     {isLoading ? <StateCard>Loading organisational report...</StateCard> : null}
     {error ? <StateCard error>{error}</StateCard> : null}
     {!isLoading && report ? <PortfolioTable report={report} view={view} /> : null}
   </section>;
+}
+
+function selectionFromScope(scope: string, events: GlacierEvent[], groups: EventGroup[]) {
+  if (scope.startsWith("EVENT:")) return events.filter(({ id }) => id === scope.slice(6)).map(({ id }) => id);
+  if (scope.startsWith("GROUP:")) return groups.find(({ id }) => id === scope.slice(6))?.events.map(({ event }) => event.id).filter((id) => events.some((candidate) => candidate.id === id)) ?? [];
+  return events.map(({ id }) => id);
 }
 
 function PortfolioTable({ report, view }: { report: PortfolioReport; view: PortfolioReportView }) {

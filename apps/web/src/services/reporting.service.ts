@@ -337,7 +337,7 @@ export type PortfolioReportData =
 export interface PortfolioReport {
   generatedAt: string;
   reportType: string;
-  scope: { type: "ALL" | "GROUP" | "EVENT"; id: string | null; name: string };
+  scope: { type: "ALL" | "GROUP" | "EVENT" | "SELECTED"; id: string | null; name: string };
   filter: { date: string | null };
   reports: Array<{
     event: { id: string; name: string; timezone: string };
@@ -370,13 +370,15 @@ export const reportingService = {
     api.get<OrganizationReport>("/reporting/organization"),
   getPortfolioReport: (
     reportType: string,
-    scope: "ALL" | "GROUP" | "EVENT",
+    scope: "ALL" | "GROUP" | "EVENT" | "SELECTED",
     scopeId?: string,
     date?: string,
+    eventIds?: string[],
   ) => {
     const query = new URLSearchParams({ scope });
     if (scopeId) query.set("scopeId", scopeId);
     if (date) query.set("date", date);
+    if (eventIds?.length) query.set("eventIds", eventIds.join(","));
     return api.get<PortfolioReport>(
       `/reporting/portfolio/${reportType}?${query.toString()}`,
     );

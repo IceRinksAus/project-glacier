@@ -152,3 +152,21 @@ Post-refinement verification passed:
 - Fictional browser acceptance confirmed six authorised local Events in the
   All Events view, report switching without leaving `/reports`, explicit Event
   identity/timezone rows and authorised Group/Event scope choices.
+
+### Multi-Event checklist refinement
+
+Organiser review replaced the single Reporting Scope dropdown with an explicit
+Event checklist. An operator can now include any one or more authorised Events,
+select all, clear the list or use an accessible Event Group as a quick
+selection. Applying a custom selection keeps the operator in the same report
+and recomputes the table and headline totals across only those Events.
+
+The API accepts a bounded explicit selection of 1–100 Event ids. It checks the
+entire selection through the authenticated Event authority and fails closed if
+any requested Event is outside that authority. Focused verification passed 2
+API suites / 27 tests and 1 web file / 3 tests. The complete local release gate
+then passed 92 API suites / 669 tests, 38 web files / 118 tests, both production
+builds, all 50 migrations and 5/5 isolation checks. The tracked-secret scan
+passed 668 files / 6 rules and isolated restore matched 16 critical tables.
+Fictional browser acceptance confirmed a six-Event selection could be reduced
+to five and applied without leaving the organisational report.

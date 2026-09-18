@@ -14,7 +14,7 @@ const events = [
   { id: "event-1", name: "Melbourne", timezone: "Australia/Melbourne" },
   { id: "event-2", name: "Sydney", timezone: "Australia/Sydney" },
 ] ;
-const groups = [{ id: "group-1", name: "Winter Season", status: "ACTIVE", events: [] }];
+const groups = [{ id: "group-1", name: "Winter Season", status: "ACTIVE", events: [{ event: events[0] }] }];
 const response = {
   generatedAt: "2027-01-01T00:00:00.000Z",
   reportType: "overview",
@@ -29,17 +29,28 @@ describe("PortfolioReportsWorkspace", () => {
   it("shows multiple Events in one organisational report", async () => {
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
     expect(await screen.findByRole("heading", { name: "Sales Summary" })).toBeVisible();
-    expect(screen.getByText("Melbourne")).toBeVisible();
-    expect(screen.getByText("Sydney")).toBeVisible();
+    expect(screen.getAllByText("Melbourne")[0]).toBeVisible();
+    expect(screen.getAllByText("Sydney")[0]).toBeVisible();
     expect(screen.getByText("$230.00")).toBeVisible();
-    expect(getPortfolioReport).toHaveBeenCalledWith("overview", "ALL", undefined, undefined);
+    expect(getPortfolioReport).toHaveBeenCalledWith("overview", "ALL", undefined, undefined, undefined);
   });
 
-  it("switches to an Event Group without expanding browser authority", async () => {
+  it("selects any combination of authorised Events", async () => {
     const user = userEvent.setup();
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
     await screen.findByText("Melbourne");
-    await user.selectOptions(screen.getByLabelText("Reporting scope"), "GROUP:group-1");
-    await waitFor(() => expect(getPortfolioReport).toHaveBeenLastCalledWith("overview", "GROUP", "group-1", undefined));
+    await user.click(screen.getByRole("checkbox", { name: /Sydney/ }));
+    await user.click(screen.getByRole("button", { name: "Apply selection" }));
+    await waitFor(() => expect(getPortfolioReport).toHaveBeenLastCalledWith("overview", "SELECTED", undefined, undefined, ["event-1"]));
+  });
+
+  it("uses an Event Group as a quick checklist selection", async () => {
+    const user = userEvent.setup();
+    render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
+    await screen.findByText("Melbourne");
+    await user.click(screen.getByRole("button", { name: "Clear" }));
+    await user.click(screen.getByRole("button", { name: "Winter Season" }));
+    expect(screen.getByRole("checkbox", { name: /Melbourne/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Sydney/ })).not.toBeChecked();
   });
 });

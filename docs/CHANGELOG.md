@@ -19,11 +19,14 @@
   identity, timezone and Event-local date meaning in multi-Event results.
 - Replaced the separate Event Reports implementation with a contextual link to
   the canonical organisational workspace.
+- Replaced the single reporting-scope dropdown with an Event checklist,
+  including All Events and Event Group shortcuts, so operators can report on
+  any authorised Event combination without leaving the organisational hub.
 
 ## Verification
 
-- API: 92 suites / 668 tests passed; production build passed.
-- Web: 38 files / 117 tests passed; production build passed.
+- API: 92 suites / 669 tests passed; production build passed.
+- Web: 38 files / 118 tests passed; production build passed.
 - All 50 migrations remained current and replayed from empty state.
 - Disposable authenticated tenant/role/Event/MFA isolation passed 5 / 5.
 - Tracked-secret scanning passed across 668 files and 6 rules.

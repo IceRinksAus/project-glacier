@@ -36,13 +36,19 @@ export class ReportingService {
     if (!supported.includes(reportType)) {
       throw new BadRequestException('Unsupported portfolio report type.');
     }
-    if (query.scope !== 'ALL' && !query.scopeId) {
+    if (query.scope !== 'ALL' && query.scope !== 'SELECTED' && !query.scopeId) {
       throw new BadRequestException('A scope ID is required.');
     }
 
     let scopedIds: string[] | undefined;
     let scopeName = 'All authorised Events';
-    if (query.scope === 'EVENT') {
+    if (query.scope === 'SELECTED') {
+      scopedIds = [...new Set((query.eventIds ?? '').split(',').filter(Boolean))];
+      if (scopedIds.length === 0 || scopedIds.length > 100) {
+        throw new BadRequestException('Select between 1 and 100 Events.');
+      }
+      scopeName = `${scopedIds.length} selected Event${scopedIds.length === 1 ? '' : 's'}`;
+    } else if (query.scope === 'EVENT') {
       scopedIds = [query.scopeId!];
     } else if (query.scope === 'GROUP') {
       await this.accessControl.assertEventGroupAccess(query.scopeId!, access);
@@ -71,6 +77,9 @@ export class ReportingService {
     });
     if (query.scope === 'EVENT' && events.length !== 1) {
       throw new NotFoundException('Event not found.');
+    }
+    if (query.scope === 'SELECTED' && events.length !== scopedIds!.length) {
+      throw new NotFoundException('One or more Events were not found.');
     }
     if (query.scope === 'EVENT') scopeName = events[0].name;
 

@@ -27,8 +27,9 @@ describe('ReportingService', () => {
         {
           provide: AccessControlService,
           useValue: {
-            eventWhere: (access: { organizationId: string }) => ({
+            eventWhere: (access: { organizationId: string }, where = {}) => ({
               organizationId: access.organizationId,
+              ...where,
             }),
             assertEventGroupAccess: jest.fn(),
           },
@@ -61,6 +62,26 @@ describe('ReportingService', () => {
     prisma.product.findMany.mockResolvedValue([]);
     prisma.rule.findMany.mockResolvedValue([]);
     prisma.eventGroup.findFirst.mockResolvedValue(null);
+  });
+
+  it('requires every explicitly selected Event to be authorised', async () => {
+    prisma.event.findMany.mockResolvedValue([
+      { id: 'event-1', name: 'Melbourne', timezone: 'Australia/Melbourne' },
+    ]);
+    const access = {
+      userId: 'user-1',
+      organizationId: 'org-1',
+      role: 'STAFF' as const,
+      accessScope: 'ASSIGNED_EVENTS' as const,
+    };
+
+    await expect(service.getPortfolioReport(access, 'overview', {
+      scope: 'SELECTED',
+      eventIds: 'event-1,event-outside-authority',
+    })).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.event.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { organizationId: 'org-1', id: { in: ['event-1', 'event-outside-authority'] } },
+    }));
   });
 
   it('builds a portfolio report only from Events in the authenticated access scope', async () => {
