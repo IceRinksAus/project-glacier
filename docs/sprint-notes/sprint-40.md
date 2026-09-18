@@ -119,3 +119,36 @@ hardware or other paid infrastructure was purchased or provisioned.
 - Managed production secrets, deployed reporting monitoring and cap alerts.
 - Real device/browser fleet validation and independent accessibility,
   accounting, privacy and security review.
+
+## Approved organisational reporting refinement
+
+Following organiser review, detailed reports now remain inside the
+Organisation Reports destination instead of redirecting into an individual
+Event page. Operators can switch report type while retaining an explicit All
+Events, Event Group or individual Event scope. Multi-Event rows always identify
+the source Event and preserve that Event's timezone and Event-local date
+semantics.
+
+The new bounded portfolio read supports overview, Ticket Type, Session,
+Product, Event-local date and sales-pace reports. All Events is resolved through
+the authenticated Event authority, Event Group scope requires access to the
+selected tenant-owned Group, and individual Event scope uses the existing
+not-found access boundary. The Event Reports tab now directs operators into the
+same organisational workspace with that Event preselected, removing the second
+competing report interface.
+
+Post-refinement verification passed:
+
+- Focused API reporting: 2 suites / 26 tests.
+- Focused web reporting: 3 files / 14 tests.
+- API: 92 suites / 668 tests; production build passed.
+- Web: 38 files / 117 tests; production build passed.
+- All 50 migrations remained current and replayed from empty state.
+- Disposable authenticated tenant/role/Event/MFA isolation passed 5 of 5.
+- Tracked-secret scanning passed across 668 files and 6 rules.
+- Isolated PostgreSQL backup/restore matched all 16 critical tables; the 0.29
+  MiB archive completed in 0.74 seconds and restored in 1.40 seconds.
+- The complete local release gate passed.
+- Fictional browser acceptance confirmed six authorised local Events in the
+  All Events view, report switching without leaving `/reports`, explicit Event
+  identity/timezone rows and authorised Group/Event scope choices.

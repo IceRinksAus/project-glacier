@@ -14,14 +14,19 @@
   EFTPOS with gross, successful refunds and net collection kept distinct.
 - Retained Event Groups as OWNER-managed report configuration and preserved
   read-only comparison for authorised operators.
+- Moved detailed reporting into the Organisation Reports workspace with All
+  Events, authorised Event Group and individual Event scopes, retaining Event
+  identity, timezone and Event-local date meaning in multi-Event results.
+- Replaced the separate Event Reports implementation with a contextual link to
+  the canonical organisational workspace.
 
 ## Verification
 
-- API: 92 suites / 666 tests passed; production build passed.
-- Web: 37 files / 115 tests passed; production build passed.
+- API: 92 suites / 668 tests passed; production build passed.
+- Web: 38 files / 117 tests passed; production build passed.
 - All 50 migrations remained current and replayed from empty state.
 - Disposable authenticated tenant/role/Event/MFA isolation passed 5 / 5.
-- Tracked-secret scanning passed across 665 files and 6 rules.
+- Tracked-secret scanning passed across 668 files and 6 rules.
 - Isolated PostgreSQL restore matched all 16 critical tables.
 - Complete local release gate and fictional responsive browser acceptance
   passed.

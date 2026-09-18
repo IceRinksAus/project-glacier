@@ -39,13 +39,28 @@ Production operations should monitor report latency, errors, cap utilisation and
 
 ## Detailed Category Reports and Exports
 
-The authenticated Reports destination is the discovery hub. It presents an
-Organisation headline position from the bounded Organisation summary, a
-selected-Event snapshot and a grouped catalogue that opens directly into the
-existing Event report workspace. Event Group administration remains available
-as report configuration rather than occupying the primary reporting position.
+The authenticated Reports destination is both the discovery hub and the
+canonical detailed-report workspace. It presents an Organisation headline
+position from the bounded Organisation summary and a grouped catalogue. A
+selected report remains at `/reports` and can be scoped to all authorised
+Events, an authorised Event Group or one authorised Event. Event Group
+administration remains available as report configuration rather than occupying
+the primary reporting position.
 Catalogue entries distinguish available reports from planned capabilities; a
 planned label is not evidence that a calculation exists.
+
+`GET /reporting/portfolio/:reportType` accepts the closed report set overview,
+ticket-types, sessions, products, dates and sales-pace. `ALL` resolves Events
+only through the authenticated Event-access predicate. `GROUP` additionally
+requires access to the tenant-owned Group and retains its configured Event
+order. `EVENT` uses the established indistinguishable not-found boundary. The
+read is capped at 100 Events and delegates each Event calculation to the same
+authoritative reporting methods used by the single-Event APIs. Responses retain
+Event id, name, timezone and per-Event report context; they do not merge
+different local dates or timezones into a fabricated universal day.
+
+The Event Reports tab is now a contextual route into this workspace with the
+Event scope preselected. It is not a second reporting implementation.
 
 Detailed reads currently group sales and operations by Ticket Type, Session, Event-local Session date, Product and Product Variant. Event-local date and Session filters reuse the same scope contract as the Event overview. Product reporting distinguishes confirmed units/gross item sales from current Event-wide inventory commitments and per-Session reusable capacity. Active `REQUIRE_PRODUCT` Rules identify required products separately from discretionary Add-ons.
 
