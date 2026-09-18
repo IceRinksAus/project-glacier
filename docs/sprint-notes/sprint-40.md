@@ -170,3 +170,14 @@ builds, all 50 migrations and 5/5 isolation checks. The tracked-secret scan
 passed 668 files / 6 rules and isolated restore matched 16 critical tables.
 Fictional browser acceptance confirmed a six-Event selection could be reduced
 to five and applied without leaving the organisational report.
+
+### Catalogue status clarification
+
+Organiser review identified that catalogue cards linking to the general Sales
+Summary could incorrectly imply a dedicated report was complete. Sales by
+Channel, Payment Method Summary, Cash Sales, EFTPOS Sales, Refund Summary and
+Payment Exceptions are now visibly labelled `Coming soon` in orange and are
+not interactive. Capacity Utilisation now opens the completed Session report,
+which contains the authoritative used and remaining capacity measures. This is
+a presentation correction only; it does not claim or introduce new financial
+reporting authority.

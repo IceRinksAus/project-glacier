@@ -22,6 +22,9 @@
 - Replaced the single reporting-scope dropdown with an Event checklist,
   including All Events and Event Group shortcuts, so operators can report on
   any authorised Event combination without leaving the organisational hub.
+- Corrected the report catalogue so six unfinished channel, payment, Cash,
+  EFTPOS, refund and exception reports show an orange `Coming soon` status and
+  cannot be mistaken for completed report links.
 
 ## Verification
 

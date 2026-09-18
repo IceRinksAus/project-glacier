@@ -67,7 +67,10 @@ describe("ReportsPage Event Groups", () => {
     expect(screen.getByRole("heading", { name: "Tickets and operations" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Financial and reconciliation" })).toBeVisible();
     expect(screen.getByRole("link", { name: /Sales by Ticket Type/ })).toHaveAttribute("href", "/reports?report=TICKET_TYPES&scope=ALL");
-    expect(screen.getByRole("link", { name: /Sales by Channel/ })).toHaveAttribute("href", "/reports?report=OVERVIEW&scope=ALL");
+    expect(screen.queryByRole("link", { name: /Sales by Channel/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Coming soon")).toHaveLength(6);
+    expect(screen.getAllByText("Coming soon")[0]).toHaveClass("bg-orange-100", "text-orange-800");
+    expect(screen.getByRole("link", { name: /Capacity Utilisation/ })).toHaveAttribute("href", "/reports?report=SESSIONS&scope=ALL");
   }, 15000);
 
   it("persists selected Event membership in organiser order", async () => {

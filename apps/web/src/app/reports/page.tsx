@@ -46,7 +46,7 @@ type ReportCardDefinition = {
   description: string;
   view?: string;
   icon: typeof BarChart3;
-  status?: "Available" | "Planned";
+  status?: "Available" | "Coming soon";
 };
 
 const reportCategories: Array<{
@@ -64,7 +64,7 @@ const reportCategories: Array<{
       { title: "Sales by Ticket Type", description: "Ticket quantity, sales mix, admissions and gross item sales.", view: "TICKET_TYPES", icon: Ticket },
       { title: "Sales by Session", description: "Session revenue, attendance demand and remaining capacity.", view: "SESSIONS", icon: CalendarRange },
       { title: "Sales by Event Date", description: "Daily sales, Tickets, admissions and capacity performance.", view: "DATES", icon: BarChart3 },
-      { title: "Sales by Channel", description: "Online card, POS Cash and POS EFTPOS comparison.", view: "OVERVIEW", icon: CreditCard },
+      { title: "Sales by Channel", description: "Online card, POS Cash and POS EFTPOS comparison.", icon: CreditCard, status: "Coming soon" },
       { title: "Booking Pace", description: "Daily and cumulative booking demand before each Event date.", view: "SALES_PACE", icon: ChartNoAxesCombined },
     ],
   },
@@ -74,7 +74,7 @@ const reportCategories: Array<{
     tone: "text-emerald-700 bg-emerald-50",
     reports: [
       { title: "Session Performance", description: "Bookings, Tickets, collected revenue and utilisation by Session.", view: "SESSIONS", icon: CalendarRange },
-      { title: "Capacity Utilisation", description: "Reserved attendance, remaining places and sell-through by Session.", view: "OVERVIEW", icon: UsersRound },
+      { title: "Capacity Utilisation", description: "Reserved attendance, remaining places and sell-through by Session.", view: "SESSIONS", icon: UsersRound },
       { title: "Attendance and Check-in", description: "Tickets issued, admissions and attendance rate.", view: "OVERVIEW", icon: ScanLine },
       { title: "Product and Add-on Performance", description: "Units, gross sales, stock and reusable Product capacity.", view: "PRODUCTS", icon: PackageSearch },
       { title: "Event Comparison", description: "Compare saved seasons, tours and Event Groups using consistent measures.", icon: ClipboardList },
@@ -85,11 +85,11 @@ const reportCategories: Array<{
     description: "Operational payment visibility without claiming settlement or accounting authority.",
     tone: "text-amber-700 bg-amber-50",
     reports: [
-      { title: "Payment Method Summary", description: "Successful collections by supported Glacier payment method.", view: "OVERVIEW", icon: CreditCard },
-      { title: "Cash Sales", description: "Successful POS Cash transactions for operational reconciliation.", view: "OVERVIEW", icon: CircleDollarSign },
-      { title: "EFTPOS Sales", description: "Standalone POS EFTPOS transactions recorded by Glacier.", view: "OVERVIEW", icon: CreditCard },
-      { title: "Refund Summary", description: "Successful refunds and their effect on Event net collection.", view: "OVERVIEW", icon: CircleDollarSign },
-      { title: "Payment Exceptions", description: "Pending Payments and failed reconciliation attempts needing review.", view: "OVERVIEW", icon: ClipboardList },
+      { title: "Payment Method Summary", description: "Successful collections by supported Glacier payment method.", icon: CreditCard, status: "Coming soon" },
+      { title: "Cash Sales", description: "Successful POS Cash transactions for operational reconciliation.", icon: CircleDollarSign, status: "Coming soon" },
+      { title: "EFTPOS Sales", description: "Standalone POS EFTPOS transactions recorded by Glacier.", icon: CreditCard, status: "Coming soon" },
+      { title: "Refund Summary", description: "Successful refunds and their effect on Event net collection.", icon: CircleDollarSign, status: "Coming soon" },
+      { title: "Payment Exceptions", description: "Pending Payments and failed reconciliation attempts needing review.", icon: ClipboardList, status: "Coming soon" },
     ],
   },
 ];
@@ -198,7 +198,7 @@ function ReportsPageContent() {
           <div>
             <p className="text-sm font-semibold text-primary">Report library</p>
             <h2 id="report-library-heading" className="mt-1 text-2xl font-semibold">Choose the question you want to answer</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Available reports open with the selected Event. Planned reports stay visible so the reporting roadmap is clear.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Available reports open in the organisational workspace. Coming-soon reports stay visible so the reporting roadmap is clear.</p>
           </div>
           {reportCategories.map((category) => <ReportCategory key={category.title} category={category} selectedEventId={selectedEventId} />)}
         </section>
@@ -256,9 +256,9 @@ function ReportCategory({ category, selectedEventId }: { category: (typeof repor
 function ReportCard({ report, selectedEventId }: { report: ReportCardDefinition; selectedEventId: string }) {
   const status = report.status ?? "Available";
   const Icon = report.icon;
-  const content = <><div className="flex items-start justify-between gap-4"><span className="rounded-lg bg-primary/10 p-2 text-primary"><Icon aria-hidden="true" className="h-6 w-6" /></span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Available" ? "bg-emerald-100 text-emerald-800" : "bg-muted text-muted-foreground"}`}>{status}</span></div><h4 className="mt-5 text-base font-semibold">{report.title}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{report.description}</p></>;
+  const content = <><div className="flex items-start justify-between gap-4"><span className="rounded-lg bg-primary/10 p-2 text-primary"><Icon aria-hidden="true" className="h-6 w-6" /></span><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${status === "Available" ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}`}>{status}</span></div><h4 className="mt-5 text-base font-semibold">{report.title}</h4><p className="mt-2 text-sm leading-6 text-muted-foreground">{report.description}</p></>;
   if (report.title === "Event Comparison") return <a href="#event-groups" className="rounded-xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{content}</a>;
-  if (status === "Planned" || !selectedEventId || !report.view) return <div className="rounded-xl border bg-card p-5 opacity-80">{content}</div>;
+  if (status === "Coming soon" || !selectedEventId || !report.view) return <div className="rounded-xl border bg-card p-5 opacity-80">{content}</div>;
   return <Link href={`/reports?report=${report.view}&scope=ALL`} className="rounded-xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{content}</Link>;
 }
 
