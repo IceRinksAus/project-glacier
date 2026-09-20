@@ -103,7 +103,7 @@ when the catalogue matches this runbook.
 | WEB-2 | Stripe test | 1 Adult + 1 Young Child + required Kanga | $30.00 | 2 | 1 |
 | POS-1 | Cash | 2 Adult | $40.00 | 2 | 0 |
 | POS-2 | Standalone EFTPOS | 1 Child + 1 Skate Hire | $20.00 | 1 | 1 |
-| POS-3 | Cash merchandise | 1 Blue Kanga | $10.00 | 0 | 1 |
+| POS-3 | Cash Session Product | 1 Blue Kanga linked to the selected Session | $10.00 | 0 | 1 |
 
 Before refunds or rescheduling, the expected combined position is:
 

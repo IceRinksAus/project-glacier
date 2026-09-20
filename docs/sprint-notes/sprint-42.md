@@ -219,6 +219,34 @@ evidence constrain changes.
 - This is local integration evidence only; hosted webhook delivery and real
   settlement remain future production evidence.
 
+### S42-F13 — Product-only POS cannot sell Session-linked Products
+
+- **Severity:** Blocker for POS-3; High for event-day operations.
+- **Where:** POS Product-only sale using a Kanga.
+- **Expected:** Staff can sell a Kanga without creating a Ticket, but must select
+  the Session whose finite Kanga availability will be consumed.
+- **Observed:** Merchandise-only POS exposes only Products that require no
+  Session and have no reusable Session capacity. The rehearsal Event therefore
+  shows no eligible Products because Kanga and Skate Hire are Session-linked.
+- **Impact:** A valid operational Product-only transaction cannot be completed.
+  Simply exposing the Product would allow Session capacity to be oversold.
+- **Clarified domain model:**
+  - general merchandise is Event-scoped and uses global inventory only;
+  - operational Products such as Kangas are Session-scoped and consume their
+    Product capacity for the selected Session;
+  - neither path creates a Ticket or consumes rink admission capacity; and
+  - a Kanga-only sale must not be used to disguise a missing young-child
+    admission, because that would still understate rink attendance.
+- **Correction direction:** Add an optional authoritative Session association to
+  retail Sales; require it for `requiresSession` Products; restrict the
+  catalogue to active Product assignments for that Session; include reserved
+  and completed retail quantities in Session-Product availability; preserve
+  inventory, payment idempotency, Event access and reporting evidence; and show
+  the selected Session on review, receipt and sale lookup.
+
+POS-3 remains open until this is implemented, migrated, regression-tested and
+reconciled against both Product capacity and admission capacity.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect
