@@ -588,7 +588,8 @@ export class EventWaiverService {
       eventStartDate: configuration.eventStartDate,
       eventEndDate: configuration.eventEndDate,
       eventDates: `${configuration.eventStartDate} to ${configuration.eventEndDate}`,
-      additionalInformation: configuration.additionalInformation.trim(),
+      additionalInformation:
+        configuration.additionalInformation.trim() || 'None specified.',
       jurisdiction: event.jurisdiction ?? '',
       organizationName: event.organization.name,
       organizationLegalName: event.organization.legalName ?? '',

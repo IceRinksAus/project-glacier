@@ -22,6 +22,7 @@ The implementation does not assert that historical wording is current legal advi
 - Tightened legal-evidence routes to OWNER/MANAGER with assigned-Event enforcement. SCANNER cannot retrieve signatures, child dates of birth or template administration.
 - Corrected the Event Waiver setup after organiser review: Glacier now automatically resolves the compatible approved activity/jurisdiction template, pre-fills promoter, location, address and Event dates, and exposes only those bounded Event-specific fields plus optional approved operational information. The legal template remains locked and version-controlled; an organiser cannot compose or silently change legal clauses from the Event screen.
 - Added explicit blocked states when Event classification, required values or an approved compatible template is missing. Generating a preview persists only the permitted configuration, renders a new immutable draft and leaves publication as a separate OWNER action.
+- Added an idempotent local-only fixture command for fictional NSW, VIC, WA and SA ice-skating templates. Each fixture is visibly labelled `LOCAL TEST ONLY`, refuses to run when `NODE_ENV=production`, contains no asserted legislation reference and exists solely so the complete Waiver workflow can be tested before real lawyer-approved wording is available.
 
 ## Data and migration evidence
 

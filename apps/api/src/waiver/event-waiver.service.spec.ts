@@ -364,6 +364,21 @@ describe('EventWaiverService', () => {
     );
   });
 
+  it('renders an optional additional-information placeholder when left blank', async () => {
+    waiverTemplateServiceMock.findApprovedTemplate.mockResolvedValue({
+      ...template,
+      contentTemplate: 'Event information: {{additionalInformation}}',
+    });
+
+    await service.createDraft('organization-1', event.id);
+
+    expect(transactionMock.waiverVersion.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        content: 'Event information: None specified.',
+      }),
+    });
+  });
+
   it('reuses the stable Event waiver and increments the draft version', async () => {
     prismaMock.event.findFirst.mockResolvedValue({
       ...event,
