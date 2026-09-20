@@ -95,6 +95,7 @@ export default function EventWorkspacePage({
 
             {activeTab === "Waiver" ? (
               <WaiverWorkspace
+                key={event.id}
                 eventId={event.id}
                 activityType={event.activityType}
                 jurisdiction={event.jurisdiction}

@@ -10,7 +10,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   EventWaiverAdministration,
@@ -80,10 +87,13 @@ export function WaiverWorkspace({
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
 
   const loadWorkspace = useCallback(
-    async (submissionSearch?: string) => {
+    async (submissionSearch?: string, preferredVersionId?: string) => {
+      const generation = ++loadGeneration.current;
       try {
+        setIsLoading(true);
         setError(null);
         const [waiverResult, preparationResult, submissionResult] =
           await Promise.all([
@@ -91,35 +101,62 @@ export function WaiverWorkspace({
             waiverService.getPreparation(eventId),
             waiverService.listSubmissions(eventId, submissionSearch),
           ]);
+        if (generation !== loadGeneration.current) return;
         setWaiver(waiverResult);
         setPreparation(preparationResult);
         setConfiguration(preparationResult.fields);
         setSubmissions(submissionResult);
         setSelectedVersionId(
-          (current) => current ?? waiverResult?.versions[0]?.id ?? null,
+          (current) =>
+            (preferredVersionId &&
+            waiverResult?.versions.some(
+              (version) => version.id === preferredVersionId,
+            )
+              ? preferredVersionId
+              : waiverResult?.versions.some(
+                    (version) => version.id === current,
+                  )
+                ? current
+                : waiverResult?.versions[0]?.id) ?? null,
         );
         const hasPublishedVersion = waiverResult?.versions.some(
           (version) => version.status === "PUBLISHED",
         );
-        setQrCode(
+        const nextQrCode =
           hasPublishedVersion && preparationResult.event.status === "ACTIVE"
             ? await waiverService.generatePublicQrCode(eventId)
-            : null,
-        );
+            : null;
+        if (generation !== loadGeneration.current) return;
+        setQrCode(nextQrCode);
       } catch (loadError) {
+        if (generation !== loadGeneration.current) return;
         setError(
           loadError instanceof Error
             ? loadError.message
             : "Unable to load the Event waiver workspace.",
         );
       } finally {
-        setIsLoading(false);
+        if (generation === loadGeneration.current) setIsLoading(false);
       }
     },
     [eventId],
   );
 
   useEffect(() => {
+    loadGeneration.current += 1;
+    setIsLoading(true);
+    setWaiver(null);
+    setPreparation(null);
+    setConfiguration(null);
+    setSubmissions([]);
+    setSelectedVersionId(null);
+    setSelectedSubmission(null);
+    setQrCode(null);
+    setAssociationBookingNumber("");
+    setAssociationBooking(null);
+    setSignatoryParticipantId("");
+    setMinorMatches({});
+    setError(null);
     const loadTimer = window.setTimeout(() => {
       void loadWorkspace();
     }, 0);
@@ -152,6 +189,15 @@ export function WaiverWorkspace({
   const generationReady = Boolean(
     preparation?.template && requiredConfigurationComplete,
   );
+  const hasUnappliedConfiguration = Boolean(
+    configuration &&
+      preparation &&
+      Object.keys(configuration).some(
+        (key) =>
+          configuration[key as keyof EventWaiverConfiguration] !==
+          preparation.fields[key as keyof EventWaiverConfiguration],
+      ),
+  );
 
   function updateConfiguration(
     field: keyof EventWaiverConfiguration,
@@ -168,8 +214,7 @@ export function WaiverWorkspace({
       setError(null);
       if (!configuration) return;
       const draft = await waiverService.createDraft(eventId, configuration);
-      await loadWorkspace(search);
-      setSelectedVersionId(draft.id);
+      await loadWorkspace(search, draft.id);
     } catch (mutationError) {
       setError(
         mutationError instanceof Error
@@ -396,6 +441,15 @@ export function WaiverWorkspace({
                     These values are inserted into the controlled template. They
                     do not alter its legal clauses.
                   </p>
+                  {hasUnappliedConfiguration ? (
+                    <p
+                      role="status"
+                      className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-900"
+                    >
+                      These edits are not in the preview yet. Select Generate
+                      updated preview to create a new immutable version.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="space-y-1.5 text-sm font-medium">

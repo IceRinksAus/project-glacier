@@ -69,6 +69,13 @@ Victorian Event, using the profile and expected transaction totals in
   generated versions, show which configuration produced each version, select
   the newly generated version reliably, and test all supported variables.
 
+Initial remediation now clears all Event-specific Waiver state before loading
+a different Event, ignores stale responses from an earlier Event request,
+marks edited fields as not yet included in the immutable preview and selects
+the exact newly generated version after generation. Focused UI regression
+coverage proves both Event switching and updated-preview selection. The
+organiser retest remains required before F02/F03 are closed.
+
 ### S42-F04 — Waiver publication and Event activation sequence is unclear
 
 - **Severity:** High
