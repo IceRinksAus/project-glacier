@@ -89,6 +89,19 @@ Use that value as `STRIPE_WEBHOOK_SECRET` for the API process receiving those fo
 
 Restart the API after changing local environment values.
 
+Before an end-to-end rehearsal, run the non-sensitive local readiness check:
+
+```bash
+bash scripts/check-local-rehearsal-readiness.sh
+```
+
+This checks the database, API, public site, organiser dashboard, presence of a
+local webhook secret and whether a Stripe forwarding process is running. It
+does not display secrets and cannot prove that the listener's signing secret
+matches the API value; a successfully delivered test webhook remains the
+authoritative integration check. See
+[`PILOT_REHEARSAL.md`](./PILOT_REHEARSAL.md) for the complete evidence run.
+
 ## Stripe Test Payments
 
 Use Stripe test mode for local development.
