@@ -149,6 +149,38 @@ Victorian Event, using the profile and expected transaction totals in
   final review. Keep draft as the safe default and show the selected outcome in
   the primary action label. The server remains authoritative for the status.
 
+### S42-F10 — Event creation feels like disconnected workspaces
+
+- **Severity:** High; cross-cutting organiser experience.
+- **Where:** Complete new-Event setup journey.
+- **Expected:** One guided, resumable process should explain the order of work,
+  preserve context and lead naturally from Event details to review and launch.
+- **Observed:** Setup jumps between tabs. Some sections depend on configuration
+  elsewhere, but those dependencies are discovered only after opening them.
+- **Impact:** Organisers must understand Glacier's internal data model to know
+  what to do next, increasing setup time and the chance of incomplete Events.
+- **Correction direction:** Retain the specialist workspaces for later editing,
+  but introduce a connected first-time setup journey with **Save and continue**,
+  **Back**, persistent progress, dependency-aware explanations and a final
+  review/activation step.
+
+The proposed organiser sequence is:
+
+1. Event identity, jurisdiction, venue, dates and timezone;
+2. Sessions and whether generated Sessions are draft or active;
+3. Ticket Types, age ranges and presentation;
+4. Products and inventory/capacity model;
+5. Ticket-combination and required-Product Rules;
+6. Event-specific Waiver generation and publication;
+7. Website branding and public preview;
+8. operational settings and staff assignment; and
+9. readiness review, issues to resolve and Event activation.
+
+Each step should state why any dependency is required and link back to the
+specific incomplete step. Later edits must remain available through Event tabs,
+with impact warnings where Sessions, sales, published Waivers or accepted legal
+evidence constrain changes.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect
