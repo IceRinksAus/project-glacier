@@ -153,11 +153,15 @@ export function ScheduleTimetableStep({
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="text-sm font-medium">
+                    <label
+                      htmlFor={`activity-name-${entry.id}`}
+                      className="text-sm font-medium"
+                    >
                       Activity name
                     </label>
 
                     <input
+                      id={`activity-name-${entry.id}`}
                       type="text"
                       value={entry.name}
                       placeholder="e.g. Public Skate"
@@ -173,11 +177,15 @@ export function ScheduleTimetableStep({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">
+                    <label
+                      htmlFor={`start-time-${entry.id}`}
+                      className="text-sm font-medium"
+                    >
                       Start time
                     </label>
 
                     <input
+                      id={`start-time-${entry.id}`}
                       type="time"
                       value={entry.startTime}
                       onChange={(event) =>
@@ -192,12 +200,16 @@ export function ScheduleTimetableStep({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">
+                    <label
+                      htmlFor={`duration-${entry.id}`}
+                      className="text-sm font-medium"
+                    >
                       Duration
                     </label>
 
                     <div className="mt-2 flex items-center gap-2">
                       <input
+                        id={`duration-${entry.id}`}
                         type="number"
                         min={1}
                         value={entry.duration}
@@ -218,11 +230,15 @@ export function ScheduleTimetableStep({
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium">
+                    <label
+                      htmlFor={`activity-type-${entry.id}`}
+                      className="text-sm font-medium"
+                    >
                       Activity type
                     </label>
 
                     <select
+                      id={`activity-type-${entry.id}`}
                       value={entry.type}
                       onChange={(event) =>
                         updateEntry(
@@ -245,14 +261,18 @@ export function ScheduleTimetableStep({
 
                   {entry.type === "BOOKABLE" ? (
                     <div>
-                      <label className="text-sm font-medium">
+                      <label
+                        htmlFor={`capacity-${entry.id}`}
+                        className="text-sm font-medium"
+                      >
                         Capacity
                       </label>
 
                       <input
+                        id={`capacity-${entry.id}`}
                         type="number"
                         min={1}
-                        value={entry.capacity}
+                        value={entry.capacity || ""}
                         onChange={(event) =>
                           updateEntry(
                             entry.id,

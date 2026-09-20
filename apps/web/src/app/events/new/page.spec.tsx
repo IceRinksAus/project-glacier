@@ -54,7 +54,7 @@ async function reachReview(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: /Continue/ }));
 
   await user.click(screen.getByRole("button", { name: /Continue/ }));
-  await user.click(screen.getByRole("radio", { name: /No Waiver/ }));
+  expect(screen.getByText("Continue in guided setup")).toBeVisible();
   await user.click(screen.getByRole("button", { name: /Continue/ }));
 }
 
@@ -110,7 +110,9 @@ describe("NewEventPage", () => {
         }),
       }),
     );
-    expect(routerPush).toHaveBeenCalledWith("/events/event-1");
+    expect(routerPush).toHaveBeenCalledWith(
+      "/events/event-1?tab=Sessions&setup=1",
+    );
   });
 
   it("preserves the review when creation returns a slug conflict", async () => {

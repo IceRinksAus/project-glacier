@@ -41,6 +41,12 @@ Victorian Event, using the profile and expected transaction totals in
   before final readiness review and Event activation. Preserve direct access
   for later version management.
 
+Initial connected-setup remediation removes Waiver creation from the initial
+Event form. A newly created draft now opens at Sessions and shows a resumable
+seven-step guide through Sessions, Ticket Types, Products and Rules, Waiver,
+Website, operations and final review. The specialist Waiver workspace remains
+available for later version management.
+
 ### S42-F02 — Waiver preview displayed another Event's details
 
 - **Severity:** Blocker
@@ -92,6 +98,11 @@ organiser retest remains required before F02/F03 are closed.
   status. Waiver publication must remain possible for a draft Event; its public
   URL/QR remains unavailable until Event activation.
 
+The new draft-Event guide now states that Waiver preparation occurs after the
+operational catalogue and before final review. Existing readiness controls
+remain authoritative; the guide neither publishes a Waiver nor bypasses Event
+activation requirements.
+
 ### S42-F05 — Session capacity input preserves a leading zero
 
 - **Severity:** Medium
@@ -101,6 +112,12 @@ organiser retest remains required before F02/F03 are closed.
 - **Impact:** Minor friction and uncertainty during repeated Session setup.
 - **Correction direction:** Permit a temporary empty input state and validate a
   positive integer on continue/blur across every schedule mode.
+
+Remediation now permits the controlled capacity field to render temporarily
+empty, so replacing the default `200` with `100` no longer produces a leading
+zero. The existing positive-capacity validation continues to prevent review
+until a valid value is present. Focused regression coverage also verifies the
+field's accessible label.
 
 ### S42-F06 — Event identity and dates cannot be edited from Overview
 
@@ -171,6 +188,13 @@ organiser retest remains required before F02/F03 are closed.
   but introduce a connected first-time setup journey with **Save and continue**,
   **Back**, persistent progress, dependency-aware explanations and a final
   review/activation step.
+
+The first connected-flow slice is now implemented for every draft Event. The
+guide preserves Event context, exposes Back/Continue navigation and makes the
+required order visible without duplicating the underlying configuration or
+readiness authorities. Workspace-specific save actions remain explicit. Safe
+Event identity/date editing and richer persisted completion states remain open
+for the next slice.
 
 The proposed organiser sequence is:
 

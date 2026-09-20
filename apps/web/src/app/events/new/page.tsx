@@ -21,7 +21,7 @@ const steps = [
   "Dates & timezone",
   "Venue & activity",
   "Gate entry",
-  "Waiver & terms",
+  "Setup journey",
   "Review",
 ];
 
@@ -65,7 +65,6 @@ interface WizardData {
   activityType: CreateGlacierEvent["activityType"];
   opensBefore: string;
   closesAfter: string;
-  waiverChoice: "NONE" | "CONFIGURE" | "";
   branding: EventBranding;
 }
 
@@ -130,7 +129,6 @@ const initialData: WizardData = {
   activityType: "ICE_SKATING",
   opensBefore: "30",
   closesAfter: "0",
-  waiverChoice: "",
   branding: defaultBranding,
 };
 
@@ -250,8 +248,6 @@ export default function NewEventPage() {
       )
         return "Entry settings must be whole minutes from 0 to 240.";
     }
-    if (step === 5 && !data.waiverChoice)
-      return "Choose whether this Event requires Waiver setup.";
     return "";
   }
 
@@ -263,7 +259,7 @@ export default function NewEventPage() {
   }
 
   async function createEvent() {
-    if (!interpretedDates || !data.jurisdiction || !data.waiverChoice) return;
+    if (!interpretedDates || !data.jurisdiction) return;
     setIsCreating(true);
     setError("");
     try {
@@ -290,9 +286,7 @@ export default function NewEventPage() {
           heroDescription: data.branding.heroDescription?.trim() || undefined,
         },
       });
-      router.push(
-        `/events/${event.id}${data.waiverChoice === "CONFIGURE" ? "?tab=Waiver" : ""}`,
-      );
+      router.push(`/events/${event.id}?tab=Sessions&setup=1`);
     } catch (creationError) {
       setError(
         creationError instanceof Error
@@ -681,47 +675,18 @@ export default function NewEventPage() {
           ) : null}
 
           {step === 5 ? (
-            <fieldset className="mt-5 space-y-3">
-              <legend className="text-sm text-muted-foreground">
-                Choose one. No Waiver is a valid Event setup.
-              </legend>
-              {[
-                [
-                  "NONE",
-                  "No Waiver",
-                  "Continue setup without creating legal content.",
-                ],
-                [
-                  "CONFIGURE",
-                  "Configure a Waiver",
-                  "Open the existing Waiver Workspace after Event creation.",
-                ],
-              ].map(([value, title, detail]) => (
-                <label
-                  key={value}
-                  className="flex cursor-pointer gap-3 rounded-xl border p-4"
-                >
-                  <input
-                    type="radio"
-                    name="waiver"
-                    value={value}
-                    checked={data.waiverChoice === value}
-                    onChange={() =>
-                      update(
-                        "waiverChoice",
-                        value as WizardData["waiverChoice"],
-                      )
-                    }
-                  />
-                  <span>
-                    <span className="block font-semibold">{title}</span>
-                    <span className="mt-1 block text-sm text-muted-foreground">
-                      {detail}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
+            <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-5 text-sky-950">
+              <h3 className="font-semibold">Continue in guided setup</h3>
+              <p className="mt-2 text-sm leading-6">
+                Glacier will create this Event as a private draft, then guide
+                you through Sessions, Ticket Types, Products and Rules, Waiver,
+                Website, operational settings and final activation review.
+              </p>
+              <p className="mt-3 text-sm font-medium">
+                Waiver preparation happens later, after the operational Event
+                details it depends on are ready.
+              </p>
+            </div>
           ) : null}
 
           {step === 6 ? (
@@ -751,14 +716,7 @@ export default function NewEventPage() {
                 label="Gate entry"
                 value={`Opens ${data.opensBefore} min before · closes ${data.closesAfter} min after`}
               />
-              <Review
-                label="Waiver"
-                value={
-                  data.waiverChoice === "CONFIGURE"
-                    ? "Configure after creation"
-                    : "No Waiver"
-                }
-              />
+              <Review label="Next" value="Continue with Sessions in guided setup" />
             </dl>
           ) : null}
 

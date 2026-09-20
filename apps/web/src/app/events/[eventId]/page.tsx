@@ -5,6 +5,7 @@ import Link from "next/link";
 import { use } from "react";
 
 import { EventHeader } from "@/components/events/EventHeader";
+import { EventSetupGuide } from "@/components/events/EventSetupGuide";
 import { EventSettingsWorkspace } from "@/components/events/EventSettingsWorkspace";
 import { EventOverview } from "@/components/events/EventOverview";
 import { EventBrandingWorkspace } from "@/components/events/EventBrandingWorkspace";
@@ -69,6 +70,10 @@ export default function EventWorkspacePage({
             />
 
             <EventTabs activeTab={activeTab} onChange={selectTab} />
+
+            {event.status === "DRAFT" ? (
+              <EventSetupGuide activeTab={activeTab} onNavigate={selectTab} />
+            ) : null}
 
             {activeTab === "Overview" ? (
               <EventOverview
