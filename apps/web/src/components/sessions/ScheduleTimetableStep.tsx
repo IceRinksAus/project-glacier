@@ -29,6 +29,22 @@ export function ScheduleTimetableStep({
   onNext,
 }: ScheduleTimetableStepProps) {
 
+  const validationIssues = entries.flatMap((entry, index) => {
+    const prefix = `Activity ${index + 1}`;
+    const issues: string[] = [];
+    if (!entry.name.trim()) issues.push(`${prefix}: enter an activity name.`);
+    if (!entry.startTime) issues.push(`${prefix}: choose a start time.`);
+    if (entry.duration <= 0) issues.push(`${prefix}: enter a duration greater than zero.`);
+    if (entry.type === "BOOKABLE" && entry.capacity <= 0) {
+      issues.push(`${prefix}: enter a capacity greater than zero.`);
+    }
+    return issues;
+  });
+
+  if (entries.length === 0) {
+    validationIssues.push("Add at least one activity.");
+  }
+
 
   function addEntry() {
     const newEntry: TimetableEntry = {
@@ -263,6 +279,20 @@ export function ScheduleTimetableStep({
         )}
       </div>
 
+      {validationIssues.length > 0 ? (
+        <div
+          role="alert"
+          className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950"
+        >
+          <p className="font-semibold">Complete these details to continue</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {validationIssues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       <div className="mt-8 flex items-center justify-between border-t pt-6">
         <Button
           type="button"
@@ -275,17 +305,7 @@ export function ScheduleTimetableStep({
         <Button
           type="button"
           onClick={onNext}
-          disabled={
-            entries.length === 0 ||
-            entries.some(
-              (entry) =>
-                !entry.name.trim() ||
-                !entry.startTime ||
-                entry.duration <= 0 ||
-                (entry.type === "BOOKABLE" &&
-                  entry.capacity <= 0),
-            )
-          }
+          disabled={validationIssues.length > 0}
         >
           Next: Review schedule
         </Button>

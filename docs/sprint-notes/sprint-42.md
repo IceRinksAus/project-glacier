@@ -123,6 +123,18 @@ Victorian Event, using the profile and expected transaction totals in
   the Event timezone, and derive the web builder's limits in that same timezone.
   Retain the existing timezone-aware Session generation.
 
+### S42-F08 — Disabled schedule review gives no reason
+
+- **Severity:** High
+- **Where:** Daily timetable builder.
+- **Expected:** If review is unavailable, the screen should identify the exact
+  incomplete activity field.
+- **Observed:** **Next: Review schedule** was greyed out without an explanation.
+- **Impact:** The organiser cannot tell whether name, start time, duration or
+  bookable capacity is preventing progress.
+- **Correction:** Display an inline checklist of every incomplete field and
+  keep the button state tied to the same validation result.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect
