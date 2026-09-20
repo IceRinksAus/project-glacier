@@ -181,6 +181,44 @@ specific incomplete step. Later edits must remain available through Event tabs,
 with impact warnings where Sessions, sales, published Waivers or accepted legal
 evidence constrain changes.
 
+### S42-F11 — Completed Waiver has no return action
+
+- **Severity:** High
+- **Where:** Public Waiver completion page reached from a confirmed Booking.
+- **Expected:** After retaining or opening proof, the customer can return to the
+  secure Booking/Ticket journey.
+- **Observed:** The final page ended at completion proof with no route back.
+- **Impact:** Customers become stranded outside the purchase journey and may
+  repeat actions or close the site without finding their Tickets.
+- **Correction:** For a booking-linked Waiver, return to secure Booking
+  management using the existing fragment-held access credential. For a
+  standalone QR Waiver, return to the public Event website. Keep completion
+  proof as a separate secondary action.
+
+### S42-F12 — Flexible Ticket choice is absent from Event setup
+
+- **Severity:** High; included in S42-F10 guided-flow work.
+- **Where:** First-time Event creation.
+- **Expected:** The organiser deliberately chooses whether the Event inherits
+  the Organisation policy, uses an Event override or does not offer Flexible
+  Tickets before public preview/activation.
+- **Observed:** The authoritative controls exist only under Event Settings and
+  are not presented during creation.
+- **Impact:** An Event can be launched without the organiser making or reviewing
+  a commercial Flexible Ticket decision.
+- **Correction direction:** Include the existing Event Flexible Ticket policy
+  component in the guided operational-settings step. Do not create a second
+  policy authority or silently enable coverage.
+
+## Successful payment evidence
+
+- With local Stripe webhook forwarding running, the organiser completed a
+  fresh test-mode purchase end to end.
+- Glacier automatically completed Payment/Booking state, issued Tickets and
+  supported booking-linked Waiver completion without manual reconciliation.
+- This is local integration evidence only; hosted webhook delivery and real
+  settlement remain future production evidence.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

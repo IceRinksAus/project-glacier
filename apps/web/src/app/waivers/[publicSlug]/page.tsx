@@ -16,6 +16,7 @@ import {
   eventFontFamilies,
 } from "@/components/booking/event-branding";
 import { publicBookingService } from "@/services/public-booking.service";
+import { buildWaiverReturnAction } from "./waiver-return";
 
 interface PublicWaiverPageProps {
   params: Promise<{
@@ -341,6 +342,10 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
 
   if (completion) {
     const branding = waiver.event.branding ?? defaultEventBranding;
+    const returnAction = buildWaiverReturnAction(
+      waiver.event.slug,
+      bookingCredential,
+    );
     return (
       <main
         className="min-h-screen px-4 py-12 sm:py-20"
@@ -379,16 +384,24 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
               {completion.verificationToken}
             </p>
           </div>
-          <Link
-            href={`/waivers/verify/${completion.verificationToken}`}
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-bold shadow-lg"
-            style={{
-              backgroundColor: branding.accentColor,
-              color: branding.textColor,
-            }}
-          >
-            Open completion proof
-          </Link>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href={returnAction.href}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-bold shadow-lg"
+              style={{
+                backgroundColor: branding.accentColor,
+                color: branding.textColor,
+              }}
+            >
+              {returnAction.label}
+            </Link>
+            <Link
+              href={`/waivers/verify/${completion.verificationToken}`}
+              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 px-5 font-bold"
+            >
+              Open completion proof
+            </Link>
+          </div>
           <p className="mt-5 text-sm leading-6 text-slate-500">
             This credential contains no personal information. Glacier retains
             the authoritative waiver record.
