@@ -361,6 +361,26 @@ Detailed report definitions, accounting boundaries and export requirements
 should be reviewed report-by-report after the Sprint 42 operational walkthrough
 rather than changed piecemeal during it.
 
+### S42-F16 — Event Bookings should remain inside Event context
+
+- **Severity:** Medium; important for manager usability.
+- **Where:** Event workspace → Bookings compared with the main sidebar →
+  Bookings.
+- **Expected:** Main Bookings provides an organisation-wide view across every
+  Event the signed-in user may access. Event Bookings provides the same search
+  and operational controls but is visibly locked to the selected Event.
+- **Observed:** The Event tab currently presents a link into the shared
+  Bookings page with an Event query filter. The data is correctly filtered, but
+  the user leaves the Event workspace and can perceive the scope as temporary.
+- **Existing security evidence:** Booking search is already constrained by the
+  authenticated user's tenant and Event assignments before any optional Event
+  filter is applied. A manager assigned to one Event cannot retrieve another
+  Event's Bookings through the organisation-wide page or direct query.
+- **Correction direction:** House an Event-scoped Booking list within the Event
+  workspace, keep the Event identity and navigation visible, remove the Event
+  selector in that context and reuse the existing Booking search/service. Do
+  not create a second Booking store or weaken assignment filtering.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

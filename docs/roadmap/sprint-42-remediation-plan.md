@@ -84,12 +84,19 @@ no Ticket and is retrievable with its Session and Payment evidence.
   never create a duplicate setting or silently enable it.
 - Add an authorised Event identity/date editor with impact checks for Sessions,
   Bookings, published Waivers and accepted evidence.
+- Preserve two intentional Booking contexts: the main sidebar opens an
+  organisation-wide workspace across all Events the user may access, while an
+  Event's **Bookings** tab remains visibly and permanently scoped to that Event.
+  Reuse the same search and Booking authority; do not duplicate Booking data or
+  permit an Event-scoped user to escape their assignment boundary.
 - Permit a temporarily empty capacity input and validate a positive integer at
   the appropriate boundary.
 
 **Acceptance:** An organiser can create a fresh Event in the intended order,
 resume after leaving, understand every blocked next action, deliberately choose
 Flexible Ticket policy, review readiness and activate without hidden knowledge.
+An assigned manager can also work inside their Event's Booking list without
+seeing or selecting an Event outside their authorised assignment.
 
 ## Slice 4 — Public booking calendar
 
