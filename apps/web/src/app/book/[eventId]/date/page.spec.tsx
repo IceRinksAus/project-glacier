@@ -63,9 +63,9 @@ describe("DatePage", () => {
     });
 
     expect(await screen.findByText("2 Sessions available")).toBeVisible();
-    expect(screen.getByText("1 Session available")).toBeVisible();
-    expect(screen.getByText("Wednesday 1 September 2027")).toBeVisible();
-    expect(screen.getByText("Thursday 2 September 2027")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Wednesday 1 September 2027, 2 Sessions available" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Thursday 2 September 2027, 1 Session available" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Available booking dates" })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Wednesday 1 September 2027/ }));
     expect(mocks.selectDate).toHaveBeenCalledWith("2027-09-01");

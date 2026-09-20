@@ -390,6 +390,25 @@ authority. Focused coverage proves that the embedded view always sends its
 fixed Event ID, does not load the organisation Event selector and retains the
 normal Session filter.
 
+### S42-F17 — Public booking dates need a calendar
+
+- **Severity:** Medium; grows with longer Events.
+- **Where:** Public booking journey, Date step.
+- **Expected:** Customers can understand availability by month and choose a
+  valid Event-local date without scanning a long list.
+- **Observed:** Every available date was presented as a separate stacked card.
+- **Correction:** Replace the list with an accessible, touch-friendly monthly
+  calendar. Use only dates returned by the active-Session public authority,
+  disable past and unavailable dates, retain a valid existing choice, select
+  today when bookable or otherwise the next bookable date, and preserve the
+  existing downstream booking-state reset rules.
+
+The calendar remediation is implemented with previous/next month navigation,
+Session counts in accessible date labels, non-colour availability markers and
+a plain-language selected-date summary. Focused coverage verifies Event-timezone
+grouping, next-date defaults, past-date protection, month navigation and state
+handoff to the existing Session step.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

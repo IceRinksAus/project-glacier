@@ -112,6 +112,11 @@ seeing or selecting an Event outside their authorised assignment.
 select a valid booking date without scanning a long list, and cannot select a
 date with no active bookable Session.
 
+After this slice, apply the same shared-workspace pattern used for Bookings to
+Customers: the sidebar retains the authorised organisation-wide Customer view,
+while Event → Customers remains visibly locked to that Event without a scope
+selector or duplicated Customer authority.
+
 ## Slice 5 — Organisation Reports redesign
 
 Reporting will remain at `/reports` and use three clear states:

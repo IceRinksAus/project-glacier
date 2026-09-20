@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, CalendarDays } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 
 import { useBookingJourney } from "@/components/booking/BookingJourneyProvider";
 import { BookingJourneyShell } from "@/components/booking/BookingJourneyShell";
+import { PublicBookingCalendar } from "@/components/booking/PublicBookingCalendar";
 import { formatEventDate, getEventDateKey } from "@/components/booking/event-date";
 import {
   PublicEvent,
@@ -57,6 +58,10 @@ export default function DatePage({ params }: { params: Promise<{ eventId: string
       }))
       .sort((left, right) => left.key.localeCompare(right.key));
   }, [sessions, timeZone]);
+  const todayKey = getEventDateKey(new Date().toISOString(), timeZone);
+  const selectableDateKey = selectedDateKey && dates.some(
+    (date) => date.key === selectedDateKey && date.key >= todayKey,
+  ) ? selectedDateKey : dates.find((date) => date.key >= todayKey)?.key ?? null;
 
   return (
     <BookingJourneyShell>
@@ -71,35 +76,14 @@ export default function DatePage({ params }: { params: Promise<{ eventId: string
         {!event && !error ? <p className="mt-8 text-sm text-slate-500">Loading Event dates…</p> : null}
         {event && dates.length === 0 ? <p className="mt-8 rounded-xl border border-dashed p-5 text-sm text-slate-600">There are currently no dates available for online booking.</p> : null}
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          {dates.map((date) => {
-            const selected = selectedDateKey === date.key;
-            return (
-              <button
-                key={date.key}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => selectDate(date.key)}
-                className={[
-                  "rounded-2xl border-2 p-5 text-left transition",
-                  selected ? "border-slate-950 bg-slate-50" : "border-slate-200 hover:border-slate-400",
-                ].join(" ")}
-              >
-                <CalendarDays className="size-5" />
-                <p className="mt-4 font-bold">{date.label}</p>
-                <p className="mt-2 text-sm text-slate-600">
-                  {date.sessionCount} {date.sessionCount === 1 ? "Session" : "Sessions"} available
-                </p>
-                <p className="mt-3 text-sm font-semibold">{selected ? "Selected" : "Choose date"}</p>
-              </button>
-            );
-          })}
-        </div>
+        {event && dates.length > 0 ? (
+          <PublicBookingCalendar dates={dates} selectedDateKey={selectedDateKey} onSelect={selectDate} todayKey={todayKey} />
+        ) : null}
 
         <div className="mt-8 flex justify-end">
           <button
             type="button"
-            disabled={!selectedDateKey}
+            disabled={!selectableDateKey}
             onClick={() => router.push(`/book/${eventId}/session`)}
             className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-6 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
