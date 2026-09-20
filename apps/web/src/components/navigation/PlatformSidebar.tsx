@@ -4,6 +4,7 @@ import {
   BarChart3,
   CalendarDays,
   CreditCard,
+  FileSignature,
   LayoutDashboard,
   Package,
   ReceiptText,
@@ -53,6 +54,11 @@ const navigationItems = [
     icon: Package,
   },
   {
+    label: "Waivers",
+    href: "/waivers",
+    icon: FileSignature,
+  },
+  {
     label: "Reports",
     href: "/reports",
     icon: BarChart3,
@@ -70,8 +76,17 @@ export function PlatformSidebar() {
   return (
     <aside className="hidden min-h-screen w-56 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:flex lg:h-full lg:flex-col">
       <div className="flex h-16 items-center border-b border-sidebar-border px-5">
-        <Link href="/" className="flex items-center gap-2.5 text-lg font-bold tracking-[0.08em]">
-          <Image src="/glacier-mark.svg" width={32} height={26} alt="" priority />
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 text-lg font-bold tracking-[0.08em]"
+        >
+          <Image
+            src="/glacier-mark.svg"
+            width={32}
+            height={26}
+            alt=""
+            priority
+          />
           <span>GLACIER</span>
         </Link>
       </div>
@@ -79,7 +94,10 @@ export function PlatformSidebar() {
       <nav className="flex-1 space-y-1 p-3">
         {navigationItems.map((item) => {
           const Icon = item.icon;
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
 
           return (
             <Link
@@ -119,14 +137,24 @@ export function PlatformSidebar() {
 
 export function PlatformMobileNav() {
   const pathname = usePathname();
-  const primaryItems = navigationItems.filter(({ href }) => ["/", "/events", "/pos", "/bookings", "/reports"].includes(href));
+  const primaryItems = navigationItems.filter(({ href }) =>
+    ["/", "/events", "/pos", "/bookings", "/waivers", "/reports"].includes(
+      href,
+    ),
+  );
 
   return (
-    <nav aria-label="Primary navigation" className="overflow-x-auto border-b bg-card px-3 py-2 lg:hidden">
+    <nav
+      aria-label="Primary navigation"
+      className="overflow-x-auto border-b bg-card px-3 py-2 lg:hidden"
+    >
       <div className="flex min-w-max gap-1">
         {primaryItems.map((item) => {
           const Icon = item.icon;
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
