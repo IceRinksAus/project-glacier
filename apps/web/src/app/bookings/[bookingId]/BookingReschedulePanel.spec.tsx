@@ -57,6 +57,19 @@ describe("BookingReschedulePanel", () => {
     context.mockResolvedValue(contextResponse);
   });
 
+  it("explains inside the text box why the review action is disabled", async () => {
+    render(<BookingReschedulePanel bookingId="booking-1" />);
+
+    expect(
+      await screen.findByPlaceholderText(
+        "An explanation is required before you can review this Session change.",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Review Session change" }),
+    ).toBeDisabled();
+  });
+
   it("requires a reviewed whole-Booking impact before execution", async () => {
     const user = userEvent.setup();
     preview.mockResolvedValue({

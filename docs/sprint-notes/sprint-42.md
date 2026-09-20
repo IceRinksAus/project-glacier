@@ -247,6 +247,26 @@ evidence constrain changes.
 POS-3 remains open until this is implemented, migrated, regression-tested and
 reconciled against both Product capacity and admission capacity.
 
+### S42-F14 — Change/refund explanation requirement is not discoverable
+
+- **Severity:** Medium.
+- **Where:** Booking Session change and Ticket cancellation/refund panels.
+- **Expected:** The empty reason text box explains that an attributable
+  explanation is required before the review action can continue.
+- **Observed:** The action stayed disabled, but the text box contained no prompt
+  explaining what was missing.
+- **Impact:** Operators can mistake the disabled action for a system fault.
+- **Correction:** Add contextual placeholder text to both required explanation
+  fields while retaining the existing server validation and review-before-
+  execute controls.
+
+## Successful Booking-backed POS evidence
+
+- All planned Booking-backed transactions completed successfully: the online
+  Stripe cases plus Cash and standalone EFTPOS Ticket sales.
+- Each resulting transaction was retrievable from the Bookings workspace.
+- POS-3 remains excluded from this evidence pending S42-F13.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

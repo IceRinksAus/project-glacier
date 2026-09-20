@@ -212,6 +212,7 @@ export function BookingReschedulePanel({
               aria-label="Session-change explanation"
               className="mt-1 min-h-24 w-full rounded-md border p-3"
               maxLength={500}
+              placeholder="An explanation is required before you can review this Session change."
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />

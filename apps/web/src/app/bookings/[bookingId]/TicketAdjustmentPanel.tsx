@@ -191,8 +191,10 @@ export function TicketAdjustmentPanel({ bookingId }: { bookingId: string }) {
           <label className="text-sm font-medium md:col-span-2">
             Required explanation
             <textarea
+              aria-label="Ticket adjustment explanation"
               className="mt-1 min-h-24 w-full rounded-md border p-3"
               maxLength={500}
+              placeholder="An explanation is required before you can review this cancellation or refund."
               value={note}
               onChange={(event) => setNote(event.target.value)}
             />
