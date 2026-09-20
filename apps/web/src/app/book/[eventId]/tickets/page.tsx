@@ -108,6 +108,9 @@ export default function TicketsPage({ params }: { params: Promise<{ eventId: str
         <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">Step 3 of 9</p>
         <h1 className="mt-3 text-3xl font-bold">Choose your Tickets</h1>
         <p className="mt-2 text-slate-600">All Ticket Types draw from the shared capacity of your selected Session.</p>
+        <p className="mt-2 text-sm font-medium text-sky-800">
+          Kanga skating aids and other add-ons can be added on the next page.
+        </p>
 
         {error ? <p role="alert" className="mt-6 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
         <div className="mt-8 grid gap-3">

@@ -106,6 +106,22 @@ describe("routed public booking pages", () => {
     expect(mocks.getTicketTypes).not.toHaveBeenCalled();
   });
 
+  it("reassures customers that skating aids and add-ons follow Ticket selection", async () => {
+    Object.assign(journey, {
+      selectedDateKey: "2027-07-01",
+      selectedSessionId: "session-1",
+    });
+    mocks.getTicketTypes.mockResolvedValue([]);
+
+    await renderRoute(<TicketsPage params={params} />);
+
+    expect(
+      screen.getByText(
+        "Kanga skating aids and other add-ons can be added on the next page.",
+      ),
+    ).toBeVisible();
+  });
+
   it("keeps the customer on Participants when authoritative Rules reject the party", async () => {
     const user = userEvent.setup();
     Object.assign(journey, {
