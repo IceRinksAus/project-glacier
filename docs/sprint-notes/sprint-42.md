@@ -381,6 +381,15 @@ rather than changed piecemeal during it.
   selector in that context and reuse the existing Booking search/service. Do
   not create a second Booking store or weaken assignment filtering.
 
+Remediation now uses one shared Booking workspace in two intentional contexts.
+The main sidebar retains the authorised multi-Event selector; the Event tab
+renders the same search, Session/status/payment filters, result table and
+pagination in place, with a visible fixed Event scope and no Event selector.
+Every request still passes through the existing tenant and Event-assignment
+authority. Focused coverage proves that the embedded view always sends its
+fixed Event ID, does not load the organisation Event selector and retains the
+normal Session filter.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

@@ -2,6 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { BookingsWorkspace } from "@/components/bookings/BookingsWorkspace";
+
 import BookingsPage from "./page";
 
 const { search, getEvents, getSessions } = vi.hoisted(() => ({
@@ -135,6 +137,26 @@ describe("BookingsPage", () => {
           sessionId: "session-1",
         }),
       ),
+    );
+  });
+
+  it("keeps an embedded Event Bookings workspace permanently scoped", async () => {
+    render(
+      <BookingsWorkspace
+        fixedEventId="event-1"
+        fixedEventName="Winter Festival"
+        embedded
+      />,
+    );
+
+    expect(await screen.findByText("1 Booking found")).toBeVisible();
+    expect(screen.getByText("Event scope")).toBeVisible();
+    expect(screen.getByText("Winter Festival")).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "Event" })).not.toBeInTheDocument();
+    expect(getEvents).not.toHaveBeenCalled();
+    expect(getSessions).toHaveBeenCalledWith("event-1");
+    expect(search).toHaveBeenCalledWith(
+      expect.objectContaining({ eventId: "event-1" }),
     );
   });
 });
