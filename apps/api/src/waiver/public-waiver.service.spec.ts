@@ -32,9 +32,24 @@ describe('PublicWaiverService', () => {
       id: 'event-1',
       organizationId: 'organization-1',
       name: 'Bathurst Ice Rink',
+      slug: 'bathurst-ice-rink',
       venueName: 'Bathurst Showground',
       startDate: new Date('2026-06-20T00:00:00.000Z'),
       endDate: new Date('2026-07-19T00:00:00.000Z'),
+      branding: {
+        primaryColor: '#123456',
+        secondaryColor: '#234567',
+        accentColor: '#22C55E',
+        backgroundColor: '#FFFFFF',
+        surfaceColor: '#F8FAFC',
+        textColor: '#0F172A',
+        headingFont: 'INTER',
+        bodyFont: 'INTER',
+        heroHeadline: 'Bathurst on ice',
+        heroDescription: 'A fictional branded Event.',
+        logoAsset: null,
+        heroAsset: null,
+      },
     },
     versions: [
       {
@@ -75,9 +90,11 @@ describe('PublicWaiverService', () => {
     await expect(service.findPublishedWaiver('public-slug')).resolves.toEqual({
       event: {
         name: publishedRecord.event.name,
+        slug: publishedRecord.event.slug,
         venueName: publishedRecord.event.venueName,
         startDate: publishedRecord.event.startDate,
         endDate: publishedRecord.event.endDate,
+        branding: publishedRecord.event.branding,
       },
       waiver: {
         publicSlug: 'public-slug',

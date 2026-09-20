@@ -11,6 +11,11 @@ import {
   WaiverSubmissionResponse,
   publicWaiverService,
 } from "@/services/public-waiver.service";
+import {
+  defaultEventBranding,
+  eventFontFamilies,
+} from "@/components/booking/event-branding";
+import { publicBookingService } from "@/services/public-booking.service";
 
 interface PublicWaiverPageProps {
   params: Promise<{
@@ -335,16 +340,30 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
   }
 
   if (completion) {
+    const branding = waiver.event.branding ?? defaultEventBranding;
     return (
-      <main className="min-h-screen bg-[linear-gradient(180deg,#e9f7ff_0%,#f8fafc_45%)] px-4 py-12 sm:py-20">
-        <section className="mx-auto max-w-2xl rounded-3xl border border-emerald-200 bg-white p-6 shadow-xl shadow-slate-200/60 sm:p-10">
+      <main
+        className="min-h-screen px-4 py-12 sm:py-20"
+        style={{
+          backgroundColor: branding.backgroundColor,
+          color: branding.textColor,
+          fontFamily: eventFontFamilies[branding.bodyFont],
+        }}
+      >
+        <section
+          className="mx-auto max-w-2xl rounded-3xl border border-emerald-200 p-6 shadow-xl shadow-slate-200/60 sm:p-10"
+          style={{ backgroundColor: branding.surfaceColor }}
+        >
           <div className="flex size-14 items-center justify-center rounded-full bg-emerald-100">
             <CheckCircle2 className="size-8 text-emerald-700" />
           </div>
           <p className="mt-6 text-sm font-bold uppercase tracking-[0.18em] text-emerald-700">
             Waiver complete
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+          <h1
+            className="mt-2 text-3xl font-semibold tracking-tight"
+            style={{ fontFamily: eventFontFamilies[branding.headingFont] }}
+          >
             You&apos;re ready for {waiver.event.name}
           </h1>
           <p className="mt-4 leading-7 text-slate-600">
@@ -362,7 +381,11 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
           </div>
           <Link
             href={`/waivers/verify/${completion.verificationToken}`}
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-sky-950 px-5 font-bold text-white"
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl px-5 font-bold shadow-lg"
+            style={{
+              backgroundColor: branding.accentColor,
+              color: branding.textColor,
+            }}
           >
             Open completion proof
           </Link>
@@ -375,30 +398,88 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
     );
   }
 
+  const branding = waiver.event.branding ?? defaultEventBranding;
+  const logoUrl = branding.logoAsset
+    ? publicBookingService.brandingAssetUrl(
+        waiver.event.slug,
+        branding.logoAsset.id,
+      )
+    : null;
+  const heroUrl = branding.heroAsset
+    ? publicBookingService.brandingAssetUrl(
+        waiver.event.slug,
+        branding.heroAsset.id,
+      )
+    : null;
+
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#e9f7ff_0%,#f8fafc_28rem)] text-slate-950">
-      <header className="border-b border-sky-200/70 bg-white/75 px-4 py-5 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-sky-950 text-white">
-            <ShieldCheck className="size-5" />
+    <main
+      className="min-h-screen"
+      style={{
+        backgroundColor: branding.backgroundColor,
+        color: branding.textColor,
+        fontFamily: eventFontFamilies[branding.bodyFont],
+      }}
+    >
+      <header className="border-b px-4 py-5">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {logoUrl ? (
+              // Public URL exposes only the Event's selected branding asset.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt={`${waiver.event.name} logo`}
+                className="max-h-14 max-w-40 object-contain"
+              />
+            ) : (
+              <div
+                className="flex size-10 items-center justify-center rounded-xl text-white"
+                style={{ backgroundColor: branding.primaryColor }}
+              >
+                <ShieldCheck className="size-5" />
+              </div>
+            )}
+            <div>
+              <p className="font-semibold tracking-tight">
+                {waiver.event.name}
+              </p>
+              <p className="text-xs opacity-60">Secure digital Waiver</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold tracking-tight">Glacier Waivers</p>
-            <p className="text-xs text-slate-500">Secure digital acceptance</p>
-          </div>
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] opacity-50">
+            Powered by Glacier
+          </span>
         </div>
       </header>
 
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
-        <section className="rounded-3xl border border-sky-200 bg-white p-6 shadow-xl shadow-sky-950/5 sm:p-10">
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-sky-700">
+      <section
+        className="relative overflow-hidden"
+        style={{
+          backgroundColor: branding.primaryColor,
+          color: branding.backgroundColor,
+        }}
+      >
+        {heroUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroUrl}
+            alt=""
+            className="absolute inset-0 size-full object-cover opacity-30"
+          />
+        ) : null}
+        <div className="relative mx-auto max-w-4xl px-4 py-12 sm:py-16">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] opacity-75">
             Event waiver
           </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1
+            className="mt-3 text-3xl font-semibold tracking-tight sm:text-5xl"
+            style={{ fontFamily: eventFontFamilies[branding.headingFont] }}
+          >
             {waiver.waiver.title}
           </h1>
-          <div className="mt-5 grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-            <p className="font-medium text-slate-800">{waiver.event.name}</p>
+          <div className="mt-6 grid gap-2 text-sm opacity-85 sm:grid-cols-2">
+            <p className="font-semibold">{waiver.event.name}</p>
             <p className="sm:text-right">
               {waiver.event.venueName ?? "Venue to be confirmed"}
             </p>
@@ -406,9 +487,35 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
               {formatEventDates(waiver.event.startDate, waiver.event.endDate)}
             </p>
           </div>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:py-12">
+        <section
+          className="rounded-3xl border border-slate-200 p-6 shadow-sm sm:p-10"
+          style={{ backgroundColor: branding.surfaceColor }}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="flex size-10 items-center justify-center rounded-xl"
+              style={{ backgroundColor: branding.accentColor }}
+            >
+              <ShieldCheck className="size-5" />
+            </span>
+            <div>
+              <p className="font-semibold">Before you begin</p>
+              <p className="text-sm opacity-65">
+                Please read the complete Waiver and provide your acceptance
+                below.
+              </p>
+            </div>
+          </div>
         </section>
 
-        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+        <section
+          className="mt-6 rounded-3xl border border-slate-200 p-6 shadow-sm sm:p-10"
+          style={{ backgroundColor: branding.surfaceColor }}
+        >
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">Please read carefully</h2>
             <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -421,7 +528,10 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
         </section>
 
         <form onSubmit={submitWaiver} className="mt-6 space-y-6">
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+          <section
+            className="rounded-3xl border border-slate-200 p-6 shadow-sm sm:p-10"
+            style={{ backgroundColor: branding.surfaceColor }}
+          >
             <h2 className="text-xl font-semibold">Your acceptance</h2>
             <label className="mt-6 block text-sm font-semibold text-slate-800">
               Full legal name
@@ -494,7 +604,10 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+          <section
+            className="rounded-3xl border border-slate-200 p-6 shadow-sm sm:p-10"
+            style={{ backgroundColor: branding.surfaceColor }}
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-xl font-semibold">Children in your care</h2>
@@ -598,7 +711,10 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
             </div>
           </section>
 
-          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+          <section
+            className="rounded-3xl border border-slate-200 p-6 shadow-sm sm:p-10"
+            style={{ backgroundColor: branding.surfaceColor }}
+          >
             <h2 className="text-xl font-semibold">Optional permissions</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               These choices are separate from the mandatory activity waiver.
@@ -640,7 +756,11 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-14 w-full rounded-2xl bg-sky-950 px-6 text-base font-bold text-white shadow-lg shadow-sky-950/15 transition hover:bg-sky-900 focus:outline-none focus:ring-4 focus:ring-sky-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="h-14 w-full rounded-2xl px-6 text-base font-bold shadow-lg transition hover:-translate-y-0.5 focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              backgroundColor: branding.accentColor,
+              color: branding.textColor,
+            }}
           >
             {isSubmitting ? "Submitting securely…" : "Accept and sign waiver"}
           </button>

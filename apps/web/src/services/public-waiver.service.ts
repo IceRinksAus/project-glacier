@@ -1,11 +1,14 @@
 import { publicApi } from "@/lib/public-api";
+import type { PublicEventSite } from "@/services/public-booking.service";
 
 export interface PublicWaiver {
   event: {
     name: string;
+    slug: string;
     venueName: string | null;
     startDate: string;
     endDate: string;
+    branding: PublicEventSite["branding"];
   };
   waiver: {
     publicSlug: string;

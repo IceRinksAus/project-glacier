@@ -25,6 +25,8 @@ The implementation does not assert that historical wording is current legal advi
 - Added an idempotent local-only fixture command for fictional NSW, VIC, WA and SA ice-skating templates. Each fixture is visibly labelled `LOCAL TEST ONLY`, refuses to run when `NODE_ENV=production`, contains no asserted legislation reference and exists solely so the complete Waiver workflow can be tested before real lawyer-approved wording is available.
 - Clarified the publication boundary after Bathurst acceptance testing: a published Waiver is publicly reachable only while its Event is active. Draft Events now show an explicit activation requirement instead of displaying a public link or QR code that cannot resolve, and authenticated QR generation enforces the same active-Event condition.
 - Closed the Session activation UX gap discovered while activating Bathurst: owners can now activate an individual draft Session from its detail panel or activate every draft Session for the Event in one action before completing Event readiness.
+- Extended the existing public Event branding contract to the customer Waiver and completion screen. Published Waivers now inherit the Event logo, hero image, colour palette and selected heading/body fonts with Glacier fallbacks, while legal wording and acceptance evidence remain unchanged.
+- Added insurer-ready operator export for accepted submissions. Selecting a signatory now exposes `Print / Save PDF`, producing a focused evidence document containing the exact accepted version, acceptance statement, adult/dependants, acceptance time, Booking reference, captured signature and integrity hashes. Automated email delivery remains deferred until an approved provider and sender account exist.
 
 ## Data and migration evidence
 

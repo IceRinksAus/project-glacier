@@ -29,9 +29,11 @@ export class PublicWaiverService {
     return {
       event: {
         name: eventWaiver.event.name,
+        slug: eventWaiver.event.slug,
         venueName: eventWaiver.event.venueName,
         startDate: eventWaiver.event.startDate,
         endDate: eventWaiver.event.endDate,
+        branding: eventWaiver.event.branding,
       },
       waiver: {
         publicSlug: eventWaiver.publicSlug,
@@ -204,11 +206,28 @@ export class PublicWaiverService {
         event: {
           select: {
             name: true,
+            slug: true,
             id: true,
             organizationId: true,
             venueName: true,
             startDate: true,
             endDate: true,
+            branding: {
+              select: {
+                primaryColor: true,
+                secondaryColor: true,
+                accentColor: true,
+                backgroundColor: true,
+                surfaceColor: true,
+                textColor: true,
+                headingFont: true,
+                bodyFont: true,
+                heroHeadline: true,
+                heroDescription: true,
+                logoAsset: { select: { id: true, width: true, height: true } },
+                heroAsset: { select: { id: true, width: true, height: true } },
+              },
+            },
           },
         },
         versions: {
