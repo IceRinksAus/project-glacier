@@ -4,7 +4,7 @@
 
 Glacier's Waiver domain records Event-specific legal acceptance independently of the commerce channel used to acquire admission.
 
-The domain is Event-centric. A Waiver Submission does not require a Booking, Ticket, BookingParticipant, Customer account or email address.
+The domain remains Event-centric. A Waiver Submission may stand alone or be explicitly associated with a same-Event Booking and selected Booking Participants. It never requires a Ticket, Customer account or email address.
 
 ## Domain Shape
 
@@ -17,7 +17,7 @@ Organisation
             │         └─ WaiverMinor (zero to many)
             └─ WaiverSubmission
 
-WaiverTemplate (activity + jurisdiction + revision)
+WaiverTemplate (platform-curated or Organisation-owned + activity + jurisdiction + revision)
   └─ source of WaiverVersion
 ```
 
@@ -35,7 +35,7 @@ Absence of `EventWaiver` means the Event has no Waiver. Glacier deliberately doe
 8. Published snapshots are not edited; changes require a new version.
 9. The stable Event public slug always resolves the current published version.
 
-Templates are curated legal content. Glacier must not invent or silently rewrite production legal wording.
+Templates have explicit authority. An Organisation-owned approved template takes precedence for that Organisation; a platform-curated approved template is a controlled fallback. OWNER records approval provenance and approved content is never edited in place. Templates are structured legal content, but Glacier engineering does not provide legal approval and must not invent or silently rewrite production wording.
 
 ## Public Acceptance Boundary
 
@@ -54,6 +54,9 @@ Submission input contains:
 - explicit `accepted: true`
 - electronic signature payload
 - optional minor names and dates of birth
+- whether the signatory participates;
+- optional, separately recorded media and marketing choices; and
+- optional Booking possession evidence plus explicit participant selections.
 
 The server supplies:
 
@@ -64,6 +67,8 @@ The server supplies:
 - high-entropy verification credential
 
 Submission and nested minors are created atomically.
+
+When a customer arrives from Booking confirmation, the raw Booking credential stays in the browser URL fragment and is presented in a POST body only. Glacier stores neither that raw credential nor a duplicate Ticket relationship. The server validates the credential hash, confirmed/paid state, exact Event and every selected participant before creating association evidence. A generic Event QR remains Booking-independent.
 
 ## Evidence and Verification
 
@@ -78,6 +83,8 @@ The public verification endpoint returns only:
 - Waiver title
 - Waiver version
 - accepted time
+- covered-person count; and
+- a QR representation of the same verification URL.
 
 It does not return signatory identity, minors, signature or internal identifiers.
 
@@ -85,7 +92,9 @@ It does not return signatory identity, minors, signature or internal identifiers
 
 Operator routes use `JwtAuthGuard` and `RolesGuard`. Organisation scope comes from `request.user.organizationId` through `@CurrentUser()`.
 
-Read operations are tenant-scoped. Draft generation and publication require the `OWNER` role. Public submission lists and evidence endpoints do not exist.
+Operator evidence routes require OWNER or MANAGER, enforce Organisation and assigned-Event scope, and exclude SCANNER. Draft generation and publication require OWNER. Routine POS/Scanner lookup receives only a compact linked/not-linked projection, not the signature, child dates of birth or full legal evidence.
+
+Authorised OWNER/MANAGER may match an independent submission to a same-Event Booking only by entering the Booking and selecting exact participants. Glacier performs no fuzzy name matching. Replacement matching clears the previous participant links and writes an attributable `WaiverAssociationAudit`; it does not consume or admit a Ticket.
 
 ## QR Architecture
 
@@ -102,20 +111,13 @@ QR generation is server-side using the existing `qrcode` package:
 
 ## Booking Relationship
 
-Booking confirmation may show a shortcut to the same stable Event Waiver URL when an active published Waiver exists.
-
-This is navigation only. It does not:
-
-- link a submission to a Booking
-- change Booking or Payment state
-- block Ticket issuance
-- make the purchaser authoritative for other adults
+Booking confirmation may supply the bounded Booking possession credential to the Waiver page through the URL fragment. This offers only that paid Booking's participants for explicit coverage. It does not change Booking or Payment state, block Ticket issuance, or make the purchaser authoritative for other adults.
 
 ## Privacy and Retention
 
 Waiver evidence contains personal information and, for minors, child data. It must be treated as restricted operational/legal evidence.
 
-Current controls include tenant-scoped retrieval, narrow public responses, bounded input and hashed verification credentials.
+Current controls include tenant/role/Event-assignment retrieval, narrow public responses, bounded input, explicit participant matching and hashed verification credentials. Optional consent is stored separately from mandatory risk acceptance.
 
 Before production launch, Glacier still needs an approved retention schedule, deletion/legal-hold policy, operational access policy, rate limiting/abuse monitoring, and a final privacy/legal assessment.
 
@@ -125,9 +127,8 @@ Sprint 16 stores the bounded electronic signature payload in PostgreSQL text. Th
 
 If Glacier later adds signed PDFs, photographs or larger evidence artifacts, those files should use private object storage with authorised signed access. The database should retain metadata, hashes and authoritative relationships.
 
-## Non-Goals for Sprint 16
+## Deferred work
 
-- mandatory Booking or Ticket linkage
 - Customer Portal integration
 - participant invitations or reminders
 - scanner admission blocking
@@ -135,6 +136,8 @@ If Glacier later adds signed PDFs, photographs or larger evidence artifacts, tho
 - signed PDF generation
 - Digital Waiver Pass / Apple Wallet
 - AI-authored production legal wording
+- automated retention/deletion before an approved legal-hold policy
+- automatic Ticket invalidation, consumption or admission from Waiver status
 
 ## Source of Truth
 

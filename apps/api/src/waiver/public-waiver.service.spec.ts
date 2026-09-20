@@ -357,6 +357,8 @@ describe('PublicWaiverService', () => {
     const verificationToken = 'a'.repeat(64);
     prismaMock.waiverSubmission.findUnique.mockResolvedValue({
       acceptedAt,
+      signatoryParticipating: true,
+      _count: { minors: 2 },
       eventWaiver: {
         event: {
           name: 'Bathurst Ice Rink',
@@ -374,6 +376,7 @@ describe('PublicWaiverService', () => {
       waiverTitle: 'Bathurst Ice Rink Waiver',
       waiverVersion: 2,
       acceptedAt,
+      coveredPersonCount: 3,
       verificationUrl: `http://localhost:3001/waivers/verify/${verificationToken}`,
       qrCodeDataUrl: 'data:image/png;base64,proof-qr',
     });

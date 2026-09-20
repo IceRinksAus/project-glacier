@@ -21,7 +21,11 @@ const criticalTables = [
   "Product",
   "ProductVariant",
   "EventWaiver",
+  "WaiverTemplate",
+  "WaiverVersion",
   "WaiverSubmission",
+  "WaiverMinor",
+  "WaiverAssociationAudit",
   "_prisma_migrations",
 ];
 

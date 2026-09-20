@@ -143,6 +143,8 @@ export class PublicWaiverService {
       },
       select: {
         acceptedAt: true,
+        signatoryParticipating: true,
+        _count: { select: { minors: true } },
         eventWaiver: {
           select: {
             event: {
@@ -178,6 +180,8 @@ export class PublicWaiverService {
       waiverTitle: submission.waiverVersion.title,
       waiverVersion: submission.waiverVersion.version,
       acceptedAt: submission.acceptedAt,
+      coveredPersonCount:
+        submission._count.minors + (submission.signatoryParticipating ? 1 : 0),
       verificationUrl,
       qrCodeDataUrl,
     };

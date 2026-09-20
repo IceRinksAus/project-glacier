@@ -36,6 +36,11 @@
 - exercise authorised Ticket-link rotation and prove the former current and legacy links both fail without changing Ticket, Booking, Payment or scan history
 - prove personal-data deletion across denormalised snapshots, files, logs, subprocessors and restored backups
 - approve customer-facing privacy notices, subprocessors/data locations and children's/Waiver handling
+- obtain current qualified approval for every jurisdiction/activity Waiver template and retain its approval reference; historical NSW/WA/VIC/SA forms are source material only
+- approve guardian capacity, optional media/marketing consent wording, Waiver retention and legal-hold behavior
+- verify deployed public Waiver submission/proof abuse limits and privacy-safe monitoring
+- rehearse independent-submission matching with assigned MANAGER accounts and confirm SCANNER cannot retrieve signatures, child dates of birth or template administration
+- verify printable proof and Event QR on the supported customer handset/browser matrix; native Wallet passes remain deferred
 - privacy/legal/accounting/insurance review and named privacy-request owner
 - tenant-isolation integration verification against a production-like database
 - dependency vulnerability review

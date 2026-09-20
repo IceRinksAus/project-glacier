@@ -88,6 +88,10 @@ export default function WaiverVerificationPage({
                   {new Date(verification.acceptedAt).toLocaleString("en-AU")}
                 </dd>
               </div>
+              <div className="sm:col-span-2">
+                <dt className="text-xs font-bold uppercase tracking-wide text-slate-500">People covered</dt>
+                <dd className="mt-1 font-semibold">{verification.coveredPersonCount}</dd>
+              </div>
             </dl>
             <div className="mt-7 flex justify-center rounded-2xl border bg-white p-5">
               <Image

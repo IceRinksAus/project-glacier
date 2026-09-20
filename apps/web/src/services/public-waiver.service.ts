@@ -54,6 +54,7 @@ export interface WaiverVerification {
   waiverTitle: string;
   waiverVersion: number;
   acceptedAt: string;
+  coveredPersonCount: number;
   verificationUrl: string;
   qrCodeDataUrl: string;
 }

@@ -1,6 +1,6 @@
 # Sprint 41 Plan — Waiver Templates, Participant Coverage and Staff Verification
 
-**Status:** Approved 20 September 2026
+**Status:** Implemented locally 20 September 2026; organiser browser acceptance pending
 
 ## Outcome
 
