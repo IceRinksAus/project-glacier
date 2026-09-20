@@ -1,5 +1,6 @@
 "use client";
 
+import { formatInTimeZone } from "date-fns-tz";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -29,13 +30,14 @@ interface ScheduleBuilderProps {
   pattern: OperationalSchedulePattern;
   eventStartDate: string;
   eventEndDate: string;
+  eventTimezone: string | null;
   onBack: () => void;
   onCancel: () => void;
   onComplete: () => void;
 }
 
-function toDateInputValue(date: string) {
-  return date.slice(0, 10);
+function toDateInputValue(date: string, timezone: string | null) {
+  return formatInTimeZone(new Date(date), timezone ?? "UTC", "yyyy-MM-dd");
 }
 
 export function ScheduleBuilder({
@@ -43,15 +45,16 @@ export function ScheduleBuilder({
   pattern,
   eventStartDate,
   eventEndDate,
+  eventTimezone,
   onBack,
   onCancel,
   onComplete,
 }: ScheduleBuilderProps) {
   const minimumDate =
-    toDateInputValue(eventStartDate);
+    toDateInputValue(eventStartDate, eventTimezone);
 
   const maximumDate =
-    toDateInputValue(eventEndDate);
+    toDateInputValue(eventEndDate, eventTimezone);
 
   const [step, setStep] = useState(1);
 

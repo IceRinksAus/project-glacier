@@ -1,4 +1,4 @@
-import { fromZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 
 import {
   BadRequestException,
@@ -65,9 +65,20 @@ if (!event.timezone) {
       );
     }
 
+    const eventStartDate = formatInTimeZone(
+      event.startDate,
+      event.timezone,
+      'yyyy-MM-dd',
+    );
+    const eventEndDate = formatInTimeZone(
+      event.endDate,
+      event.timezone,
+      'yyyy-MM-dd',
+    );
+
     if (
-      scheduleStart < event.startDate ||
-      scheduleEnd > event.endDate
+      data.startDate < eventStartDate ||
+      data.endDate > eventEndDate
     ) {
       throw new BadRequestException(
         'Operational schedule must remain within the event dates.',

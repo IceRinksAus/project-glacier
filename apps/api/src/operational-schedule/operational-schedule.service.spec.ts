@@ -347,6 +347,27 @@ describe('OperationalScheduleService', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('should accept the Event local start and end dates when the stored instants are not UTC midnight', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      ...event,
+      startDate: new Date('2026-10-01T14:00:00.000Z'),
+      endDate: new Date('2026-10-05T12:59:59.999Z'),
+      timezone: 'Australia/Melbourne',
+    });
+
+    await expect(
+      service.createAndGenerate('org-1', {
+        ...basePayload,
+        startDate: '2026-10-02',
+        endDate: '2026-10-05',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({ generatedSessions: 8 }),
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
   it('should reject an end date earlier than the start date', async () => {
     await expect(
       service.createAndGenerate('org-1', {

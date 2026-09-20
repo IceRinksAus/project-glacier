@@ -61,6 +61,7 @@ if (selectedPattern) {
         pattern={selectedPattern}
         eventStartDate={eventStartDate}
         eventEndDate={eventEndDate}
+        eventTimezone={eventTimezone}
         onBack={handleBuilderBack}
         onCancel={handleBuilderCancel}
         onComplete={handleBuilderComplete}
