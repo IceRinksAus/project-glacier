@@ -5,6 +5,10 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { PublicWaiverService } from './public-waiver.service';
 
+jest.mock('qrcode', () => ({
+  toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,proof-qr'),
+}));
+
 describe('PublicWaiverService', () => {
   let service: PublicWaiverService;
 
@@ -16,12 +20,17 @@ describe('PublicWaiverService', () => {
       create: jest.fn(),
       findUnique: jest.fn(),
     },
+    booking: {
+      findFirst: jest.fn(),
+    },
   };
   const acceptedAt = new Date('2026-08-20T01:00:00.000Z');
   const publishedRecord = {
     id: 'event-waiver-1',
     publicSlug: 'public-slug',
     event: {
+      id: 'event-1',
+      organizationId: 'organization-1',
       name: 'Bathurst Ice Rink',
       venueName: 'Bathurst Showground',
       startDate: new Date('2026-06-20T00:00:00.000Z'),
@@ -64,7 +73,12 @@ describe('PublicWaiverService', () => {
 
   it('returns only the current published public Waiver data', async () => {
     await expect(service.findPublishedWaiver('public-slug')).resolves.toEqual({
-      event: publishedRecord.event,
+      event: {
+        name: publishedRecord.event.name,
+        venueName: publishedRecord.event.venueName,
+        startDate: publishedRecord.event.startDate,
+        endDate: publishedRecord.event.endDate,
+      },
       waiver: {
         publicSlug: 'public-slug',
         version: 2,
@@ -113,6 +127,7 @@ describe('PublicWaiverService', () => {
       signatoryFullName: '  Jamie Stoller  ',
       accepted: true,
       signatureData: 'data:image/png;base64,signature',
+      signatoryParticipating: true,
     });
 
     expect(prismaMock.waiverSubmission.create).toHaveBeenCalledWith({
@@ -121,6 +136,11 @@ describe('PublicWaiverService', () => {
         waiverVersionId: 'waiver-version-2',
         signatoryFullName: 'Jamie Stoller',
         signatureData: 'data:image/png;base64,signature',
+        signatoryParticipating: true,
+        mediaConsent: null,
+        marketingConsent: null,
+        bookingId: undefined,
+        signatoryParticipantId: undefined,
         waiverContentHash: 'authoritative-content-hash',
         acceptanceStatementHash: createHash('sha256')
           .update('I agree to this waiver.')
@@ -129,6 +149,7 @@ describe('PublicWaiverService', () => {
         minors: {
           create: [],
         },
+        associationAudits: undefined,
       },
       select: {
         id: true,
@@ -160,6 +181,7 @@ describe('PublicWaiverService', () => {
       signatoryFullName: 'Responsible Adult',
       accepted: true,
       signatureData: 'signature',
+      signatoryParticipating: false,
       minors,
     });
 
@@ -170,11 +192,127 @@ describe('PublicWaiverService', () => {
             create: minors.map((minor) => ({
               fullName: minor.fullName,
               dateOfBirth: new Date(`${minor.dateOfBirth}T00:00:00.000Z`),
+              bookingParticipantId: undefined,
             })),
           },
         }),
       }),
     );
+  });
+
+  it('links only explicitly selected participants from the authorised Booking', async () => {
+    prismaMock.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'GLA-1001',
+      participants: [
+        {
+          id: 'adult-1',
+          firstName: 'Alex',
+          lastName: 'Adult',
+          age: 35,
+          ticketType: { name: 'Adult' },
+        },
+        {
+          id: 'child-1',
+          firstName: 'Casey',
+          lastName: 'Child',
+          age: 8,
+          ticketType: { name: 'Child' },
+        },
+      ],
+    });
+
+    await service.submit('public-slug', {
+      signatoryFullName: 'Alex Adult',
+      accepted: true,
+      signatureData: 'signature',
+      signatoryParticipating: true,
+      signatoryParticipantId: 'adult-1',
+      bookingId: 'booking-1',
+      publicAccessToken: 'a'.repeat(64),
+      mediaConsent: false,
+      marketingConsent: true,
+      minors: [
+        {
+          fullName: 'Casey Child',
+          dateOfBirth: '2018-01-01',
+          bookingParticipantId: 'child-1',
+        },
+      ],
+    });
+
+    expect(prismaMock.booking.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 'booking-1',
+        eventId: 'event-1',
+        status: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        publicAccessTokenHash: createHash('sha256')
+          .update('a'.repeat(64))
+          .digest('hex'),
+      },
+      select: expect.any(Object),
+    });
+    expect(prismaMock.waiverSubmission.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          bookingId: 'booking-1',
+          signatoryParticipantId: 'adult-1',
+          mediaConsent: false,
+          marketingConsent: true,
+          minors: {
+            create: [
+              expect.objectContaining({ bookingParticipantId: 'child-1' }),
+            ],
+          },
+          associationAudits: {
+            create: {
+              organizationId: 'organization-1',
+              eventId: 'event-1',
+              bookingId: 'booking-1',
+              action: 'BOOKING_LINKED_SUBMISSION',
+              participantIds: ['adult-1', 'child-1'],
+            },
+          },
+        }),
+      }),
+    );
+  });
+
+  it('rejects participant association when the Booking credential is invalid', async () => {
+    prismaMock.booking.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.submit('public-slug', {
+        signatoryFullName: 'Alex Adult',
+        accepted: true,
+        signatureData: 'signature',
+        signatoryParticipating: true,
+        signatoryParticipantId: 'participant-1',
+        bookingId: 'booking-1',
+        publicAccessToken: 'b'.repeat(64),
+      }),
+    ).rejects.toThrow(NotFoundException);
+    expect(prismaMock.waiverSubmission.create).not.toHaveBeenCalled();
+  });
+
+  it('returns a paid Booking context without exposing its access credential', async () => {
+    prismaMock.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'GLA-1001',
+      participants: [{ id: 'participant-1', firstName: 'Alex' }],
+    });
+
+    await expect(
+      service.bookingContext('public-slug', {
+        bookingId: 'booking-1',
+        publicAccessToken: 'c'.repeat(64),
+      }),
+    ).resolves.toEqual({
+      bookingId: 'booking-1',
+      bookingNumber: 'GLA-1001',
+      participants: [{ id: 'participant-1', firstName: 'Alex' }],
+    });
   });
 
   it('rejects a future minor date of birth before persistence', async () => {
@@ -183,6 +321,7 @@ describe('PublicWaiverService', () => {
         signatoryFullName: 'Responsible Adult',
         accepted: true,
         signatureData: 'signature',
+        signatoryParticipating: false,
         minors: [
           {
             fullName: 'Future Child',
@@ -201,6 +340,7 @@ describe('PublicWaiverService', () => {
         signatoryFullName: 'Responsible Adult',
         accepted: true,
         signatureData: 'signature',
+        signatoryParticipating: false,
         minors: [
           {
             fullName: 'Child One',
@@ -234,6 +374,8 @@ describe('PublicWaiverService', () => {
       waiverTitle: 'Bathurst Ice Rink Waiver',
       waiverVersion: 2,
       acceptedAt,
+      verificationUrl: `http://localhost:3001/waivers/verify/${verificationToken}`,
+      qrCodeDataUrl: 'data:image/png;base64,proof-qr',
     });
     expect(prismaMock.waiverSubmission.findUnique).toHaveBeenCalledWith({
       where: {

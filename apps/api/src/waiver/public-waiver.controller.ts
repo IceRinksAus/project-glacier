@@ -8,7 +8,10 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 
-import { CreateWaiverSubmissionDto } from './dto/create-waiver-submission.dto';
+import {
+  CreateWaiverSubmissionDto,
+  WaiverBookingContextDto,
+} from './dto/create-waiver-submission.dto';
 import { PublicWaiverService } from './public-waiver.service';
 
 @UsePipes(
@@ -38,5 +41,13 @@ export class PublicWaiverController {
     @Body() data: CreateWaiverSubmissionDto,
   ) {
     return this.publicWaiverService.submit(publicSlug, data);
+  }
+
+  @Post(':publicSlug/booking-context')
+  bookingContext(
+    @Param('publicSlug') publicSlug: string,
+    @Body() data: WaiverBookingContextDto,
+  ) {
+    return this.publicWaiverService.bookingContext(publicSlug, data);
   }
 }

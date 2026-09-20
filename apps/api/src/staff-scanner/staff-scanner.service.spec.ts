@@ -34,6 +34,8 @@ describe('StaffScannerService', () => {
       firstName: 'Alex',
       lastName: 'Test',
       ticketType: { name: 'Adult' },
+      signatoryWaiverSubmissions: [],
+      dependantWaiverCoverages: [],
     },
     booking: {
       eventId: 'event-1',
@@ -120,9 +122,38 @@ describe('StaffScannerService', () => {
       participantName: 'Alex Test',
       ticketType: 'Adult',
       entryOpensAt: now,
+      waiver: { status: 'NOT_LINKED' },
     });
     expect(transactionMock.ticket.updateMany).not.toHaveBeenCalled();
     expect(transactionMock.ticketScanAttempt.create).not.toHaveBeenCalled();
+  });
+
+  it('reports linked waiver coverage without changing Ticket validity', async () => {
+    prismaMock.ticket.findFirst.mockResolvedValue({
+      ...ticket,
+      participant: {
+        ...ticket.participant,
+        signatoryWaiverSubmissions: [
+          {
+            acceptedAt: new Date('2027-08-30T04:00:00.000Z'),
+            waiverVersion: { title: 'Ice Event Waiver', version: 3 },
+          },
+        ],
+      },
+    });
+
+    const result = await service.lookup(scannerAccess, 'event-1', input);
+
+    expect(result).toMatchObject({
+      result: ScannerTicketResult.READY_TO_ADMIT,
+      waiver: {
+        status: 'COMPLETE',
+        coveredAs: 'SIGNATORY',
+        title: 'Ice Event Waiver',
+        version: 3,
+      },
+    });
+    expect(transactionMock.ticket.updateMany).not.toHaveBeenCalled();
   });
 
   it('looks up a human-readable Ticket number within the authenticated organization', async () => {

@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   Equals,
   IsArray,
+  IsBoolean,
   IsOptional,
   IsString,
   Matches,
@@ -20,6 +21,12 @@ export class CreateWaiverMinorDto {
 
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
   dateOfBirth: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  bookingParticipantId?: string;
 }
 
 export class CreateWaiverSubmissionDto {
@@ -38,10 +45,49 @@ export class CreateWaiverSubmissionDto {
   @Matches(/\S/)
   signatureData: string;
 
+  @IsBoolean()
+  signatoryParticipating: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  mediaConsent?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  marketingConsent?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  bookingId?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-f0-9]{64}$/)
+  publicAccessToken?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  signatoryParticipantId?: string;
+
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)
   @ValidateNested({ each: true })
   @Type(() => CreateWaiverMinorDto)
   minors?: CreateWaiverMinorDto[];
+}
+
+export class WaiverBookingContextDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  bookingId: string;
+
+  @IsString()
+  @Matches(/^[a-f0-9]{64}$/)
+  publicAccessToken: string;
 }

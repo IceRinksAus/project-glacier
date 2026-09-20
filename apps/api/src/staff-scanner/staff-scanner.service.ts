@@ -13,7 +13,27 @@ import { TicketCredentialService } from '../ticket/ticket-credential.service';
 
 type ScannerTicket = Prisma.TicketGetPayload<{
   include: {
-    participant: { include: { ticketType: true } };
+    participant: {
+      include: {
+        ticketType: true;
+        signatoryWaiverSubmissions: {
+          select: {
+            acceptedAt: true;
+            waiverVersion: { select: { title: true; version: true } };
+          };
+        };
+        dependantWaiverCoverages: {
+          select: {
+            waiverSubmission: {
+              select: {
+                acceptedAt: true;
+                waiverVersion: { select: { title: true; version: true } };
+              };
+            };
+          };
+        };
+      };
+    };
     booking: { include: { event: true; session: true } };
     originalRescheduleMapping: {
       select: { replacementTicketNumberSnapshot: true };
@@ -223,7 +243,33 @@ export class StaffScannerService {
           booking: { event: { organizationId } },
         },
         include: {
-          participant: { include: { ticketType: true } },
+          participant: {
+            include: {
+              ticketType: true,
+              signatoryWaiverSubmissions: {
+                orderBy: { acceptedAt: 'desc' },
+                take: 1,
+                select: {
+                  acceptedAt: true,
+                  waiverVersion: { select: { title: true, version: true } },
+                },
+              },
+              dependantWaiverCoverages: {
+                orderBy: { waiverSubmission: { acceptedAt: 'desc' } },
+                take: 1,
+                select: {
+                  waiverSubmission: {
+                    select: {
+                      acceptedAt: true,
+                      waiverVersion: {
+                        select: { title: true, version: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           booking: { include: { event: true, session: true } },
           originalRescheduleMapping: {
             select: { replacementTicketNumberSnapshot: true },
@@ -241,7 +287,33 @@ export class StaffScannerService {
           booking: { event: { organizationId } },
         },
         include: {
-          participant: { include: { ticketType: true } },
+          participant: {
+            include: {
+              ticketType: true,
+              signatoryWaiverSubmissions: {
+                orderBy: { acceptedAt: 'desc' },
+                take: 1,
+                select: {
+                  acceptedAt: true,
+                  waiverVersion: { select: { title: true, version: true } },
+                },
+              },
+              dependantWaiverCoverages: {
+                orderBy: { waiverSubmission: { acceptedAt: 'desc' } },
+                take: 1,
+                select: {
+                  waiverSubmission: {
+                    select: {
+                      acceptedAt: true,
+                      waiverVersion: {
+                        select: { title: true, version: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           booking: { include: { event: true, session: true } },
           originalRescheduleMapping: {
             select: { replacementTicketNumberSnapshot: true },
@@ -280,6 +352,13 @@ export class StaffScannerService {
     else if (now < opensAt) result = ScannerTicketResult.NOT_YET_VALID;
     else if (now > closesAt) result = ScannerTicketResult.ENTRY_WINDOW_CLOSED;
 
+    const signatoryCoverage =
+      ticket.participant.signatoryWaiverSubmissions?.[0] ?? null;
+    const dependantCoverage =
+      ticket.participant.dependantWaiverCoverages?.[0]?.waiverSubmission ??
+      null;
+    const waiverCoverage = signatoryCoverage ?? dependantCoverage;
+
     return {
       result,
       ticketNumber: ticket.ticketNumber,
@@ -302,6 +381,17 @@ export class StaffScannerService {
       sessionEnd: end,
       entryOpensAt: opensAt,
       entryClosesAt: closesAt,
+      waiver: waiverCoverage
+        ? {
+            status: 'COMPLETE' as const,
+            acceptedAt: waiverCoverage.acceptedAt,
+            title: waiverCoverage.waiverVersion.title,
+            version: waiverCoverage.waiverVersion.version,
+            coveredAs: signatoryCoverage
+              ? ('SIGNATORY' as const)
+              : ('DEPENDANT' as const),
+          }
+        : { status: 'NOT_LINKED' as const },
     };
   }
 

@@ -1,10 +1,12 @@
 "use client";
 
 import { CheckCircle2, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { use, useEffect, useRef, useState } from "react";
 
 import {
   PublicWaiver,
+  WaiverBookingContext,
   WaiverMinorInput,
   WaiverSubmissionResponse,
   publicWaiverService,
@@ -165,7 +167,17 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
   const [signatoryFullName, setSignatoryFullName] = useState("");
   const [accepted, setAccepted] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [signatoryParticipating, setSignatoryParticipating] = useState(true);
+  const [signatoryParticipantId, setSignatoryParticipantId] = useState("");
+  const [mediaConsent, setMediaConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [minors, setMinors] = useState<WaiverMinorInput[]>([]);
+  const [bookingContext, setBookingContext] =
+    useState<WaiverBookingContext | null>(null);
+  const [bookingCredential, setBookingCredential] = useState<{
+    bookingId: string;
+    publicAccessToken: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [completion, setCompletion] = useState<WaiverSubmissionResponse | null>(
@@ -203,6 +215,25 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
     return () => {
       isMounted = false;
     };
+  }, [publicSlug]);
+
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const bookingId = fragment.get("booking");
+    const publicAccessToken = fragment.get("access");
+    if (!bookingId || !publicAccessToken) return;
+
+    setBookingCredential({ bookingId, publicAccessToken });
+    publicWaiverService
+      .bookingContext(publicSlug, bookingId, publicAccessToken)
+      .then((context) => setBookingContext(context))
+      .catch((error: unknown) => {
+        setSubmissionError(
+          error instanceof Error
+            ? error.message
+            : "Unable to connect this waiver to the Booking.",
+        );
+      });
   }, [publicSlug]);
 
   function addMinor() {
@@ -251,6 +282,15 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
         signatoryFullName,
         accepted: true,
         signatureData,
+        signatoryParticipating,
+        mediaConsent,
+        marketingConsent,
+        bookingId: bookingCredential?.bookingId,
+        publicAccessToken: bookingCredential?.publicAccessToken,
+        signatoryParticipantId:
+          bookingContext && signatoryParticipating
+            ? signatoryParticipantId
+            : undefined,
         minors,
       });
       setCompletion(result);
@@ -320,6 +360,12 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
               {completion.verificationToken}
             </p>
           </div>
+          <Link
+            href={`/waivers/verify/${completion.verificationToken}`}
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-sky-950 px-5 font-bold text-white"
+          >
+            Open completion proof
+          </Link>
           <p className="mt-5 text-sm leading-6 text-slate-500">
             This credential contains no personal information. Glacier retains
             the authoritative waiver record.
@@ -388,6 +434,43 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
                 className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-sky-700 focus:ring-4 focus:ring-sky-100"
               />
             </label>
+
+            <label className="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+              <input
+                type="checkbox"
+                checked={signatoryParticipating}
+                onChange={(event) => {
+                  setSignatoryParticipating(event.target.checked);
+                  if (!event.target.checked) setSignatoryParticipantId("");
+                }}
+                className="mt-1 size-5 accent-sky-800"
+              />
+              <span className="text-sm leading-6 text-slate-700">
+                I am also participating in this Event activity.
+              </span>
+            </label>
+
+            {bookingContext && signatoryParticipating ? (
+              <label className="mt-5 block text-sm font-semibold text-slate-800">
+                Match yourself to this Booking
+                <select
+                  required
+                  value={signatoryParticipantId}
+                  onChange={(event) =>
+                    setSignatoryParticipantId(event.target.value)
+                  }
+                  className="mt-2 h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-base"
+                >
+                  <option value="">Choose a participant</option>
+                  {bookingContext.participants.map((participant) => (
+                    <option key={participant.id} value={participant.id}>
+                      {participant.firstName} {participant.lastName} ·{" "}
+                      {participant.ticketType.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <input
@@ -479,10 +562,70 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
                         className="mt-2 h-11 w-full rounded-xl border border-slate-300 px-3 text-base outline-none focus:border-sky-700 focus:ring-4 focus:ring-sky-100"
                       />
                     </label>
+                    {bookingContext ? (
+                      <label className="text-sm font-semibold text-slate-700 sm:col-span-2">
+                        Match this child to the Booking
+                        <select
+                          required
+                          value={minor.bookingParticipantId ?? ""}
+                          onChange={(event) =>
+                            setMinors((current) =>
+                              current.map((item, minorIndex) =>
+                                minorIndex === index
+                                  ? {
+                                      ...item,
+                                      bookingParticipantId: event.target.value,
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="mt-2 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base"
+                        >
+                          <option value="">Choose a participant</option>
+                          {bookingContext.participants.map((participant) => (
+                            <option key={participant.id} value={participant.id}>
+                              {participant.firstName} {participant.lastName} ·{" "}
+                              {participant.ticketType.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : null}
                   </div>
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+            <h2 className="text-xl font-semibold">Optional permissions</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              These choices are separate from the mandatory activity waiver.
+              Declining them does not prevent participation.
+            </p>
+            <label className="mt-5 flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+              <input
+                type="checkbox"
+                checked={mediaConsent}
+                onChange={(event) => setMediaConsent(event.target.checked)}
+                className="mt-1 size-5 accent-sky-800"
+              />
+              <span className="text-sm leading-6 text-slate-700">
+                I consent to approved Event photography or video use.
+              </span>
+            </label>
+            <label className="mt-3 flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
+              <input
+                type="checkbox"
+                checked={marketingConsent}
+                onChange={(event) => setMarketingConsent(event.target.checked)}
+                className="mt-1 size-5 accent-sky-800"
+              />
+              <span className="text-sm leading-6 text-slate-700">
+                I would like to receive optional Event updates and marketing.
+              </span>
+            </label>
           </section>
 
           {submissionError ? (

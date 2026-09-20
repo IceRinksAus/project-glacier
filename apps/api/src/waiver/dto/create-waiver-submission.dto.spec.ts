@@ -11,6 +11,7 @@ describe('CreateWaiverSubmissionDto', () => {
       signatoryFullName: 'Jamie Stoller',
       accepted: false,
       signatureData: 'signature',
+      signatoryParticipating: true,
     });
 
     const errors = await validate(dto);
@@ -23,6 +24,7 @@ describe('CreateWaiverSubmissionDto', () => {
       signatoryFullName: 'Jamie Stoller',
       accepted: true,
       signatureData: 'signature',
+      signatoryParticipating: true,
       minors: [{ fullName: '', dateOfBirth: 'not-a-date' }],
     });
 
@@ -36,6 +38,7 @@ describe('CreateWaiverSubmissionDto', () => {
       signatoryFullName: 'Jamie Stoller',
       accepted: true,
       signatureData: 'signature',
+      signatoryParticipating: true,
       minors: Array.from({ length: 6 }, (_, index) => ({
         fullName: `Child ${index + 1}`,
         dateOfBirth: '2015-01-01',
@@ -50,6 +53,7 @@ describe('CreateWaiverSubmissionDto', () => {
       signatoryFullName: 'Jamie Stoller',
       accepted: true,
       signatureData: 'x'.repeat(200_001),
+      signatoryParticipating: true,
     });
 
     const errors = await validate(dto);
@@ -64,6 +68,7 @@ describe('CreateWaiverSubmissionDto', () => {
       signatoryFullName: '   ',
       accepted: true,
       signatureData: '   ',
+      signatoryParticipating: true,
     });
 
     const errors = await validate(dto);

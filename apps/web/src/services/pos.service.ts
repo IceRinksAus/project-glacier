@@ -111,6 +111,15 @@ export interface PosTicketLookup {
   sessionName?: string | null;
   status?: string;
   checkedInAt?: string | null;
+  waiver?:
+    | {
+        status: "COMPLETE";
+        acceptedAt: string;
+        title: string;
+        version: number;
+        coveredAs: "SIGNATORY" | "DEPENDANT";
+      }
+    | { status: "NOT_LINKED" };
 }
 
 export interface PosBookingTicketLookup {

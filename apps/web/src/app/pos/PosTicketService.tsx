@@ -199,6 +199,7 @@ export function PosTicketService({ eventId }: { eventId: string }) {
                       {ticket.participantName}
                     </p>
                   ) : null}
+                  <WaiverStatus waiver={ticket.waiver} />
                   {ticket.result === "READY_TO_ADMIT" && ticket.ticketNumber ? (
                     <Button
                       className="mt-3 w-full"
@@ -248,6 +249,7 @@ export function PosTicketService({ eventId }: { eventId: string }) {
                 <strong>Session:</strong> {result.sessionName}
               </p>
             ) : null}
+            <WaiverStatus waiver={result.waiver} />
             {result.result === "READY_TO_ADMIT" ? (
               <Button
                 className="h-14 w-full"
@@ -263,6 +265,26 @@ export function PosTicketService({ eventId }: { eventId: string }) {
           </div>
         )}
       </aside>
+    </div>
+  );
+}
+
+function WaiverStatus({ waiver }: { waiver: PosTicketLookup["waiver"] }) {
+  if (!waiver || waiver.status === "NOT_LINKED") {
+    return (
+      <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+        Waiver not linked. This warning does not change Ticket validity or admit
+        the guest.
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+      <strong>Waiver complete</strong> ·{" "}
+      {waiver.coveredAs === "SIGNATORY" ? "signatory" : "dependant"}
+      <br />
+      {waiver.title} v{waiver.version} ·{" "}
+      {new Date(waiver.acceptedAt).toLocaleString("en-AU")}
     </div>
   );
 }

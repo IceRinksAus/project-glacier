@@ -70,8 +70,8 @@ export default function ConfirmationPage({
             <h2 className="text-xl font-bold">Flexible Ticket coverage</h2>
             <p className="mt-2 text-sm leading-6 text-slate-700">
               Coverage is recorded separately for the Tickets below. You may
-              submit an eligible request below, but the organiser must review
-              it before any Ticket, Session or payment changes.
+              submit an eligible request below, but the organiser must review it
+              before any Ticket, Session or payment changes.
             </p>
             <div className="mt-4 grid gap-3">
               {(bookingStatus.flexibleTicketEntitlements ?? []).map(
@@ -131,7 +131,11 @@ export default function ConfirmationPage({
               the ice. A responsible adult may include children in their care.
             </p>
             <Link
-              href={`/waivers/${bookingStatus.event.waiverPublicSlug}`}
+              href={
+                reservation?.booking.publicAccessToken
+                  ? `/waivers/${bookingStatus.event.waiverPublicSlug}#booking=${bookingStatus.id}&access=${reservation.booking.publicAccessToken}`
+                  : `/waivers/${bookingStatus.event.waiverPublicSlug}`
+              }
               className="mt-4 inline-flex rounded-xl bg-sky-950 px-5 py-3 font-bold text-white"
             >
               Complete waiver now
