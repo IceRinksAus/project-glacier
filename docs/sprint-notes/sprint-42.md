@@ -1,6 +1,7 @@
 # Sprint 42 — End-to-End Pilot Rehearsal and Workflow Hardening
 
-**Status:** In progress from 20 September 2026
+**Status:** Walkthrough complete; remediation implementation in progress from
+20 September 2026
 
 ## Objective
 
