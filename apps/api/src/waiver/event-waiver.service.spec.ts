@@ -17,6 +17,7 @@ describe('EventWaiverService', () => {
   const transactionMock = {
     eventWaiver: {
       create: jest.fn(),
+      update: jest.fn(),
     },
     waiverVersion: {
       create: jest.fn(),
@@ -74,6 +75,12 @@ describe('EventWaiverService', () => {
   };
   const template = {
     id: 'template-1',
+    name: 'NSW ice-skating waiver',
+    revision: 3,
+    jurisdiction: AustralianJurisdiction.NSW,
+    activityType: EventActivityType.ICE_SKATING,
+    authority: 'PLATFORM',
+    approvalReference: 'Approved legal source 2026',
     contentTemplate:
       '{{organizationLegalName}} operates {{eventName}} at {{venueName}}, {{eventAddress}}.',
     acceptanceStatement: 'I accept the waiver for {{eventName}}.',
@@ -112,6 +119,50 @@ describe('EventWaiverService', () => {
 
   afterEach(() => {
     delete process.env.WEB_APP_URL;
+  });
+
+  it('prepares the compatible approved template and Event defaults automatically', async () => {
+    await expect(
+      service.preparation('organization-1', event.id),
+    ).resolves.toEqual({
+      event: {
+        id: event.id,
+        name: event.name,
+        activityType: EventActivityType.ICE_SKATING,
+        jurisdiction: AustralianJurisdiction.NSW,
+      },
+      template: {
+        id: template.id,
+        name: template.name,
+        revision: template.revision,
+        jurisdiction: template.jurisdiction,
+        activityType: template.activityType,
+        authority: template.authority,
+        approvalReference: template.approvalReference,
+      },
+      fields: {
+        promoter: 'Ice Rinks Australia Pty Ltd',
+        eventLocation: 'Bathurst Showground',
+        siteAddress: '1 Kendall Avenue, Bathurst, NSW, 2795, AU',
+        eventStartDate: '2026-06-20',
+        eventEndDate: '2026-07-19',
+        additionalInformation: '',
+      },
+      missingFields: [],
+      ready: true,
+    });
+  });
+
+  it('reports a missing approved template without exposing a draft composer', async () => {
+    waiverTemplateServiceMock.findApprovedTemplate.mockRejectedValue(
+      new NotFoundException('No approved template.'),
+    );
+
+    await expect(
+      service.preparation('organization-1', event.id),
+    ).resolves.toEqual(
+      expect.objectContaining({ template: null, ready: false }),
+    );
   });
 
   it('retrieves version history within the authenticated organization', async () => {
@@ -282,6 +333,14 @@ describe('EventWaiverService', () => {
       data: {
         eventId: event.id,
         publicSlug: expect.stringMatching(/^[a-f0-9]{48}$/),
+        configuration: {
+          promoter: 'Ice Rinks Australia Pty Ltd',
+          eventLocation: 'Bathurst Showground',
+          siteAddress: '1 Kendall Avenue, Bathurst, NSW, 2795, AU',
+          eventStartDate: '2026-06-20',
+          eventEndDate: '2026-07-19',
+          additionalInformation: '',
+        },
       },
     });
     expect(transactionMock.waiverVersion.create).toHaveBeenCalledWith({
@@ -319,6 +378,15 @@ describe('EventWaiverService', () => {
     await service.createDraft('organization-1', event.id);
 
     expect(transactionMock.eventWaiver.create).not.toHaveBeenCalled();
+    expect(transactionMock.eventWaiver.update).toHaveBeenCalledWith({
+      where: { id: 'event-waiver-1' },
+      data: {
+        configuration: expect.objectContaining({
+          promoter: 'Ice Rinks Australia Pty Ltd',
+          eventLocation: 'Bathurst Showground',
+        }),
+      },
+    });
     expect(transactionMock.waiverVersion.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         eventWaiverId: 'event-waiver-1',
@@ -365,16 +433,18 @@ describe('EventWaiverService', () => {
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
-  it('rejects a required template variable with no source value', async () => {
-    prismaMock.event.findFirst.mockResolvedValue({
-      ...event,
-      venueName: null,
-    });
-
+  it('rejects a missing required organiser field', async () => {
     await expect(
-      service.createDraft('organization-1', event.id),
+      service.createDraft('organization-1', event.id, {
+        promoter: 'Ice Rinks Australia Pty Ltd',
+        eventLocation: '',
+        siteAddress: '1 Kendall Avenue, Bathurst NSW 2795',
+        eventStartDate: '2026-06-20',
+        eventEndDate: '2026-07-19',
+        additionalInformation: '',
+      }),
     ).rejects.toThrow(
-      'Waiver template variable "venueName" has no Event or Organization value.',
+      'Waiver configuration field "eventLocation" is required.',
     );
 
     expect(prismaMock.$transaction).not.toHaveBeenCalled();

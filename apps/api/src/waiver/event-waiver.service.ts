@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { getWebAppUrl } from '../config/application-security';
 import { WaiverTemplateService } from './waiver-template.service';
 import { MatchWaiverSubmissionDto } from './dto/match-waiver-submission.dto';
+import { ConfigureEventWaiverDto } from './dto/configure-event-waiver.dto';
 
 @Injectable()
 export class EventWaiverService {
@@ -44,6 +45,65 @@ export class EventWaiverService {
         },
       },
     });
+  }
+
+  async preparation(organizationId: string, eventId: string) {
+    const event = await this.findEventForDraft(organizationId, eventId);
+    if (!event) {
+      throw new NotFoundException('Event was not found in your organization.');
+    }
+
+    const defaults = this.defaultConfiguration(event);
+    const saved = event.waiver
+      ?.configuration as Partial<ConfigureEventWaiverDto> | null;
+    const fields = { ...defaults, ...(saved ?? {}) };
+    let template: {
+      id: string;
+      name: string;
+      revision: number;
+      jurisdiction: string;
+      activityType: string;
+      authority: string;
+      approvalReference: string | null;
+    } | null = null;
+    if (event.activityType && event.jurisdiction) {
+      try {
+        const approved = await this.waiverTemplateService.findApprovedTemplate(
+          event.activityType,
+          event.jurisdiction,
+          organizationId,
+        );
+        template = {
+          id: approved.id,
+          name: approved.name,
+          revision: approved.revision,
+          jurisdiction: approved.jurisdiction,
+          activityType: approved.activityType,
+          authority: approved.authority,
+          approvalReference: approved.approvalReference,
+        };
+      } catch (error) {
+        if (!(error instanceof NotFoundException)) throw error;
+      }
+    }
+
+    const missingFields = Object.entries(fields)
+      .filter(
+        ([key, value]) => key !== 'additionalInformation' && !value.trim(),
+      )
+      .map(([key]) => key);
+    return {
+      event: {
+        id: event.id,
+        name: event.name,
+        activityType: event.activityType,
+        jurisdiction: event.jurisdiction,
+      },
+      template,
+      fields,
+      missingFields,
+      ready: Boolean(template && missingFields.length === 0),
+    };
   }
 
   async generatePublicQrCode(organizationId: string, eventId: string) {
@@ -296,26 +356,12 @@ export class EventWaiverService {
     });
   }
 
-  async createDraft(organizationId: string, eventId: string) {
-    const event = await this.prisma.event.findFirst({
-      where: {
-        id: eventId,
-        organizationId,
-      },
-      include: {
-        organization: true,
-        waiver: {
-          include: {
-            versions: {
-              orderBy: {
-                version: 'desc',
-              },
-              take: 1,
-            },
-          },
-        },
-      },
-    });
+  async createDraft(
+    organizationId: string,
+    eventId: string,
+    data?: ConfigureEventWaiverDto,
+  ) {
+    const event = await this.findEventForDraft(organizationId, eventId);
 
     if (!event) {
       throw new NotFoundException('Event was not found in your organization.');
@@ -333,7 +379,10 @@ export class EventWaiverService {
       organizationId,
     );
 
-    const variables = this.buildVariables(event);
+    const configuration = data ?? this.defaultConfiguration(event);
+    this.validateConfiguration(configuration);
+    const storedConfiguration = { ...configuration };
+    const variables = this.buildVariables(event, configuration);
     const content = this.renderTemplate(template.contentTemplate, variables);
     const acceptanceStatement = this.renderTemplate(
       template.acceptanceStatement,
@@ -349,8 +398,16 @@ export class EventWaiverService {
           data: {
             eventId: event.id,
             publicSlug: randomBytes(24).toString('hex'),
+            configuration: storedConfiguration,
           },
         }));
+
+      if (event.waiver) {
+        await transaction.eventWaiver.update({
+          where: { id: eventWaiver.id },
+          data: { configuration: storedConfiguration },
+        });
+      }
 
       return transaction.waiverVersion.create({
         data: {
@@ -421,7 +478,21 @@ export class EventWaiverService {
     });
   }
 
-  private buildVariables(event: {
+  private findEventForDraft(organizationId: string, eventId: string) {
+    return this.prisma.event.findFirst({
+      where: { id: eventId, organizationId },
+      include: {
+        organization: true,
+        waiver: {
+          include: {
+            versions: { orderBy: { version: 'desc' }, take: 1 },
+          },
+        },
+      },
+    });
+  }
+
+  private defaultConfiguration(event: {
     name: string;
     venueName: string | null;
     addressLine1: string | null;
@@ -436,26 +507,88 @@ export class EventWaiverService {
       name: string;
       legalName: string | null;
       tradingName: string | null;
-      abn: string | null;
     };
-  }) {
-    const address = [
-      event.addressLine1,
-      event.addressLine2,
-      event.suburb,
-      event.jurisdiction,
-      event.postcode,
-      event.country,
-    ]
-      .filter(Boolean)
-      .join(', ');
+  }): ConfigureEventWaiverDto {
+    return {
+      promoter:
+        event.organization.legalName ??
+        event.organization.tradingName ??
+        event.organization.name,
+      eventLocation: event.venueName ?? event.name,
+      siteAddress: [
+        event.addressLine1,
+        event.addressLine2,
+        event.suburb,
+        event.jurisdiction,
+        event.postcode,
+        event.country,
+      ]
+        .filter(Boolean)
+        .join(', '),
+      eventStartDate: event.startDate.toISOString().slice(0, 10),
+      eventEndDate: event.endDate.toISOString().slice(0, 10),
+      additionalInformation: '',
+    };
+  }
 
+  private validateConfiguration(data: ConfigureEventWaiverDto) {
+    const requiredText = [
+      ['promoter', data.promoter],
+      ['eventLocation', data.eventLocation],
+      ['siteAddress', data.siteAddress],
+    ] as const;
+    const missing = requiredText.find(([, value]) => !value?.trim());
+    if (missing) {
+      throw new BadRequestException(
+        `Waiver configuration field "${missing[0]}" is required.`,
+      );
+    }
+
+    const start = new Date(`${data.eventStartDate}T00:00:00.000Z`);
+    const end = new Date(`${data.eventEndDate}T00:00:00.000Z`);
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end < start
+    ) {
+      throw new BadRequestException(
+        'Waiver Event dates must be valid and the end date cannot precede the start date.',
+      );
+    }
+  }
+
+  private buildVariables(
+    event: {
+      name: string;
+      venueName: string | null;
+      addressLine1: string | null;
+      addressLine2: string | null;
+      suburb: string | null;
+      postcode: string | null;
+      country: string | null;
+      jurisdiction: string | null;
+      startDate: Date;
+      endDate: Date;
+      organization: {
+        name: string;
+        legalName: string | null;
+        tradingName: string | null;
+        abn: string | null;
+      };
+    },
+    configuration: ConfigureEventWaiverDto,
+  ) {
     return {
       eventName: event.name,
-      venueName: event.venueName ?? '',
-      eventAddress: address,
-      eventStartDate: event.startDate.toISOString(),
-      eventEndDate: event.endDate.toISOString(),
+      promoter: configuration.promoter.trim(),
+      venueName: configuration.eventLocation.trim(),
+      eventLocation: configuration.eventLocation.trim(),
+      eventAddress: configuration.siteAddress.trim(),
+      siteAddress: configuration.siteAddress.trim(),
+      eventStartDate: configuration.eventStartDate,
+      eventEndDate: configuration.eventEndDate,
+      eventDates: `${configuration.eventStartDate} to ${configuration.eventEndDate}`,
+      additionalInformation: configuration.additionalInformation.trim(),
       jurisdiction: event.jurisdiction ?? '',
       organizationName: event.organization.name,
       organizationLegalName: event.organization.legalName ?? '',

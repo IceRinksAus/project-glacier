@@ -33,6 +33,36 @@ export interface EventWaiverAdministration {
   versions: WaiverVersion[];
 }
 
+export interface EventWaiverConfiguration {
+  promoter: string;
+  eventLocation: string;
+  siteAddress: string;
+  eventStartDate: string;
+  eventEndDate: string;
+  additionalInformation: string;
+}
+
+export interface EventWaiverPreparation {
+  event: {
+    id: string;
+    name: string;
+    activityType: string | null;
+    jurisdiction: string | null;
+  };
+  template: {
+    id: string;
+    name: string;
+    revision: number;
+    jurisdiction: string;
+    activityType: string;
+    authority: string;
+    approvalReference: string | null;
+  } | null;
+  fields: EventWaiverConfiguration;
+  missingFields: string[];
+  ready: boolean;
+}
+
 export interface WaiverSubmissionSummary {
   id: string;
   signatoryFullName: string;
@@ -94,8 +124,17 @@ export const waiverService = {
     );
   },
 
-  createDraft(eventId: string) {
-    return api.post<WaiverVersion>(`/event/${eventId}/waiver/drafts`, {});
+  getPreparation(eventId: string) {
+    return api.get<EventWaiverPreparation>(
+      `/event/${eventId}/waiver/preparation`,
+    );
+  },
+
+  createDraft(eventId: string, configuration: EventWaiverConfiguration) {
+    return api.post<WaiverVersion>(
+      `/event/${eventId}/waiver/drafts`,
+      configuration,
+    );
   },
 
   generatePublicQrCode(eventId: string) {

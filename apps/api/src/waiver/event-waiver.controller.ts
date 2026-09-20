@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { EventWaiverService } from './event-waiver.service';
 import { MatchWaiverSubmissionDto } from './dto/match-waiver-submission.dto';
+import { ConfigureEventWaiverDto } from './dto/configure-event-waiver.dto';
 
 interface AuthenticatedUser extends AuthenticatedAccessContext {
   email: string;
@@ -39,6 +40,16 @@ export class EventWaiverController {
   ) {
     await this.accessControl.assertEventAccess(eventId, user);
     return this.eventWaiverService.findForEvent(user.organizationId, eventId);
+  }
+
+  @Roles('OWNER', 'MANAGER')
+  @Get('preparation')
+  async preparation(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.accessControl.assertEventAccess(eventId, user);
+    return this.eventWaiverService.preparation(user.organizationId, eventId);
   }
 
   @Roles('OWNER', 'MANAGER')
@@ -121,10 +132,15 @@ export class EventWaiverController {
   @Post('drafts')
   async createDraft(
     @Param('eventId') eventId: string,
+    @Body() data: ConfigureEventWaiverDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     await this.accessControl.assertEventAccess(eventId, user);
-    return this.eventWaiverService.createDraft(user.organizationId, eventId);
+    return this.eventWaiverService.createDraft(
+      user.organizationId,
+      eventId,
+      data,
+    );
   }
 
   @Roles('OWNER')

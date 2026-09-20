@@ -1721,7 +1721,8 @@ model EventWaiver {
   eventId String @unique
   event   Event  @relation(fields: [eventId], references: [id])
 
-  publicSlug String @unique
+  publicSlug    String @unique
+  configuration Json?
 
   versions    WaiverVersion[]
   submissions WaiverSubmission[]

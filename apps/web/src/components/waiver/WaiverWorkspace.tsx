@@ -9,10 +9,13 @@ import {
   Users,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   EventWaiverAdministration,
+  EventWaiverConfiguration,
+  EventWaiverPreparation,
   WaiverSubmissionDetail,
   WaiverSubmissionSummary,
   WaiverAssociationBooking,
@@ -56,6 +59,11 @@ export function WaiverWorkspace({
   jurisdiction,
 }: WaiverWorkspaceProps) {
   const [waiver, setWaiver] = useState<EventWaiverAdministration | null>(null);
+  const [preparation, setPreparation] = useState<EventWaiverPreparation | null>(
+    null,
+  );
+  const [configuration, setConfiguration] =
+    useState<EventWaiverConfiguration | null>(null);
   const [submissions, setSubmissions] = useState<WaiverSubmissionSummary[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
     null,
@@ -77,11 +85,15 @@ export function WaiverWorkspace({
     async (submissionSearch?: string) => {
       try {
         setError(null);
-        const [waiverResult, submissionResult] = await Promise.all([
-          waiverService.findForEvent(eventId),
-          waiverService.listSubmissions(eventId, submissionSearch),
-        ]);
+        const [waiverResult, preparationResult, submissionResult] =
+          await Promise.all([
+            waiverService.findForEvent(eventId),
+            waiverService.getPreparation(eventId),
+            waiverService.listSubmissions(eventId, submissionSearch),
+          ]);
         setWaiver(waiverResult);
+        setPreparation(preparationResult);
+        setConfiguration(preparationResult.fields);
         setSubmissions(submissionResult);
         setSelectedVersionId(
           (current) => current ?? waiverResult?.versions[0]?.id ?? null,
@@ -128,13 +140,32 @@ export function WaiverWorkspace({
     waiver && typeof window !== "undefined"
       ? `${window.location.origin}/waivers/${waiver.publicSlug}`
       : null;
-  const generationReady = Boolean(activityType && jurisdiction);
+  const requiredConfigurationComplete = Boolean(
+    configuration?.promoter.trim() &&
+    configuration.eventLocation.trim() &&
+    configuration.siteAddress.trim() &&
+    configuration.eventStartDate &&
+    configuration.eventEndDate,
+  );
+  const generationReady = Boolean(
+    preparation?.template && requiredConfigurationComplete,
+  );
+
+  function updateConfiguration(
+    field: keyof EventWaiverConfiguration,
+    value: string,
+  ) {
+    setConfiguration((current) =>
+      current ? { ...current, [field]: value } : current,
+    );
+  }
 
   async function createDraft() {
     try {
       setIsMutating(true);
       setError(null);
-      const draft = await waiverService.createDraft(eventId);
+      if (!configuration) return;
+      const draft = await waiverService.createDraft(eventId, configuration);
       await loadWorkspace(search);
       setSelectedVersionId(draft.id);
     } catch (mutationError) {
@@ -257,7 +288,7 @@ export function WaiverWorkspace({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">
-                Event Waiver
+                Waiver setup
               </p>
               <h2 className="mt-1 text-2xl font-semibold tracking-tight">
                 {publishedVersion
@@ -267,9 +298,9 @@ export function WaiverWorkspace({
                     : "No Waiver configured"}
               </h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Event Waivers are optional. When enabled, Glacier generates
-                Event-specific wording from the approved activity and
-                jurisdiction template.
+                Glacier automatically uses the approved template for this
+                Event's activity and jurisdiction. Complete the Event details
+                below; the approved legal wording stays locked.
               </p>
             </div>
           </div>
@@ -283,8 +314,8 @@ export function WaiverWorkspace({
             {isMutating
               ? "Working…"
               : waiver
-                ? "Generate new draft"
-                : "Create Waiver"}
+                ? "Generate updated preview"
+                : "Generate Waiver preview"}
           </button>
         </div>
 
@@ -315,10 +346,129 @@ export function WaiverWorkspace({
 
         {!generationReady ? (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            Set the Event activity type and jurisdiction before generating a
-            Waiver.
+            {!activityType || !jurisdiction
+              ? "Set the Event activity type and jurisdiction before generating a Waiver."
+              : !preparation?.template
+                ? "No approved template is available for this activity and jurisdiction."
+                : "Complete all required Event details before generating a Waiver preview."}
+            {activityType && jurisdiction && !preparation?.template ? (
+              <Link href="/waivers" className="ml-1 font-semibold underline">
+                Review the approved template library
+              </Link>
+            ) : null}
           </p>
         ) : null}
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[19rem_minmax(0,1fr)]">
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-800">
+              Approved template
+            </p>
+            {preparation?.template ? (
+              <>
+                <p className="mt-2 font-semibold text-sky-950">
+                  {preparation.template.name}
+                </p>
+                <p className="mt-1 text-sm text-sky-900">
+                  Revision {preparation.template.revision} ·{" "}
+                  {preparation.template.jurisdiction} ·{" "}
+                  {preparation.template.activityType.replaceAll("_", " ")}
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-800">
+                  <CheckCircle2 className="size-4" /> Legal wording locked
+                </div>
+              </>
+            ) : (
+              <p className="mt-2 text-sm leading-6 text-sky-950">
+                Glacier could not find an approved compatible template.
+              </p>
+            )}
+          </div>
+
+          {configuration ? (
+            <div>
+              <div className="mb-4">
+                <h3 className="font-semibold">Event-specific details</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  These values are inserted into the controlled template. They
+                  do not alter its legal clauses.
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="space-y-1.5 text-sm font-medium">
+                  Promoter
+                  <input
+                    value={configuration.promoter}
+                    onChange={(event) =>
+                      updateConfiguration("promoter", event.target.value)
+                    }
+                    className="min-h-11 w-full rounded-lg border bg-background px-3 font-normal"
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium">
+                  Event location
+                  <input
+                    value={configuration.eventLocation}
+                    onChange={(event) =>
+                      updateConfiguration("eventLocation", event.target.value)
+                    }
+                    className="min-h-11 w-full rounded-lg border bg-background px-3 font-normal"
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium md:col-span-2">
+                  Site address
+                  <input
+                    value={configuration.siteAddress}
+                    onChange={(event) =>
+                      updateConfiguration("siteAddress", event.target.value)
+                    }
+                    className="min-h-11 w-full rounded-lg border bg-background px-3 font-normal"
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium">
+                  Start date
+                  <input
+                    type="date"
+                    value={configuration.eventStartDate}
+                    onChange={(event) =>
+                      updateConfiguration("eventStartDate", event.target.value)
+                    }
+                    className="min-h-11 w-full rounded-lg border bg-background px-3 font-normal"
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium">
+                  End date
+                  <input
+                    type="date"
+                    value={configuration.eventEndDate}
+                    onChange={(event) =>
+                      updateConfiguration("eventEndDate", event.target.value)
+                    }
+                    className="min-h-11 w-full rounded-lg border bg-background px-3 font-normal"
+                  />
+                </label>
+                <label className="space-y-1.5 text-sm font-medium md:col-span-2">
+                  Additional Event information{" "}
+                  <span className="font-normal text-muted-foreground">
+                    (optional)
+                  </span>
+                  <textarea
+                    value={configuration.additionalInformation}
+                    onChange={(event) =>
+                      updateConfiguration(
+                        "additionalInformation",
+                        event.target.value,
+                      )
+                    }
+                    rows={3}
+                    placeholder="Add only approved Event-specific operational information."
+                    className="w-full rounded-lg border bg-background px-3 py-2 font-normal"
+                  />
+                </label>
+              </div>
+            </div>
+          ) : null}
+        </div>
 
         {publicUrl && publishedVersion ? (
           <div className="mt-5 grid gap-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-center">

@@ -2,6 +2,12 @@
 
 **Status:** Implemented locally 20 September 2026; organiser browser acceptance pending
 
+**Organiser review correction:** The Event Waiver screen automatically selects
+the approved compatible template and permits editing only promoter, Event
+location, site address, Event dates and optional approved Event-specific
+information. Legal wording is locked to the versioned template library;
+preview generation and publication remain separate actions.
+
 ## Outcome
 
 Make Glacier's Waiver workflow usable from legal-template preparation through

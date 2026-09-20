@@ -20,24 +20,27 @@ The implementation does not assert that historical wording is current legal advi
 - Added explicit staff matching for independent submissions. Assigned OWNER/MANAGER enters the Booking and selects exact participants; Glacier performs no fuzzy name matching.
 - Added compact linked/not-linked Waiver status to POS Ticket and Booking lookup. Status is advisory and does not change Ticket validity, consume entry or admit a guest.
 - Tightened legal-evidence routes to OWNER/MANAGER with assigned-Event enforcement. SCANNER cannot retrieve signatures, child dates of birth or template administration.
+- Corrected the Event Waiver setup after organiser review: Glacier now automatically resolves the compatible approved activity/jurisdiction template, pre-fills promoter, location, address and Event dates, and exposes only those bounded Event-specific fields plus optional approved operational information. The legal template remains locked and version-controlled; an organiser cannot compose or silently change legal clauses from the Event screen.
+- Added explicit blocked states when Event classification, required values or an approved compatible template is missing. Generating a preview persists only the permitted configuration, renders a new immutable draft and leaves publication as a separate OWNER action.
 
 ## Data and migration evidence
 
-Two forward-only migrations add template authority/approval provenance, Booking and participant coverage, optional consent fields and attributable association audit evidence. A follow-up integrity migration preserves platform-template revision uniqueness when `organizationId` is null and adds the Booking foreign key for association audits.
+Three forward-only migrations add template authority/approval provenance, Booking and participant coverage, optional consent fields, attributable association audit evidence and bounded Event-specific Waiver configuration. A follow-up integrity migration preserves platform-template revision uniqueness when `organizationId` is null and adds the Booking foreign key for association audits.
 
-The repository now contains 52 committed Prisma migrations. They applied to the working database and replayed successfully from empty state during the disposable isolation gate.
+The repository now contains 53 Prisma migrations locally. The guided-configuration migration applied successfully to the working database; full empty-state replay is repeated at final correction closeout.
 
 ## Verification
 
 - Focused waiver/template/Event/scanner suites passed throughout each slice.
-- API: 92 suites / 675 tests passed; production build passed.
+- API: 92 suites / 677 tests passed; production build passed.
 - Web: 39 files / 119 tests passed; production Webpack build passed.
-- All 52 migrations are current and replayed from empty state.
+- All 53 migrations are current and replayed from empty state.
 - Disposable authenticated tenant/role/Event/MFA isolation passed 5 of 5 checks.
-- Tracked-secret scanning passed across 679 files and 6 rules.
-- Isolated PostgreSQL backup/restore matched all 20 critical tables; the 0.31 MiB archive completed in 0.60 seconds and restored in 1.25 seconds.
+- Tracked-secret scanning passed across 681 files and 6 rules.
+- Isolated PostgreSQL backup/restore matched all 20 critical tables; the 0.31 MiB archive completed in 0.67 seconds and restored in 1.72 seconds.
 - The complete local release gate passed.
 - Browser navigation confirmed the new Waivers destination is present in the protected desktop and mobile primary navigation. The local authentication session expired when opening it, so final organiser/customer/POS responsive acceptance remains an explicit organiser review rather than a claimed completed check.
+- Subsequent organiser review found that the Event tab exposed the workflow too abstractly. The guided setup correction is implemented locally; 26 focused Waiver tests, both production builds and the complete release, migration, isolation, restore and secret gates pass.
 
 ## Protected foundations
 

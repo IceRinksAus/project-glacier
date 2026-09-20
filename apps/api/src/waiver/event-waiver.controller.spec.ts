@@ -9,6 +9,7 @@ describe('EventWaiverController', () => {
 
   const serviceMock = {
     findForEvent: jest.fn(),
+    preparation: jest.fn(),
     generatePublicQrCode: jest.fn(),
     listSubmissions: jest.fn(),
     findSubmission: jest.fn(),
@@ -25,6 +26,14 @@ describe('EventWaiverController', () => {
     accessScope: 'ALL_EVENTS' as const,
   };
   const accessControlMock = { assertEventAccess: jest.fn() };
+  const configuration = {
+    promoter: 'Ice Rinks Australia Pty Ltd',
+    eventLocation: 'Bathurst Showground',
+    siteAddress: '1 Kendall Avenue, Bathurst NSW 2795',
+    eventStartDate: '2026-06-20',
+    eventEndDate: '2026-07-19',
+    additionalInformation: '',
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -110,12 +119,15 @@ describe('EventWaiverController', () => {
       id: 'waiver-version-1',
     });
 
-    await expect(controller.createDraft('event-1', user)).resolves.toEqual({
+    await expect(
+      controller.createDraft('event-1', configuration, user),
+    ).resolves.toEqual({
       id: 'waiver-version-1',
     });
     expect(serviceMock.createDraft).toHaveBeenCalledWith(
       'organization-1',
       'event-1',
+      configuration,
     );
   });
 
