@@ -104,6 +104,7 @@ describe("PosPage", () => {
     });
     getMerchandiseCatalogue.mockResolvedValue({
       event: catalogue.event,
+      sessions: catalogue.sessions,
       products: [
         {
           id: "hoodie",
@@ -114,6 +115,8 @@ describe("PosPage", () => {
           maxQuantity: null,
           inventoryTracked: true,
           remainingInventory: 10,
+          requiresSessionSelection: false,
+          remainingSessionCapacity: null,
           productGroup: { id: "merch", name: "Merchandise", sortOrder: 0 },
           variants: [],
         },
@@ -144,21 +147,72 @@ describe("PosPage", () => {
     );
   });
 
-  it("switches to merchandise without requiring a Session or purchaser", async () => {
+  it("processes a Kanga-only order from the unified selling screen", async () => {
+    getCatalogue.mockResolvedValue({
+      ...catalogue,
+      sessionProducts: [
+        {
+          id: "assignment-1",
+          productId: "kanga-1",
+          capacityOverride: 20,
+          sortOrder: 0,
+          product: {
+            id: "kanga-1",
+            name: "Kanga",
+            slug: "kanga",
+            description: null,
+            price: 10,
+            minQuantity: 0,
+            maxQuantity: null,
+            capacityControlled: true,
+            capacity: 20,
+            inventoryTracked: false,
+            inventoryQuantity: null,
+            imageAsset: null,
+            productGroup: null,
+            variants: [],
+          },
+        },
+      ],
+    });
+    createRetailSale.mockResolvedValue({
+      id: "sale-1",
+      saleNumber: "RS-1",
+      status: "RESERVED",
+      paymentStatus: "UNPAID",
+      total: 10,
+      currency: "AUD",
+      reservedUntil: "2026-09-20T07:00:00.000Z",
+      completedAt: null,
+      completedByUser: null,
+      session: {
+        id: "session-1",
+        name: "10:00 session",
+        startDate: catalogue.sessions[0].startDate,
+        endDate: catalogue.sessions[0].endDate,
+      },
+      items: [],
+      payments: [],
+    });
     render(<PosPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Use recommendation" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add one Kanga" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review payment" }));
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: /^Merchandise Sale/ }),
-    );
-
-    expect(await screen.findByText("Merchandise")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "No Session, participant or purchaser details are required.",
+    await waitFor(() =>
+      expect(createRetailSale).toHaveBeenCalledWith(
+        "event-1",
+        "session-1",
+        [{ productId: "kanga-1", quantity: 1, productVariantId: undefined }],
       ),
-    ).toBeInTheDocument();
-    expect(screen.queryByLabelText("Selling Session")).not.toBeInTheDocument();
-    expect(await screen.findByText("10 remaining")).toBeInTheDocument();
+    );
+    expect(createReservation).not.toHaveBeenCalled();
+    expect(screen.getByText("Product Sale RS-1")).toBeVisible();
+    expect(screen.getByText("$10.00")).toBeVisible();
+    expect(getCatalogue).toHaveBeenLastCalledWith(
+      "event-1",
+      "session-1",
+    );
   });
 
   it("adds an ordinary walk-up Ticket without participant name fields", async () => {

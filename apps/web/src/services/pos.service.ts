@@ -145,12 +145,20 @@ export interface RetailProduct {
   maxQuantity: number | null;
   inventoryTracked: boolean;
   remainingInventory: number | null;
+  requiresSessionSelection: boolean;
+  remainingSessionCapacity: number | null;
   productGroup: { id: string; name: string; sortOrder: number } | null;
   variants: RetailProductVariant[];
 }
 
 export interface RetailCatalogue {
   event: { id: string; name: string; timezone: string | null };
+  sessions: Array<{
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+  }>;
   products: RetailProduct[];
 }
 
@@ -164,6 +172,12 @@ export interface RetailSale {
   reservedUntil: string;
   completedAt: string | null;
   completedByUser: { id: string; name: string } | null;
+  session: {
+    id: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+  } | null;
   items: Array<{
     id: string;
     productNameSnapshot: string;
@@ -272,17 +286,24 @@ export const posService = {
       mode: "TICKET_LOOKUP",
     }),
 
-  getMerchandiseCatalogue: (eventId: string) =>
-    api.get<RetailCatalogue>(`/pos/events/${eventId}/merchandise`),
+  getMerchandiseCatalogue: (eventId: string, sessionId?: string) =>
+    api.get<RetailCatalogue>(
+      `/pos/events/${eventId}/merchandise${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ""}`,
+    ),
 
   createRetailSale: (
     eventId: string,
+    sessionId: string | undefined,
     items: Array<{
       productId: string;
       productVariantId?: string;
       quantity: number;
     }>,
-  ) => api.post<RetailSale>(`/pos/events/${eventId}/retail-sales`, { items }),
+  ) =>
+    api.post<RetailSale>(`/pos/events/${eventId}/retail-sales`, {
+      sessionId,
+      items,
+    }),
 
   completeRetailSale: (
     eventId: string,

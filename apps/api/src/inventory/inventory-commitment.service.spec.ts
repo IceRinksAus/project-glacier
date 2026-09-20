@@ -46,4 +46,37 @@ describe('InventoryCommitmentService', () => {
       }),
     );
   });
+
+  it('combines Booking and Retail Sale commitments for one Session Product', async () => {
+    client.bookingProduct.aggregate.mockResolvedValue({
+      _sum: { quantity: 6 },
+    });
+    client.retailSaleItem.aggregate.mockResolvedValue({
+      _sum: { quantity: 2 },
+    });
+
+    await expect(
+      service.sessionProductCommitted(
+        client as never,
+        'session-1',
+        'kanga-1',
+      ),
+    ).resolves.toBe(8);
+    expect(client.bookingProduct.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          productId: 'kanga-1',
+          booking: expect.objectContaining({ sessionId: 'session-1' }),
+        }),
+      }),
+    );
+    expect(client.retailSaleItem.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          productId: 'kanga-1',
+          retailSale: expect.objectContaining({ sessionId: 'session-1' }),
+        }),
+      }),
+    );
+  });
 });

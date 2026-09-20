@@ -36,6 +36,7 @@ describe('RetailSaleService', () => {
     productGroupId: null,
     productGroup: null,
     variants: [],
+    sessionProducts: [],
   };
   const sale = {
     id: 'sale-1',
@@ -50,6 +51,7 @@ describe('RetailSaleService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     eventId: 'event-1',
+    sessionId: null,
     createdByUserId: 'user-1',
     completedByUserId: 'user-1',
     event: { id: 'event-1', name: 'Winter Festival' },
@@ -78,6 +80,7 @@ describe('RetailSaleService', () => {
   const inventory = {
     productCommitted: jest.fn(),
     variantCommitted: jest.fn(),
+    sessionProductCommitted: jest.fn(),
   };
   let service: RetailSaleService;
 
@@ -95,6 +98,7 @@ describe('RetailSaleService', () => {
       id: 'event-1',
       name: 'Winter Festival',
       timezone: 'Australia/Melbourne',
+      sessions: [],
     });
     prisma.product.findMany.mockResolvedValue([product]);
     inventory.productCommitted.mockResolvedValue(3);
@@ -106,13 +110,153 @@ describe('RetailSaleService', () => {
         where: expect.objectContaining({
           eventId: 'event-1',
           availablePos: true,
-          requiresSession: false,
-          capacityControlled: false,
+          OR: expect.arrayContaining([
+            { requiresSession: false, capacityControlled: false },
+          ]),
         }),
       }),
     );
     expect(result.products[0].remainingInventory).toBe(7);
     expect(result.products[0].price).toBe(50);
+  });
+
+  it('includes a Session Product and reports capacity remaining for that Session', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      id: 'event-1',
+      name: 'Winter Festival',
+      timezone: 'Australia/Melbourne',
+      sessions: [
+        {
+          id: 'session-1',
+          name: '10:00 session',
+          startDate: new Date(),
+          endDate: new Date(),
+        },
+      ],
+    });
+    prisma.product.findMany.mockResolvedValue([
+      {
+        ...product,
+        id: 'kanga-1',
+        name: 'Kanga',
+        inventoryTracked: false,
+        inventoryQuantity: null,
+        requiresSession: true,
+        capacityControlled: true,
+        capacity: 20,
+        sessionProducts: [{ capacityOverride: 15 }],
+      },
+    ]);
+    inventory.sessionProductCommitted.mockResolvedValue(4);
+
+    const result = await service.findCatalogue(
+      access,
+      'event-1',
+      'session-1',
+    );
+
+    expect(result.products[0].requiresSessionSelection).toBe(true);
+    expect(result.products[0].remainingSessionCapacity).toBe(11);
+    expect(inventory.sessionProductCommitted).toHaveBeenCalledWith(
+      prisma,
+      'session-1',
+      'kanga-1',
+    );
+  });
+
+  it('rejects a Session-controlled Product when no Session is supplied', async () => {
+    const transaction = {
+      product: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            ...product,
+            id: 'kanga-1',
+            name: 'Kanga',
+            inventoryTracked: false,
+            inventoryQuantity: null,
+            requiresSession: true,
+            capacityControlled: true,
+            capacity: 20,
+            sessionProducts: [],
+          },
+        ]),
+      },
+    };
+    prisma.$transaction.mockImplementation(
+      (operation: (client: typeof transaction) => unknown) =>
+        operation(transaction),
+    );
+
+    await expect(
+      service.createReservation(access, 'event-1', {
+        items: [{ productId: 'kanga-1', quantity: 1 }],
+      }),
+    ).rejects.toThrow('Kanga requires an active selected Session');
+  });
+
+  it('stores the selected Session on a valid operational Product reservation', async () => {
+    const kanga = {
+      ...product,
+      id: 'kanga-1',
+      name: 'Kanga',
+      inventoryTracked: false,
+      inventoryQuantity: null,
+      requiresSession: true,
+      capacityControlled: true,
+      capacity: 20,
+      sessionProducts: [{ capacityOverride: 15 }],
+    };
+    const reservedSale = {
+      ...sale,
+      status: 'RESERVED',
+      paymentStatus: 'UNPAID',
+      sessionId: 'session-1',
+      session: {
+        id: 'session-1',
+        name: '10:00 session',
+        startDate: new Date(),
+        endDate: new Date(),
+      },
+      items: [],
+    };
+    const transaction = {
+      product: {
+        findMany: jest.fn().mockResolvedValue([kanga]),
+      },
+      session: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'session-1' }),
+      },
+      retailSale: {
+        create: jest.fn().mockResolvedValue({ id: 'sale-1' }),
+        findFirst: jest.fn().mockResolvedValue(reservedSale),
+      },
+    };
+    prisma.$transaction.mockImplementation(
+      (operation: (client: typeof transaction) => unknown) =>
+        operation(transaction),
+    );
+    inventory.sessionProductCommitted.mockResolvedValue(4);
+
+    const result = await service.createReservation(access, 'event-1', {
+      sessionId: 'session-1',
+      items: [{ productId: 'kanga-1', quantity: 1 }],
+    });
+
+    expect(transaction.retailSale.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventId: 'event-1',
+          sessionId: 'session-1',
+        }),
+      }),
+    );
+    expect(result.session.id).toBe('session-1');
+    expect(inventory.sessionProductCommitted).toHaveBeenCalledWith(
+      transaction,
+      'session-1',
+      'kanga-1',
+      undefined,
+    );
   });
 
   it('returns the existing result for an exact idempotent payment retry', async () => {

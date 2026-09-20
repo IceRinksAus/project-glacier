@@ -255,6 +255,27 @@ evidence constrain changes.
 POS-3 remains open until this is implemented, migrated, regression-tested and
 reconciled against both Product capacity and admission capacity.
 
+Implementation now adds an optional authoritative Session association to a
+Retail Sale. The first interface placed Session-controlled Product sales in a
+separate merchandise workflow; organiser testing correctly rejected that as
+too slow for event-day queues. The primary POS now uses one Event and Session
+context, presents Ticket and Product tiles together, and permits Tickets,
+Products, or Products alone in the same order rail. A Product-only order is
+recorded as a Retail Sale behind the scenes without exposing that accounting
+distinction to staff.
+
+Reservations and payment completion count both Booking Products and live or
+completed Retail Sale items against the selected Session Product capacity.
+The selected Session is retained automatically; a Product-only order creates
+no Booking or Ticket and rink admission capacity is not changed.
+
+Focused verification covers combined Session commitments, rejection without a
+required Session, persistence of a valid Session association and a Kanga-only
+checkout from the unified POS screen. The organiser then completed the
+migrated local POS-3 journey successfully using the unified Event/Session
+screen. S42-F13 is closed at the local application/database boundary; physical
+POS hardware and deployed-environment evidence remain future work.
+
 ### S42-F14 — Change/refund explanation requirement is not discoverable
 
 - **Severity:** Medium.

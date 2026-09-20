@@ -26,6 +26,7 @@ function money(value: number) {
 
 export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
   const [catalogue, setCatalogue] = useState<RetailCatalogue | null>(null);
+  const [sessionId, setSessionId] = useState("");
   const [basket, setBasket] = useState<
     Record<string, { quantity: number; productVariantId?: string }>
   >({});
@@ -40,6 +41,10 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    setSessionId("");
+  }, [eventId]);
+
+  useEffect(() => {
     setCatalogue(null);
     setBasket({});
     setSale(null);
@@ -47,7 +52,7 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
     if (!eventId) return;
     setWorking(true);
     posService
-      .getMerchandiseCatalogue(eventId)
+      .getMerchandiseCatalogue(eventId, sessionId || undefined)
       .then(setCatalogue)
       .catch((reason) =>
         setError(
@@ -57,7 +62,7 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
         ),
       )
       .finally(() => setWorking(false));
-  }, [eventId]);
+  }, [eventId, sessionId]);
 
   const total = useMemo(() => {
     if (!catalogue) return 0;
@@ -99,7 +104,13 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
     setWorking(true);
     setError("");
     try {
-      setSale(await posService.createRetailSale(eventId, items));
+      setSale(
+        await posService.createRetailSale(
+          eventId,
+          sessionId || undefined,
+          items,
+        ),
+      );
       setIdempotencyKey(crypto.randomUUID());
     } catch (reason) {
       setError(
@@ -163,8 +174,33 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
           <section className="rounded-xl border bg-card p-5 shadow-sm">
             <h2 className="text-xl font-semibold">Merchandise</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              No Session, participant or purchaser details are required.
+              Choose a Session for finite operational Products such as Kangas.
+              General merchandise remains available without one.
             </p>
+            <label className="mt-4 block text-sm font-medium">
+              Operational Session (optional)
+              <select
+                aria-label="Operational Session"
+                className="mt-2 w-full rounded-md border bg-background px-3 py-3"
+                value={sessionId}
+                onChange={(event) => {
+                  setBasket({});
+                  setSessionId(event.target.value);
+                }}
+              >
+                <option value="">No Session — general merchandise only</option>
+                {catalogue?.sessions?.map((session) => (
+                  <option key={session.id} value={session.id}>
+                    {session.name} ·{" "}
+                    {new Intl.DateTimeFormat("en-AU", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                      timeZone: catalogue.event.timezone || undefined,
+                    }).format(new Date(session.startDate))}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="mt-4 space-y-3">
               {catalogue?.products.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -179,6 +215,14 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
                 const remaining = selectedVariant
                   ? selectedVariant.remainingInventory
                   : product.remainingInventory;
+                const sessionRemaining =
+                  product.remainingSessionCapacity ?? null;
+                const effectiveRemaining =
+                  sessionRemaining === null
+                    ? remaining
+                    : remaining === null
+                      ? sessionRemaining
+                      : Math.min(remaining, sessionRemaining);
                 return (
                   <div key={product.id} className="rounded-lg border p-4">
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -192,7 +236,11 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
                             ? ` · ${product.productGroup.name}`
                             : ""}
                         </p>
-                        {remaining !== null ? (
+                        {sessionRemaining !== null ? (
+                          <p className="mt-1 text-xs font-medium text-sky-800">
+                            {sessionRemaining} available for this Session
+                          </p>
+                        ) : remaining !== null ? (
                           <p className="mt-1 text-xs text-muted-foreground">
                             {remaining} remaining
                           </p>
@@ -246,8 +294,8 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
                           variant="outline"
                           aria-label={`Add one ${product.name}`}
                           disabled={
-                            remaining !== null &&
-                            selection.quantity >= remaining
+                            effectiveRemaining !== null &&
+                            selection.quantity >= effectiveRemaining
                           }
                           onClick={() =>
                             update(
@@ -272,6 +320,12 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
               <h2 className="text-xl font-semibold">Merchandise Sale</h2>
             </div>
             <p className="text-3xl font-bold">{money(total)}</p>
+            {sessionId && catalogue ? (
+              <p className="rounded-lg bg-sky-50 p-3 text-sm text-sky-950">
+                Session:{" "}
+                {catalogue.sessions?.find(({ id }) => id === sessionId)?.name}
+              </p>
+            ) : null}
             <Button
               className="w-full"
               size="lg"
@@ -294,6 +348,11 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
               Confirm payment received
             </h2>
             <p className="mt-3 text-4xl font-bold">{money(sale.total)}</p>
+            {sale.session ? (
+              <p className="mt-2 text-sm font-medium text-sky-900">
+                Session: {sale.session.name}
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2 rounded-lg border p-4 text-sm">
             {sale.items.map((item) => (
@@ -371,6 +430,11 @@ export function MerchandiseSaleMode({ eventId }: { eventId: string }) {
             Sale {completion.saleNumber} is paid. No Booking or Ticket was
             created.
           </p>
+          {completion.session ? (
+            <p className="mt-2 font-medium">
+              Session: {completion.session.name}
+            </p>
+          ) : null}
           <p className="mt-3 text-3xl font-bold">{money(completion.total)}</p>
           <p className="mt-2 text-sm">
             Received by{" "}

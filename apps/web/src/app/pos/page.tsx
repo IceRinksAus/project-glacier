@@ -20,9 +20,9 @@ import {
   PosCompletion,
   PosParticipant,
   PosReservation,
+  RetailSale,
   posService,
 } from "@/services/pos.service";
-import { MerchandiseSaleMode } from "./MerchandiseSaleMode";
 import { PosTicketService } from "./PosTicketService";
 
 const EVENT_KEY = "glacier_pos_event";
@@ -54,9 +54,9 @@ function defaultAgeForTicketType(
 }
 
 export default function PosPage() {
-  const [saleMode, setSaleMode] = useState<
-    "TICKETS" | "MERCHANDISE" | "TICKET_SERVICE"
-  >("TICKETS");
+  const [saleMode, setSaleMode] = useState<"TICKETS" | "TICKET_SERVICE">(
+    "TICKETS",
+  );
   const [events, setEvents] = useState<GlacierEvent[]>([]);
   const [eventId, setEventId] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -70,6 +70,11 @@ export default function PosPage() {
   >({});
   const [reservation, setReservation] = useState<PosReservation | null>(null);
   const [completion, setCompletion] = useState<PosCompletion | null>(null);
+  const [retailReservation, setRetailReservation] =
+    useState<RetailSale | null>(null);
+  const [retailCompletion, setRetailCompletion] = useState<RetailSale | null>(
+    null,
+  );
   const [paymentMethod, setPaymentMethod] = useState<
     "CASH" | "STANDALONE_EFTPOS"
   >("STANDALONE_EFTPOS");
@@ -168,6 +173,9 @@ export default function PosPage() {
     }, 0);
     return tickets + addons;
   }, [catalogue, effectiveProducts, participants]);
+  const hasSelectedProducts = Object.values(effectiveProducts).some(
+    ({ quantity }) => quantity > 0,
+  );
 
   useEffect(() => {
     if (!eventId || !sessionId || !catalogue || participants.length === 0) {
@@ -259,39 +267,59 @@ export default function PosPage() {
     setRequiredProductQuantities({});
     setReservation(null);
     setCompletion(null);
+    setRetailReservation(null);
+    setRetailCompletion(null);
     setTerminalReference("");
     setIdempotencyKey("");
     setError("");
   }
 
   async function reserveSale() {
-    if (!eventId || !sessionId || participants.length === 0)
-      return setError("Choose a Session and at least one Ticket.");
+    if (!eventId || !sessionId)
+      return setError("Choose a Session before starting the order.");
+    if (participants.length === 0 && !hasSelectedProducts)
+      return setError("Add at least one Ticket or Product.");
     setIsWorking(true);
     setError("");
     try {
-      const rules = await posService.evaluateRules(
-        eventId,
-        sessionId,
-        participants,
-      );
-      if (!rules.valid) throw new Error(rules.errors.join(" "));
       const selectedProducts = { ...products };
-      for (const required of rules.requiredProducts) {
-        const assignment = catalogue?.sessionProducts.find(
-          ({ product }) => product.slug === required.productSlug,
+      if (participants.length > 0) {
+        const rules = await posService.evaluateRules(
+          eventId,
+          sessionId,
+          participants,
         );
-        if (!assignment)
-          throw new Error(
-            `Required Product ${required.productSlug} is not available for this Session.`,
+        if (!rules.valid) throw new Error(rules.errors.join(" "));
+        for (const required of rules.requiredProducts) {
+          const assignment = catalogue?.sessionProducts.find(
+            ({ product }) => product.slug === required.productSlug,
           );
-        const current = selectedProducts[assignment.productId];
-        selectedProducts[assignment.productId] = {
-          ...current,
-          quantity: Math.max(current?.quantity ?? 0, required.quantity),
-        };
+          if (!assignment)
+            throw new Error(
+              `Required Product ${required.productSlug} is not available for this Session.`,
+            );
+          const current = selectedProducts[assignment.productId];
+          selectedProducts[assignment.productId] = {
+            ...current,
+            quantity: Math.max(current?.quantity ?? 0, required.quantity),
+          };
+        }
       }
       setProducts(selectedProducts);
+      const selectedItems = Object.entries(selectedProducts)
+        .filter(([, selection]) => selection.quantity > 0)
+        .map(([productId, selection]) => ({
+          productId,
+          quantity: selection.quantity,
+          productVariantId: selection.productVariantId,
+        }));
+      if (participants.length === 0) {
+        setRetailReservation(
+          await posService.createRetailSale(eventId, sessionId, selectedItems),
+        );
+        setIdempotencyKey(crypto.randomUUID());
+        return;
+      }
       const createdCustomer = await posService.createCustomer(eventId, {
         firstName: "Walk-up sale",
       });
@@ -299,13 +327,7 @@ export default function PosPage() {
         customerId: createdCustomer.id,
         sessionId,
         participants,
-        products: Object.entries(selectedProducts)
-          .filter(([, selection]) => selection.quantity > 0)
-          .map(([productId, selection]) => ({
-            productId,
-            quantity: selection.quantity,
-            productVariantId: selection.productVariantId,
-          })),
+        products: selectedItems,
       });
       setReservation(createdReservation);
       setIdempotencyKey(crypto.randomUUID());
@@ -321,24 +343,38 @@ export default function PosPage() {
   }
 
   async function completeSale() {
-    if (!reservation || !idempotencyKey) return;
+    if ((!reservation && !retailReservation) || !idempotencyKey) return;
     setIsWorking(true);
     setError("");
     try {
-      const result = await posService.completePayment(
-        eventId,
-        reservation.booking.id,
-        {
+      const payment = {
           method: paymentMethod,
-          amount: Number(reservation.booking.total),
+          amount: retailReservation
+            ? retailReservation.total
+            : Number(reservation!.booking.total),
           idempotencyKey,
           standaloneReference:
             paymentMethod === "STANDALONE_EFTPOS"
               ? terminalReference || undefined
               : undefined,
-        },
-      );
-      setCompletion(result);
+        };
+      if (retailReservation) {
+        setRetailCompletion(
+          await posService.completeRetailSale(
+            eventId,
+            retailReservation.id,
+            payment,
+          ),
+        );
+      } else {
+        setCompletion(
+          await posService.completePayment(
+            eventId,
+            reservation!.booking.id,
+            payment,
+          ),
+        );
+      }
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -362,10 +398,8 @@ export default function PosPage() {
           </h1>
           <p className="mt-2 text-muted-foreground">
             {saleMode === "TICKETS"
-              ? "Fast touch sales using Glacier's shared Tickets, Products and Rules."
-              : saleMode === "MERCHANDISE"
-                ? "Sell Event merchandise without creating an admission Booking or Ticket."
-                : "Look up a pre-purchased Ticket, then admit it only after confirmation."}
+              ? "Sell Tickets and Products together, or either one on its own."
+              : "Look up a pre-purchased Ticket, then admit it only after confirmation."}
           </p>
           <Link
             href="/pos/sales"
@@ -377,14 +411,14 @@ export default function PosPage() {
 
         <section
           aria-label="Sale mode"
-          className="grid gap-3 rounded-xl border bg-card p-3 md:grid-cols-3"
+          className="grid gap-3 rounded-xl border bg-card p-3 md:grid-cols-2"
         >
           <button
             type="button"
             className={`rounded-lg border p-4 text-left ${saleMode === "TICKETS" ? "border-primary bg-primary/5" : ""}`}
             onClick={() => setSaleMode("TICKETS")}
           >
-            <span className="font-semibold">Ticket Sale</span>
+            <span className="font-semibold">Sell Tickets & Products</span>
             <span className="mt-1 block text-sm text-muted-foreground">
               Session admission and eligible Products
             </span>
@@ -397,16 +431,6 @@ export default function PosPage() {
             <span className="font-semibold">Scan existing Ticket</span>
             <span className="mt-1 block text-sm text-muted-foreground">
               Read-only lookup, then deliberate admission
-            </span>
-          </button>
-          <button
-            type="button"
-            className={`rounded-lg border p-4 text-left ${saleMode === "MERCHANDISE" ? "border-primary bg-primary/5" : ""}`}
-            onClick={() => setSaleMode("MERCHANDISE")}
-          >
-            <span className="font-semibold">Merchandise Sale</span>
-            <span className="mt-1 block text-sm text-muted-foreground">
-              Products only — no Session, participant or Ticket
             </span>
           </button>
         </section>
@@ -478,7 +502,11 @@ export default function PosPage() {
           ) : null}
         </section>
 
-        {saleMode === "TICKETS" && sessionId && catalogue && !reservation ? (
+        {saleMode === "TICKETS" &&
+        sessionId &&
+        catalogue &&
+        !reservation &&
+        !retailReservation ? (
           <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
             <div className="space-y-6">
               <section className="rounded-xl border bg-card p-5 shadow-sm">
@@ -648,6 +676,7 @@ export default function PosPage() {
                             <Button
                               type="button"
                               variant="outline"
+                              aria-label={`Remove one ${product.name}`}
                               onClick={() =>
                                 updateProduct(
                                   product.id,
@@ -664,6 +693,7 @@ export default function PosPage() {
                             <Button
                               type="button"
                               variant="outline"
+                              aria-label={`Add one ${product.name}`}
                               onClick={() =>
                                 updateProduct(
                                   product.id,
@@ -742,7 +772,10 @@ export default function PosPage() {
               <Button
                 className="w-full"
                 size="lg"
-                disabled={isWorking || participants.length === 0}
+                disabled={
+                  isWorking ||
+                  (participants.length === 0 && !hasSelectedProducts)
+                }
                 onClick={reserveSale}
               >
                 {isWorking ? "Checking sale…" : "Review payment"}
@@ -751,17 +784,24 @@ export default function PosPage() {
           </div>
         ) : null}
 
-        {saleMode === "TICKETS" && reservation && !completion ? (
+        {saleMode === "TICKETS" &&
+        (reservation || retailReservation) &&
+        !completion &&
+        !retailCompletion ? (
           <section className="mx-auto max-w-2xl space-y-5 rounded-xl border bg-card p-6 shadow-sm">
             <div>
               <p className="text-sm text-muted-foreground">
-                Reservation {reservation.booking.bookingNumber}
+                {reservation
+                  ? `Reservation ${reservation.booking.bookingNumber}`
+                  : `Product Sale ${retailReservation?.saleNumber}`}
               </p>
               <h2 className="mt-1 text-2xl font-semibold">
                 Confirm payment received
               </h2>
               <p className="mt-3 text-4xl font-bold">
-                {money(reservation.booking.total)}
+                {money(
+                  retailReservation?.total ?? reservation!.booking.total,
+                )}
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -809,6 +849,7 @@ export default function PosPage() {
                 disabled={isWorking}
                 onClick={() => {
                   setReservation(null);
+                  setRetailReservation(null);
                   setIdempotencyKey("");
                 }}
               >
@@ -817,23 +858,34 @@ export default function PosPage() {
               <Button size="lg" disabled={isWorking} onClick={completeSale}>
                 {isWorking
                   ? "Completing…"
-                  : `Confirm ${money(reservation.booking.total)} received`}
+                  : `Confirm ${money(
+                      retailReservation?.total ?? reservation!.booking.total,
+                    )} received`}
               </Button>
             </div>
           </section>
         ) : null}
 
-        {saleMode === "TICKETS" && completion ? (
+        {saleMode === "TICKETS" && (completion || retailCompletion) ? (
           <section className="mx-auto max-w-2xl rounded-xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-950">
             <CheckCircle2 className="size-10" />
             <h2 className="mt-4 text-2xl font-semibold">Sale complete</h2>
-            <p className="mt-2">
-              Booking {completion.bookingNumber} is paid and{" "}
-              {completion.tickets.length}{" "}
-              {completion.tickets.length === 1 ? "Ticket has" : "Tickets have"}{" "}
-              been issued.
-            </p>
-            <div className="mt-5 space-y-2">
+            {completion ? (
+              <p className="mt-2">
+                Booking {completion.bookingNumber} is paid and{" "}
+                {completion.tickets.length}{" "}
+                {completion.tickets.length === 1
+                  ? "Ticket has"
+                  : "Tickets have"}{" "}
+                been issued.
+              </p>
+            ) : (
+              <p className="mt-2">
+                Product Sale {retailCompletion?.saleNumber} is paid. No Ticket
+                or admission was created.
+              </p>
+            )}
+            {completion ? <div className="mt-5 space-y-2">
               {completion.tickets.map((ticket) => (
                 <Link
                   key={ticket.id}
@@ -845,16 +897,13 @@ export default function PosPage() {
                   {ticket.participant.lastName}
                 </Link>
               ))}
-            </div>
+            </div> : null}
             <Button className="mt-6" onClick={resetSale}>
               Start next sale
             </Button>
           </section>
         ) : null}
 
-        {saleMode === "MERCHANDISE" ? (
-          <MerchandiseSaleMode eventId={eventId} />
-        ) : null}
         {saleMode === "TICKET_SERVICE" ? (
           <PosTicketService eventId={eventId} />
         ) : null}

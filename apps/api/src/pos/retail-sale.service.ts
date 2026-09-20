@@ -29,16 +29,33 @@ export class RetailSaleService {
     private readonly inventoryCommitments: InventoryCommitmentService,
   ) {}
 
-  async findCatalogue(access: AuthenticatedAccessContext, eventId: string) {
+  async findCatalogue(
+    access: AuthenticatedAccessContext,
+    eventId: string,
+    sessionId?: string,
+  ) {
     const event = await this.prisma.event.findFirst({
       where: this.accessControl.eventWhere(access, {
         id: eventId,
         status: 'ACTIVE',
       }),
-      select: { id: true, name: true, timezone: true },
+      select: {
+        id: true,
+        name: true,
+        timezone: true,
+        sessions: {
+          where: { status: 'ACTIVE' },
+          orderBy: { startDate: 'asc' },
+          select: { id: true, name: true, startDate: true, endDate: true },
+        },
+      },
     });
 
     if (!event) throw new NotFoundException('Event not found');
+
+    if (sessionId && !event.sessions.some((session) => session.id === sessionId)) {
+      throw new NotFoundException('Active Session not found for this Event');
+    }
 
     const now = new Date();
     const products = await this.prisma.product.findMany({
@@ -47,13 +64,28 @@ export class RetailSaleService {
         status: 'ACTIVE',
         availablePos: true,
         productType: { not: 'ADMISSION' },
-        requiresSession: false,
-        capacityControlled: false,
-        OR: [{ salesStart: null }, { salesStart: { lte: now } }],
-        AND: [{ OR: [{ salesEnd: null }, { salesEnd: { gte: now } }] }],
+        OR: [
+          { requiresSession: false, capacityControlled: false },
+          ...(sessionId
+            ? [
+                {
+                  sessionProducts: {
+                    some: { sessionId, active: true },
+                  },
+                },
+              ]
+            : []),
+        ],
+        AND: [
+          { OR: [{ salesStart: null }, { salesStart: { lte: now } }] },
+          { OR: [{ salesEnd: null }, { salesEnd: { gte: now } }] },
+        ],
       },
       include: {
         productGroup: true,
+        sessionProducts: sessionId
+          ? { where: { sessionId, active: true }, take: 1 }
+          : false,
         variants: {
           where: { status: 'ACTIVE', availablePos: true },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -70,6 +102,7 @@ export class RetailSaleService {
       event,
       products: await Promise.all(
         products.map(async (product) => {
+          const assignment = sessionId ? product.sessionProducts[0] : null;
           const productCommitted = product.inventoryTracked
             ? await this.inventoryCommitments.productCommitted(
                 this.prisma,
@@ -78,7 +111,22 @@ export class RetailSaleService {
             : null;
           return {
             ...product,
+            sessionProducts: undefined,
             price: product.price.toNumber(),
+            requiresSessionSelection:
+              product.requiresSession || product.capacityControlled,
+            remainingSessionCapacity:
+              sessionId && assignment && product.capacityControlled
+                ? Math.max(
+                    (assignment.capacityOverride ?? product.capacity ?? 0) -
+                      (await this.inventoryCommitments.sessionProductCommitted(
+                        this.prisma,
+                        sessionId,
+                        product.id,
+                      )),
+                    0,
+                  )
+                : null,
             remainingInventory:
               product.inventoryTracked && product.inventoryQuantity !== null
                 ? Math.max(
@@ -123,8 +171,18 @@ export class RetailSaleService {
     const selections = this.combineSelections(data.items);
 
     return this.withSerializableRetry(async (transaction) => {
-      const items = await this.resolveItems(transaction, eventId, selections);
+      const items = await this.resolveItems(
+        transaction,
+        eventId,
+        data.sessionId,
+        selections,
+      );
       await this.assertInventory(transaction, items);
+      await this.assertSessionCapacity(
+        transaction,
+        data.sessionId,
+        items,
+      );
       const total = items.reduce(
         (sum, item) => sum.plus(item.lineTotal),
         new Prisma.Decimal(0),
@@ -134,6 +192,7 @@ export class RetailSaleService {
         data: {
           saleNumber: `RS-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`,
           eventId,
+          sessionId: data.sessionId ?? null,
           createdByUserId: access.userId,
           total,
           currency: 'AUD',
@@ -213,6 +272,12 @@ export class RetailSaleService {
         );
       }
       await this.assertInventory(transaction, sale.items, sale.id);
+      await this.assertSessionCapacity(
+        transaction,
+        sale.sessionId ?? undefined,
+        sale.items,
+        sale.id,
+      );
 
       const updated = await transaction.retailSale.updateMany({
         where: {
@@ -348,12 +413,18 @@ export class RetailSaleService {
   private async resolveItems(
     transaction: Prisma.TransactionClient,
     eventId: string,
+    sessionId: string | undefined,
     selections: CreateRetailSaleItemDto[],
   ) {
     const productIds = [...new Set(selections.map((item) => item.productId))];
     const products = await transaction.product.findMany({
       where: { id: { in: productIds }, eventId },
-      include: { variants: true },
+      include: {
+        variants: true,
+        sessionProducts: sessionId
+          ? { where: { sessionId, active: true }, take: 1 }
+          : false,
+      },
     });
     if (products.length !== productIds.length) {
       throw new BadRequestException(
@@ -364,18 +435,35 @@ export class RetailSaleService {
       products.map((product) => [product.id, product]),
     );
     const now = new Date();
+    if (sessionId) {
+      const session = await transaction.session.findFirst({
+        where: { id: sessionId, eventId, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      if (!session) {
+        throw new BadRequestException(
+          'The selected Session is not active for this Event',
+        );
+      }
+    }
     return selections.map((selection) => {
       const product = productMap.get(selection.productId);
       if (
         !product ||
         product.status !== 'ACTIVE' ||
         !product.availablePos ||
-        product.productType === 'ADMISSION' ||
-        product.requiresSession ||
-        product.capacityControlled
+        product.productType === 'ADMISSION'
       ) {
         throw new BadRequestException(
           'One or more Products are not eligible for merchandise-only sale',
+        );
+      }
+      if (
+        (product.requiresSession || product.capacityControlled) &&
+        (!sessionId || product.sessionProducts.length === 0)
+      ) {
+        throw new BadRequestException(
+          `${product.name} requires an active selected Session`,
         );
       }
       if (
@@ -422,6 +510,64 @@ export class RetailSaleService {
         variant,
       };
     });
+  }
+
+  private async assertSessionCapacity(
+    transaction: Prisma.TransactionClient,
+    sessionId: string | undefined,
+    items: Array<{
+      productId: string;
+      quantity: number;
+      product?: {
+        name: string;
+        requiresSession?: boolean;
+        capacityControlled?: boolean;
+        capacity?: number | null;
+        sessionProducts?: Array<{ capacityOverride: number | null }>;
+      };
+    }>,
+    excludeRetailSaleId?: string,
+  ) {
+    for (const item of items) {
+      const product =
+        item.product ??
+        (await transaction.product.findUniqueOrThrow({
+          where: { id: item.productId },
+          include: {
+            sessionProducts: sessionId
+              ? { where: { sessionId, active: true }, take: 1 }
+              : false,
+          },
+        }));
+      if (!product.requiresSession && !product.capacityControlled) continue;
+      if (!sessionId || !product.sessionProducts?.length) {
+        throw new BadRequestException(
+          `${product.name} requires an active selected Session`,
+        );
+      }
+      if (!product.capacityControlled) continue;
+      const limit =
+        product.sessionProducts[0].capacityOverride ?? product.capacity;
+      if (limit == null) {
+        throw new BadRequestException(
+          `${product.name} capacity has not been configured`,
+        );
+      }
+      const committed =
+        await this.inventoryCommitments.sessionProductCommitted(
+          transaction,
+          sessionId,
+          item.productId,
+          excludeRetailSaleId,
+        );
+      const remaining = limit - committed;
+      if (item.quantity > remaining) {
+        throw new BadRequestException(
+          `${product.name} does not have enough capacity for this Session. ` +
+            `Requested: ${item.quantity}. Remaining: ${Math.max(remaining, 0)}.`,
+        );
+      }
+    }
   }
 
   private async assertInventory(
@@ -507,6 +653,9 @@ export class RetailSaleService {
       },
       include: {
         event: { select: { id: true, name: true } },
+        session: {
+          select: { id: true, name: true, startDate: true, endDate: true },
+        },
         createdByUser: { select: { id: true, name: true } },
         completedByUser: { select: { id: true, name: true } },
         items: { orderBy: { createdAt: 'asc' } },

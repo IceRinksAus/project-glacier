@@ -67,8 +67,9 @@ export class PosController {
   findMerchandiseCatalogue(
     @CurrentUser() user: AuthenticatedAccessContext,
     @Param('eventId') eventId: string,
+    @Query() query: PosCatalogueQueryDto,
   ) {
-    return this.retailSaleService.findCatalogue(user, eventId);
+    return this.retailSaleService.findCatalogue(user, eventId, query.sessionId);
   }
 
   @Get('events/:eventId/retail-sales')

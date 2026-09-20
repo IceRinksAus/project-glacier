@@ -75,4 +75,43 @@ export class InventoryCommitmentService {
 
     return (bookings._sum.quantity ?? 0) + (retailSales._sum.quantity ?? 0);
   }
+
+  async sessionProductCommitted(
+    transaction: InventoryClient,
+    sessionId: string,
+    productId: string,
+    excludeRetailSaleId?: string,
+  ) {
+    const now = new Date();
+    const [bookings, retailSales] = await Promise.all([
+      transaction.bookingProduct.aggregate({
+        where: {
+          productId,
+          booking: {
+            sessionId,
+            status: { in: ['RESERVED', 'CONFIRMED'] },
+          },
+        },
+        _sum: { quantity: true },
+      }),
+      transaction.retailSaleItem.aggregate({
+        where: {
+          productId,
+          ...(excludeRetailSaleId
+            ? { retailSaleId: { not: excludeRetailSaleId } }
+            : {}),
+          retailSale: {
+            sessionId,
+            OR: [
+              { status: 'COMPLETED' },
+              { status: 'RESERVED', reservedUntil: { gte: now } },
+            ],
+          },
+        },
+        _sum: { quantity: true },
+      }),
+    ]);
+
+    return (bookings._sum.quantity ?? 0) + (retailSales._sum.quantity ?? 0);
+  }
 }

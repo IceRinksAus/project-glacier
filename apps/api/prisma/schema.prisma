@@ -557,6 +557,7 @@ model Session {
   destinationFlexibleTicketRequests FlexibleTicketRequest[] @relation("FlexibleTicketRequestDestinationSession")
 
   sessionProducts SessionProduct[]
+  retailSales     RetailSale[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -938,6 +939,9 @@ model RetailSale {
   eventId String
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
+  sessionId String?
+  session   Session? @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
   createdByUserId String
   createdByUser   User   @relation("RetailSaleCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
@@ -956,6 +960,7 @@ model RetailSale {
 
   @@index([eventId, createdAt])
   @@index([eventId, status, createdAt])
+  @@index([sessionId, status])
   @@index([createdByUserId, createdAt])
   @@index([completedByUserId, completedAt])
 }

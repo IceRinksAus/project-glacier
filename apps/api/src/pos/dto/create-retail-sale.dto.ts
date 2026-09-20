@@ -32,6 +32,12 @@ export class CreateRetailSaleItemDto {
 }
 
 export class CreateRetailSaleDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  sessionId?: string;
+
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(100)
