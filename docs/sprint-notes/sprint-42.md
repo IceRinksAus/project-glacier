@@ -267,6 +267,39 @@ reconciled against both Product capacity and admission capacity.
 - Each resulting transaction was retrievable from the Bookings workspace.
 - POS-3 remains excluded from this evidence pending S42-F13.
 
+### S42-F15 — Reporting lacks a coherent information hierarchy
+
+- **Severity:** High; cross-cutting management experience.
+- **Where:** Organisation Reports workspace and individual report views.
+- **Expected:** Reporting should make it obvious whether the organiser is
+  choosing a report, filtering its scope or reading the result.
+- **Observed:** The report catalogue, availability status, organisational
+  scope, multi-Event selection, filters, top-line metrics and detailed output
+  compete on the same surface. The experience feels fragmented and difficult
+  to navigate.
+- **Impact:** Organisers cannot confidently locate, configure or interpret the
+  report they need even where the underlying figures exist.
+- **Correction direction:** Treat reporting as a dedicated product review,
+  preserving authoritative calculations while rebuilding the presentation
+  around three clear states:
+  1. **Reports home** — grouped searchable catalogue with plain-language
+     descriptions and honest Available/Coming soon labels;
+  2. **Report setup** — selected report, Event checkboxes/group shortcut, date
+     range and only the filters relevant to that report; and
+  3. **Report result** — one stable title/filter summary, a small top-line KPI
+     row, the primary chart/table and clear export/print actions.
+- **Navigation direction:** Keep Organisation reporting inside `/reports`;
+  retain selected report, scope and filters during navigation; provide a clear
+  **Back to all reports** action; do not jump into an Event workspace.
+- **Design direction:** Use the clean report-card discovery pattern from the
+  organiser references and the stronger top-line summary style from the legacy
+  dashboard reference, without copying either system's clutter or unsupported
+  metrics.
+
+Detailed report definitions, accounting boundaries and export requirements
+should be reviewed report-by-report after the Sprint 42 operational walkthrough
+rather than changed piecemeal during it.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect
