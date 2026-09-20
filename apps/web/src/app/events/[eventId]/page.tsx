@@ -18,6 +18,7 @@ import { TicketTypesWorkspace } from "@/components/ticket-types/TicketTypesWorks
 import { WaiverWorkspace } from "@/components/waiver/WaiverWorkspace";
 import { useEvent } from "@/hooks/useEvent";
 import { BookingsWorkspace } from "@/components/bookings/BookingsWorkspace";
+import { CustomersWorkspace } from "@/components/customers/CustomersWorkspace";
 
 interface EventWorkspacePageProps {
   params: Promise<{
@@ -145,19 +146,7 @@ export default function EventWorkspacePage({
             ) : null}
 
             {activeTab === "Customers" ? (
-              <div className="rounded-xl border bg-card p-6 shadow-sm">
-                <h2 className="text-lg font-semibold">{activeTab}</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Open the operational {activeTab.toLowerCase()} workspace with{" "}
-                  {event.name} already selected.
-                </p>
-                <Link
-                  href={`/customers?eventId=${encodeURIComponent(event.id)}`}
-                  className="mt-5 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-                >
-                  View Event Customers
-                </Link>
-              </div>
+              <CustomersWorkspace fixedEventId={event.id} fixedEventName={event.name} embedded />
             ) : null}
 
             {activeTab !== "Overview" &&

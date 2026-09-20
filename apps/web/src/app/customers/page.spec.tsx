@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import CustomersPage from "./page";
+import { CustomersWorkspace } from "@/components/customers/CustomersWorkspace";
 
 const { search, getEvents } = vi.hoisted(() => ({
   search: vi.fn(),
@@ -61,5 +62,14 @@ describe("CustomersPage", () => {
         pageSize: 25,
       }),
     );
+  });
+
+  it("keeps the embedded Event Customer workspace permanently scoped", async () => {
+    render(<CustomersWorkspace fixedEventId="event-1" fixedEventName="Fictional Festival" embedded />);
+    expect(await screen.findByText("Taylor Example")).toBeVisible();
+    expect(screen.getByText("Event scope")).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "Event" })).not.toBeInTheDocument();
+    expect(getEvents).not.toHaveBeenCalled();
+    await waitFor(() => expect(search).toHaveBeenCalledWith({ eventId: "event-1", page: 1, pageSize: 25 }));
   });
 });

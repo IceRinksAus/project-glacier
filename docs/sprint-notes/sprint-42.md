@@ -409,6 +409,16 @@ a plain-language selected-date summary. Focused coverage verifies Event-timezone
 grouping, next-date defaults, past-date protection, month navigation and state
 handoff to the existing Session step.
 
+### S42-F18 — Event Customers should remain inside Event context
+
+The organisation Customers workspace remains available from the main sidebar
+across all authorised Events. Event → Customers now embeds the same search,
+masked contact cards and pagination with a visible fixed Event scope and no
+Event selector. It reuses the existing Customer query and tenant/Event-
+assignment authority; no second Customer store or broader access path is
+introduced. Focused coverage proves the embedded request always includes the
+selected Event and does not load the organisation Event selector.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect
