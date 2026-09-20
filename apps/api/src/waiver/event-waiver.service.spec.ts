@@ -272,6 +272,7 @@ describe('EventWaiverService', () => {
     expect(waiverTemplateServiceMock.findApprovedTemplate).toHaveBeenCalledWith(
       EventActivityType.ICE_SKATING,
       AustralianJurisdiction.NSW,
+      'organization-1',
     );
     expect(transactionMock.eventWaiver.create).toHaveBeenCalledWith({
       data: {

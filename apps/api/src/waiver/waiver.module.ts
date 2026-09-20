@@ -5,9 +5,14 @@ import { EventWaiverService } from './event-waiver.service';
 import { PublicWaiverController } from './public-waiver.controller';
 import { PublicWaiverService } from './public-waiver.service';
 import { WaiverTemplateService } from './waiver-template.service';
+import { WaiverTemplateController } from './waiver-template.controller';
 
 @Module({
-  controllers: [EventWaiverController, PublicWaiverController],
+  controllers: [
+    EventWaiverController,
+    PublicWaiverController,
+    WaiverTemplateController,
+  ],
   providers: [EventWaiverService, PublicWaiverService, WaiverTemplateService],
   exports: [EventWaiverService, WaiverTemplateService],
 })

@@ -219,6 +219,7 @@ export class EventWaiverService {
     const template = await this.waiverTemplateService.findApprovedTemplate(
       event.activityType,
       event.jurisdiction,
+      organizationId,
     );
 
     const variables = this.buildVariables(event);

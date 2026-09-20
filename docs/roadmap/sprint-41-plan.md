@@ -1,6 +1,6 @@
 # Sprint 41 Plan — Waiver Templates, Participant Coverage and Staff Verification
 
-**Status:** Proposed — awaiting explicit organiser scope approval
+**Status:** Approved 20 September 2026
 
 ## Outcome
 
@@ -280,6 +280,6 @@ dependant, privacy and consent suitability remain organiser/legal evidence.
 
 ## Scope confirmation required
 
-Implementation begins only after explicit organiser approval of this plan. The
+Implementation began only after explicit organiser approval of this plan. The
 historical waiver links will remain documented source material; their wording
 will not be promoted to `APPROVED` production content by implementation alone.

@@ -151,6 +151,8 @@ model Organization {
   flexibleTicketEntitlements    FlexibleTicketEntitlement[]
   flexibleTicketRequests        FlexibleTicketRequest[]
   ticketCredentialRotations     TicketCredentialRotationAudit[]
+  waiverTemplates               WaiverTemplate[]
+  waiverAssociationAudits       WaiverAssociationAudit[]
 }
 
 model User {
@@ -167,6 +169,8 @@ model User {
   eventAccess                     UserEventAccess[]
   organizations                   UserOrganization[]
   publishedWaiverVersions         WaiverVersion[]
+  approvedWaiverTemplates         WaiverTemplate[]                @relation("WaiverTemplateApprovedBy")
+  waiverAssociationAudits         WaiverAssociationAudit[]
   ticketScanAttempts              TicketScanAttempt[]
   createdFileAssets               FileAsset[]
   paymentReconciliationAttempts   PaymentReconciliationAttempt[]
@@ -419,6 +423,7 @@ model Event {
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
   eventGroupMemberships         EventGroupEvent[]
   ticketCredentialRotations     TicketCredentialRotationAudit[]
+  waiverAssociationAudits       WaiverAssociationAudit[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
@@ -827,6 +832,8 @@ model Booking {
   reschedules                   BookingReschedule[]
   flexibleTicketEntitlements    FlexibleTicketEntitlement[]
   flexibleTicketRequests        FlexibleTicketRequest[]
+  waiverSubmissions             WaiverSubmission[]
+  waiverAssociationAudits       WaiverAssociationAudit[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -882,6 +889,8 @@ model BookingParticipant {
   rescheduleTicketMappings   BookingRescheduleTicket[]
   flexibleTicketEntitlement  FlexibleTicketEntitlement?
   flexibleTicketRequestItems FlexibleTicketRequestItem[]
+  signatoryWaiverSubmissions WaiverSubmission[]           @relation("WaiverSignatoryParticipant")
+  dependantWaiverCoverages   WaiverMinor[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1724,6 +1733,10 @@ model EventWaiver {
 model WaiverTemplate {
   id String @id @default(cuid())
 
+  authority      WaiverTemplateAuthority @default(PLATFORM_CURATED)
+  organizationId String?
+  organization   Organization?           @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
   name         String
   activityType EventActivityType
   jurisdiction AustralianJurisdiction
@@ -1733,16 +1746,25 @@ model WaiverTemplate {
   acceptanceStatement   String @db.Text
   legislationReferences Json?
 
-  status     WaiverTemplateStatus @default(DRAFT)
-  approvedAt DateTime?
+  status            WaiverTemplateStatus @default(DRAFT)
+  approvedAt        DateTime?
+  approvalReference String?
+  approvedByUserId  String?
+  approvedByUser    User?                @relation("WaiverTemplateApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   waiverVersions WaiverVersion[]
 
-  @@unique([activityType, jurisdiction, revision])
-  @@index([activityType, jurisdiction, status])
+  @@unique([organizationId, activityType, jurisdiction, revision])
+  @@index([authority, activityType, jurisdiction, status])
+  @@index([organizationId, status])
+}
+
+enum WaiverTemplateAuthority {
+  PLATFORM_CURATED
+  ORGANIZATION
 }
 
 enum AustralianJurisdiction {
@@ -1841,8 +1863,18 @@ model WaiverSubmission {
   waiverVersionId String
   waiverVersion   WaiverVersion @relation(fields: [waiverVersionId], references: [id])
 
-  signatoryFullName String
-  signatureData     String @db.Text
+  signatoryFullName      String
+  signatureData          String  @db.Text
+  signatoryParticipating Boolean @default(true)
+
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  signatoryParticipantId String?
+  signatoryParticipant   BookingParticipant? @relation("WaiverSignatoryParticipant", fields: [signatoryParticipantId], references: [id], onDelete: SetNull)
+
+  mediaConsent     Boolean?
+  marketingConsent Boolean?
 
   acceptedAt DateTime @default(now())
 
@@ -1851,13 +1883,16 @@ model WaiverSubmission {
 
   verificationTokenHash String @unique
 
-  minors WaiverMinor[]
+  minors            WaiverMinor[]
+  associationAudits WaiverAssociationAudit[]
 
   createdAt DateTime @default(now())
 
   @@index([eventWaiverId, acceptedAt])
   @@index([waiverVersionId])
   @@index([signatoryFullName])
+  @@index([bookingId])
+  @@index([signatoryParticipantId])
 }
 
 model WaiverMinor {
@@ -1869,7 +1904,45 @@ model WaiverMinor {
   fullName    String
   dateOfBirth DateTime @db.Date
 
+  bookingParticipantId String?
+  bookingParticipant   BookingParticipant? @relation(fields: [bookingParticipantId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
 
   @@index([waiverSubmissionId])
+  @@index([bookingParticipantId])
+}
+
+enum WaiverAssociationAction {
+  BOOKING_LINKED_SUBMISSION
+  STAFF_PARTICIPANT_MATCH
+  STAFF_PARTICIPANT_UNMATCH
+}
+
+model WaiverAssociationAudit {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  waiverSubmissionId String
+  waiverSubmission   WaiverSubmission @relation(fields: [waiverSubmissionId], references: [id], onDelete: Restrict)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  actorUserId String?
+  actorUser   User?   @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  action         WaiverAssociationAction
+  participantIds Json
+  createdAt      DateTime                @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([waiverSubmissionId, createdAt])
+  @@index([bookingId, createdAt])
 }

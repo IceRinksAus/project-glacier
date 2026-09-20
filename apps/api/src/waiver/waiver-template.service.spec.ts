@@ -10,8 +10,13 @@ describe('WaiverTemplateService', () => {
 
   const prismaMock = {
     waiverTemplate: {
+      findMany: jest.fn(),
       findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
     },
+    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -34,42 +39,75 @@ describe('WaiverTemplateService', () => {
     expect(service).toBeDefined();
   });
 
-  it('returns the latest approved template for the activity and jurisdiction', async () => {
-    const template = {
-      id: 'template-1',
+  it('prefers the organisation template over a platform template', async () => {
+    const platformTemplate = {
+      id: 'platform-template',
+      authority: 'PLATFORM_CURATED',
+      organizationId: null,
       activityType: EventActivityType.ICE_SKATING,
       jurisdiction: AustralianJurisdiction.NSW,
-      revision: 3,
+      revision: 4,
       status: 'APPROVED',
     };
+    const organizationTemplate = {
+      ...platformTemplate,
+      id: 'organization-template',
+      authority: 'ORGANIZATION',
+      organizationId: 'organization-1',
+      revision: 2,
+    };
 
-    prismaMock.waiverTemplate.findFirst.mockResolvedValue(template);
+    prismaMock.waiverTemplate.findMany.mockResolvedValue([
+      platformTemplate,
+      organizationTemplate,
+    ]);
 
     const result = await service.findApprovedTemplate(
       EventActivityType.ICE_SKATING,
       AustralianJurisdiction.NSW,
+      'organization-1',
     );
 
-    expect(result).toEqual(template);
-    expect(prismaMock.waiverTemplate.findFirst).toHaveBeenCalledWith({
+    expect(result).toEqual(organizationTemplate);
+    expect(prismaMock.waiverTemplate.findMany).toHaveBeenCalledWith({
       where: {
         activityType: EventActivityType.ICE_SKATING,
         jurisdiction: AustralianJurisdiction.NSW,
         status: 'APPROVED',
+        OR: [
+          { authority: 'PLATFORM_CURATED', organizationId: null },
+          { authority: 'ORGANIZATION', organizationId: 'organization-1' },
+        ],
       },
-      orderBy: {
-        revision: 'desc',
-      },
+      orderBy: { revision: 'desc' },
     });
   });
 
+  it('falls back to the approved platform template', async () => {
+    const template = {
+      id: 'platform-template',
+      authority: 'PLATFORM_CURATED',
+      organizationId: null,
+    };
+    prismaMock.waiverTemplate.findMany.mockResolvedValue([template]);
+
+    await expect(
+      service.findApprovedTemplate(
+        EventActivityType.ICE_SKATING,
+        AustralianJurisdiction.VIC,
+        'organization-1',
+      ),
+    ).resolves.toEqual(template);
+  });
+
   it('throws when no approved template is available', async () => {
-    prismaMock.waiverTemplate.findFirst.mockResolvedValue(null);
+    prismaMock.waiverTemplate.findMany.mockResolvedValue([]);
 
     await expect(
       service.findApprovedTemplate(
         EventActivityType.ICE_SKATING,
         AustralianJurisdiction.WA,
+        'organization-1',
       ),
     ).rejects.toThrow(NotFoundException);
   });
