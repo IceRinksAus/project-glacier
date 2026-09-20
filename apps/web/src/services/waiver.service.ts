@@ -53,6 +53,8 @@ export interface WaiverSubmissionDetail {
   acceptedAt: string;
   waiverContentHash: string;
   acceptanceStatementHash: string;
+  booking: { id: string; bookingNumber: string } | null;
+  signatoryParticipantId: string | null;
   waiverVersion: {
     version: number;
     title: string;
@@ -64,6 +66,19 @@ export interface WaiverSubmissionDetail {
     id: string;
     fullName: string;
     dateOfBirth: string;
+    bookingParticipantId: string | null;
+  }>;
+}
+
+export interface WaiverAssociationBooking {
+  id: string;
+  bookingNumber: string;
+  participants: Array<{
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    age: number;
+    ticketType: { name: string };
   }>;
 }
 
@@ -107,6 +122,30 @@ export const waiverService = {
   findSubmission(eventId: string, submissionId: string) {
     return api.get<WaiverSubmissionDetail>(
       `/event/${eventId}/waiver/submissions/${submissionId}`,
+    );
+  },
+
+  findAssociationBooking(eventId: string, bookingNumber: string) {
+    return api.get<WaiverAssociationBooking>(
+      `/event/${eventId}/waiver/association-bookings/${encodeURIComponent(bookingNumber.trim().toUpperCase())}`,
+    );
+  },
+
+  matchSubmission(
+    eventId: string,
+    submissionId: string,
+    data: {
+      bookingId: string;
+      signatoryParticipantId?: string;
+      minorMatches: Array<{
+        minorId: string;
+        bookingParticipantId: string;
+      }>;
+    },
+  ) {
+    return api.post<{ matched: true }>(
+      `/event/${eventId}/waiver/submissions/${submissionId}/association`,
+      data,
     );
   },
 };

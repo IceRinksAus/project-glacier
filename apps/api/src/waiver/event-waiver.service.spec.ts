@@ -23,6 +23,9 @@ describe('EventWaiverService', () => {
       updateMany: jest.fn(),
       update: jest.fn(),
     },
+    waiverSubmission: { update: jest.fn() },
+    waiverMinor: { updateMany: jest.fn(), update: jest.fn() },
+    waiverAssociationAudit: { create: jest.fn() },
   };
   const prismaMock = {
     event: {
@@ -35,6 +38,7 @@ describe('EventWaiverService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    booking: { findFirst: jest.fn() },
     waiverVersion: {
       findFirst: jest.fn(),
     },
@@ -462,5 +466,51 @@ describe('EventWaiverService', () => {
     ).rejects.toThrow('Only a draft waiver version can be published.');
 
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('explicitly matches same-Event participants and records attributable audit evidence', async () => {
+    prismaMock.waiverSubmission.findFirst.mockResolvedValue({
+      id: 'submission-1',
+      minors: [{ id: 'minor-1' }],
+    });
+    prismaMock.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      participants: [{ id: 'adult-1' }, { id: 'child-1' }],
+    });
+    transactionMock.waiverAssociationAudit.create.mockResolvedValue({
+      id: 'audit-1',
+    });
+
+    await expect(
+      service.matchSubmission(
+        'organization-1',
+        'event-1',
+        'submission-1',
+        'manager-1',
+        {
+          bookingId: 'booking-1',
+          signatoryParticipantId: 'adult-1',
+          minorMatches: [
+            { minorId: 'minor-1', bookingParticipantId: 'child-1' },
+          ],
+        },
+      ),
+    ).resolves.toEqual({
+      matched: true,
+      bookingId: 'booking-1',
+      participantIds: ['adult-1', 'child-1'],
+    });
+
+    expect(transactionMock.waiverAssociationAudit.create).toHaveBeenCalledWith({
+      data: {
+        organizationId: 'organization-1',
+        eventId: 'event-1',
+        waiverSubmissionId: 'submission-1',
+        bookingId: 'booking-1',
+        actorUserId: 'manager-1',
+        action: 'STAFF_PARTICIPANT_MATCH',
+        participantIds: ['adult-1', 'child-1'],
+      },
+    });
   });
 });

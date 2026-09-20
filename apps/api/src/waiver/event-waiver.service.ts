@@ -9,6 +9,7 @@ import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { getWebAppUrl } from '../config/application-security';
 import { WaiverTemplateService } from './waiver-template.service';
+import { MatchWaiverSubmissionDto } from './dto/match-waiver-submission.dto';
 
 @Injectable()
 export class EventWaiverService {
@@ -117,6 +118,8 @@ export class EventWaiverService {
         id: true,
         signatoryFullName: true,
         acceptedAt: true,
+        booking: { select: { id: true, bookingNumber: true } },
+        signatoryParticipantId: true,
         waiverVersion: {
           select: {
             version: true,
@@ -171,6 +174,7 @@ export class EventWaiverService {
             id: true,
             fullName: true,
             dateOfBirth: true,
+            bookingParticipantId: true,
           },
         },
       },
@@ -183,6 +187,113 @@ export class EventWaiverService {
     }
 
     return submission;
+  }
+
+  async findAssociationBooking(
+    organizationId: string,
+    eventId: string,
+    bookingNumber: string,
+  ) {
+    const booking = await this.prisma.booking.findFirst({
+      where: { bookingNumber, event: { id: eventId, organizationId } },
+      select: {
+        id: true,
+        bookingNumber: true,
+        participants: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            age: true,
+            ticketType: { select: { name: true } },
+          },
+        },
+      },
+    });
+    if (!booking) throw new NotFoundException('Booking was not found.');
+    return booking;
+  }
+
+  async matchSubmission(
+    organizationId: string,
+    eventId: string,
+    submissionId: string,
+    actorUserId: string,
+    data: MatchWaiverSubmissionDto,
+  ) {
+    const [submission, booking] = await Promise.all([
+      this.prisma.waiverSubmission.findFirst({
+        where: {
+          id: submissionId,
+          eventWaiver: { event: { id: eventId, organizationId } },
+        },
+        select: { id: true, minors: { select: { id: true } } },
+      }),
+      this.prisma.booking.findFirst({
+        where: { id: data.bookingId, event: { id: eventId, organizationId } },
+        select: { id: true, participants: { select: { id: true } } },
+      }),
+    ]);
+    if (!submission || !booking) {
+      throw new NotFoundException(
+        'Waiver submission or Booking was not found.',
+      );
+    }
+
+    const participantIds = [
+      ...(data.signatoryParticipantId ? [data.signatoryParticipantId] : []),
+      ...data.minorMatches.map((match) => match.bookingParticipantId),
+    ];
+    if (new Set(participantIds).size !== participantIds.length) {
+      throw new BadRequestException(
+        'Each Booking participant can only be matched once.',
+      );
+    }
+    const bookingParticipantIds = new Set(
+      booking.participants.map(({ id }) => id),
+    );
+    const minorIds = new Set(submission.minors.map(({ id }) => id));
+    if (
+      participantIds.some((id) => !bookingParticipantIds.has(id)) ||
+      data.minorMatches.some((match) => !minorIds.has(match.minorId))
+    ) {
+      throw new BadRequestException(
+        'A selected participant or dependant is not in scope.',
+      );
+    }
+
+    return this.prisma.$transaction(async (transaction) => {
+      await transaction.waiverSubmission.update({
+        where: { id: submission.id },
+        data: {
+          bookingId: booking.id,
+          signatoryParticipantId: data.signatoryParticipantId ?? null,
+        },
+      });
+      await transaction.waiverMinor.updateMany({
+        where: { waiverSubmissionId: submission.id },
+        data: { bookingParticipantId: null },
+      });
+      for (const match of data.minorMatches) {
+        await transaction.waiverMinor.update({
+          where: { id: match.minorId },
+          data: { bookingParticipantId: match.bookingParticipantId },
+        });
+      }
+      await transaction.waiverAssociationAudit.create({
+        data: {
+          organizationId,
+          eventId,
+          waiverSubmissionId: submission.id,
+          bookingId: booking.id,
+          actorUserId,
+          action: 'STAFF_PARTICIPANT_MATCH',
+          participantIds,
+        },
+      });
+      return { matched: true, bookingId: booking.id, participantIds };
+    });
   }
 
   async createDraft(organizationId: string, eventId: string) {

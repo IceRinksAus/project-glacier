@@ -15,6 +15,7 @@ import {
   EventWaiverAdministration,
   WaiverSubmissionDetail,
   WaiverSubmissionSummary,
+  WaiverAssociationBooking,
   WaiverVersion,
   WaiverQrCode,
   waiverService,
@@ -63,6 +64,11 @@ export function WaiverWorkspace({
     useState<WaiverSubmissionDetail | null>(null);
   const [qrCode, setQrCode] = useState<WaiverQrCode | null>(null);
   const [search, setSearch] = useState("");
+  const [associationBookingNumber, setAssociationBookingNumber] = useState("");
+  const [associationBooking, setAssociationBooking] =
+    useState<WaiverAssociationBooking | null>(null);
+  const [signatoryParticipantId, setSignatoryParticipantId] = useState("");
+  const [minorMatches, setMinorMatches] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +87,7 @@ export function WaiverWorkspace({
           (current) => current ?? waiverResult?.versions[0]?.id ?? null,
         );
         const hasPublishedVersion = waiverResult?.versions.some(
-          (version) => version.status === 'PUBLISHED',
+          (version) => version.status === "PUBLISHED",
         );
         setQrCode(
           hasPublishedVersion
@@ -170,12 +176,66 @@ export function WaiverWorkspace({
       setError(null);
       const result = await waiverService.findSubmission(eventId, submissionId);
       setSelectedSubmission(result);
+      setAssociationBookingNumber(result.booking?.bookingNumber ?? "");
+      setAssociationBooking(null);
+      setSignatoryParticipantId(result.signatoryParticipantId ?? "");
+      setMinorMatches(
+        Object.fromEntries(
+          result.minors
+            .filter((minor) => minor.bookingParticipantId)
+            .map((minor) => [minor.id, minor.bookingParticipantId!]),
+        ),
+      );
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
           ? submissionError.message
           : "Unable to load submission evidence.",
       );
+    }
+  }
+
+  async function lookupAssociationBooking() {
+    try {
+      setError(null);
+      const booking = await waiverService.findAssociationBooking(
+        eventId,
+        associationBookingNumber,
+      );
+      setAssociationBooking(booking);
+    } catch (lookupError) {
+      setError(
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Unable to find that Booking for this Event.",
+      );
+    }
+  }
+
+  async function saveAssociation() {
+    if (!selectedSubmission || !associationBooking) return;
+    try {
+      setIsMutating(true);
+      setError(null);
+      await waiverService.matchSubmission(eventId, selectedSubmission.id, {
+        bookingId: associationBooking.id,
+        signatoryParticipantId: signatoryParticipantId || undefined,
+        minorMatches: Object.entries(minorMatches)
+          .filter(([, participantId]) => participantId)
+          .map(([minorId, bookingParticipantId]) => ({
+            minorId,
+            bookingParticipantId,
+          })),
+      });
+      await openSubmission(selectedSubmission.id);
+    } catch (associationError) {
+      setError(
+        associationError instanceof Error
+          ? associationError.message
+          : "Unable to save the participant matches.",
+      );
+    } finally {
+      setIsMutating(false);
     }
   }
 
@@ -511,6 +571,89 @@ export function WaiverWorkspace({
                 </ul>
               )}
             </div>
+          </div>
+          <div className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-5">
+            <p className="font-semibold text-sky-950">
+              Booking participant match
+            </p>
+            <p className="mt-1 text-sm leading-6 text-sky-900">
+              Match only after confirming the customer&apos;s Booking. Glacier
+              does not match by name automatically, and this does not admit or
+              consume a Ticket.
+            </p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={associationBookingNumber}
+                onChange={(event) =>
+                  setAssociationBookingNumber(event.target.value)
+                }
+                placeholder="PG-… Booking number"
+                className="h-10 flex-1 rounded-lg border bg-white px-3 font-mono text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => void lookupAssociationBooking()}
+                className="h-10 rounded-lg border border-sky-300 bg-white px-4 text-sm font-semibold text-sky-950"
+              >
+                Find Booking
+              </button>
+            </div>
+            {associationBooking ? (
+              <div className="mt-5 space-y-4">
+                <p className="text-sm font-semibold">
+                  {associationBooking.bookingNumber}
+                </p>
+                <label className="block text-sm font-medium">
+                  Adult signatory participant
+                  <select
+                    value={signatoryParticipantId}
+                    onChange={(event) =>
+                      setSignatoryParticipantId(event.target.value)
+                    }
+                    className="mt-2 h-10 w-full rounded-lg border bg-white px-3"
+                  >
+                    <option value="">Signatory is not a participant</option>
+                    {associationBooking.participants.map((participant) => (
+                      <option key={participant.id} value={participant.id}>
+                        {participant.firstName} {participant.lastName} ·{" "}
+                        {participant.ticketType.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedSubmission.minors.map((minor) => (
+                  <label key={minor.id} className="block text-sm font-medium">
+                    {minor.fullName}
+                    <select
+                      value={minorMatches[minor.id] ?? ""}
+                      onChange={(event) =>
+                        setMinorMatches((current) => ({
+                          ...current,
+                          [minor.id]: event.target.value,
+                        }))
+                      }
+                      className="mt-2 h-10 w-full rounded-lg border bg-white px-3"
+                    >
+                      <option value="">Not matched</option>
+                      {associationBooking.participants.map((participant) => (
+                        <option key={participant.id} value={participant.id}>
+                          {participant.firstName} {participant.lastName} ·{" "}
+                          {participant.ticketType.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  disabled={isMutating}
+                  onClick={() => void saveAssociation()}
+                  className="min-h-10 rounded-lg bg-sky-950 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {isMutating ? "Saving…" : "Confirm participant matches"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

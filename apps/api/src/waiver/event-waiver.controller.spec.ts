@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { AccessControlService } from '../access-control/access-control.service';
 import { EventWaiverController } from './event-waiver.controller';
 import { EventWaiverService } from './event-waiver.service';
 
@@ -11,6 +12,8 @@ describe('EventWaiverController', () => {
     generatePublicQrCode: jest.fn(),
     listSubmissions: jest.fn(),
     findSubmission: jest.fn(),
+    findAssociationBooking: jest.fn(),
+    matchSubmission: jest.fn(),
     createDraft: jest.fn(),
     publishDraft: jest.fn(),
   };
@@ -19,7 +22,9 @@ describe('EventWaiverController', () => {
     email: 'owner@example.com',
     role: 'OWNER',
     organizationId: 'organization-1',
+    accessScope: 'ALL_EVENTS' as const,
   };
+  const accessControlMock = { assertEventAccess: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -31,6 +36,7 @@ describe('EventWaiverController', () => {
           provide: EventWaiverService,
           useValue: serviceMock,
         },
+        { provide: AccessControlService, useValue: accessControlMock },
       ],
     }).compile();
 
@@ -48,6 +54,10 @@ describe('EventWaiverController', () => {
     expect(serviceMock.findForEvent).toHaveBeenCalledWith(
       'organization-1',
       'event-1',
+    );
+    expect(accessControlMock.assertEventAccess).toHaveBeenCalledWith(
+      'event-1',
+      user,
     );
   });
 
