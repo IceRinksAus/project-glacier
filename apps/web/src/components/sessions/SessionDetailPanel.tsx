@@ -1,19 +1,12 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-import {
-  SessionDetail,
-  sessionService,
-} from "@/services/session.service";
+import { SessionDetail, sessionService } from "@/services/session.service";
 
 import { EditSessionForm } from "./EditSessionForm";
 
@@ -24,19 +17,12 @@ interface SessionDetailPanelProps {
   onSessionChanged: () => Promise<void>;
 }
 
-function getTimeZone(
-  eventTimezone: string | null,
-) {
+function getTimeZone(eventTimezone: string | null) {
   return eventTimezone ?? "UTC";
 }
 
-function formatDate(
-  value: string,
-  timeZone: string,
-) {
-  return new Date(
-    value,
-  ).toLocaleDateString("en-AU", {
+function formatDate(value: string, timeZone: string) {
+  return new Date(value).toLocaleDateString("en-AU", {
     weekday: "long",
     day: "2-digit",
     month: "long",
@@ -45,13 +31,8 @@ function formatDate(
   });
 }
 
-function formatTime(
-  value: string,
-  timeZone: string,
-) {
-  return new Date(
-    value,
-  ).toLocaleTimeString("en-AU", {
+function formatTime(value: string, timeZone: string) {
+  return new Date(value).toLocaleTimeString("en-AU", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone,
@@ -64,66 +45,44 @@ export function SessionDetailPanel({
   onClose,
   onSessionChanged,
 }: SessionDetailPanelProps) {
-  const [session, setSession] =
-    useState<SessionDetail | null>(
-      null,
-    );
+  const [session, setSession] = useState<SessionDetail | null>(null);
 
-  const [isLoading, setIsLoading] =
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [error, setError] = useState("");
+
+  const [isActivating, setIsActivating] = useState(false);
+
+  const [activationError, setActivationError] = useState("");
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [isConfirmingCancellation, setIsConfirmingCancellation] =
     useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
-  const [isEditing, setIsEditing] =
-    useState(false);
+  const [cancellationError, setCancellationError] = useState("");
 
-  const [
-    isConfirmingCancellation,
-    setIsConfirmingCancellation,
-  ] = useState(false);
+  const [isConfirmingDeletion, setIsConfirmingDeletion] = useState(false);
 
-  const [
-    isCancelling,
-    setIsCancelling,
-  ] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const [
-    cancellationError,
-    setCancellationError,
-  ] = useState("");
-
-  const [
-    isConfirmingDeletion,
-    setIsConfirmingDeletion,
-  ] = useState(false);
-
-  const [
-    isDeleting,
-    setIsDeleting,
-  ] = useState(false);
-
-  const [
-    deletionError,
-    setDeletionError,
-  ] = useState("");
+  const [deletionError, setDeletionError] = useState("");
 
   useEffect(() => {
     if (!sessionId) {
       const reset = window.setTimeout(() => {
         setSession(null);
         setError("");
+        setActivationError("");
         setIsEditing(false);
 
-        setIsConfirmingCancellation(
-          false,
-        );
+        setIsConfirmingCancellation(false);
 
         setCancellationError("");
 
-        setIsConfirmingDeletion(
-          false,
-        );
+        setIsConfirmingDeletion(false);
 
         setDeletionError("");
       }, 0);
@@ -131,8 +90,7 @@ export function SessionDetailPanel({
       return () => window.clearTimeout(reset);
     }
 
-    const currentSessionId =
-      sessionId;
+    const currentSessionId = sessionId;
 
     let cancelled = false;
 
@@ -144,18 +102,11 @@ export function SessionDetailPanel({
         setCancellationError("");
         setDeletionError("");
 
-        setIsConfirmingCancellation(
-          false,
-        );
+        setIsConfirmingCancellation(false);
 
-        setIsConfirmingDeletion(
-          false,
-        );
+        setIsConfirmingDeletion(false);
 
-        const data =
-          await sessionService.getSession(
-            currentSessionId,
-          );
+        const data = await sessionService.getSession(currentSessionId);
 
         if (!cancelled) {
           setSession(data);
@@ -183,58 +134,33 @@ export function SessionDetailPanel({
     };
   }, [sessionId]);
 
-  const timeZone = getTimeZone(
-    session?.event.timezone ??
-      eventTimezone,
-  );
+  const timeZone = getTimeZone(session?.event.timezone ?? eventTimezone);
 
-  const bookedQuantity =
-    useMemo(() => {
-      if (!session) {
-        return 0;
-      }
+  const bookedQuantity = useMemo(() => {
+    if (!session) {
+      return 0;
+    }
 
-      return session.bookings
-        .filter((booking) =>
-          [
-            "RESERVED",
-            "CONFIRMED",
-          ].includes(
-            booking.status,
+    return session.bookings
+      .filter((booking) => ["RESERVED", "CONFIRMED"].includes(booking.status))
+      .reduce(
+        (total, booking) =>
+          total +
+          booking.items.reduce(
+            (itemTotal, item) => itemTotal + item.quantity,
+            0,
           ),
-        )
-        .reduce(
-          (total, booking) =>
-            total +
-            booking.items.reduce(
-              (
-                itemTotal,
-                item,
-              ) =>
-                itemTotal +
-                item.quantity,
-              0,
-            ),
-          0,
-        );
-    }, [session]);
+        0,
+      );
+  }, [session]);
 
-  const availableCapacity =
-    session
-      ? Math.max(
-          session.capacity -
-            bookedQuantity,
-          0,
-        )
-      : 0;
+  const availableCapacity = session
+    ? Math.max(session.capacity - bookedQuantity, 0)
+    : 0;
 
-  const hasBookings =
-    (session?.bookings.length ?? 0) >
-    0;
+  const hasBookings = (session?.bookings.length ?? 0) > 0;
 
-  const canDelete =
-    session !== null &&
-    !hasBookings;
+  const canDelete = session !== null && !hasBookings;
 
   async function handleCancellation() {
     if (!session) {
@@ -246,24 +172,15 @@ export function SessionDetailPanel({
 
       setCancellationError("");
 
-      await sessionService.cancelSession(
-        session.id,
-      );
+      await sessionService.cancelSession(session.id);
 
       await onSessionChanged();
 
-      const refreshedSession =
-        await sessionService.getSession(
-          session.id,
-        );
+      const refreshedSession = await sessionService.getSession(session.id);
 
-      setSession(
-        refreshedSession,
-      );
+      setSession(refreshedSession);
 
-      setIsConfirmingCancellation(
-        false,
-      );
+      setIsConfirmingCancellation(false);
     } catch (cancelError) {
       setCancellationError(
         cancelError instanceof Error
@@ -272,6 +189,35 @@ export function SessionDetailPanel({
       );
     } finally {
       setIsCancelling(false);
+    }
+  }
+
+  async function handleActivation() {
+    if (!session || session.status !== "DRAFT") {
+      return;
+    }
+
+    try {
+      setIsActivating(true);
+      setActivationError("");
+
+      const updatedSession = await sessionService.updateSession(session.id, {
+        status: "ACTIVE",
+      });
+
+      setSession(updatedSession);
+      await onSessionChanged();
+
+      const refreshedSession = await sessionService.getSession(session.id);
+      setSession(refreshedSession);
+    } catch (activationFailure) {
+      setActivationError(
+        activationFailure instanceof Error
+          ? activationFailure.message
+          : "Unable to activate Session.",
+      );
+    } finally {
+      setIsActivating(false);
     }
   }
 
@@ -284,9 +230,7 @@ export function SessionDetailPanel({
       setIsDeleting(true);
       setDeletionError("");
 
-      await sessionService.deleteSession(
-        session.id,
-      );
+      await sessionService.deleteSession(session.id);
 
       await onSessionChanged();
 
@@ -319,14 +263,11 @@ export function SessionDetailPanel({
         <div className="flex items-start justify-between gap-4 border-b p-6">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              {isEditing
-                ? "Edit session"
-                : "Session details"}
+              {isEditing ? "Edit session" : "Session details"}
             </p>
 
             <h2 className="mt-1 text-2xl font-semibold tracking-tight">
-              {session?.name ??
-                "Loading session..."}
+              {session?.name ?? "Loading session..."}
             </h2>
           </div>
 
@@ -354,80 +295,47 @@ export function SessionDetailPanel({
             </div>
           ) : null}
 
-          {!isLoading &&
-          !error &&
-          session &&
-          isEditing ? (
+          {!isLoading && !error && session && isEditing ? (
             <EditSessionForm
               session={session}
-              eventTimezone={
-                eventTimezone
-              }
-              onCancel={() =>
-                setIsEditing(false)
-              }
-              onSaved={async (
-                updatedSession,
-              ) => {
-                setSession(
-                  updatedSession,
-                );
+              eventTimezone={eventTimezone}
+              onCancel={() => setIsEditing(false)}
+              onSaved={async (updatedSession) => {
+                setSession(updatedSession);
 
                 await onSessionChanged();
 
-                const refreshedSession =
-                  await sessionService.getSession(
-                    session.id,
-                  );
-
-                setSession(
-                  refreshedSession,
+                const refreshedSession = await sessionService.getSession(
+                  session.id,
                 );
+
+                setSession(refreshedSession);
 
                 setIsEditing(false);
               }}
             />
           ) : null}
 
-          {!isLoading &&
-          !error &&
-          session &&
-          !isEditing ? (
+          {!isLoading && !error && session && !isEditing ? (
             <div className="space-y-6">
               <section className="rounded-xl border bg-card p-5">
-                <p className="text-sm text-muted-foreground">
-                  Date
-                </p>
+                <p className="text-sm text-muted-foreground">Date</p>
 
                 <p className="mt-1 font-semibold">
-                  {formatDate(
-                    session.startDate,
-                    timeZone,
-                  )}
+                  {formatDate(session.startDate, timeZone)}
                 </p>
 
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Time
-                </p>
+                <p className="mt-4 text-sm text-muted-foreground">Time</p>
 
                 <p className="mt-1 font-semibold">
-                  {formatTime(
-                    session.startDate,
-                    timeZone,
-                  )}{" "}
-                  –{" "}
-                  {formatTime(
-                    session.endDate,
-                    timeZone,
-                  )}
+                  {formatTime(session.startDate, timeZone)} –{" "}
+                  {formatTime(session.endDate, timeZone)}
                 </p>
               </section>
 
               <section className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-xl border bg-card p-5">
-                  <p className="text-sm text-muted-foreground">
-                    Capacity
-                  </p>
+                  <p className="text-sm text-muted-foreground">Capacity</p>
 
                   <p className="mt-2 text-2xl font-semibold">
                     {session.capacity}
@@ -435,9 +343,7 @@ export function SessionDetailPanel({
                 </div>
 
                 <div className="rounded-xl border bg-card p-5">
-                  <p className="text-sm text-muted-foreground">
-                    Booked
-                  </p>
+                  <p className="text-sm text-muted-foreground">Booked</p>
 
                   <p className="mt-2 text-2xl font-semibold">
                     {bookedQuantity}
@@ -445,14 +351,10 @@ export function SessionDetailPanel({
                 </div>
 
                 <div className="rounded-xl border bg-card p-5">
-                  <p className="text-sm text-muted-foreground">
-                    Available
-                  </p>
+                  <p className="text-sm text-muted-foreground">Available</p>
 
                   <p className="mt-2 text-2xl font-semibold">
-                    {
-                      availableCapacity
-                    }
+                    {availableCapacity}
                   </p>
                 </div>
               </section>
@@ -460,13 +362,9 @@ export function SessionDetailPanel({
               <section className="rounded-xl border bg-card p-5">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div>
-                    <p className="text-sm text-muted-foreground">
-                      Status
-                    </p>
+                    <p className="text-sm text-muted-foreground">Status</p>
 
-                    <p className="mt-1 font-semibold">
-                      {session.status}
-                    </p>
+                    <p className="mt-1 font-semibold">{session.status}</p>
                   </div>
 
                   <div>
@@ -475,17 +373,14 @@ export function SessionDetailPanel({
                     </p>
 
                     <p className="mt-1 font-semibold">
-                      {session.scheduleExceptionType ??
-                        "NONE"}
+                      {session.scheduleExceptionType ?? "NONE"}
                     </p>
                   </div>
                 </div>
               </section>
 
               <section className="rounded-xl border bg-card p-5">
-                <h3 className="font-semibold">
-                  Schedule origin
-                </h3>
+                <h3 className="font-semibold">Schedule origin</h3>
 
                 {session.operationalScheduleId ? (
                   <div className="mt-4 space-y-3 text-sm">
@@ -495,62 +390,42 @@ export function SessionDetailPanel({
                       </p>
 
                       <p className="mt-1 break-all font-medium">
-                        {
-                          session.operationalScheduleId
-                        }
+                        {session.operationalScheduleId}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-muted-foreground">
-                        Schedule entry
-                      </p>
+                      <p className="text-muted-foreground">Schedule entry</p>
 
                       <p className="mt-1 break-all font-medium">
-                        {session.scheduleEntryId ??
-                          "Not available"}
+                        {session.scheduleEntryId ?? "Not available"}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    This is a standalone
-                    session.
+                    This is a standalone session.
                   </p>
                 )}
               </section>
 
               <section className="rounded-xl border bg-card p-5">
-                <h3 className="font-semibold">
-                  Bookings
-                </h3>
+                <h3 className="font-semibold">Bookings</h3>
 
-                {session.bookings
-                  .length === 0 ? (
+                {session.bookings.length === 0 ? (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    No bookings for this
-                    session.
+                    No bookings for this session.
                   </p>
                 ) : (
                   <>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {
-                        session.bookings
-                          .length
-                      }{" "}
-                      booking
-                      {session.bookings
-                        .length === 1
-                        ? ""
-                        : "s"}{" "}
-                      attached to this
-                      session.
+                      {session.bookings.length} booking
+                      {session.bookings.length === 1 ? "" : "s"} attached to
+                      this session.
                     </p>
 
                     <p className="mt-3 text-sm font-medium">
-                      Sessions with
-                      bookings cannot be
-                      permanently deleted.
+                      Sessions with bookings cannot be permanently deleted.
                     </p>
                   </>
                 )}
@@ -558,45 +433,32 @@ export function SessionDetailPanel({
 
               {isConfirmingCancellation ? (
                 <section className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
-                  <h3 className="font-semibold">
-                    Cancel this session?
-                  </h3>
+                  <h3 className="font-semibold">Cancel this session?</h3>
 
                   <p className="mt-2 text-sm text-muted-foreground">
-                    This will mark the
-                    Session as CANCELLED.
-                    It will remain in
-                    Glacier&apos;s records
-                    and will no longer be
-                    available for booking.
+                    This will mark the Session as CANCELLED. It will remain in
+                    Glacier&apos;s records and will no longer be available for
+                    booking.
                   </p>
 
                   {bookedQuantity > 0 ? (
                     <p className="mt-3 text-sm font-medium">
-                      This Session currently
-                      has {bookedQuantity}{" "}
-                      reserved or confirmed{" "}
-                      admission
-                      {bookedQuantity === 1
-                        ? ""
-                        : "s"}.
+                      This Session currently has {bookedQuantity} reserved or
+                      confirmed admission
+                      {bookedQuantity === 1 ? "" : "s"}.
                     </p>
                   ) : null}
 
                   {session.operationalScheduleId ? (
                     <p className="mt-3 text-sm text-muted-foreground">
-                      This generated Session
-                      will also be marked as
-                      a CANCELLED schedule
-                      exception.
+                      This generated Session will also be marked as a CANCELLED
+                      schedule exception.
                     </p>
                   ) : null}
 
                   {cancellationError ? (
                     <div className="mt-4 rounded-lg border border-destructive/30 bg-background p-4 text-sm text-destructive">
-                      {
-                        cancellationError
-                      }
+                      {cancellationError}
                     </div>
                   ) : null}
 
@@ -605,33 +467,21 @@ export function SessionDetailPanel({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setIsConfirmingCancellation(
-                          false,
-                        );
+                        setIsConfirmingCancellation(false);
 
-                        setCancellationError(
-                          "",
-                        );
+                        setCancellationError("");
                       }}
-                      disabled={
-                        isCancelling
-                      }
+                      disabled={isCancelling}
                     >
                       Keep Session
                     </Button>
 
                     <Button
                       type="button"
-                      onClick={() =>
-                        void handleCancellation()
-                      }
-                      disabled={
-                        isCancelling
-                      }
+                      onClick={() => void handleCancellation()}
+                      disabled={isCancelling}
                     >
-                      {isCancelling
-                        ? "Cancelling..."
-                        : "Confirm Cancellation"}
+                      {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
                     </Button>
                   </div>
                 </section>
@@ -640,33 +490,25 @@ export function SessionDetailPanel({
               {isConfirmingDeletion ? (
                 <section className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
                   <h3 className="font-semibold">
-                    Permanently delete this
-                    session?
+                    Permanently delete this session?
                   </h3>
 
                   <p className="mt-2 text-sm text-muted-foreground">
-                    This action permanently
-                    removes the Session from
-                    Glacier and cannot be
-                    undone.
+                    This action permanently removes the Session from Glacier and
+                    cannot be undone.
                   </p>
 
                   {session.operationalScheduleId ? (
                     <p className="mt-3 text-sm text-muted-foreground">
-                      The originating
-                      Operational Schedule
-                      will remain unchanged.
-                      Only this generated
-                      Session occurrence
-                      will be deleted.
+                      The originating Operational Schedule will remain
+                      unchanged. Only this generated Session occurrence will be
+                      deleted.
                     </p>
                   ) : null}
 
                   {deletionError ? (
                     <div className="mt-4 rounded-lg border border-destructive/30 bg-background p-4 text-sm text-destructive">
-                      {
-                        deletionError
-                      }
+                      {deletionError}
                     </div>
                   ) : null}
 
@@ -675,130 +517,109 @@ export function SessionDetailPanel({
                       type="button"
                       variant="outline"
                       onClick={() => {
-                        setIsConfirmingDeletion(
-                          false,
-                        );
+                        setIsConfirmingDeletion(false);
 
-                        setDeletionError(
-                          "",
-                        );
+                        setDeletionError("");
                       }}
-                      disabled={
-                        isDeleting
-                      }
+                      disabled={isDeleting}
                     >
                       Keep Session
                     </Button>
 
                     <Button
                       type="button"
-                      onClick={() =>
-                        void handleDeletion()
-                      }
-                      disabled={
-                        isDeleting
-                      }
+                      onClick={() => void handleDeletion()}
+                      disabled={isDeleting}
                     >
-                      {isDeleting
-                        ? "Deleting..."
-                        : "Delete Permanently"}
+                      {isDeleting ? "Deleting..." : "Delete Permanently"}
                     </Button>
                   </div>
                 </section>
               ) : null}
 
-              {!isConfirmingCancellation &&
-              !isConfirmingDeletion ? (
-                <div className="flex flex-wrap gap-3 border-t pt-6">
-                  <Button
-                    type="button"
-                    onClick={() =>
-                      setIsEditing(true)
-                    }
-                    disabled={
-                      session.status ===
-                      "CANCELLED"
-                    }
-                  >
-                    Edit Session
-                  </Button>
+              {!isConfirmingCancellation && !isConfirmingDeletion ? (
+                <div className="space-y-3 border-t pt-6">
+                  {activationError ? (
+                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+                      {activationError}
+                    </div>
+                  ) : null}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setCancellationError(
-                        "",
-                      );
+                  <div className="flex flex-wrap gap-3">
+                    {session.status === "DRAFT" ? (
+                      <Button
+                        type="button"
+                        onClick={() => void handleActivation()}
+                        disabled={isActivating}
+                      >
+                        {isActivating ? "Activating..." : "Activate Session"}
+                      </Button>
+                    ) : null}
 
-                      setIsConfirmingCancellation(
-                        true,
-                      );
-                    }}
-                    disabled={
-                      session.status ===
-                      "CANCELLED"
-                    }
-                  >
-                    Cancel Session
-                  </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        session.status === "DRAFT" ? "outline" : "default"
+                      }
+                      onClick={() => setIsEditing(true)}
+                      disabled={session.status === "CANCELLED"}
+                    >
+                      Edit Session
+                    </Button>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setDeletionError(
-                        "",
-                      );
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setCancellationError("");
 
-                      setIsConfirmingDeletion(
-                        true,
-                      );
-                    }}
-                    disabled={
-                      !canDelete
-                    }
-                  >
-                    Delete Session
-                  </Button>
+                        setIsConfirmingCancellation(true);
+                      }}
+                      disabled={session.status === "CANCELLED"}
+                    >
+                      Cancel Session
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDeletionError("");
+
+                        setIsConfirmingDeletion(true);
+                      }}
+                      disabled={!canDelete}
+                    >
+                      Delete Session
+                    </Button>
+                  </div>
                 </div>
               ) : null}
 
               {!canDelete ? (
                 <div className="rounded-xl border bg-muted/30 p-4">
-                  <p className="text-sm font-medium">
-                    Deletion unavailable
-                  </p>
+                  <p className="text-sm font-medium">Deletion unavailable</p>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    This Session has one or
-                    more Booking records and
-                    must be preserved.
-                    Cancel the Session
-                    instead if it should no
-                    longer operate.
+                    This Session has one or more Booking records and must be
+                    preserved. Cancel the Session instead if it should no longer
+                    operate.
                   </p>
                 </div>
               ) : null}
 
-              {session.status ===
-              "CANCELLED" ? (
+              {session.status === "CANCELLED" ? (
                 <div className="rounded-xl border bg-muted/30 p-4">
-                  <p className="text-sm font-medium">
-                    Session cancelled
-                  </p>
+                  <p className="text-sm font-medium">Session cancelled</p>
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    This Session has been
-                    cancelled and can no
-                    longer be edited.
+                    This Session has been cancelled and can no longer be edited.
                   </p>
 
                   {canDelete ? (
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Because it has no
-                      bookings, it may still
-                      be permanently deleted.
+                      Because it has no bookings, it may still be permanently
+                      deleted.
                     </p>
                   ) : null}
                 </div>

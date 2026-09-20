@@ -24,6 +24,7 @@ The implementation does not assert that historical wording is current legal advi
 - Added explicit blocked states when Event classification, required values or an approved compatible template is missing. Generating a preview persists only the permitted configuration, renders a new immutable draft and leaves publication as a separate OWNER action.
 - Added an idempotent local-only fixture command for fictional NSW, VIC, WA and SA ice-skating templates. Each fixture is visibly labelled `LOCAL TEST ONLY`, refuses to run when `NODE_ENV=production`, contains no asserted legislation reference and exists solely so the complete Waiver workflow can be tested before real lawyer-approved wording is available.
 - Clarified the publication boundary after Bathurst acceptance testing: a published Waiver is publicly reachable only while its Event is active. Draft Events now show an explicit activation requirement instead of displaying a public link or QR code that cannot resolve, and authenticated QR generation enforces the same active-Event condition.
+- Closed the Session activation UX gap discovered while activating Bathurst: owners can now activate an individual draft Session from its detail panel or activate every draft Session for the Event in one action before completing Event readiness.
 
 ## Data and migration evidence
 
