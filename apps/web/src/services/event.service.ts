@@ -40,6 +40,12 @@ export interface GlacierEvent {
   startDate: string;
   endDate: string;
   timezone: string | null;
+  venueName?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  suburb?: string | null;
+  postcode?: string | null;
+  country?: string | null;
   status: string;
   activityType: string | null;
   jurisdiction: string | null;
@@ -71,6 +77,15 @@ export interface CreateGlacierEvent {
   branding?: EventBranding;
 }
 
+export type UpdateGlacierEventDetails = Omit<
+  CreateGlacierEvent,
+  | "slug"
+  | "country"
+  | "entryOpensMinutesBeforeStart"
+  | "entryClosesMinutesAfterEnd"
+  | "branding"
+>;
+
 export interface EventReadinessItem {
   id: "EVENT_DETAILS" | "SESSIONS" | "TICKET_TYPES" | "WAIVER";
   label: string;
@@ -95,6 +110,9 @@ export const eventService = {
 
   createEvent: (data: CreateGlacierEvent) =>
     api.post<GlacierEvent>("/event", data),
+
+  updateDetails: (eventId: string, data: UpdateGlacierEventDetails) =>
+    api.patch<GlacierEvent>(`/event/${eventId}/details`, data),
 
   getReadiness: (eventId: string) =>
     api.get<EventReadiness>(`/event/${eventId}/readiness`),

@@ -20,16 +20,19 @@ vi.mock("@/hooks/useOrganizationReport", () => ({
   }),
 }));
 
+vi.mock("@/lib/auth", () => ({ getAuthUser: () => ({ role: "OWNER" }) }));
+
 vi.mock("./EventReadinessPanel", () => ({ EventReadinessPanel: () => <aside>Readiness</aside> }));
 
 describe("EventOverview", () => {
   it("shows authoritative operational event metrics", () => {
-    render(<EventOverview eventId="event-1" name="Winter Festival" description="Snow and skating" status="ACTIVE" slug="winter-festival" startDate="2027-09-01T00:00:00.000Z" endDate="2027-09-02T00:00:00.000Z" onNavigate={vi.fn()} onActivated={vi.fn()} />);
+    render(<EventOverview event={{ id: "event-1", name: "Winter Festival", description: "Snow and skating", status: "ACTIVE", slug: "winter-festival", startDate: "2027-09-01T00:00:00.000Z", endDate: "2027-09-02T00:00:00.000Z", timezone: "Australia/Melbourne", venueName: "Preview Arena", addressLine1: "1 Example Street", addressLine2: null, suburb: "Melbourne", postcode: "3000", country: "AU", activityType: "ICE_SKATING", jurisdiction: "VIC", entryOpensMinutesBeforeStart: 30, entryClosesMinutesAfterEnd: 0, organizationId: "org-1", createdAt: "2027-01-01T00:00:00.000Z", updatedAt: "2027-01-01T00:00:00.000Z", branding: null }} onNavigate={vi.fn()} onActivated={vi.fn()} />);
 
     expect(screen.getByText("Tickets issued").nextSibling).toHaveTextContent("35");
     expect(screen.getByText("Sessions today").nextSibling).toHaveTextContent("4");
     expect(screen.getByText("Confirmed bookings").nextSibling).toHaveTextContent("21");
     expect(screen.getByText("62%")).toBeVisible();
     expect(screen.getByText(/Evening session/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "Edit Event details" })).toBeVisible();
   });
 });

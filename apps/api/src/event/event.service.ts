@@ -15,6 +15,7 @@ import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 import { CreateEventDto } from './dto/create-event.dto';
 import { EventReadiness, EventReadinessItem } from './event-readiness.types';
 import { EventBrandingDto } from './dto/event-branding.dto';
+import { UpdateEventDetailsDto } from './dto/update-event-details.dto';
 
 const readinessInclude = {
   sessions: {
@@ -177,6 +178,90 @@ export class EventService {
       where: { eventId: event.id },
       create: { eventId: event.id, ...branding },
       update: branding,
+    });
+  }
+
+  async updateDetails(
+    id: string,
+    organizationId: string,
+    data: UpdateEventDetailsDto,
+  ) {
+    const event = await this.prisma.event.findFirst({
+      where: { id, organizationId },
+      include: {
+        sessions: { select: { startDate: true, endDate: true } },
+        waiver: {
+          select: {
+            versions: { select: { id: true }, take: 1 },
+            submissions: { select: { id: true }, take: 1 },
+          },
+        },
+      },
+    });
+
+    if (!event) throw new NotFoundException('Event not found');
+
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(data.endDate);
+    if (endDate <= startDate) {
+      throw new BadRequestException('Event end must be after Event start.');
+    }
+
+    const sessionOutsideDates = event.sessions.some(
+      (session) =>
+        session.startDate < startDate || session.endDate > endDate,
+    );
+    if (sessionOutsideDates) {
+      throw new BadRequestException(
+        'Event dates must continue to contain every existing Session.',
+      );
+    }
+
+    if (event.sessions.length > 0 && data.timezone !== event.timezone) {
+      throw new BadRequestException(
+        'Event timezone cannot be changed after Sessions have been created.',
+      );
+    }
+
+    const hasWaiverEvidence = Boolean(
+      event.waiver &&
+        (event.waiver.versions.length > 0 ||
+          event.waiver.submissions.length > 0),
+    );
+    const legalDetailsChanged =
+      data.name !== event.name ||
+      startDate.getTime() !== event.startDate.getTime() ||
+      endDate.getTime() !== event.endDate.getTime() ||
+      data.venueName !== event.venueName ||
+      data.addressLine1 !== event.addressLine1 ||
+      (data.addressLine2 ?? null) !== event.addressLine2 ||
+      data.suburb !== event.suburb ||
+      data.postcode !== event.postcode ||
+      data.jurisdiction !== event.jurisdiction ||
+      data.activityType !== event.activityType;
+    if (hasWaiverEvidence && legalDetailsChanged) {
+      throw new BadRequestException(
+        'Legal Event details cannot be changed after Waiver versions or accepted submissions exist.',
+      );
+    }
+
+    return this.prisma.event.update({
+      where: { id: event.id },
+      data: {
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        startDate,
+        endDate,
+        timezone: data.timezone,
+        venueName: data.venueName.trim(),
+        addressLine1: data.addressLine1.trim(),
+        addressLine2: data.addressLine2?.trim() || null,
+        suburb: data.suburb.trim(),
+        postcode: data.postcode,
+        jurisdiction: data.jurisdiction,
+        activityType: data.activityType,
+      },
+      include: { branding: true },
     });
   }
 

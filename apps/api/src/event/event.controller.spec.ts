@@ -10,6 +10,7 @@ describe('EventController', () => {
   const serviceMock = {
     getReadiness: jest.fn(),
     updateEntryPolicy: jest.fn(),
+    updateDetails: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -73,5 +74,20 @@ describe('EventController', () => {
       accessScope: 'ASSIGNED_EVENTS',
       organizationId: 'organization-1',
     });
+  });
+
+  it('uses trusted organization context for Event detail updates', async () => {
+    const data = {
+      name: 'Updated Event', description: 'Fictional',
+      startDate: '2027-09-01T00:00:00.000Z', endDate: '2027-09-05T00:00:00.000Z',
+      timezone: 'Australia/Melbourne', venueName: 'Preview Arena',
+      addressLine1: '1 Example Street', suburb: 'Melbourne', postcode: '3000',
+      jurisdiction: 'VIC' as const, activityType: 'ICE_SKATING' as const,
+    };
+    await controller.updateDetails('event-1', {
+      userId: 'user-1', email: 'owner@example.com', role: 'OWNER',
+      accessScope: 'ALL_EVENTS', organizationId: 'organization-1',
+    }, data);
+    expect(serviceMock.updateDetails).toHaveBeenCalledWith('event-1', 'organization-1', data);
   });
 });

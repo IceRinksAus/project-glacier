@@ -77,13 +77,7 @@ export default function EventWorkspacePage({
 
             {activeTab === "Overview" ? (
               <EventOverview
-                eventId={event.id}
-                name={event.name}
-                description={event.description}
-                status={event.status}
-                slug={event.slug}
-                startDate={event.startDate}
-                endDate={event.endDate}
+                event={event}
                 onNavigate={selectTab}
                 onActivated={() => window.location.reload()}
               />

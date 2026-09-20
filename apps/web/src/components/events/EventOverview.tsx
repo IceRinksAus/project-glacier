@@ -1,33 +1,28 @@
 "use client";
 
 import { useOrganizationReport } from "@/hooks/useOrganizationReport";
+import { getAuthUser } from "@/lib/auth";
+import type { GlacierEvent } from "@/services/event.service";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
+import { EventDetailsEditor } from "./EventDetailsEditor";
 import { EventReadinessPanel } from "./EventReadinessPanel";
 import type { EventTab } from "./EventTabs";
 
 interface EventOverviewProps {
-  eventId: string;
-  name: string;
-  description: string | null;
-  status: string;
-  slug: string;
-  startDate: string;
-  endDate: string;
+  event: GlacierEvent;
   onNavigate: (tab: EventTab) => void;
   onActivated: () => void;
 }
 
 export function EventOverview({
-  eventId,
-  name,
-  description,
-  status,
-  slug,
-  startDate,
-  endDate,
+  event,
   onNavigate,
   onActivated,
 }: EventOverviewProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const { id: eventId, name, description, status, slug, startDate, endDate } = event;
   const { report } = useOrganizationReport();
   const metrics = report?.events.find((row) => row.event.id === eventId);
   const formattedStartDate = new Date(startDate).toLocaleDateString("en-AU", {
@@ -42,12 +37,17 @@ export function EventOverview({
     year: "numeric",
   });
 
+  if (isEditing) {
+    return <div className="grid gap-6"><EventDetailsEditor event={event} onCancel={() => setIsEditing(false)} onSaved={() => window.location.reload()} /></div>;
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
       <section className="glacier-panel p-6">
-        <p className="text-sm font-medium text-muted-foreground">
-          Event overview
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-medium text-muted-foreground">Event overview</p>
+          {getAuthUser()?.role === "OWNER" ? <Button type="button" variant="outline" onClick={() => setIsEditing(true)}>Edit Event details</Button> : null}
+        </div>
 
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">{name}</h2>
 

@@ -219,6 +219,78 @@ describe('EventService', () => {
     expect(prismaMock.event.create).not.toHaveBeenCalled();
   });
 
+  describe('updateDetails', () => {
+    const editableEvent = {
+      ...readyEvent,
+      sessions: [],
+      waiver: null,
+    };
+
+    it('updates tenant-owned Event details when operational boundaries remain safe', async () => {
+      prismaMock.event.findFirst.mockResolvedValue(editableEvent);
+      prismaMock.event.update.mockResolvedValue({ id: 'event-1' });
+
+      await service.updateDetails('event-1', 'organization-1', {
+        ...createData,
+        name: 'Updated Winter Event',
+      });
+
+      expect(prismaMock.event.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'event-1', organizationId: 'organization-1' } }),
+      );
+      expect(prismaMock.event.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'event-1' },
+          data: expect.objectContaining({ name: 'Updated Winter Event' }),
+        }),
+      );
+    });
+
+    it('rejects dates that exclude an existing Session', async () => {
+      prismaMock.event.findFirst.mockResolvedValue(readyEvent);
+
+      await expect(
+        service.updateDetails('event-1', 'organization-1', {
+          ...createData,
+          startDate: '2027-09-01T01:30:00.000Z',
+        }),
+      ).rejects.toThrow('Event dates must continue to contain every existing Session.');
+      expect(prismaMock.event.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects timezone changes after Sessions exist', async () => {
+      prismaMock.event.findFirst.mockResolvedValue(readyEvent);
+
+      await expect(
+        service.updateDetails('event-1', 'organization-1', {
+          ...createData,
+          timezone: 'Australia/Perth',
+        }),
+      ).rejects.toThrow('Event timezone cannot be changed after Sessions have been created.');
+    });
+
+    it('protects legal details after Waiver evidence exists', async () => {
+      prismaMock.event.findFirst.mockResolvedValue({
+        ...editableEvent,
+        waiver: { versions: [{ id: 'version-1' }], submissions: [] },
+      });
+
+      await expect(
+        service.updateDetails('event-1', 'organization-1', {
+          ...createData,
+          venueName: 'Different Arena',
+        }),
+      ).rejects.toThrow('Legal Event details cannot be changed');
+    });
+
+    it('does not reveal another tenant Event', async () => {
+      prismaMock.event.findFirst.mockResolvedValue(null);
+      await expect(
+        service.updateDetails('event-1', 'organization-2', createData),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
   it('converts a unique slug collision into a stable conflict', async () => {
     prismaMock.event.create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Unique constraint', {

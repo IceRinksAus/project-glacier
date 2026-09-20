@@ -131,6 +131,14 @@ field's accessible label.
   invariants when Sessions, Bookings, published Waivers or public sales already
   exist; do not silently move operational records or rewrite accepted evidence.
 
+Initial remediation now gives an OWNER an **Edit Event details** action from
+Overview. The server remains tenant-scoped and authoritative: new dates must
+still contain every existing Session, timezone cannot change after Sessions
+exist, and legal Event details cannot change after a Waiver version or accepted
+submission exists. Description-only updates remain possible without rewriting
+legal evidence. The Event website slug is deliberately excluded from this
+editor so existing public links are not silently changed.
+
 ### S42-F07 — Valid Event-local schedule rejected at date boundary
 
 - **Severity:** Blocker

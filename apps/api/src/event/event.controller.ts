@@ -26,6 +26,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEntryPolicyDto } from './dto/update-entry-policy.dto';
 import { EventBrandingDto } from './dto/event-branding.dto';
 import { UploadBrandingAssetDto } from './dto/upload-branding-asset.dto';
+import { UpdateEventDetailsDto } from './dto/update-event-details.dto';
 import { FileAssetService } from '../file-asset/file-asset.service';
 import type { BrandingImageUpload } from '../file-asset/file-asset.types';
 
@@ -65,6 +66,16 @@ export class EventController {
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() data: CreateEventDto) {
     return this.eventService.create(user.organizationId, data);
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/details')
+  updateDetails(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: UpdateEventDetailsDto,
+  ) {
+    return this.eventService.updateDetails(id, user.organizationId, data);
   }
 
   @Roles('OWNER')
