@@ -99,6 +99,9 @@ export function ScheduleBuilder({
   const [isGenerating, setIsGenerating] =
     useState(false);
 
+  const [activateSessions, setActivateSessions] =
+    useState(false);
+
   const [generateError, setGenerateError] =
     useState("");
 
@@ -170,6 +173,8 @@ export function ScheduleBuilder({
         manualDays={manualDays}
         isGenerating={isGenerating}
         generateError={generateError}
+        activateSessions={activateSessions}
+        onActivateSessionsChange={setActivateSessions}
         onBack={() => setStep(2)}
         onCancel={onCancel}
         onGenerate={async () => {
@@ -183,6 +188,7 @@ export function ScheduleBuilder({
               pattern,
               startDate,
               endDate,
+              activateSessions,
 
               ...(pattern === "WEEKDAY_WEEKEND"
                 ? {

@@ -20,10 +20,12 @@ interface ScheduleReviewStepProps {
 
   isGenerating: boolean;
   generateError: string;
+  activateSessions: boolean;
 
   onBack: () => void;
   onCancel: () => void;
   onGenerate: () => void;
+  onActivateSessionsChange: (activate: boolean) => void;
 }
 
 const dayNames: Record<number, string> = {
@@ -253,9 +255,11 @@ export function ScheduleReviewStep({
   manualDays = [],
   isGenerating,
   generateError,
+  activateSessions,
   onBack,
   onCancel,
   onGenerate,
+  onActivateSessionsChange,
 }: ScheduleReviewStepProps) {
   const calendarDays =
     calculateInclusiveDays(
@@ -673,6 +677,30 @@ export function ScheduleReviewStep({
         </div>
       ) : null}
 
+      <section className="mt-6 rounded-xl border bg-card p-5">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={activateSessions}
+            disabled={isGenerating}
+            onChange={(event) =>
+              onActivateSessionsChange(event.target.checked)
+            }
+            className="mt-1 size-4"
+          />
+          <span>
+            <span className="block font-semibold">
+              Create Sessions as active
+            </span>
+            <span className="mt-1 block text-sm leading-6 text-muted-foreground">
+              Active Sessions are immediately eligible for Event readiness and
+              public sale once the Event itself is active. Leave this unticked
+              if another staff member must review the Sessions first.
+            </span>
+          </span>
+        </label>
+      </section>
+
       <div className="mt-8 flex items-center justify-between border-t pt-6">
         <Button
           type="button"
@@ -690,7 +718,9 @@ export function ScheduleReviewStep({
         >
           {isGenerating
             ? "Generating..."
-            : "Generate Schedule"}
+            : activateSessions
+              ? "Generate and activate Sessions"
+              : "Generate Schedule as draft"}
         </Button>
       </div>
     </div>

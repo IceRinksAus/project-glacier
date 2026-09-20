@@ -226,6 +226,32 @@ describe('OperationalScheduleService', () => {
     expect(createManyCall.data).toHaveLength(4);
   });
 
+  it('should keep generated Sessions in draft by default', async () => {
+    await service.createAndGenerate('org-1', basePayload);
+
+    const createManyCall = tx.session.createMany.mock.calls[0][0];
+    expect(
+      createManyCall.data.every(
+        (session: { status: string }) => session.status === 'DRAFT',
+      ),
+    ).toBe(true);
+  });
+
+  it('should activate generated Sessions when explicitly selected', async () => {
+    const result = await service.createAndGenerate('org-1', {
+      ...basePayload,
+      activateSessions: true,
+    });
+
+    const createManyCall = tx.session.createMany.mock.calls[0][0];
+    expect(
+      createManyCall.data.every(
+        (session: { status: string }) => session.status === 'ACTIVE',
+      ),
+    ).toBe(true);
+    expect(result.generatedSessionStatus).toBe('ACTIVE');
+  });
+
   it('should not generate Session records for operational blocks', async () => {
     await service.createAndGenerate(
       'org-1',

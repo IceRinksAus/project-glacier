@@ -135,6 +135,20 @@ Victorian Event, using the profile and expected transaction totals in
 - **Correction:** Display an inline checklist of every incomplete field and
   keep the button state tied to the same validation result.
 
+### S42-F09 — Schedule creation cannot activate reviewed Sessions
+
+- **Severity:** High
+- **Where:** Final schedule review.
+- **Expected:** The organiser can explicitly choose whether the reviewed bulk
+  Session set is created as draft or active.
+- **Observed:** Every generated Session was forced into draft, requiring a
+  separate bulk activation step.
+- **Impact:** Avoidable setup work and a greater chance that an otherwise ready
+  Event remains unavailable because Sessions were not activated.
+- **Correction:** Add an explicit **Create Sessions as active** checkbox to the
+  final review. Keep draft as the safe default and show the selected outcome in
+  the primary action label. The server remains authoritative for the status.
+
 ## Immediate safety decision
 
 Continue the organiser walkthrough, but do not publish or rely on the incorrect

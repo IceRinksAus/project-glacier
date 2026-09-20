@@ -18,6 +18,7 @@ export interface CreateOperationalScheduleDto {
   pattern: string;
   startDate: string;
   endDate: string;
+  activateSessions?: boolean;
 
   timetable?: OperationalScheduleEntryDto[];
 

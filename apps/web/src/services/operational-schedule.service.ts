@@ -21,6 +21,7 @@ export interface CreateOperationalSchedulePayload {
   pattern: OperationalSchedulePattern;
   startDate: string;
   endDate: string;
+  activateSessions?: boolean;
 
   timetable?: OperationalScheduleEntry[];
 
@@ -47,6 +48,7 @@ export interface OperationalScheduleResponse {
   };
 
   generatedSessions: number;
+  generatedSessionStatus: "DRAFT" | "ACTIVE";
   operationalBlocks: number;
 }
 

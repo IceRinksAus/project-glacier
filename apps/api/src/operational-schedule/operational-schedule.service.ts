@@ -160,6 +160,7 @@ const {
         await tx.session.createMany({
           data: sessionData.map((session) => ({
             ...session,
+            status: data.activateSessions === true ? 'ACTIVE' : 'DRAFT',
             operationalScheduleId: schedule.id,
           })),
         });
@@ -168,6 +169,8 @@ const {
       return {
         schedule,
         generatedSessions: sessionData.length,
+        generatedSessionStatus:
+          data.activateSessions === true ? 'ACTIVE' : 'DRAFT',
         operationalBlocks,
       };
     });
