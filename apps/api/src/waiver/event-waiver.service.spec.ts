@@ -55,6 +55,7 @@ describe('EventWaiverService', () => {
   const event = {
     id: 'event-1',
     name: 'Bathurst Ice Rink',
+    status: 'ACTIVE',
     activityType: EventActivityType.ICE_SKATING,
     jurisdiction: AustralianJurisdiction.NSW,
     venueName: 'Bathurst Showground',
@@ -128,6 +129,7 @@ describe('EventWaiverService', () => {
       event: {
         id: event.id,
         name: event.name,
+        status: 'ACTIVE',
         activityType: EventActivityType.ICE_SKATING,
         jurisdiction: AustralianJurisdiction.NSW,
       },
@@ -224,6 +226,7 @@ describe('EventWaiverService', () => {
         eventId: event.id,
         event: {
           organizationId: 'organization-1',
+          status: 'ACTIVE',
         },
         versions: {
           some: {

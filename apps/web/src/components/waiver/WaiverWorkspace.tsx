@@ -102,7 +102,7 @@ export function WaiverWorkspace({
           (version) => version.status === "PUBLISHED",
         );
         setQrCode(
-          hasPublishedVersion
+          hasPublishedVersion && preparationResult.event.status === "ACTIVE"
             ? await waiverService.generatePublicQrCode(eventId)
             : null,
         );
@@ -137,7 +137,9 @@ export function WaiverWorkspace({
   const publishedVersion =
     waiver?.versions.find((version) => version.status === "PUBLISHED") ?? null;
   const publicUrl =
-    waiver && typeof window !== "undefined"
+    waiver &&
+    preparation?.event.status === "ACTIVE" &&
+    typeof window !== "undefined"
       ? `${window.location.origin}/waivers/${waiver.publicSlug}`
       : null;
   const requiredConfigurationComplete = Boolean(
@@ -512,6 +514,18 @@ export function WaiverWorkspace({
                 />
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {publishedVersion && preparation?.event.status !== "ACTIVE" ? (
+          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-semibold">
+              Waiver published; public access is waiting for Event activation
+            </p>
+            <p className="mt-1 leading-6 text-amber-900">
+              This Event is still a draft. Activate the Event from its Overview
+              readiness panel before sharing the public Waiver link or QR code.
+            </p>
           </div>
         ) : null}
       </section>

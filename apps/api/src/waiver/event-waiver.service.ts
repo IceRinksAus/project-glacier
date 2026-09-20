@@ -96,6 +96,7 @@ export class EventWaiverService {
       event: {
         id: event.id,
         name: event.name,
+        status: event.status,
         activityType: event.activityType,
         jurisdiction: event.jurisdiction,
       },
@@ -112,6 +113,7 @@ export class EventWaiverService {
         eventId,
         event: {
           organizationId,
+          status: 'ACTIVE',
         },
         versions: {
           some: {
@@ -126,7 +128,7 @@ export class EventWaiverService {
 
     if (!waiver) {
       throw new NotFoundException(
-        'A published Waiver was not found for this Event in your organization.',
+        'An active Event with a published Waiver was not found in your organization.',
       );
     }
 
@@ -493,6 +495,7 @@ export class EventWaiverService {
   }
 
   private defaultConfiguration(event: {
+    status: string;
     name: string;
     venueName: string | null;
     addressLine1: string | null;
@@ -559,6 +562,7 @@ export class EventWaiverService {
 
   private buildVariables(
     event: {
+      status: string;
       name: string;
       venueName: string | null;
       addressLine1: string | null;

@@ -23,6 +23,7 @@ The implementation does not assert that historical wording is current legal advi
 - Corrected the Event Waiver setup after organiser review: Glacier now automatically resolves the compatible approved activity/jurisdiction template, pre-fills promoter, location, address and Event dates, and exposes only those bounded Event-specific fields plus optional approved operational information. The legal template remains locked and version-controlled; an organiser cannot compose or silently change legal clauses from the Event screen.
 - Added explicit blocked states when Event classification, required values or an approved compatible template is missing. Generating a preview persists only the permitted configuration, renders a new immutable draft and leaves publication as a separate OWNER action.
 - Added an idempotent local-only fixture command for fictional NSW, VIC, WA and SA ice-skating templates. Each fixture is visibly labelled `LOCAL TEST ONLY`, refuses to run when `NODE_ENV=production`, contains no asserted legislation reference and exists solely so the complete Waiver workflow can be tested before real lawyer-approved wording is available.
+- Clarified the publication boundary after Bathurst acceptance testing: a published Waiver is publicly reachable only while its Event is active. Draft Events now show an explicit activation requirement instead of displaying a public link or QR code that cannot resolve, and authenticated QR generation enforces the same active-Event condition.
 
 ## Data and migration evidence
 

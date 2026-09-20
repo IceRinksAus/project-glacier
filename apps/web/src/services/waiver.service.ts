@@ -46,6 +46,7 @@ export interface EventWaiverPreparation {
   event: {
     id: string;
     name: string;
+    status: string;
     activityType: string | null;
     jurisdiction: string | null;
   };
