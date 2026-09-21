@@ -25,3 +25,21 @@ states, trustworthy multi-Event scope and matching exports.
 
 No reporting totals, commerce records or Event assignments are mutated by this
 slice.
+
+## Slice 2 — Three-state Reports navigation
+
+- Reports home now contains the Organisation headline, grouped report library
+  and Event Group administration without also rendering an active result.
+- Selecting an available report opens a dedicated setup state with report,
+  Event checklist, Group shortcuts and date control.
+- Generating the report replaces setup with a focused result state, applied
+  scope summary, print action and **Change report settings** return action.
+- Returning to setup retains the selected report, Events and date in the
+  current workspace.
+- An active report no longer leaves the home catalogue, Event snapshot selector
+  or Event Group administration underneath it.
+- Added a clear **Back to all reports** action at the organisation level.
+
+Focused web coverage proves the home/setup separation, multi-Event result
+generation and settings return path. URL persistence of the complete selection
+and date-range controls remains Slice 3 scope.

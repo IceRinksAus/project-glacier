@@ -173,37 +173,37 @@ function ReportsPageContent() {
   return (
     <PlatformShell>
       <div className="space-y-8">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end print:hidden">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Performance and operations</p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">Reports</h1>
             <p className="mt-2 max-w-3xl text-muted-foreground">Start with the headline position, then open a focused report for the detail behind each figure.</p>
           </div>
-          <label className="w-full text-sm font-medium lg:w-80">
+          {!activePortfolioReport ? <label className="w-full text-sm font-medium lg:w-80">
             Event for detailed reports
             <select aria-label="Event for detailed reports" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal">
               {events.length === 0 ? <option value="">No authorised Events</option> : null}
               {events.map((event) => <option key={event.id} value={event.id}>{event.name}</option>)}
             </select>
-          </label>
+          </label> : <Link href="/reports" className="inline-flex h-10 items-center justify-center rounded-lg border bg-background px-4 text-sm font-semibold">← Back to all reports</Link>}
         </div>
 
         {isLoading ? <StateCard>Loading trusted reporting data...</StateCard> : null}
         {error ? <StateCard error>{error}</StateCard> : null}
-        {!isLoading && summary ? <ReportingOverview summary={summary} selectedEventId={selectedEventId} /> : null}
+        {!isLoading && summary && !activePortfolioReport ? <ReportingOverview summary={summary} selectedEventId={selectedEventId} /> : null}
 
         {!isLoading && activePortfolioReport ? <PortfolioReportsWorkspace events={events} groups={groups} initialView={activePortfolioReport} initialScope={initialPortfolioScope} /> : null}
 
-        <section aria-labelledby="report-library-heading" className="space-y-7">
+        {!activePortfolioReport ? <section aria-labelledby="report-library-heading" className="space-y-7">
           <div>
             <p className="text-sm font-semibold text-primary">Report library</p>
             <h2 id="report-library-heading" className="mt-1 text-2xl font-semibold">Choose the question you want to answer</h2>
             <p className="mt-1 text-sm text-muted-foreground">Available reports open in the organisational workspace. Coming-soon reports stay visible so the reporting roadmap is clear.</p>
           </div>
           {reportCategories.map((category) => <ReportCategory key={category.title} category={category} selectedEventId={selectedEventId} />)}
-        </section>
+        </section> : null}
 
-        <section id="event-groups" className="space-y-5 scroll-mt-6 border-t pt-8 print:hidden">
+        {!activePortfolioReport ? <section id="event-groups" className="space-y-5 scroll-mt-6 border-t pt-8 print:hidden">
           <div><p className="text-sm font-semibold text-primary">Report configuration</p><h2 className="mt-1 text-2xl font-semibold">Event Groups</h2><p className="mt-1 text-sm text-muted-foreground">Build seasons, tours or campaigns for trusted Event comparison.</p></div>
         {role === "OWNER" ? <div className="rounded-xl border bg-card p-6 shadow-sm">
           <h3 className="text-lg font-semibold">Create Event Group</h3>
@@ -217,7 +217,7 @@ function ReportsPageContent() {
 
         {!isLoading && groups.length === 0 ? <StateCard>No Event Groups yet. Create a Season, Tour, Promoter or Campaign to compare Events.</StateCard> : null}
         <div className="grid gap-5">{groups.map((group) => <GroupCard key={group.id} group={group} allEvents={events} canEdit={role === "OWNER"} onSaved={reload} />)}</div>
-        </section>
+        </section> : null}
       </div>
     </PlatformShell>
   );

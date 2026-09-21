@@ -29,6 +29,9 @@ describe("PortfolioReportsWorkspace", () => {
   it("shows multiple Events in one organisational report", async () => {
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
     expect(await screen.findByRole("heading", { name: "Sales Summary" })).toBeVisible();
+    expect(screen.getByText("Report setup")).toBeVisible();
+    await userEvent.click(screen.getByRole("button", { name: "Generate report" }));
+    expect(await screen.findByText("Report result")).toBeVisible();
     expect(screen.getAllByText("Melbourne")[0]).toBeVisible();
     expect(screen.getAllByText("Sydney")[0]).toBeVisible();
     expect(screen.getByText("$230.00")).toBeVisible();
@@ -38,19 +41,28 @@ describe("PortfolioReportsWorkspace", () => {
   it("selects any combination of authorised Events", async () => {
     const user = userEvent.setup();
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
-    await screen.findByText("Melbourne");
     await user.click(screen.getByRole("checkbox", { name: /Sydney/ }));
-    await user.click(screen.getByRole("button", { name: "Apply selection" }));
+    await user.click(screen.getByRole("button", { name: "Generate report" }));
     await waitFor(() => expect(getPortfolioReport).toHaveBeenLastCalledWith("overview", "SELECTED", undefined, undefined, ["event-1"]));
   });
 
   it("uses an Event Group as a quick checklist selection", async () => {
     const user = userEvent.setup();
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
-    await screen.findByText("Melbourne");
     await user.click(screen.getByRole("button", { name: "Clear" }));
     await user.click(screen.getByRole("button", { name: "Winter Season" }));
     expect(screen.getByRole("checkbox", { name: /Melbourne/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Sydney/ })).not.toBeChecked();
+  });
+
+  it("returns from a result to the same report settings", async () => {
+    const user = userEvent.setup();
+    render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
+    await user.click(screen.getByRole("checkbox", { name: /Sydney/ }));
+    await user.click(screen.getByRole("button", { name: "Generate report" }));
+    expect(await screen.findByText("Report result")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Change report settings" }));
+    expect(screen.getByText("Report setup")).toBeVisible();
     expect(screen.getByRole("checkbox", { name: /Sydney/ })).not.toBeChecked();
   });
 });

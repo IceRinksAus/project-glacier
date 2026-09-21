@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import ReportsPage from "./page";
 
-const { getAll, create, update, replaceEvents, getEvents, getOrganizationSummary, getEventGroupComparison, downloadEventGroupComparisonCsv } = vi.hoisted(() => ({
-  getAll: vi.fn(), create: vi.fn(), update: vi.fn(), replaceEvents: vi.fn(), getEvents: vi.fn(), getOrganizationSummary: vi.fn(), getEventGroupComparison: vi.fn(), downloadEventGroupComparisonCsv: vi.fn(),
+const { getAll, create, update, replaceEvents, getEvents, getOrganizationSummary, getEventGroupComparison, downloadEventGroupComparisonCsv, routeSearch } = vi.hoisted(() => ({
+  getAll: vi.fn(), create: vi.fn(), update: vi.fn(), replaceEvents: vi.fn(), getEvents: vi.fn(), getOrganizationSummary: vi.fn(), getEventGroupComparison: vi.fn(), downloadEventGroupComparisonCsv: vi.fn(), routeSearch: { value: "" },
 }));
 
 vi.mock("@/services/event-group.service", () => ({ eventGroupService: { getAll, create, update, replaceEvents } }));
@@ -13,7 +13,7 @@ vi.mock("@/services/event.service", () => ({ eventService: { getEvents } }));
 vi.mock("@/services/reporting.service", () => ({ reportingService: { getOrganizationSummary, getEventGroupComparison, downloadEventGroupComparisonCsv } }));
 vi.mock("@/lib/auth", () => ({ subscribeAuthSession: () => () => undefined, getAuthRoleSnapshot: () => "OWNER", getServerAuthRoleSnapshot: () => "OWNER" }));
 vi.mock("@/components/layout/PlatformShell", () => ({ PlatformShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(routeSearch.value) }));
 
 const events = [
   { id: "event-1", name: "Melbourne", startDate: "2027-06-01T00:00:00.000Z" },
@@ -33,6 +33,7 @@ const organizationSummary = {
 
 describe("ReportsPage Event Groups", () => {
   beforeEach(() => {
+    routeSearch.value = "";
     getAll.mockReset().mockResolvedValue([group]);
     getEvents.mockReset().mockResolvedValue(events);
     getOrganizationSummary.mockReset().mockResolvedValue(organizationSummary);
@@ -81,6 +82,17 @@ describe("ReportsPage Event Groups", () => {
     await user.click(await screen.findByRole("button", { name: "Move Sydney earlier" }));
     await user.click(screen.getByRole("button", { name: "Save membership" }));
     await waitFor(() => expect(replaceEvents).toHaveBeenCalledWith("group-1", ["event-2", "event-1"]));
+  }, 15000);
+
+  it("shows report setup without the home catalogue or group administration", async () => {
+    routeSearch.value = "report=OVERVIEW&scope=ALL";
+    render(<ReportsPage />);
+
+    expect(await screen.findByText("Report setup")).toBeVisible();
+    expect(screen.getByRole("link", { name: /Back to all reports/ })).toHaveAttribute("href", "/reports");
+    expect(screen.queryByRole("heading", { name: "Headline performance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Choose the question you want to answer" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Event Groups" })).not.toBeInTheDocument();
   }, 15000);
 
   it("shows Group totals alongside normalised Event comparison measures", async () => {

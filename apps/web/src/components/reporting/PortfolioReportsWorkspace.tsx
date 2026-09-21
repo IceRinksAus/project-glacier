@@ -54,7 +54,8 @@ export function PortfolioReportsWorkspace({
   const [selectedEventIds, setSelectedEventIds] = useState(initialEventIds);
   const [date, setDate] = useState("");
   const [report, setReport] = useState<PortfolioReport | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [stage, setStage] = useState<"SETUP" | "RESULT">("SETUP");
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const authorisedEventIds = new Set(events.map(({ id }) => id));
   const accessibleGroups = groups.filter(
@@ -67,6 +68,7 @@ export function PortfolioReportsWorkspace({
     if (nextSelection.length === 0) { setReport(null); setError("Select at least one Event."); return; }
     const allSelected = nextSelection.length === events.length && events.every(({ id }) => nextSelection.includes(id));
     setIsLoading(true);
+    setStage("RESULT");
     setError("");
     reportingService.getPortfolioReport(reportPaths[nextView], allSelected ? "ALL" : "SELECTED", undefined, nextDate || undefined, allSelected ? undefined : nextSelection)
       .then(setReport)
@@ -74,28 +76,45 @@ export function PortfolioReportsWorkspace({
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(() => { const selection = selectionFromScope(initialScope, events, groups); setSelectedEventIds(selection); load(initialView, selection, ""); }, [initialView, initialScope]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    setView(initialView);
+    setSelectedEventIds(selectionFromScope(initialScope, events, groups));
+    setDate("");
+    setReport(null);
+    setError("");
+    setStage("SETUP");
+  }, [initialView, initialScope, events, groups]);
 
-  function changeView(next: PortfolioReportView) { setView(next); load(next); }
+  function changeView(next: PortfolioReportView) { setView(next); setReport(null); setError(""); }
   function toggleEvent(eventId: string) { setSelectedEventIds((current) => current.includes(eventId) ? current.filter((id) => id !== eventId) : [...current, eventId]); }
   function choose(selection: string[]) { setSelectedEventIds(selection); }
 
-  return <section className="space-y-6" aria-labelledby="organisational-report-heading">
+  if (stage === "RESULT") return <section className="space-y-6" aria-labelledby="organisational-report-heading">
     <div className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
-      <p className="text-sm font-semibold text-primary">Organisational reporting workspace</p>
+      <p className="text-sm font-semibold text-primary">Report result</p>
       <h2 id="organisational-report-heading" className="mt-1 text-2xl font-semibold">{reportLabel(view)}</h2>
-      <p className="mt-2 text-sm text-muted-foreground">Compare authorised Events without leaving Reports. Each Event retains its own timezone and authoritative records.</p>
-      <div className="mt-5 grid gap-4 md:grid-cols-2 print:hidden">
-        <label className="text-sm font-medium">Report<select aria-label="Organisational report" value={view} onChange={(event) => changeView(event.target.value as PortfolioReportView)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Sales Summary</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="DATES">Sales by Event Date</option><option value="PRODUCTS">Product and Add-on Performance</option><option value="SALES_PACE">Booking Pace</option></select></label>
-        <label className="text-sm font-medium">Event-local date<input aria-label="Portfolio Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal" /></label>
-      </div>
-      <fieldset className="mt-5 rounded-lg border p-4 print:hidden"><legend className="px-1 text-sm font-medium">Reporting scope</legend><p className="text-xs text-muted-foreground">Select one or more Events to include.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => choose(events.map(({ id }) => id))}>All Events</Button><Button type="button" size="sm" variant="outline" onClick={() => choose([])}>Clear</Button>{accessibleGroups.map((group) => <Button key={group.id} type="button" size="sm" variant="outline" onClick={() => choose(group.events.map(({ event }) => event.id))}>{group.name}</Button>)}</div><div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{events.map((event) => <label key={event.id} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background p-3 text-sm"><input type="checkbox" checked={selectedEventIds.includes(event.id)} onChange={() => toggleEvent(event.id)} className="mt-0.5 h-4 w-4" /><span><span className="font-medium">{event.name}</span><span className="block text-xs text-muted-foreground">{event.timezone}</span></span></label>)}</div></fieldset>
-      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button onClick={() => load()}>Apply selection</Button><Button variant="outline" onClick={() => { setDate(""); load(view, selectedEventIds, ""); }}>Clear date</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
+      <p className="mt-2 text-sm text-muted-foreground">Authoritative operational results for the applied Event selection. Each Event retains its own timezone.</p>
       {report ? <p className="mt-4 text-xs text-muted-foreground">Scope: {report.scope.name} · {report.reports.length} Event{report.reports.length === 1 ? "" : "s"}{report.filter.date ? ` · ${report.filter.date} in each Event timezone` : ""}</p> : null}
+      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button variant="outline" onClick={() => setStage("SETUP")}>Change report settings</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
     </div>
     {isLoading ? <StateCard>Loading organisational report...</StateCard> : null}
     {error ? <StateCard error>{error}</StateCard> : null}
     {!isLoading && report ? <PortfolioTable report={report} view={view} /> : null}
+  </section>;
+
+  return <section className="space-y-6" aria-labelledby="organisational-report-heading">
+    <div className="rounded-xl border bg-card p-6 shadow-sm">
+      <p className="text-sm font-semibold text-primary">Report setup</p>
+      <h2 id="organisational-report-heading" className="mt-1 text-2xl font-semibold">{reportLabel(view)}</h2>
+      <p className="mt-2 text-sm text-muted-foreground">Choose the authorised Events and optional Event-local date to include before generating the result.</p>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <label className="text-sm font-medium">Report<select aria-label="Organisational report" value={view} onChange={(event) => changeView(event.target.value as PortfolioReportView)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal"><option value="OVERVIEW">Sales Summary</option><option value="TICKET_TYPES">Sales by Ticket Type</option><option value="SESSIONS">Sales by Session</option><option value="DATES">Sales by Event Date</option><option value="PRODUCTS">Product and Add-on Performance</option><option value="SALES_PACE">Booking Pace</option></select></label>
+        <label className="text-sm font-medium">Event-local date<input aria-label="Portfolio Event-local date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="mt-2 h-11 w-full rounded-lg border bg-background px-3 font-normal" /></label>
+      </div>
+      <fieldset className="mt-5 rounded-lg border p-4"><legend className="px-1 text-sm font-medium">Reporting scope</legend><p className="text-xs text-muted-foreground">Select one or more Events to include.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" size="sm" variant="outline" onClick={() => choose(events.map(({ id }) => id))}>All Events</Button><Button type="button" size="sm" variant="outline" onClick={() => choose([])}>Clear</Button>{accessibleGroups.map((group) => <Button key={group.id} type="button" size="sm" variant="outline" onClick={() => choose(group.events.map(({ event }) => event.id))}>{group.name}</Button>)}</div><div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{events.map((event) => <label key={event.id} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-background p-3 text-sm"><input type="checkbox" checked={selectedEventIds.includes(event.id)} onChange={() => toggleEvent(event.id)} className="mt-0.5 h-4 w-4" /><span><span className="font-medium">{event.name}</span><span className="block text-xs text-muted-foreground">{event.timezone}</span></span></label>)}</div></fieldset>
+      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+      <div className="mt-5 flex flex-wrap gap-3"><Button onClick={() => load()} disabled={selectedEventIds.length === 0}>Generate report</Button><Button variant="outline" onClick={() => setDate("")}>Clear date</Button></div>
+    </div>
   </section>;
 }
 
