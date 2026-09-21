@@ -133,6 +133,19 @@ describe('ReportingService', () => {
     expect(prisma.event.findMany).not.toHaveBeenCalled();
   });
 
+  it('rejects incomplete, reversed and oversized portfolio date ranges', async () => {
+    const access = {
+      userId: 'user-1', organizationId: 'org-1', role: 'OWNER' as const, accessScope: 'ALL_EVENTS' as const,
+    };
+    await expect(service.getPortfolioReport(access, 'overview', { scope: 'ALL', from: '2027-01-01' }))
+      .rejects.toEqual(new BadRequestException('Both from and to dates are required.'));
+    await expect(service.getPortfolioReport(access, 'overview', { scope: 'ALL', from: '2027-02-01', to: '2027-01-01' }))
+      .rejects.toEqual(new BadRequestException('From date must be on or before to date.'));
+    await expect(service.getPortfolioReport(access, 'overview', { scope: 'ALL', from: '2027-01-01', to: '2028-01-02' }))
+      .rejects.toEqual(new BadRequestException('Date range cannot exceed 366 days.'));
+    expect(prisma.event.findMany).not.toHaveBeenCalled();
+  });
+
   it('builds a portfolio report only from Events in the authenticated access scope', async () => {
     prisma.event.findMany.mockResolvedValue([
       { id: 'event-1', name: 'Melbourne', timezone: 'Australia/Melbourne' },

@@ -103,11 +103,17 @@ function ReportsPageContent() {
   const activePortfolioReport = parsePortfolioReportView(searchParams.get("report"));
   const requestedScope = searchParams.get("scope");
   const requestedScopeId = searchParams.get("scopeId");
+  const requestedEventIds = searchParams.get("eventIds");
   const initialPortfolioScope = requestedScope === "GROUP" && requestedScopeId
     ? `GROUP:${requestedScopeId}`
     : requestedScope === "EVENT" && requestedScopeId
       ? `EVENT:${requestedScopeId}`
+      : requestedScope === "SELECTED" && requestedEventIds
+        ? `SELECTED:${requestedEventIds}`
       : "ALL";
+  const initialFrom = searchParams.get("from") ?? "";
+  const initialTo = searchParams.get("to") ?? "";
+  const initialStage = searchParams.get("stage") === "result" ? "RESULT" as const : "SETUP" as const;
   const role = useSyncExternalStore(subscribeAuthSession, getAuthRoleSnapshot, getServerAuthRoleSnapshot);
   const [groups, setGroups] = useState<EventGroup[]>([]);
   const [events, setEvents] = useState<GlacierEvent[]>([]);
@@ -192,7 +198,7 @@ function ReportsPageContent() {
         {error ? <StateCard error>{error}</StateCard> : null}
         {!isLoading && summary && !activePortfolioReport ? <ReportingOverview summary={summary} selectedEventId={selectedEventId} /> : null}
 
-        {!isLoading && activePortfolioReport ? <PortfolioReportsWorkspace events={events} groups={groups} initialView={activePortfolioReport} initialScope={initialPortfolioScope} /> : null}
+        {!isLoading && activePortfolioReport ? <PortfolioReportsWorkspace events={events} groups={groups} initialView={activePortfolioReport} initialScope={initialPortfolioScope} initialFrom={initialFrom} initialTo={initialTo} initialStage={initialStage} /> : null}
 
         {!activePortfolioReport ? <section aria-labelledby="report-library-heading" className="space-y-7">
           <div>

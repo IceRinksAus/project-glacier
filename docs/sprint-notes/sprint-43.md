@@ -43,3 +43,20 @@ slice.
 Focused web coverage proves the home/setup separation, multi-Event result
 generation and settings return path. URL persistence of the complete selection
 and date-range controls remains Slice 3 scope.
+
+## Slice 3 — Durable scope and Event-local date ranges
+
+- Replaced the single-day portfolio control with an optional inclusive
+  **From / To** range evaluated independently in each Event's timezone.
+- Date ranges fail closed when incomplete, reversed or longer than 366 days;
+  exact-day and range filters cannot be mixed at the API boundary.
+- Added Event-name search without changing the selected checklist, plus a
+  visible selected-Event count and the existing authorised Group shortcuts.
+- Report, selected Event IDs, date range and setup/result state are now kept in
+  the URL. Refreshing or revisiting a result therefore retains its intended
+  scope rather than silently returning to all Events.
+- Event and Group access boundaries remain unchanged. Explicit Event lists are
+  still checked all-or-nothing against the signed-in user's assignments.
+
+Focused API and web coverage proves bounded ranges, Event search, URL state and
+restoration of an explicit multi-Event selection.

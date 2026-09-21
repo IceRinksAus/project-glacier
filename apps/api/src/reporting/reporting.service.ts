@@ -39,6 +39,7 @@ export class ReportingService {
     if (query.scope !== 'ALL' && query.scope !== 'SELECTED' && !query.scopeId) {
       throw new BadRequestException('A scope ID is required.');
     }
+    this.assertDateFilters(query);
 
     let scopedIds: string[] | undefined;
     let scopeName = 'All authorised Events';
@@ -86,7 +87,7 @@ export class ReportingService {
     }
     if (query.scope === 'EVENT') scopeName = events[0].name;
 
-    const filters = { date: query.date };
+    const filters = { date: query.date, from: query.from, to: query.to };
     const reports = await Promise.all(
       events.map(async (event) => {
         const report =
@@ -109,7 +110,7 @@ export class ReportingService {
       generatedAt: new Date(),
       reportType,
       scope: { type: query.scope, id: query.scopeId ?? null, name: scopeName },
-      filter: { date: query.date ?? null },
+      filter: { date: query.date ?? null, from: query.from ?? null, to: query.to ?? null },
       reports,
     };
   }
@@ -321,9 +322,12 @@ export class ReportingService {
     if (!event) throw new NotFoundException('Event not found.');
 
     const timezone = event.timezone || 'Australia/Melbourne';
+    this.assertDateFilters(query);
     const dateWindow = query.date
       ? this.eventDateWindow(query.date, timezone)
-      : null;
+      : query.from && query.to
+        ? this.eventDateRangeWindow(query.from, query.to, timezone)
+        : null;
 
     const sessions = await this.prisma.session.findMany({
       where: {
@@ -494,6 +498,8 @@ export class ReportingService {
       event: { ...event, timezone },
       filter: {
         date: query.date ?? null,
+        from: query.from ?? null,
+        to: query.to ?? null,
         sessionId: query.sessionId ?? null,
         startsAt: dateWindow?.start ?? event.startDate,
         endsAt: dateWindow?.end ?? event.endDate,
@@ -1874,9 +1880,12 @@ export class ReportingService {
     });
     if (!event) throw new NotFoundException('Event not found.');
     const timezone = event.timezone || 'Australia/Melbourne';
+    this.assertDateFilters(query);
     const dateWindow = query.date
       ? this.eventDateWindow(query.date, timezone)
-      : null;
+      : query.from && query.to
+        ? this.eventDateRangeWindow(query.from, query.to, timezone)
+        : null;
     const sessions = await this.prisma.session.findMany({
       where: {
         eventId,
@@ -1918,6 +1927,28 @@ export class ReportingService {
       start: fromZonedTime(`${date}T00:00:00`, timezone),
       end: fromZonedTime(`${nextDate}T00:00:00`, timezone),
     };
+  }
+
+  private eventDateRangeWindow(from: string, to: string, timezone: string) {
+    return {
+      start: this.eventDateWindow(from, timezone).start,
+      end: this.eventDateWindow(to, timezone).end,
+    };
+  }
+
+  private assertDateFilters(query: Pick<EventReportQueryDto, 'date' | 'from' | 'to'>) {
+    if (query.date && (query.from || query.to)) {
+      throw new BadRequestException('Use either date or from/to filters, not both.');
+    }
+    if (!!query.from !== !!query.to) {
+      throw new BadRequestException('Both from and to dates are required.');
+    }
+    if (!query.from || !query.to) return;
+    this.eventDateWindow(query.from, 'UTC');
+    this.eventDateWindow(query.to, 'UTC');
+    const days = this.calendarDayDifference(query.from, query.to);
+    if (days < 0) throw new BadRequestException('From date must be on or before to date.');
+    if (days > 365) throw new BadRequestException('Date range cannot exceed 366 days.');
   }
 
   private calendarDayDifference(fromDate: string, toDate: string) {

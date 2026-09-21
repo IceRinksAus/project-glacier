@@ -58,6 +58,8 @@ export interface EventReport {
   };
   filter: {
     date: string | null;
+    from: string | null;
+    to: string | null;
     sessionId: string | null;
     startsAt: string;
     endsAt: string;
@@ -338,7 +340,7 @@ export interface PortfolioReport {
   generatedAt: string;
   reportType: string;
   scope: { type: "ALL" | "GROUP" | "EVENT" | "SELECTED"; id: string | null; name: string };
-  filter: { date: string | null };
+  filter: { date: string | null; from: string | null; to: string | null };
   reports: Array<{
     event: { id: string; name: string; timezone: string };
     report: PortfolioReportData;
@@ -372,12 +374,14 @@ export const reportingService = {
     reportType: string,
     scope: "ALL" | "GROUP" | "EVENT" | "SELECTED",
     scopeId?: string,
-    date?: string,
+    from?: string,
+    to?: string,
     eventIds?: string[],
   ) => {
     const query = new URLSearchParams({ scope });
     if (scopeId) query.set("scopeId", scopeId);
-    if (date) query.set("date", date);
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
     if (eventIds?.length) query.set("eventIds", eventIds.join(","));
     return api.get<PortfolioReport>(
       `/reporting/portfolio/${reportType}?${query.toString()}`,
