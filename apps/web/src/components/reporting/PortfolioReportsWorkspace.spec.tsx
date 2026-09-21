@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PortfolioReportsWorkspace } from "./PortfolioReportsWorkspace";
 
-const { getPortfolioReport } = vi.hoisted(() => ({ getPortfolioReport: vi.fn() }));
+const { getPortfolioReport, downloadPortfolioCsv } = vi.hoisted(() => ({ getPortfolioReport: vi.fn(), downloadPortfolioCsv: vi.fn() }));
 vi.mock("@/services/reporting.service", async (importOriginal) => {
   const original = await importOriginal<typeof import("@/services/reporting.service")>();
-  return { ...original, reportingService: { ...original.reportingService, getPortfolioReport } };
+  return { ...original, reportingService: { ...original.reportingService, getPortfolioReport, downloadPortfolioCsv } };
 });
 
 const events = [
@@ -24,7 +24,7 @@ const response = {
 };
 
 describe("PortfolioReportsWorkspace", () => {
-  beforeEach(() => { getPortfolioReport.mockReset().mockResolvedValue(response); window.print = vi.fn(); });
+  beforeEach(() => { getPortfolioReport.mockReset().mockResolvedValue(response); downloadPortfolioCsv.mockReset().mockResolvedValue({ blob: new Blob(["report"]), filename: "sales.csv" }); window.print = vi.fn(); URL.createObjectURL = vi.fn(() => "blob:report"); URL.revokeObjectURL = vi.fn(); });
 
   it("shows multiple Events in one organisational report", async () => {
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
@@ -93,5 +93,16 @@ describe("PortfolioReportsWorkspace", () => {
     expect(await screen.findByText("Average booking")).toBeVisible();
     expect(screen.getByText("Successful operational collections less successful refunds. This is not processor settlement, payout, accounting, profit or tax evidence.")).toBeVisible();
     expect(screen.getByText(/AUD · Generated/)).toBeVisible();
+  });
+
+  it("exports the exact visible Event selection and date range", async () => {
+    const user = userEvent.setup();
+    render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
+    await user.click(screen.getByRole("checkbox", { name: /Sydney/ }));
+    await user.type(screen.getByLabelText("Portfolio from date"), "2027-06-01");
+    await user.type(screen.getByLabelText("Portfolio to date"), "2027-06-30");
+    await user.click(screen.getByRole("button", { name: "Generate report" }));
+    await user.click(await screen.findByRole("button", { name: "Download CSV" }));
+    expect(downloadPortfolioCsv).toHaveBeenCalledWith("overview", "SELECTED", "2027-06-01", "2027-06-30", ["event-1"]);
   });
 });

@@ -183,6 +183,25 @@ describe('ReportingService', () => {
     ]);
   });
 
+  it('exports formula-safe portfolio CSV from the same authorised report result', async () => {
+    jest.spyOn(service, 'getPortfolioReport').mockResolvedValue({
+      generatedAt: new Date('2027-01-01T00:00:00.000Z'),
+      reportType: 'overview',
+      scope: { type: 'SELECTED', id: null, name: '=Unsafe scope' },
+      filter: { date: null, from: '2027-06-01', to: '2027-06-30' },
+      reports: [{
+        event: { id: 'event-1', name: '+Unsafe Event', timezone: 'Australia/Melbourne' },
+        report: { commercial: { confirmedBookings: 1, grossCollected: 20, refunded: 0, netCollected: 20 }, tickets: { issued: 1, admissions: 0, attendanceRate: 0 } },
+      }],
+    } as never);
+    const file = await service.getPortfolioCsv({ userId: 'user-1', organizationId: 'org-1', role: 'OWNER', accessScope: 'ALL_EVENTS' }, 'overview', { scope: 'SELECTED', eventIds: 'event-1', from: '2027-06-01', to: '2027-06-30' });
+    const csv = file.content.toString('utf8');
+    expect(csv).toContain("'=Unsafe scope");
+    expect(csv).toContain("'+Unsafe Event");
+    expect(csv).toContain('2027-06-01');
+    expect(file.filename).toMatch(/portfolio-overview-\d{4}-\d{2}-\d{2}\.csv$/);
+  });
+
   it('reports Ticket Type gross, allocated refund and net sales separately', async () => {
     prisma.ticketType.findMany.mockResolvedValue([
       { id: 'adult', name: 'Adult', active: true },

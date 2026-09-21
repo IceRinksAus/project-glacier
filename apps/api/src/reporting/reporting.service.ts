@@ -115,6 +115,47 @@ export class ReportingService {
     };
   }
 
+  async getPortfolioCsv(
+    access: AuthenticatedAccessContext,
+    reportType: string,
+    query: PortfolioReportQueryDto,
+  ) {
+    const portfolio = await this.getPortfolioReport(access, reportType, query);
+    const commonHeaders = ['Generated at', 'Scope', 'Event', 'Event timezone', 'From', 'To'];
+    const common = (event: { name: string; timezone: string | null }) => [
+      portfolio.generatedAt.toISOString(), portfolio.scope.name, event.name, event.timezone ?? 'Australia/Melbourne',
+      portfolio.filter.from ?? '', portfolio.filter.to ?? '',
+    ];
+    let headers: string[];
+    let rows: unknown[][];
+    if (reportType === 'overview') {
+      headers = [...commonHeaders, 'Confirmed bookings', 'Gross collected AUD', 'Refunded AUD', 'Net collected AUD', 'Tickets issued', 'Admissions', 'Attendance percent'];
+      rows = portfolio.reports.map(({ event, report }) => {
+        const data = report as Awaited<ReturnType<ReportingService['getEventReport']>>;
+        return [...common(event), data.commercial.confirmedBookings, data.commercial.grossCollected, data.commercial.refunded, data.commercial.netCollected, data.tickets.issued, data.tickets.admissions, data.tickets.attendanceRate];
+      });
+    } else if (reportType === 'ticket-types') {
+      headers = [...commonHeaders, 'Ticket Type', 'Units', 'Gross Ticket sales AUD', 'Allocated refunds AUD', 'Net Ticket sales AUD', 'Admissions'];
+      rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getTicketTypeSales']>>).rows.map((row) => [...common(event), row.name, row.unitsSold, row.grossItemSales, row.allocatedTicketRefunds, row.netTicketSales, row.admissions]));
+    } else if (reportType === 'sessions') {
+      headers = [...commonHeaders, 'Session', 'Start', 'Ticket units', 'Net collected AUD', 'Reserved attendance', 'Capacity', 'Remaining capacity', 'Utilisation percent', 'Admissions'];
+      rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getSessionSales']>>).rows.map((row) => [...common(event), row.name, row.startDate.toISOString(), row.ticketUnits, row.netCollected, row.reservedAttendance, row.capacity, row.remainingCapacity, row.utilisationPercent, row.admissions]));
+    } else if (reportType === 'products') {
+      headers = [...commonHeaders, 'Product', 'Units', 'Gross Product sales AUD', 'Bookings', 'Attach rate percent', 'Inventory tracked', 'Inventory remaining'];
+      rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getProductSales']>>).rows.map((row) => [...common(event), row.name, row.unitsSold, row.grossItemSales, row.bookingCount, row.attachRatePercent, row.inventory.tracked, row.inventory.remaining ?? 'Not tracked']));
+    } else if (reportType === 'dates') {
+      headers = [...commonHeaders, 'Event-local date', 'Sessions', 'Ticket units', 'Net collected AUD', 'Reserved attendance', 'Capacity', 'Utilisation percent', 'Admissions'];
+      rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getDateSales']>>).rows.map((row) => [...common(event), row.date, row.sessionCount, row.ticketUnits, row.netCollected, row.reservedAttendance, row.capacity, row.utilisationPercent, row.admissions]));
+    } else {
+      headers = [...commonHeaders, 'Lead-time bucket', 'Confirmed bookings', 'Ticket units', 'Gross Booking value AUD', 'Cumulative bookings', 'Cumulative Ticket units'];
+      rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getSalesPace']>>).rows.map((row) => [...common(event), row.label, row.confirmedBookings, row.ticketUnits, row.grossBookingValue, row.cumulativeBookings, row.cumulativeTicketUnits]));
+    }
+    return {
+      filename: this.csvFilename(portfolio.scope.name, `portfolio-${reportType}`),
+      content: this.csvBuffer(headers, rows.length ? rows : [[portfolio.generatedAt.toISOString(), portfolio.scope.name, ...Array(headers.length - 2).fill('')]]),
+    };
+  }
+
   async getOrganizationSummary(
     access: AuthenticatedAccessContext,
     now: Date = new Date(),

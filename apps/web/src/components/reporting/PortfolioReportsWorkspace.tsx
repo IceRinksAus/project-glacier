@@ -64,6 +64,7 @@ export function PortfolioReportsWorkspace({
   const [report, setReport] = useState<PortfolioReport | null>(null);
   const [stage, setStage] = useState<"SETUP" | "RESULT">(initialStage);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState("");
   const authorisedEventIds = new Set(events.map(({ id }) => id));
   const accessibleGroups = groups.filter(
@@ -121,13 +122,27 @@ export function PortfolioReportsWorkspace({
   function toggleEvent(eventId: string) { setSelectedEventIds((current) => current.includes(eventId) ? current.filter((id) => id !== eventId) : [...current, eventId]); }
   function choose(selection: string[]) { setSelectedEventIds(selection); }
 
+  async function exportCsv() {
+    const allSelected = selectedEventIds.length === events.length && events.every(({ id }) => selectedEventIds.includes(id));
+    setIsExporting(true);
+    setError("");
+    try {
+      const file = await reportingService.downloadPortfolioCsv(reportPaths[view], allSelected ? "ALL" : "SELECTED", from || undefined, to || undefined, allSelected ? undefined : selectedEventIds);
+      downloadFile(file.blob, file.filename);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Unable to export this organisational report.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   if (stage === "RESULT") return <section className="space-y-6" aria-labelledby="organisational-report-heading">
     <div className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
       <p className="text-sm font-semibold text-primary">Report result</p>
       <h2 id="organisational-report-heading" className="mt-1 text-2xl font-semibold">{reportLabel(view)}</h2>
       <p className="mt-2 text-sm text-muted-foreground">Authoritative operational results for the applied Event selection. Each Event retains its own timezone.</p>
       {report ? <p className="mt-4 text-xs text-muted-foreground">Scope: {report.scope.name} · {report.reports.length} Event{report.reports.length === 1 ? "" : "s"}{report.filter.from && report.filter.to ? ` · ${report.filter.from} to ${report.filter.to} in each Event timezone` : ""} · AUD · Generated {new Date(report.generatedAt).toLocaleString("en-AU")}</p> : null}
-      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button variant="outline" onClick={() => { setStage("SETUP"); syncUrl("SETUP"); }}>Change report settings</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
+      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button variant="outline" onClick={() => { setStage("SETUP"); syncUrl("SETUP"); }}>Change report settings</Button><Button variant="outline" onClick={exportCsv} disabled={!report || isExporting}>{isExporting ? "Preparing CSV..." : "Download CSV"}</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
     </div>
     {isLoading ? <StateCard>Loading organisational report...</StateCard> : null}
     {error ? <StateCard error>{error}</StateCard> : null}
@@ -190,3 +205,4 @@ function Metric({ label, value }: { label: string; value: string | number }) { r
 function StateCard({ children, error = false }: { children: React.ReactNode; error?: boolean }) { return <div className={`rounded-xl border bg-card p-6 ${error ? "border-destructive/30 text-destructive" : ""}`}>{children}</div>; }
 function localDateTime(value: string, timezone: string) { return new Intl.DateTimeFormat("en-AU", { timeZone: timezone, dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
 function reportLabel(view: PortfolioReportView) { return { OVERVIEW: "Sales Summary", TICKET_TYPES: "Sales by Ticket Type", SESSIONS: "Sales by Session", PRODUCTS: "Product and Add-on Performance", DATES: "Sales by Event Date", SALES_PACE: "Booking Pace" }[view]; }
+function downloadFile(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url); }

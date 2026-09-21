@@ -387,6 +387,19 @@ export const reportingService = {
       `/reporting/portfolio/${reportType}?${query.toString()}`,
     );
   },
+  downloadPortfolioCsv: (
+    reportType: string,
+    scope: "ALL" | "SELECTED",
+    from?: string,
+    to?: string,
+    eventIds?: string[],
+  ) => {
+    const query = new URLSearchParams({ scope });
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    if (eventIds?.length) query.set("eventIds", eventIds.join(","));
+    return api.download(`/reporting/portfolio/${reportType}/export.csv?${query.toString()}`);
+  },
   getEventReport: (
     eventId: string,
     filters: { date?: string; sessionId?: string } = {},

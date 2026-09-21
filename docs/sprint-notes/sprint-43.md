@@ -84,3 +84,22 @@ restoration of an explicit multi-Event selection.
 
 Focused web tests and TypeScript checking cover the result transition, Sales
 Summary headline traceability, generated evidence and retained setup controls.
+
+## Slice 5 — Matching portfolio CSV and print evidence
+
+- Added server-generated CSV exports for all six available organisation
+  reports using the same authenticated portfolio query as the visible result.
+- CSV requests preserve the exact selected Event IDs and Event-local date range;
+  crafted or unauthorised Event IDs continue to fail through the shared report
+  authority before any file is produced.
+- Exports include generated time, applied scope, Event, Event timezone, range
+  and report-specific exact values. Empty exports retain their evidence context.
+- Existing formula-safe UTF-8 CSV encoding and safe filename handling now also
+  protect organisation portfolio exports.
+- The result screen exposes **Download CSV** alongside the existing focused
+  **Print / Save PDF** action.
+
+Focused API coverage proves trusted access-context delegation, private/no-store
+download headers, filter metadata and spreadsheet-formula protection. Focused
+web coverage proves that the downloaded file uses the visible selection and
+range rather than rebuilding scope in the browser.

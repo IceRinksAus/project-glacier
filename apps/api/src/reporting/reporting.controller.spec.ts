@@ -12,6 +12,7 @@ describe('ReportingController', () => {
     getEventReport: jest.fn(),
     getOrganizationSummary: jest.fn(),
     getPortfolioReport: jest.fn(),
+    getPortfolioCsv: jest.fn(),
     getTicketTypeSales: jest.fn(),
     getSessionSales: jest.fn(),
     getProductSales: jest.fn(),
@@ -75,6 +76,16 @@ describe('ReportingController', () => {
       'ticket-types',
       query,
     );
+  });
+
+  it('exports a portfolio CSV from the trusted access context', async () => {
+    const response = { set: jest.fn() };
+    const query = { scope: 'SELECTED' as const, eventIds: 'event-1' };
+    service.getPortfolioCsv.mockResolvedValue({ filename: 'report.csv', content: Buffer.from('csv') });
+    const result = await controller.exportPortfolioReport('overview', user('org-1'), query, response as never);
+    expect(service.getPortfolioCsv).toHaveBeenCalledWith(user('org-1'), 'overview', query);
+    expect(response.set).toHaveBeenCalledWith(expect.objectContaining({ 'Cache-Control': 'private, no-store' }));
+    expect(result).toBeInstanceOf(StreamableFile);
   });
 
   it('allows only operator roles at the controller boundary', () => {

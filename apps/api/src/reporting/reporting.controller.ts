@@ -47,6 +47,22 @@ export class ReportingController {
     return this.reportingService.getPortfolioReport(user, reportType, query);
   }
 
+  @Get('portfolio/:reportType/export.csv')
+  async exportPortfolioReport(
+    @Param('reportType') reportType: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: PortfolioReportQueryDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.reportingService.getPortfolioCsv(user, reportType, query);
+    response.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Cache-Control': 'private, no-store',
+    });
+    return new StreamableFile(file.content);
+  }
+
   @Get('events/:eventId')
   async getEventReport(
     @Param('eventId') eventId: string,
