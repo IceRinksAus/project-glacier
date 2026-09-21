@@ -39,6 +39,24 @@ Production operations should monitor report latency, errors, cap utilisation and
 
 ## Detailed Category Reports and Exports
 
+### Sprint 43 available-report metric contract
+
+| Report | Operational question | Authoritative records | Refund treatment | Time semantics | Privacy and limitation |
+| --- | --- | --- | --- | --- | --- |
+| Sales Summary | What confirmed commerce and attendance exists for the selected Events? | Confirmed Bookings, successful Payments/refunds, current issued Tickets and admissions | Successful Event-level refunds reduce net collection | Full Event by default; supported filters use each Event timezone | Aggregate operations only; not settlement, payout, tax, fees or profit |
+| Sales by Ticket Type | Which Ticket Types sold and were admitted? | Confirmed Booking Items, current Tickets and TicketAdjustment allocations | Only explicitly allocated Ticket refunds reduce the relevant type; unallocated refunds remain separate | Session/date scope follows the Event-local Session boundary | No participant identity; quantity and item value are not customer demographics |
+| Session and Capacity Performance | Which Sessions are selling, full or attended? | Reserved/confirmed Booking quantities, confirmed commerce, current Tickets and Session capacity | Attributable successful refunds are shown without changing physical capacity truth | Session start belongs to its Event timezone | Remaining admission capacity is distinct from Product inventory/capacity |
+| Sales by Event Date | How did each local operating date perform? | Sessions plus their scoped Booking, Payment, Ticket and admission records | Same Event/Session attribution as the Session report | A date is evaluated separately at local midnight in every included Event timezone | Cross-Event rows are not merged into a fabricated UTC day |
+| Product and Add-on Performance | What Products sold and what operating stock/capacity remains? | Confirmed Booking Products/Variants, Product inventory, Session Product assignments and active Rules | Product rows remain gross unless an explicit Product refund allocation exists | Date/Session scope follows the associated Event Session | Finite inventory and reusable per-Session capacity must remain distinct |
+| Booking Pace | How far in advance were currently confirmed Bookings created? | Confirmed Booking `createdAt`, Booking Items and selected Session local date | No inferred conversion or refund attribution | Lead time is calculated against the selected Session in the Event timezone | Not an abandonment funnel, attribution report or revenue forecast |
+
+All available portfolio reports use the authenticated Event predicate and a
+maximum of 100 Events. Explicit selections and saved Groups are all-or-nothing:
+if any requested Event is unavailable to the signed-in role/assignment, the
+request returns the same not-found boundary instead of silently producing a
+partial report. An empty authorised Organisation scope may return an empty
+report; an explicitly empty selection is invalid.
+
 The authenticated Reports destination is both the discovery hub and the
 canonical detailed-report workspace. It presents an Organisation headline
 position from the bounded Organisation summary and a grouped catalogue. A

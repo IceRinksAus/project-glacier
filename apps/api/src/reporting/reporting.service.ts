@@ -81,6 +81,9 @@ export class ReportingService {
     if (query.scope === 'SELECTED' && events.length !== scopedIds!.length) {
       throw new NotFoundException('One or more Events were not found.');
     }
+    if (query.scope === 'GROUP' && events.length !== scopedIds!.length) {
+      throw new NotFoundException('Event Group not found.');
+    }
     if (query.scope === 'EVENT') scopeName = events[0].name;
 
     const filters = { date: query.date };

@@ -1,6 +1,6 @@
 # Sprint 43 Plan — Coherent Organisation Reporting
 
-**Status:** Proposed 21 September 2026; awaiting organiser scope confirmation
+**Status:** Approved for implementation on 21 September 2026
 
 ## Outcome
 

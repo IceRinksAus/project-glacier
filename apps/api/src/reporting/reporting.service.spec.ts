@@ -84,6 +84,55 @@ describe('ReportingService', () => {
     }));
   });
 
+  it('fails a saved Group closed when any Event is outside the access scope', async () => {
+    prisma.eventGroup.findFirst.mockResolvedValue({
+      name: 'Winter Season',
+      events: [
+        { eventId: 'event-1' },
+        { eventId: 'event-outside-authority' },
+      ],
+    });
+    prisma.event.findMany.mockResolvedValue([
+      { id: 'event-1', name: 'Melbourne', timezone: 'Australia/Melbourne' },
+    ]);
+    const access = {
+      userId: 'user-1',
+      organizationId: 'org-1',
+      role: 'MANAGER' as const,
+      accessScope: 'ASSIGNED_EVENTS' as const,
+    };
+
+    await expect(service.getPortfolioReport(access, 'overview', {
+      scope: 'GROUP',
+      scopeId: 'group-1',
+    })).rejects.toEqual(new NotFoundException('Event Group not found.'));
+    expect(prisma.event.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        organizationId: 'org-1',
+        id: { in: ['event-1', 'event-outside-authority'] },
+      },
+    }));
+  });
+
+  it('rejects empty and oversized explicit Event selections', async () => {
+    const access = {
+      userId: 'user-1',
+      organizationId: 'org-1',
+      role: 'OWNER' as const,
+      accessScope: 'ALL_EVENTS' as const,
+    };
+
+    await expect(service.getPortfolioReport(access, 'overview', {
+      scope: 'SELECTED',
+      eventIds: '',
+    })).rejects.toEqual(new BadRequestException('Select between 1 and 100 Events.'));
+    await expect(service.getPortfolioReport(access, 'overview', {
+      scope: 'SELECTED',
+      eventIds: Array.from({ length: 101 }, (_, index) => `event-${index}`).join(','),
+    })).rejects.toEqual(new BadRequestException('Select between 1 and 100 Events.'));
+    expect(prisma.event.findMany).not.toHaveBeenCalled();
+  });
+
   it('builds a portfolio report only from Events in the authenticated access scope', async () => {
     prisma.event.findMany.mockResolvedValue([
       { id: 'event-1', name: 'Melbourne', timezone: 'Australia/Melbourne' },
