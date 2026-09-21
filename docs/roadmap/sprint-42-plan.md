@@ -1,6 +1,7 @@
 # Sprint 42 Plan — End-to-End Pilot Rehearsal and Workflow Hardening
 
-**Status:** Proposed 20 September 2026; awaiting organiser scope confirmation
+**Status:** Approved and walked through; remediation implemented, final local
+closeout gate in progress on 21 September 2026
 
 ## Outcome
 

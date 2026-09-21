@@ -1,6 +1,8 @@
 # Sprint 42 Remediation Plan — Pilot Workflow Corrections
 
-**Status:** Approved for implementation on 20 September 2026
+**Status:** Pilot-chain remediation closed locally on 21 September 2026;
+Organisation Reports transferred to proposed Sprint 43 and checkout consent
+retained as approved future scope
 
 ## Outcome
 
@@ -31,6 +33,11 @@ These corrections remain subject to the complete Sprint exit gate.
 3. S42-F01/F04/F06/F10/F12 — connected Event setup and safe Event editing;
 4. public booking Date calendar from the approved Sprint 42 plan; and
 5. S42-F15 — coherent Organisation Reports experience.
+
+The organiser review also identified a separate checkout-compliance gap:
+Ticketing Terms, the Privacy Collection Notice and optional marketing consent
+need distinct purposes and durable evidence. This is specified below as a
+bounded follow-on slice rather than being hidden inside the Waiver remediation.
 
 S42-F05, the Session-capacity leading-zero issue, is a bounded usability fix
 and should be completed alongside the Event setup work.
@@ -142,6 +149,57 @@ Reporting will remain at `/reports` and use three clear states:
 combination of Events, apply relevant dates/filters, understand the scope of
 the result and return to the catalogue without losing context or being moved
 into an individual Event.
+
+## Slice 6 — Checkout terms and communication consent
+
+Separate the commercial contract, privacy collection notice, operational
+communications, marketing choice and participation Waiver. A single checkbox
+must not be used as authority for all five purposes.
+
+- Before payment, require the purchasing adult to affirmatively accept the
+  current Ticketing Terms and Conditions through a clear unchecked control.
+- Present the Privacy Collection Notice prominently at checkout. Do not
+  misdescribe processing necessary to create the Booking, take Payment, issue
+  Tickets or send important Event updates as optional consent.
+- Offer marketing permission through a separate optional control that is
+  unchecked by default, identifies the relevant organiser/sender and explains
+  that permission can be withdrawn at any time.
+- Never block purchase when marketing permission is declined and never infer
+  marketing permission merely because a customer completed a purchase.
+- Keep receipts, Tickets, Payment notices, safety information and material
+  Session/Event changes independent from marketing preference.
+- Attach marketing preference to the purchasing adult/customer only. Do not
+  create marketing profiles for dependants entered for Tickets or Waivers.
+- Move marketing authority out of Waiver submissions. Keep optional
+  photography/media permission distinct and participation-specific where it is
+  genuinely required by the Event.
+- Retain immutable purchase evidence: Booking, accepting customer, acceptance
+  timestamp, channel, Ticketing Terms document/version and content hash, and
+  the Privacy Collection Notice version presented.
+- Retain marketing evidence separately: exact disclosure/version, sender,
+  channel, source, permission timestamp and later withdrawal timestamp. A new
+  choice supersedes future contact authority without rewriting historical
+  evidence.
+- Ensure new purchases use the then-current approved documents while existing
+  Bookings continue to resolve the exact versions presented and accepted at
+  purchase.
+- Reject reservation/Payment completion server-side when required current
+  Ticketing Terms acceptance is absent; client-side checkbox state alone is
+  never authoritative.
+- Define a separate staff-assisted/POS presentation and evidence path before
+  enabling marketing collection at POS. POS staff must not infer or select
+  marketing permission on a customer's behalf.
+
+**Acceptance:** A fictional customer can complete checkout after accepting the
+current Ticketing Terms whether marketing is accepted or declined; Glacier can
+later reproduce the exact required terms and optional marketing disclosure
+shown for that Booking; withdrawal prevents future marketing without blocking
+transactional Event communications; and no dependant acquires a marketing
+profile.
+
+The production Ticketing Terms, Privacy Collection Notice and marketing copy
+remain subject to independent Australian consumer/privacy legal approval.
+Local implementation and tests are not that approval.
 
 ## Verification and evidence
 

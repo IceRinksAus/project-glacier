@@ -1,7 +1,13 @@
 # Sprint 42 — End-to-End Pilot Rehearsal and Workflow Hardening
 
-**Status:** Walkthrough complete; remediation implementation in progress from
-20 September 2026
+**Status:** Closed locally on 21 September 2026; verified implementation commits
+remain unpushed pending organiser approval
+
+The approved pilot-chain remediation is implemented and organiser acceptance
+confirmed the corrected POS flow. Organisation Reports is deliberately moved
+into the proposed Sprint 43 scope rather than being patched further inside this
+walkthrough Sprint. Checkout terms/privacy/marketing separation is retained as
+approved future scope under S42-F19.
 
 ## Objective
 
@@ -419,9 +425,63 @@ assignment authority; no second Customer store or broader access path is
 introduced. Focused coverage proves the embedded request always includes the
 selected Event and does not load the organisation Event selector.
 
-## Immediate safety decision
+### S42-F19 — Checkout terms and optional marketing are not separated
 
-Continue the organiser walkthrough, but do not publish or rely on the incorrect
-Waiver preview recorded in S42-F02/S42-F03. Other configuration can continue so
-additional usability findings are captured. The Waiver blockers must be fixed
-and retested before Event activation or public Waiver acceptance.
+- **Severity:** High; compliance and customer-trust boundary.
+- **Where:** Public booking checkout and the current Waiver optional-consent
+  fields.
+- **Expected:** Ticketing Terms are affirmatively accepted before payment; the
+  Privacy Collection Notice is clearly presented; optional marketing is a
+  separate, unchecked choice; transactional Event communications do not depend
+  on marketing; and the participation Waiver retains only participation/legal
+  declarations plus any distinct optional media permission.
+- **Observed:** Glacier does not yet retain versioned Booking-level Ticketing
+  Terms acceptance. Marketing permission currently belongs to the Waiver
+  submission model, which couples a commercial communication choice to a
+  participation-risk document and does not cover customers who have not yet
+  completed a Waiver.
+- **Impact:** Glacier cannot reproduce the exact commercial terms accepted for
+  a Booking, and customers may not receive a sufficiently clear and voluntary
+  marketing choice at the point where their contact information is collected.
+- **Approved direction:** Implement the bounded checkout terms and
+  communication-consent slice in the Sprint 42 remediation plan. Store
+  immutable terms/privacy presentation evidence against the Booking and store
+  revocable marketing authority separately against the purchasing adult. Do
+  not infer marketing permission from purchase, make it a condition of sale or
+  create a marketing profile for a dependant.
+
+Production Ticketing Terms, the Privacy Collection Notice, marketing wording
+and retention policy require independent Australian legal/privacy approval.
+Local fictional documents may be used only to prove the workflow and evidence
+model.
+
+## Closeout verification
+
+- API: 93 suites / 693 tests passed.
+- Web: 47 files / 139 tests passed.
+- API and web production builds passed.
+- All 54 Prisma migrations are current and replayed from empty state.
+- Disposable authenticated tenant/role/Event/MFA isolation passed 5 of 5
+  checks.
+- Tracked-secret scanning passed across 706 files and 6 rules.
+- Isolated PostgreSQL backup/restore matched all 20 critical tables; the 0.40
+  MiB archive completed in 0.32 seconds and restored in 0.98 seconds.
+- The complete local release gate passed.
+- The local API was paused during the restore comparison so scheduled Booking
+  expiry could not mutate the source after the backup snapshot, then restarted
+  successfully on port 3000.
+
+The release-gate runners retain bounded 10-second web interaction and 15-second
+end-to-end isolation timeouts. These changes address demonstrated local runner
+scheduling variance without weakening a product, tenant or role assertion.
+
+## Deferred scope
+
+- Organisation Reports redesign is proposed as Sprint 43 and awaits explicit
+  organiser scope confirmation.
+- S42-F19 checkout Ticketing Terms, Privacy Collection Notice and optional
+  marketing authority remains documented but unimplemented.
+- Richer public Event website content remains a future scoped product slice.
+- Production infrastructure, managed secrets, deployed Payment/webhook/device
+  evidence and independent legal, privacy, accessibility and security review
+  remain future evidence.
