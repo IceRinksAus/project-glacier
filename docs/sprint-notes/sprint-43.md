@@ -60,3 +60,27 @@ and date-range controls remains Slice 3 scope.
 
 Focused API and web coverage proves bounded ranges, Event search, URL state and
 restoration of an explicit multi-Event selection.
+
+## Slice 4 — Report-specific results
+
+- Sales Summary now leads with gross collection, refunds, net collection,
+  confirmed Bookings and average Booking value.
+- Ticket Type results lead with units, gross Ticket sales, allocated refunds,
+  net Ticket sales and admissions, with the unallocated-refund limitation
+  stated beneath the evidence.
+- Session results use capacity-weighted utilisation and show Ticket units, net
+  collection, remaining places and admissions.
+- Product results show units, gross Product sales, Bookings with Products,
+  portfolio attach rate and the distinction between tracked inventory and
+  inventory that is not tracked.
+- Event Date results retain Event-local calendar semantics and summarise
+  operating dates, Sessions, Ticket units, collection and weighted capacity.
+- Booking Pace shows confirmed historical demand and explicitly avoids a
+  forecast or conversion-funnel claim.
+- Every result now includes AUD, generation time, Event scope, timezone/range
+  semantics, an accessible exact-value table and a short metric definition.
+- Detailed reports with no matching rows show a purposeful no-data state rather
+  than an empty table.
+
+Focused web tests and TypeScript checking cover the result transition, Sales
+Summary headline traceability, generated evidence and retained setup controls.

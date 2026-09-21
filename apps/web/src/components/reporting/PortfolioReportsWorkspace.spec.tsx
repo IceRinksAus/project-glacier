@@ -86,4 +86,12 @@ describe("PortfolioReportsWorkspace", () => {
     expect(screen.getByRole("checkbox", { name: /Sydney/ })).toBeChecked();
     expect(screen.getByLabelText("Portfolio from date")).toHaveValue("2027-07-01");
   });
+
+  it("gives Sales Summary its own traceable headline metrics and definition", async () => {
+    render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
+    await userEvent.click(screen.getByRole("button", { name: "Generate report" }));
+    expect(await screen.findByText("Average booking")).toBeVisible();
+    expect(screen.getByText("Successful operational collections less successful refunds. This is not processor settlement, payout, accounting, profit or tax evidence.")).toBeVisible();
+    expect(screen.getByText(/AUD · Generated/)).toBeVisible();
+  });
 });
