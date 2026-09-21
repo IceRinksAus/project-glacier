@@ -418,6 +418,11 @@ Unless new operational evidence promotes them, the following must not displace p
 - SaaS self-service billing.
 
 CSV and browser Print / Save PDF satisfy the present base reporting requirement.
+Sprint 43 productises the six existing operational authorities into a coherent
+Organisation Reports home, setup and result flow with explicit multi-Event
+selection, bounded Event-local ranges, report-specific summaries and matching
+portfolio CSV/print evidence. Settlement, accounting, forecasting and
+customer-marketing reports remain deliberately deferred.
 
 ---
 

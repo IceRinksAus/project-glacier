@@ -1,6 +1,6 @@
 # Sprint 43 — Coherent Organisation Reporting
 
-**Status:** Approved and implementation started 21 September 2026
+**Status:** Implementation and local verification complete; organiser walkthrough pending
 
 ## Objective
 
@@ -103,3 +103,37 @@ Focused API coverage proves trusted access-context delegation, private/no-store
 download headers, filter metadata and spreadsheet-formula protection. Focused
 web coverage proves that the downloaded file uses the visible selection and
 range rather than rebuilding scope in the browser.
+
+## Slice 6 — Closeout preparation
+
+- Added a non-technical organiser walkthrough covering the three-state flow,
+  one/multiple Events, Group shortcut, date validation, all six reports, empty
+  data, matching CSV/print evidence and assigned-manager boundaries.
+- Kept new accounting, settlement, marketing, customer-detail and forecasting
+  ideas outside this Sprint's operational reporting authority.
+- Managed production monitoring, deployed-device/performance evidence and an
+  independent privacy, accessibility and security review remain future
+  evidence; local verification cannot substitute for them.
+
+## Local verification evidence
+
+Completed 21 September 2026:
+
+- API: 93 suites / 698 tests passed;
+- web: 47 files / 145 tests passed;
+- API and web production builds passed;
+- configured database: 54 migrations found and current;
+- disposable database: all 54 committed migrations replayed successfully;
+- tenant, role and Event-assignment isolation: 5/5 checks passed;
+- tracked-secret scan: 708 files / 6 rules passed; and
+- isolated PostgreSQL backup/restore: 20 critical tables matched, 0.40 MiB
+  archive, 0.66-second backup and 1.14-second restore.
+
+The application test/build portion initially passed before PostgreSQL became
+unreachable from the restricted Codex process. PostgreSQL's own log showed a
+healthy server; after local-network permission was granted, readiness,
+migration, isolation and restore checks passed. This was an execution
+environment access issue, not a migration or data-integrity failure.
+
+Final Sprint acceptance now requires the organiser walkthrough in
+`docs/operations/SPRINT_43_REPORTING_ACCEPTANCE.md`. Nothing has been pushed.
