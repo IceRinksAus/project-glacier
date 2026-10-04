@@ -28,6 +28,7 @@ describe('CheckoutConsentService', () => {
 
   beforeEach(() => {
     prisma = {
+      event: { findFirst: jest.fn() },
       checkoutDocument: {
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -40,7 +41,9 @@ describe('CheckoutConsentService', () => {
       $transaction: jest.fn(),
     };
     accessControl = { assertEventAccess: jest.fn() };
-    service = new CheckoutConsentService(prisma, accessControl);
+    service = new CheckoutConsentService(prisma, accessControl, {
+      get: jest.fn().mockReturnValue('test'),
+    } as any);
   });
 
   it('creates a new immutable Event-scoped version with a server hash', async () => {
@@ -104,6 +107,50 @@ describe('CheckoutConsentService', () => {
         publishedByUserId: 'owner-1',
       }),
     });
+  });
+
+  it('reports checkout readiness only when both required documents are published', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      id: 'event-1',
+      name: 'Fictional Event',
+      status: 'DRAFT',
+    });
+    prisma.checkoutDocument.findMany.mockResolvedValue([
+      {
+        type: CheckoutDocumentType.TICKETING_TERMS,
+        status: CheckoutDocumentStatus.PUBLISHED,
+      },
+    ]);
+    accessControl.eventWhere = jest.fn((_access, where) => ({
+      organizationId: 'org-1',
+      ...where,
+    }));
+
+    const context = await service.eventContext(owner, 'event-1');
+
+    expect(context.readiness).toEqual({
+      readyForTicketCheckout: false,
+      termsPublished: true,
+      privacyPublished: false,
+      marketingChoiceAvailable: false,
+    });
+  });
+
+  it('fails closed when a test-only document is published in production', async () => {
+    service = new CheckoutConsentService(prisma, accessControl, {
+      get: jest.fn().mockReturnValue('production'),
+    } as any);
+    prisma.checkoutDocument.findFirst.mockResolvedValue({
+      id: 'document-1',
+      type: CheckoutDocumentType.TICKETING_TERMS,
+      status: CheckoutDocumentStatus.DRAFT,
+      testOnly: true,
+    });
+
+    await expect(
+      service.publish(owner, 'event-1', 'document-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('rejects unassigned document management before reading a draft', async () => {

@@ -7,6 +7,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   CheckoutAcceptanceChannel,
   CheckoutDocumentStatus,
@@ -26,7 +27,51 @@ export class CheckoutConsentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessControl: AccessControlService,
+    private readonly config: ConfigService,
   ) {}
+
+  async eventContext(access: AuthenticatedAccessContext, eventId: string) {
+    this.assertManagementRole(access);
+    await this.accessControl.assertEventAccess(eventId, access);
+    const event = await this.prisma.event.findFirst({
+      where: this.accessControl.eventWhere(access, { id: eventId }),
+      select: { id: true, name: true, status: true },
+    });
+    if (!event) throw new NotFoundException('Event not found.');
+
+    const documents = await this.prisma.checkoutDocument.findMany({
+      where: { organizationId: access.organizationId, eventId },
+      orderBy: [{ type: 'asc' }, { version: 'desc' }],
+      include: {
+        createdByUser: { select: { id: true, name: true } },
+        publishedByUser: { select: { id: true, name: true } },
+      },
+    });
+    const publishedTypes = new Set(
+      documents
+        .filter(({ status }) => status === CheckoutDocumentStatus.PUBLISHED)
+        .map(({ type }) => type),
+    );
+
+    return {
+      event,
+      documents,
+      readiness: {
+        readyForTicketCheckout:
+          publishedTypes.has(CheckoutDocumentType.TICKETING_TERMS) &&
+          publishedTypes.has(CheckoutDocumentType.PRIVACY_NOTICE),
+        termsPublished: publishedTypes.has(
+          CheckoutDocumentType.TICKETING_TERMS,
+        ),
+        privacyPublished: publishedTypes.has(
+          CheckoutDocumentType.PRIVACY_NOTICE,
+        ),
+        marketingChoiceAvailable: publishedTypes.has(
+          CheckoutDocumentType.MARKETING_DISCLOSURE,
+        ),
+      },
+    };
+  }
 
   async createDraft(
     access: AuthenticatedAccessContext,
@@ -103,6 +148,14 @@ export class CheckoutConsentService {
       },
     });
     if (!document) throw new NotFoundException('Document draft not found.');
+    if (
+      this.config.get<string>('NODE_ENV') === 'production' &&
+      document.testOnly
+    ) {
+      throw new BadRequestException(
+        'Test-only documents cannot be published in production.',
+      );
+    }
 
     const publishedAt = new Date();
     return this.prisma.$transaction(async (transaction) => {
