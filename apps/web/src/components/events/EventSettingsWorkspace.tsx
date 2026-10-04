@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventEntryPolicySettings } from "@/components/events/EventEntryPolicySettings";
 import { EventFlexibleTicketSettings } from "@/components/flexible-ticket/FlexibleTicketPolicySettings";
+import { CheckoutDocumentSettings } from "@/components/events/CheckoutDocumentSettings";
 import type { EventTab } from "@/components/events/EventTabs";
 import type { GlacierEvent } from "@/services/event.service";
 
@@ -51,6 +52,8 @@ export function EventSettingsWorkspace({
           </div>
         </section>
       </div>
+
+      <CheckoutDocumentSettings eventId={event.id} />
 
       <section className="space-y-3">
         <p className="text-xs font-bold uppercase tracking-wide text-primary">Organisation policy and Event override</p>

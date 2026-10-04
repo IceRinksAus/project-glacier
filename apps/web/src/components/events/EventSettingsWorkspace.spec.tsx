@@ -10,6 +10,9 @@ vi.mock("@/components/flexible-ticket/FlexibleTicketPolicySettings", () => ({
 vi.mock("@/components/events/EventEntryPolicySettings", () => ({
   EventEntryPolicySettings: () => <div>Entry window controls</div>,
 }));
+vi.mock("@/components/events/CheckoutDocumentSettings", () => ({
+  CheckoutDocumentSettings: () => <div>Checkout document controls</div>,
+}));
 
 const event = {
   id: "event-1",
@@ -40,6 +43,7 @@ describe("EventSettingsWorkspace", () => {
     expect(screen.getByText(/Entry opens 30 minutes before/)).toBeVisible();
     expect(screen.getByText("Flexible Ticket controls")).toBeVisible();
     expect(screen.getByText("Entry window controls")).toBeVisible();
+    expect(screen.getByText("Checkout document controls")).toBeVisible();
     expect(screen.getByRole("link", { name: "Scanner guidance" })).toHaveAttribute("href", "/staff/scanner");
 
     await user.click(screen.getByRole("button", { name: "Open Website" }));
