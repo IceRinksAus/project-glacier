@@ -150,8 +150,19 @@ export class ReportingService {
       headers = [...commonHeaders, 'Lead-time bucket', 'Confirmed bookings', 'Ticket units', 'Gross Booking value AUD', 'Cumulative bookings', 'Cumulative Ticket units'];
       rows = portfolio.reports.flatMap(({ event, report }) => (report as Awaited<ReturnType<ReportingService['getSalesPace']>>).rows.map((row) => [...common(event), row.label, row.confirmedBookings, row.ticketUnits, row.grossBookingValue, row.cumulativeBookings, row.cumulativeTicketUnits]));
     }
+    const reportFilename = {
+      overview: 'sales-summary',
+      'ticket-types': 'sales-by-ticket-type',
+      sessions: 'session-capacity-performance',
+      products: 'product-add-on-performance',
+      dates: 'sales-by-event-date',
+      'sales-pace': 'booking-pace',
+    }[reportType] ?? reportType;
+    const rangeFilename = portfolio.filter.from && portfolio.filter.to
+      ? `${portfolio.filter.from}-to-${portfolio.filter.to}`
+      : 'all-dates';
     return {
-      filename: this.csvFilename(portfolio.scope.name, `portfolio-${reportType}`),
+      filename: this.csvFilename(portfolio.scope.name, `${reportFilename}-${rangeFilename}`),
       content: this.csvBuffer(headers, rows.length ? rows : [[portfolio.generatedAt.toISOString(), portfolio.scope.name, ...Array(headers.length - 2).fill('')]]),
     };
   }

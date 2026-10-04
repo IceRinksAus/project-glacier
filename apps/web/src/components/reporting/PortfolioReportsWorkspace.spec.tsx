@@ -24,7 +24,7 @@ const response = {
 };
 
 describe("PortfolioReportsWorkspace", () => {
-  beforeEach(() => { getPortfolioReport.mockReset().mockResolvedValue(response); downloadPortfolioCsv.mockReset().mockResolvedValue({ blob: new Blob(["report"]), filename: "sales.csv" }); window.print = vi.fn(); URL.createObjectURL = vi.fn(() => "blob:report"); URL.revokeObjectURL = vi.fn(); });
+  beforeEach(() => { getPortfolioReport.mockReset().mockResolvedValue(response); downloadPortfolioCsv.mockReset().mockResolvedValue({ blob: new Blob(["report"]), filename: "sales.csv" }); URL.createObjectURL = vi.fn(() => "blob:report"); URL.revokeObjectURL = vi.fn(); vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined); });
 
   it("shows multiple Events in one organisational report", async () => {
     render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
@@ -104,5 +104,13 @@ describe("PortfolioReportsWorkspace", () => {
     await user.click(screen.getByRole("button", { name: "Generate report" }));
     await user.click(await screen.findByRole("button", { name: "Download CSV" }));
     expect(downloadPortfolioCsv).toHaveBeenCalledWith("overview", "SELECTED", "2027-06-01", "2027-06-30", ["event-1"]);
+  });
+
+  it("downloads a real PDF instead of relying on the browser print dialog", async () => {
+    render(<PortfolioReportsWorkspace events={events as never} groups={groups as never} initialView="OVERVIEW" />);
+    await userEvent.click(screen.getByRole("button", { name: "Generate report" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Download PDF" }));
+
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.objectContaining({ type: "application/pdf" }));
   });
 });

@@ -96,8 +96,15 @@ Summary headline traceability, generated evidence and retained setup controls.
   and report-specific exact values. Empty exports retain their evidence context.
 - Existing formula-safe UTF-8 CSV encoding and safe filename handling now also
   protect organisation portfolio exports.
-- The result screen exposes **Download CSV** alongside the existing focused
-  **Print / Save PDF** action.
+- The result screen exposes specifically named **Download CSV** and **Download
+  PDF** evidence actions.
+- Organiser acceptance identified that browsers could not read the server's
+  filename header and therefore used the generic `glacier-report.csv` fallback.
+  The API now exposes `Content-Disposition` through CORS, and portfolio files
+  identify the report, selected scope, applied range and export date.
+- Organiser acceptance also found that the embedded browser silently ignored
+  its native print dialog. Reports now generate and download a real PDF file
+  directly instead of depending on browser print support.
 
 Focused API coverage proves trusted access-context delegation, private/no-store
 download headers, filter metadata and spreadsheet-formula protection. Focused

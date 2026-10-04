@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { createReportPdf, ReportPdfData } from "@/components/reporting/report-pdf";
 import type { EventGroup } from "@/services/event-group.service";
 import type { GlacierEvent } from "@/services/event.service";
 import {
@@ -136,13 +137,19 @@ export function PortfolioReportsWorkspace({
     }
   }
 
+  function exportPdf() {
+    if (!report) { setError("Unable to prepare this report as a PDF."); return; }
+    const blob = createReportPdf(portfolioPdfData(view, report));
+    downloadFile(blob, pdfFilename(view, report));
+  }
+
   if (stage === "RESULT") return <section className="space-y-6" aria-labelledby="organisational-report-heading">
     <div className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
       <p className="text-sm font-semibold text-primary">Report result</p>
       <h2 id="organisational-report-heading" className="mt-1 text-2xl font-semibold">{reportLabel(view)}</h2>
       <p className="mt-2 text-sm text-muted-foreground">Authoritative operational results for the applied Event selection. Each Event retains its own timezone.</p>
       {report ? <p className="mt-4 text-xs text-muted-foreground">Scope: {report.scope.name} · {report.reports.length} Event{report.reports.length === 1 ? "" : "s"}{report.filter.from && report.filter.to ? ` · ${report.filter.from} to ${report.filter.to} in each Event timezone` : ""} · AUD · Generated {new Date(report.generatedAt).toLocaleString("en-AU")}</p> : null}
-      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button variant="outline" onClick={() => { setStage("SETUP"); syncUrl("SETUP"); }}>Change report settings</Button><Button variant="outline" onClick={exportCsv} disabled={!report || isExporting}>{isExporting ? "Preparing CSV..." : "Download CSV"}</Button><Button variant="outline" onClick={() => window.print()}>Print / Save PDF</Button></div>
+      <div className="mt-4 flex flex-wrap gap-3 print:hidden"><Button variant="outline" onClick={() => { setStage("SETUP"); syncUrl("SETUP"); }}>Change report settings</Button><Button variant="outline" onClick={exportCsv} disabled={!report || isExporting}>{isExporting ? "Preparing CSV..." : "Download CSV"}</Button><Button variant="outline" onClick={exportPdf} disabled={!report}>Download PDF</Button></div>
     </div>
     {isLoading ? <StateCard>Loading organisational report...</StateCard> : null}
     {error ? <StateCard error>{error}</StateCard> : null}
@@ -205,4 +212,44 @@ function Metric({ label, value }: { label: string; value: string | number }) { r
 function StateCard({ children, error = false }: { children: React.ReactNode; error?: boolean }) { return <div className={`rounded-xl border bg-card p-6 ${error ? "border-destructive/30 text-destructive" : ""}`}>{children}</div>; }
 function localDateTime(value: string, timezone: string) { return new Intl.DateTimeFormat("en-AU", { timeZone: timezone, dateStyle: "medium", timeStyle: "short" }).format(new Date(value)); }
 function reportLabel(view: PortfolioReportView) { return { OVERVIEW: "Sales Summary", TICKET_TYPES: "Sales by Ticket Type", SESSIONS: "Sales by Session", PRODUCTS: "Product and Add-on Performance", DATES: "Sales by Event Date", SALES_PACE: "Booking Pace" }[view]; }
+function portfolioPdfData(view: PortfolioReportView, report: PortfolioReport): ReportPdfData {
+  const base = {
+    title: reportLabel(view),
+    scope: `${report.scope.name} (${report.reports.length} Event${report.reports.length === 1 ? "" : "s"})`,
+    period: report.filter.from && report.filter.to ? `${report.filter.from} to ${report.filter.to} in each Event timezone` : "All available dates in each Event timezone",
+    generatedAt: new Date(report.generatedAt).toLocaleString("en-AU"),
+  };
+  if (view === "OVERVIEW") {
+    const rows = report.reports.map(({ event, report: value }) => ({ event, value: value as EventReport }));
+    const totals = rows.reduce((total, row) => ({ bookings: total.bookings + row.value.commercial.confirmedBookings, gross: total.gross + row.value.commercial.grossCollected, refunded: total.refunded + row.value.commercial.refunded, net: total.net + row.value.commercial.netCollected, tickets: total.tickets + row.value.tickets.issued }), { bookings: 0, gross: 0, refunded: 0, net: 0, tickets: 0 });
+    return { ...base, metrics: [{ label: "Gross collected", value: money.format(totals.gross) }, { label: "Refunded", value: money.format(totals.refunded) }, { label: "Net collected", value: money.format(totals.net) }, { label: "Confirmed bookings", value: String(totals.bookings) }, { label: "Average booking", value: money.format(totals.bookings ? totals.gross / totals.bookings : 0) }], columns: [{ label: "Event", width: 2.4 }, { label: "Bookings", width: 1, align: "right" }, { label: "Gross", width: 1.15, align: "right" }, { label: "Refunded", width: 1.15, align: "right" }, { label: "Net", width: 1.15, align: "right" }, { label: "Tickets", width: 0.9, align: "right" }, { label: "Admissions", width: 1, align: "right" }, { label: "Attendance", width: 1.1, align: "right" }], rows: rows.map(({ event, value }) => [event.name, String(value.commercial.confirmedBookings), money.format(value.commercial.grossCollected), money.format(value.commercial.refunded), money.format(value.commercial.netCollected), String(value.tickets.issued), String(value.tickets.admissions), `${value.tickets.attendanceRate}%`]), note: "Successful operational collections less successful refunds. This is not processor settlement, payout, accounting, profit or tax evidence." };
+  }
+  if (view === "TICKET_TYPES") {
+    const reports = report.reports.map(({ event, report: value }) => ({ event, value: value as TicketTypeSalesReport }));
+    const rows = reports.flatMap(({ event, value }) => value.rows.map((row) => ({ event, row })));
+    const totals = reports.reduce((total, { value }) => ({ units: total.units + value.totals.unitsSold, gross: total.gross + value.totals.grossItemSales, refunds: total.refunds + value.totals.allocatedTicketRefunds, net: total.net + value.totals.netTicketSales, admissions: total.admissions + value.totals.admissions }), { units: 0, gross: 0, refunds: 0, net: 0, admissions: 0 });
+    return { ...base, metrics: [{ label: "Ticket units", value: String(totals.units) }, { label: "Gross ticket sales", value: money.format(totals.gross) }, { label: "Allocated refunds", value: money.format(totals.refunds) }, { label: "Net ticket sales", value: money.format(totals.net) }, { label: "Admissions", value: String(totals.admissions) }], columns: [{ label: "Event", width: 2 }, { label: "Ticket type", width: 1.6 }, { label: "Units", width: 0.7, align: "right" }, { label: "Gross", width: 1, align: "right" }, { label: "Refunds", width: 1, align: "right" }, { label: "Net", width: 1, align: "right" }, { label: "Admissions", width: 0.9, align: "right" }], rows: rows.map(({ event, row }) => [event.name, row.name, String(row.unitsSold), money.format(row.grossItemSales), money.format(row.allocatedTicketRefunds), money.format(row.netTicketSales), String(row.admissions)]), note: "Ticket-level net sales include only refunds Glacier can allocate authoritatively to Ticket items; Event-level unallocated refunds remain in Sales Summary." };
+  }
+  if (view === "SESSIONS") {
+    const rows = report.reports.flatMap(({ event, report: value }) => (value as SessionSalesReport).rows.map((row) => ({ event, row })));
+    const totals = rows.reduce((total, { row }) => ({ tickets: total.tickets + row.ticketUnits, net: total.net + row.netCollected, reserved: total.reserved + row.reservedAttendance, capacity: total.capacity + row.capacity, remaining: total.remaining + row.remainingCapacity }), { tickets: 0, net: 0, reserved: 0, capacity: 0, remaining: 0 });
+    return { ...base, metrics: [{ label: "Ticket units", value: String(totals.tickets) }, { label: "Net collected", value: money.format(totals.net) }, { label: "Capacity utilised", value: `${percent(totals.reserved, totals.capacity)}%` }, { label: "Places remaining", value: String(totals.remaining) }, { label: "Sessions", value: String(rows.length) }], columns: [{ label: "Event", width: 1.8 }, { label: "Session", width: 1.5 }, { label: "Start", width: 1.4 }, { label: "Tickets", width: 0.7, align: "right" }, { label: "Net", width: 1, align: "right" }, { label: "Capacity", width: 0.9, align: "right" }, { label: "Remaining", width: 0.9, align: "right" }], rows: rows.map(({ event, row }) => [event.name, row.name, localDateTime(row.startDate, event.timezone), String(row.ticketUnits), money.format(row.netCollected), `${row.utilisationPercent}%`, String(row.remainingCapacity)]), note: "Capacity utilisation is reserved attendance divided by configured Session capacity. Remaining places never drops below zero." };
+  }
+  if (view === "PRODUCTS") {
+    const reports = report.reports.map(({ event, report: value }) => ({ event, value: value as ProductSalesReport }));
+    const rows = reports.flatMap(({ event, value }) => value.rows.map((row) => ({ event, row })));
+    const totals = reports.reduce((total, { value }) => ({ bookings: total.bookings + value.totals.confirmedBookings, attached: total.attached + value.totals.bookingsWithProducts, units: total.units + value.totals.unitsSold, gross: total.gross + value.totals.grossItemSales }), { bookings: 0, attached: 0, units: 0, gross: 0 });
+    return { ...base, metrics: [{ label: "Product units", value: String(totals.units) }, { label: "Gross product sales", value: money.format(totals.gross) }, { label: "Bookings with products", value: String(totals.attached) }, { label: "Portfolio attach rate", value: `${percent(totals.attached, totals.bookings)}%` }, { label: "Products", value: String(rows.length) }], columns: [{ label: "Event", width: 1.8 }, { label: "Product", width: 1.7 }, { label: "Units", width: 0.7, align: "right" }, { label: "Gross", width: 1, align: "right" }, { label: "Bookings", width: 0.9, align: "right" }, { label: "Attach rate", width: 0.9, align: "right" }, { label: "Inventory", width: 1, align: "right" }], rows: rows.map(({ event, row }) => [event.name, row.name, String(row.unitsSold), money.format(row.grossItemSales), String(row.bookingCount), `${row.attachRatePercent}%`, row.inventory.remaining === null ? "Not tracked" : String(row.inventory.remaining)]), note: "Attach rate is confirmed Bookings containing at least one Product. Not tracked is distinct from zero remaining inventory; reusable capacity is governed per Session." };
+  }
+  if (view === "DATES") {
+    const rows = report.reports.flatMap(({ event, report: value }) => (value as DateSalesReport).rows.map((row) => ({ event, row })));
+    const totals = rows.reduce((total, { row }) => ({ sessions: total.sessions + row.sessionCount, tickets: total.tickets + row.ticketUnits, net: total.net + row.netCollected, reserved: total.reserved + row.reservedAttendance, capacity: total.capacity + row.capacity }), { sessions: 0, tickets: 0, net: 0, reserved: 0, capacity: 0 });
+    return { ...base, metrics: [{ label: "Operating dates", value: String(rows.length) }, { label: "Sessions", value: String(totals.sessions) }, { label: "Ticket units", value: String(totals.tickets) }, { label: "Net collected", value: money.format(totals.net) }, { label: "Capacity utilised", value: `${percent(totals.reserved, totals.capacity)}%` }], columns: [{ label: "Event", width: 2 }, { label: "Event-local date", width: 1.4 }, { label: "Sessions", width: 0.8, align: "right" }, { label: "Tickets", width: 0.8, align: "right" }, { label: "Net", width: 1.1, align: "right" }, { label: "Capacity", width: 1, align: "right" }, { label: "Admissions", width: 0.9, align: "right" }], rows: rows.map(({ event, row }) => [event.name, row.date, String(row.sessionCount), String(row.ticketUnits), money.format(row.netCollected), `${row.utilisationPercent}%`, String(row.admissions)]), note: "Rows use each Event's local operating date. Cross-Event ranges are not reinterpreted as one UTC calendar day." };
+  }
+  const reports = report.reports.map(({ event, report: value }) => ({ event, value: value as SalesPaceReport }));
+  const rows = reports.flatMap(({ event, value }) => value.rows.map((row) => ({ event, row })));
+  const totals = reports.reduce((total, { value }) => ({ bookings: total.bookings + value.totals.confirmedBookings, tickets: total.tickets + value.totals.ticketUnits, gross: total.gross + value.totals.grossBookingValue }), { bookings: 0, tickets: 0, gross: 0 });
+  return { ...base, metrics: [{ label: "Confirmed bookings", value: String(totals.bookings) }, { label: "Ticket units", value: String(totals.tickets) }, { label: "Gross booking value", value: money.format(totals.gross) }, { label: "Average tickets", value: totals.bookings ? (totals.tickets / totals.bookings).toFixed(1) : "0.0" }, { label: "Lead-time bands", value: String(rows.length) }], columns: [{ label: "Event", width: 2 }, { label: "Lead time", width: 1.4 }, { label: "Bookings", width: 0.9, align: "right" }, { label: "Tickets", width: 0.8, align: "right" }, { label: "Gross value", width: 1.1, align: "right" }, { label: "Cumulative", width: 1, align: "right" }], rows: rows.map(({ event, row }) => [event.name, row.label, String(row.confirmedBookings), String(row.ticketUnits), money.format(row.grossBookingValue), String(row.cumulativeBookings)]), note: "Booking Pace groups confirmed demand by recorded lead time. It is historical operational evidence, not a conversion funnel or revenue forecast." };
+}
+function pdfFilename(view: PortfolioReportView, report: PortfolioReport) { const reportName = reportLabel(view).toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); const scopeName = report.scope.name.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); const range = report.filter.from && report.filter.to ? `${report.filter.from}-to-${report.filter.to}` : "all-dates"; const date = report.generatedAt.slice(0, 10); return `${scopeName}-${reportName}-${range}-${date}.pdf`; }
 function downloadFile(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url); }

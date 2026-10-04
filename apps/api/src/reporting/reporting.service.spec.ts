@@ -199,7 +199,7 @@ describe('ReportingService', () => {
     expect(csv).toContain("'=Unsafe scope");
     expect(csv).toContain("'+Unsafe Event");
     expect(csv).toContain('2027-06-01');
-    expect(file.filename).toMatch(/portfolio-overview-\d{4}-\d{2}-\d{2}\.csv$/);
+    expect(file.filename).toMatch(/sales-summary-2027-06-01-to-2027-06-30-\d{4}-\d{2}-\d{2}\.csv$/);
   });
 
   it('reports Ticket Type gross, allocated refund and net sales separately', async () => {
