@@ -486,12 +486,21 @@ authorised Customers without weakening commerce or privacy boundaries.
 
 Sprint 38 completed the touch-first POS and scanner-connected Ticket service.
 Sprint 39 completed the Settings, Website-publishing and Gate Entry clarity
-slice without absorbing the substantial Reports or Waiver reviews. The next
-bounded Product Comfort Gate should be a dedicated Reports review, followed by
-the legally and privacy sensitive Waiver review; neither should be combined
-with unrelated redesign work. Phase 3
-should also continue with another locally actionable production finding without
-starting paid infrastructure or broad product expansion.
+slice without absorbing the substantial Reports or Waiver reviews. Sprints
+40–41 completed the bounded Event-setup/operational corrections and the legally
+and privacy sensitive Waiver workflow review. Sprint 42 then ran the complete
+organiser walkthrough and remediated the confirmed Event-setup, public booking,
+POS, Booking and Customer context issues. Sprint 43 productised coherent
+organisation reporting with exact multi-Event scope, Event-local ranges,
+report-specific results and matching specifically named CSV/PDF evidence.
+
+The next bounded Product Comfort Gate is Sprint 44: separate versioned
+Ticketing Terms acceptance, Privacy Collection Notice presentation and optional
+adult-only marketing authority at checkout. It must preserve transactional
+communications and participation Waivers as distinct purposes, use fictional
+local documents only and retain final legal/privacy approval as a production
+gate. Phase 3 should also continue with locally actionable production findings
+without starting paid infrastructure or broad product expansion.
 Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.

@@ -142,5 +142,22 @@ healthy server; after local-network permission was granted, readiness,
 migration, isolation and restore checks passed. This was an execution
 environment access issue, not a migration or data-integrity failure.
 
-Final Sprint acceptance now requires the organiser walkthrough in
-`docs/operations/SPRINT_43_REPORTING_ACCEPTANCE.md`. Nothing has been pushed.
+## Organiser acceptance and repository closeout
+
+The organiser completed the walkthrough across Reports home, setup, retained
+single- and multi-Event scope, Event-local date range, report-specific results,
+CSV and PDF evidence. Acceptance identified two export defects that were fixed
+and retested before closeout:
+
+- cross-origin browser access to the server-provided CSV filename; and
+- the embedded browser's unsupported native print dialog and insufficient
+  initial text-only PDF presentation.
+
+The accepted PDF is a specifically named, Glacier-branded landscape report
+with scope/range metadata, headline metrics, aligned evidence table,
+definitions and page numbering. Focused export tests and production builds
+passed after the corrections.
+
+Sprint 43 and the preceding verified Sprint 42 closeout commits were pushed to
+`origin/main` at `031b938` on 4 October 2026. Local `main` and `origin/main`
+were synchronised and the working tree was clean after the push.
