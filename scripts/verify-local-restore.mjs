@@ -26,6 +26,9 @@ const criticalTables = [
   "WaiverSubmission",
   "WaiverMinor",
   "WaiverAssociationAudit",
+  "CheckoutDocument",
+  "BookingCheckoutAcceptance",
+  "MarketingConsentEvidence",
   "_prisma_migrations",
 ];
 

@@ -23,6 +23,34 @@ enum BookingSource {
   WALK_UP
 }
 
+enum CheckoutDocumentType {
+  TICKETING_TERMS
+  PRIVACY_NOTICE
+  MARKETING_DISCLOSURE
+}
+
+enum CheckoutDocumentStatus {
+  DRAFT
+  PUBLISHED
+  SUPERSEDED
+}
+
+enum CheckoutAcceptanceChannel {
+  ONLINE
+  POS
+}
+
+enum MarketingConsentDecision {
+  GRANTED
+  DECLINED
+  WITHDRAWN
+}
+
+enum MarketingConsentChannel {
+  ONLINE
+  ADMIN_RECORDED
+}
+
 enum PaymentMethod {
   ONLINE_CARD
   CASH
@@ -153,6 +181,9 @@ model Organization {
   ticketCredentialRotations     TicketCredentialRotationAudit[]
   waiverTemplates               WaiverTemplate[]
   waiverAssociationAudits       WaiverAssociationAudit[]
+  checkoutDocuments             CheckoutDocument[]
+  checkoutAcceptances           BookingCheckoutAcceptance[]
+  marketingConsentEvidence      MarketingConsentEvidence[]
 }
 
 model User {
@@ -188,6 +219,10 @@ model User {
   mfaAuditEntriesMade             MfaAudit[]                      @relation("MfaAuditActor")
   mfaAuditEntriesReceived         MfaAudit[]                      @relation("MfaAuditTarget")
   ticketCredentialRotations       TicketCredentialRotationAudit[] @relation("TicketCredentialRotationActor")
+  checkoutDocumentsCreated        CheckoutDocument[]              @relation("CheckoutDocumentCreatedBy")
+  checkoutDocumentsPublished      CheckoutDocument[]              @relation("CheckoutDocumentPublishedBy")
+  checkoutAcceptancesRecorded     BookingCheckoutAcceptance[]     @relation("CheckoutAcceptanceOperator")
+  marketingConsentEvidenceCreated MarketingConsentEvidence[]      @relation("MarketingConsentActor")
 }
 
 model AuthenticationSession {
@@ -424,6 +459,9 @@ model Event {
   eventGroupMemberships         EventGroupEvent[]
   ticketCredentialRotations     TicketCredentialRotationAudit[]
   waiverAssociationAudits       WaiverAssociationAudit[]
+  checkoutDocuments             CheckoutDocument[]
+  checkoutAcceptances           BookingCheckoutAcceptance[]
+  marketingConsentEvidence      MarketingConsentEvidence[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
@@ -795,7 +833,9 @@ model Customer {
   email     String?
   phone     String?
 
-  bookings Booking[]
+  bookings                 Booking[]
+  checkoutAcceptances      BookingCheckoutAcceptance[]
+  marketingConsentEvidence MarketingConsentEvidence[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -835,6 +875,8 @@ model Booking {
   flexibleTicketRequests        FlexibleTicketRequest[]
   waiverSubmissions             WaiverSubmission[]
   waiverAssociationAudits       WaiverAssociationAudit[]
+  checkoutAcceptance            BookingCheckoutAcceptance?
+  marketingConsentEvidence      MarketingConsentEvidence[]
 
   reservedUntil DateTime?
   confirmedAt   DateTime?
@@ -849,6 +891,115 @@ model Booking {
   updatedAt                  DateTime  @updatedAt
 
   @@index([eventId, source])
+}
+
+model CheckoutDocument {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  type    CheckoutDocumentType
+  version Int
+  status  CheckoutDocumentStatus @default(DRAFT)
+
+  title       String
+  content     String  @db.Text
+  contentHash String
+  testOnly    Boolean @default(true)
+
+  createdByUserId String
+  createdByUser   User   @relation("CheckoutDocumentCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  publishedAt       DateTime?
+  publishedByUserId String?
+  publishedByUser   User?     @relation("CheckoutDocumentPublishedBy", fields: [publishedByUserId], references: [id], onDelete: Restrict)
+
+  termsAcceptances   BookingCheckoutAcceptance[] @relation("CheckoutAcceptanceTerms")
+  privacyAcceptances BookingCheckoutAcceptance[] @relation("CheckoutAcceptancePrivacy")
+  marketingEvidence  MarketingConsentEvidence[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, type, version])
+  @@index([organizationId, eventId, type, status])
+  @@index([publishedByUserId, publishedAt])
+}
+
+model BookingCheckoutAcceptance {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  bookingId String  @unique
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  termsDocumentId  String
+  termsDocument    CheckoutDocument @relation("CheckoutAcceptanceTerms", fields: [termsDocumentId], references: [id], onDelete: Restrict)
+  termsVersion     Int
+  termsContentHash String
+
+  privacyDocumentId  String
+  privacyDocument    CheckoutDocument @relation("CheckoutAcceptancePrivacy", fields: [privacyDocumentId], references: [id], onDelete: Restrict)
+  privacyVersion     Int
+  privacyContentHash String
+
+  channel    CheckoutAcceptanceChannel
+  acceptedAt DateTime                  @default(now())
+
+  recordedByUserId String?
+  recordedByUser   User?   @relation("CheckoutAcceptanceOperator", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, acceptedAt])
+  @@index([eventId, acceptedAt])
+  @@index([customerId, acceptedAt])
+}
+
+model MarketingConsentEvidence {
+  id String @id @default(cuid())
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  bookingId String?
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  disclosureDocumentId  String?
+  disclosureDocument    CheckoutDocument? @relation(fields: [disclosureDocumentId], references: [id], onDelete: Restrict)
+  disclosureVersion     Int?
+  disclosureContentHash String?
+  senderName            String?
+
+  decision   MarketingConsentDecision
+  channel    MarketingConsentChannel
+  occurredAt DateTime                 @default(now())
+
+  actorUserId String?
+  actorUser   User?   @relation("MarketingConsentActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([organizationId, customerId, occurredAt])
+  @@index([eventId, occurredAt])
+  @@index([bookingId])
 }
 
 model BookingItem {
@@ -1763,7 +1914,7 @@ model WaiverTemplate {
 
   waiverVersions WaiverVersion[]
 
-  @@unique([organizationId, activityType, jurisdiction, revision])
+  @@unique([organizationId, activityType, jurisdiction, revision], map: "WaiverTemplate_organizationId_activityType_jurisdiction_revisio")
   @@index([authority, activityType, jurisdiction, status])
   @@index([organizationId, status])
 }

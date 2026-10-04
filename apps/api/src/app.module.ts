@@ -11,6 +11,7 @@ import { BookingModule } from './booking/booking.module';
 import { BookingRescheduleModule } from './booking-reschedule/booking-reschedule.module';
 import { BookingValidationModule } from './booking-validation/booking-validation.module';
 import { CategoryModule } from './category/category.module';
+import { CheckoutConsentModule } from './checkout-consent/checkout-consent.module';
 import { CustomerModule } from './customer/customer.module';
 import { EventModule } from './event/event.module';
 import { EventGroupModule } from './event-group/event-group.module';
@@ -61,6 +62,7 @@ import { AbuseProtectionMiddleware } from './security/abuse-protection.middlewar
     BookingRescheduleModule,
     SessionModule,
     CategoryModule,
+    CheckoutConsentModule,
     ProductModule,
     ProductGroupModule,
     ProductVariantModule,

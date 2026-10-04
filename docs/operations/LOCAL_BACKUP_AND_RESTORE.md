@@ -32,8 +32,9 @@ After restore, the drill compares row counts between the source and restored dat
 - Bookings, Payments and Payment Refunds;
 - Tickets;
 - Products and Product Variants;
-- Event Waivers and Waiver Submissions; and
-- Authentication Sessions; and
+- Event Waivers, Waiver Templates, versions, submissions, minors and association audits;
+- published checkout documents, Booking checkout acceptances and marketing consent evidence;
+- Authentication Sessions and privileged MFA evidence; and
 - Prisma migration history.
 
 Matching counts are a bounded structural check, not full semantic verification or corruption detection. A funded staging exercise must add application smoke tests, object-storage recovery and provider-managed backup evidence.
