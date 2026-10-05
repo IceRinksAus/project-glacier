@@ -27,4 +27,15 @@ export class CompletePosPaymentDto {
   @IsString()
   @MaxLength(100)
   standaloneReference?: string;
+
+  @IsOptional()
+  termsAccepted?: boolean;
+
+  @IsOptional()
+  @IsString()
+  termsDocumentId?: string;
+
+  @IsOptional()
+  @IsString()
+  privacyDocumentId?: string;
 }

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { eventService, GlacierEvent } from "@/services/event.service";
 import {
   PosCatalogue,
+  PosCheckoutDocuments,
   PosCompletion,
   PosParticipant,
   PosReservation,
@@ -82,6 +83,27 @@ export default function PosPage() {
   const [idempotencyKey, setIdempotencyKey] = useState("");
   const [isWorking, setIsWorking] = useState(false);
   const [error, setError] = useState("");
+  const [checkoutDocuments, setCheckoutDocuments] =
+    useState<PosCheckoutDocuments | null>(null);
+  const [termsConfirmed, setTermsConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (!reservation) {
+      setCheckoutDocuments(null);
+      setTermsConfirmed(false);
+      return;
+    }
+    posService
+      .getCheckoutDocuments(eventId)
+      .then(setCheckoutDocuments)
+      .catch((reason) =>
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "Unable to load checkout documents.",
+        ),
+      );
+  }, [eventId, reservation]);
 
   useEffect(() => {
     eventService
@@ -357,6 +379,13 @@ export default function PosPage() {
             paymentMethod === "STANDALONE_EFTPOS"
               ? terminalReference || undefined
               : undefined,
+          ...(reservation && checkoutDocuments
+            ? {
+                termsAccepted: termsConfirmed,
+                termsDocumentId: checkoutDocuments.terms.id,
+                privacyDocumentId: checkoutDocuments.privacy.id,
+              }
+            : {}),
         };
       if (retailReservation) {
         setRetailCompletion(
@@ -371,7 +400,12 @@ export default function PosPage() {
           await posService.completePayment(
             eventId,
             reservation!.booking.id,
-            payment,
+            {
+              ...payment,
+              termsAccepted: termsConfirmed,
+              termsDocumentId: checkoutDocuments!.terms.id,
+              privacyDocumentId: checkoutDocuments!.privacy.id,
+            },
           ),
         );
       }
@@ -843,6 +877,27 @@ export default function PosPage() {
                 />
               </label>
             ) : null}
+            {reservation && checkoutDocuments ? (
+              <div className="rounded-xl border bg-muted/30 p-4">
+                <details>
+                  <summary className="cursor-pointer font-semibold">
+                    {checkoutDocuments.terms.title} · version {checkoutDocuments.terms.version}
+                  </summary>
+                  <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{checkoutDocuments.terms.content}</div>
+                </details>
+                <details className="mt-3">
+                  <summary className="cursor-pointer font-semibold">
+                    {checkoutDocuments.privacy.title} · version {checkoutDocuments.privacy.version}
+                  </summary>
+                  <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{checkoutDocuments.privacy.content}</div>
+                </details>
+                <label className="mt-4 flex items-start gap-3 rounded-lg bg-background p-3 text-sm">
+                  <input type="checkbox" className="mt-1 size-4" checked={termsConfirmed} onChange={(event) => setTermsConfirmed(event.target.checked)} />
+                  <span>I confirm the purchasing adult was shown or given access to these documents and affirmatively accepted the Ticketing Terms.</span>
+                </label>
+                <p className="mt-2 text-xs text-muted-foreground">Marketing permission is not collected by POS.</p>
+              </div>
+            ) : null}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <Button
                 variant="outline"
@@ -855,7 +910,7 @@ export default function PosPage() {
               >
                 Return to basket
               </Button>
-              <Button size="lg" disabled={isWorking} onClick={completeSale}>
+              <Button size="lg" disabled={isWorking || Boolean(reservation && (!checkoutDocuments || !termsConfirmed))} onClick={completeSale}>
                 {isWorking
                   ? "Completing…"
                   : `Confirm ${money(

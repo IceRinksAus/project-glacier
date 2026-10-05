@@ -79,6 +79,11 @@ export interface PosReservation {
   };
 }
 
+export interface PosCheckoutDocuments {
+  terms: { id: string; version: number; title: string; content: string };
+  privacy: { id: string; version: number; title: string; content: string };
+}
+
 export interface PosCompletion {
   id: string;
   bookingNumber: string;
@@ -264,12 +269,18 @@ export const posService = {
       amount: number;
       idempotencyKey: string;
       standaloneReference?: string;
+      termsAccepted: boolean;
+      termsDocumentId: string;
+      privacyDocumentId: string;
     },
   ) =>
     api.post<PosCompletion>(
       `/pos/events/${eventId}/reservations/${bookingId}/complete`,
       input,
     ),
+
+  getCheckoutDocuments: (eventId: string) =>
+    api.get<PosCheckoutDocuments>(`/pos/events/${eventId}/checkout-documents`),
 
   lookupTicket: (eventId: string, token: string) =>
     api.post<PosTicketLookup | PosBookingTicketLookup>(

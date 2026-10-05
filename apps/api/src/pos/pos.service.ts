@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  CheckoutAcceptanceChannel,
+  CheckoutDocumentStatus,
+  CheckoutDocumentType,
+  Prisma,
+} from '@prisma/client';
 
 import {
   AccessControlService,
@@ -293,6 +298,20 @@ export class PosService {
     bookingId: string,
     data: CompletePosPaymentDto,
   ) {
+    if (!data.termsAccepted) {
+      throw new BadRequestException(
+        'Confirm that the purchasing adult accepted the Ticketing Terms.',
+      );
+    }
+    const documents = await this.checkoutDocuments(access, eventId);
+    if (
+      data.termsDocumentId !== documents.terms.id ||
+      data.privacyDocumentId !== documents.privacy.id
+    ) {
+      throw new BadRequestException(
+        'Checkout documents have changed. Review them before payment.',
+      );
+    }
     const standaloneReference = data.standaloneReference?.trim() || null;
     const amount = new Prisma.Decimal(data.amount);
 
@@ -388,6 +407,23 @@ export class PosService {
             receivedByUserId: access.userId,
           },
         });
+
+        await transaction.bookingCheckoutAcceptance.create({
+          data: {
+            organizationId: access.organizationId,
+            eventId,
+            bookingId,
+            customerId: booking.customerId,
+            termsDocumentId: documents.terms.id,
+            termsVersion: documents.terms.version,
+            termsContentHash: documents.terms.contentHash,
+            privacyDocumentId: documents.privacy.id,
+            privacyVersion: documents.privacy.version,
+            privacyContentHash: documents.privacy.contentHash,
+            channel: CheckoutAcceptanceChannel.POS,
+            recordedByUserId: access.userId,
+          },
+        });
       },
       {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
@@ -397,6 +433,43 @@ export class PosService {
     await this.ticketService.issueTicketsForBooking(bookingId);
 
     return this.findCompletion(access, eventId, bookingId);
+  }
+
+  async checkoutDocuments(access: AuthenticatedAccessContext, eventId: string) {
+    await this.accessControl.assertEventAccess(eventId, access);
+    const documents = await this.prisma.checkoutDocument.findMany({
+      where: {
+        organizationId: access.organizationId,
+        eventId,
+        status: CheckoutDocumentStatus.PUBLISHED,
+        type: {
+          in: [
+            CheckoutDocumentType.TICKETING_TERMS,
+            CheckoutDocumentType.PRIVACY_NOTICE,
+          ],
+        },
+      },
+      select: {
+        id: true,
+        type: true,
+        version: true,
+        title: true,
+        content: true,
+        contentHash: true,
+      },
+    });
+    const terms = documents.find(
+      ({ type }) => type === CheckoutDocumentType.TICKETING_TERMS,
+    );
+    const privacy = documents.find(
+      ({ type }) => type === CheckoutDocumentType.PRIVACY_NOTICE,
+    );
+    if (!terms || !privacy) {
+      throw new BadRequestException(
+        'This Event is not ready to accept Ticket payments.',
+      );
+    }
+    return { terms, privacy };
   }
 
   private async assertWalkUpBookingAccess(
@@ -413,6 +486,7 @@ export class PosService {
       },
       select: {
         id: true,
+        customerId: true,
         status: true,
         paymentStatus: true,
         total: true,

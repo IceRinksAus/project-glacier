@@ -30,6 +30,8 @@ describe('PosService', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
     },
+    checkoutDocument: { findMany: jest.fn() },
+    bookingCheckoutAcceptance: { create: jest.fn() },
     $transaction: jest.fn(),
   };
   const accessControl = {
@@ -87,6 +89,27 @@ describe('PosService', () => {
     prisma.payment.findUnique.mockResolvedValue(null);
     prisma.booking.updateMany.mockResolvedValue({ count: 1 });
     prisma.payment.create.mockResolvedValue({ id: 'payment-1' });
+    prisma.bookingCheckoutAcceptance.create.mockResolvedValue({
+      id: 'acceptance-1',
+    });
+    prisma.checkoutDocument.findMany.mockResolvedValue([
+      {
+        id: 'terms-1',
+        type: 'TICKETING_TERMS',
+        version: 1,
+        title: 'Terms',
+        content: 'Terms',
+        contentHash: 'terms-hash',
+      },
+      {
+        id: 'privacy-1',
+        type: 'PRIVACY_NOTICE',
+        version: 1,
+        title: 'Privacy',
+        content: 'Privacy',
+        contentHash: 'privacy-hash',
+      },
+    ]);
     prisma.$transaction.mockImplementation(async (operation) =>
       operation(prisma),
     );
@@ -187,6 +210,7 @@ describe('PosService', () => {
     prisma.booking.findFirst
       .mockResolvedValueOnce({
         id: 'booking-1',
+        customerId: 'customer-1',
         status: 'RESERVED',
         paymentStatus: 'UNPAID',
         total: new Prisma.Decimal(24),
@@ -209,6 +233,9 @@ describe('PosService', () => {
       method: 'CASH',
       amount: 24,
       idempotencyKey: 'pos-payment-1',
+      termsAccepted: true,
+      termsDocumentId: 'terms-1',
+      privacyDocumentId: 'privacy-1',
     });
 
     expect(prisma.payment.create).toHaveBeenCalledWith({
@@ -224,6 +251,16 @@ describe('PosService', () => {
     expect(ticketService.issueTicketsForBooking).toHaveBeenCalledWith(
       'booking-1',
     );
+    expect(prisma.bookingCheckoutAcceptance.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        organizationId: 'organization-1',
+        eventId: 'event-1',
+        bookingId: 'booking-1',
+        customerId: 'customer-1',
+        channel: 'POS',
+        recordedByUserId: 'user-1',
+      }),
+    });
   });
 
   it('rejects staff confirmation when the amount does not match', async () => {
@@ -240,6 +277,9 @@ describe('PosService', () => {
         method: 'CASH',
         amount: 20,
         idempotencyKey: 'pos-payment-1',
+        termsAccepted: true,
+        termsDocumentId: 'terms-1',
+        privacyDocumentId: 'privacy-1',
       }),
     ).rejects.toThrow(BadRequestException);
     expect(prisma.$transaction).not.toHaveBeenCalled();
@@ -258,6 +298,9 @@ describe('PosService', () => {
         method: 'STANDALONE_EFTPOS',
         amount: 24,
         idempotencyKey: 'pos-payment-1',
+        termsAccepted: true,
+        termsDocumentId: 'terms-1',
+        privacyDocumentId: 'privacy-1',
       }),
     ).rejects.toThrow(ConflictException);
   });

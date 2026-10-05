@@ -123,6 +123,14 @@ export class PosController {
     return this.posService.findCatalogue(user, eventId, query.sessionId);
   }
 
+  @Get('events/:eventId/checkout-documents')
+  checkoutDocuments(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.posService.checkoutDocuments(user, eventId);
+  }
+
   @Post('events/:eventId/customers')
   createCustomer(
     @CurrentUser() user: AuthenticatedAccessContext,

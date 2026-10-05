@@ -10,6 +10,7 @@ const {
   createCustomer,
   createReservation,
   completePayment,
+  getCheckoutDocuments,
   getMerchandiseCatalogue,
   createRetailSale,
   completeRetailSale,
@@ -20,6 +21,7 @@ const {
   createCustomer: vi.fn(),
   createReservation: vi.fn(),
   completePayment: vi.fn(),
+  getCheckoutDocuments: vi.fn(),
   getMerchandiseCatalogue: vi.fn(),
   createRetailSale: vi.fn(),
   completeRetailSale: vi.fn(),
@@ -36,6 +38,7 @@ vi.mock("@/services/pos.service", () => ({
     createCustomer,
     createReservation,
     completePayment,
+    getCheckoutDocuments,
     getMerchandiseCatalogue,
     createRetailSale,
     completeRetailSale,
@@ -101,6 +104,10 @@ describe("PosPage", () => {
       errors: [],
       warnings: [],
       requiredProducts: [],
+    });
+    getCheckoutDocuments.mockResolvedValue({
+      terms: { id: "terms-1", version: 1, title: "Ticketing Terms", content: "Test terms" },
+      privacy: { id: "privacy-1", version: 1, title: "Privacy Notice", content: "Test privacy" },
     });
     getMerchandiseCatalogue.mockResolvedValue({
       event: catalogue.event,
@@ -229,6 +236,29 @@ describe("PosPage", () => {
     expect(screen.getByText("1 × Adult")).toBeInTheDocument();
     expect(screen.getAllByText("$24.00").length).toBeGreaterThan(0);
     expect(screen.getByLabelText("Age")).toHaveValue(18);
+  });
+
+  it("requires an explicit POS terms confirmation without collecting marketing", async () => {
+    createCustomer.mockResolvedValue({ id: "customer-1" });
+    createReservation.mockResolvedValue({
+      booking: {
+        id: "booking-1",
+        bookingNumber: "PG-1",
+        total: 24,
+        reservedUntil: "2027-08-01T00:15:00.000Z",
+      },
+    });
+    render(<PosPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Use recommendation" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Add Ticket Adult" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review payment" }));
+
+    const confirmation = await screen.findByText(/purchasing adult was shown/i);
+    const paymentButton = screen.getByRole("button", { name: /Confirm \$24.00 received/ });
+    expect(paymentButton).toBeDisabled();
+    expect(screen.getByText(/Marketing permission is not collected by POS/)).toBeVisible();
+    fireEvent.click(confirmation.closest("label")!.querySelector("input")!);
+    expect(paymentButton).toBeEnabled();
   });
 
   it("uses a valid configured Ticket Type age instead of a universal age", async () => {
