@@ -76,7 +76,9 @@ export class PublicWaiverService {
         signatureData: data.signatureData,
         signatoryParticipating: data.signatoryParticipating,
         mediaConsent: data.mediaConsent ?? null,
-        marketingConsent: data.marketingConsent ?? null,
+        // Historical rows remain readable, but new Waivers are never a
+        // marketing authority. Checkout owns that separate adult choice.
+        marketingConsent: null,
         bookingId: booking?.id,
         signatoryParticipantId: data.signatoryParticipantId,
         waiverContentHash: waiverVersion.contentHash,

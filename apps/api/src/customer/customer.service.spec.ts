@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { CustomerService } from './customer.service';
 import { AccessControlService } from '../access-control/access-control.service';
+import { CheckoutConsentService } from '../checkout-consent/checkout-consent.service';
 
 describe('CustomerService', () => {
   let service: CustomerService;
@@ -42,6 +43,10 @@ describe('CustomerService', () => {
           provide: PrismaService,
           useValue: prismaMock,
         },
+        {
+          provide: CheckoutConsentService,
+          useValue: { withdrawMarketing: jest.fn() },
+        },
       ],
     }).compile();
 
@@ -68,7 +73,7 @@ describe('CustomerService', () => {
             },
           },
         },
-        include: {
+        include: expect.objectContaining({
           bookings: {
             where: {
               event: {
@@ -76,7 +81,7 @@ describe('CustomerService', () => {
               },
             },
           },
-        },
+        }),
       }),
     );
   });

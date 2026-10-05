@@ -233,6 +233,10 @@ describe('CheckoutConsentService', () => {
 
   it('records withdrawal as a new attributed row and never mutates history', async () => {
     prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1' });
+    prisma.marketingConsentEvidence.findFirst.mockResolvedValue({
+      id: 'grant-1',
+      decision: MarketingConsentDecision.GRANTED,
+    });
     prisma.marketingConsentEvidence.create.mockImplementation(
       ({ data }) => data,
     );
@@ -253,6 +257,35 @@ describe('CheckoutConsentService', () => {
       }),
     );
     expect(prisma.marketingConsentEvidence.update).toBeUndefined();
+  });
+
+  it('returns the existing withdrawal without appending duplicate evidence', async () => {
+    const existingWithdrawal = {
+      id: 'withdrawal-1',
+      decision: MarketingConsentDecision.WITHDRAWN,
+    };
+    prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1' });
+    prisma.marketingConsentEvidence.findFirst.mockResolvedValue(
+      existingWithdrawal,
+    );
+
+    await expect(
+      service.withdrawMarketing(owner, 'event-1', 'customer-1'),
+    ).resolves.toBe(existingWithdrawal);
+    expect(prisma.marketingConsentEvidence.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects withdrawal when no current marketing permission exists', async () => {
+    prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1' });
+    prisma.marketingConsentEvidence.findFirst.mockResolvedValue({
+      id: 'decline-1',
+      decision: MarketingConsentDecision.DECLINED,
+    });
+
+    await expect(
+      service.withdrawMarketing(owner, 'event-1', 'customer-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.marketingConsentEvidence.create).not.toHaveBeenCalled();
   });
 
   it('does not permit operational roles to manage consent documents', async () => {

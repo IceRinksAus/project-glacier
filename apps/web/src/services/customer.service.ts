@@ -47,6 +47,16 @@ export interface CustomerDetail {
       ticketType: { id: string; name: string };
     }>;
   }>;
+  marketingConsentEvidence: Array<{
+    id: string;
+    eventId: string | null;
+    decision: "GRANTED" | "DECLINED" | "WITHDRAWN";
+    channel: "ONLINE" | "ADMIN_RECORDED";
+    senderName: string | null;
+    occurredAt: string;
+    event: { id: string; name: string } | null;
+    actorUser: { id: string; name: string } | null;
+  }>;
 }
 
 export const customerService = {
@@ -65,4 +75,9 @@ export const customerService = {
   },
   findOne: (customerId: string) =>
     api.get<CustomerDetail>(`/customer/${customerId}`),
+  withdrawMarketing: (customerId: string, eventId: string) =>
+    api.post(
+      `/customer/${customerId}/events/${eventId}/marketing-withdrawal`,
+      {},
+    ),
 };

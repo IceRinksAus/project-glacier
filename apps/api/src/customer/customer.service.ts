@@ -6,12 +6,14 @@ import {
 } from '../access-control/access-control.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchCustomersQueryDto } from './dto/search-customers-query.dto';
+import { CheckoutConsentService } from '../checkout-consent/checkout-consent.service';
 
 @Injectable()
 export class CustomerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly accessControl: AccessControlService,
+    private readonly checkoutConsent: CheckoutConsentService,
   ) {}
 
   findAll(access: AuthenticatedAccessContext) {
@@ -35,6 +37,14 @@ export class CustomerService {
         createdAt: 'desc',
       },
     });
+  }
+
+  withdrawMarketing(
+    access: AuthenticatedAccessContext,
+    customerId: string,
+    eventId: string,
+  ) {
+    return this.checkoutConsent.withdrawMarketing(access, eventId, customerId);
   }
 
   async search(
@@ -132,6 +142,20 @@ export class CustomerService {
                 ticketType: true,
               },
             },
+          },
+        },
+        marketingConsentEvidence: {
+          where: { event: eventWhere },
+          orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+          select: {
+            id: true,
+            eventId: true,
+            decision: true,
+            channel: true,
+            senderName: true,
+            occurredAt: true,
+            event: { select: { id: true, name: true } },
+            actorUser: { select: { id: true, name: true } },
           },
         },
       },

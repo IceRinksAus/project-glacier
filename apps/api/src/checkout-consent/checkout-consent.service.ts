@@ -359,6 +359,23 @@ export class CheckoutConsentService {
     });
     if (!customer) throw new NotFoundException('Customer not found.');
 
+    const current = await this.prisma.marketingConsentEvidence.findFirst({
+      where: {
+        organizationId: access.organizationId,
+        eventId,
+        customerId,
+      },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+    });
+    if (current?.decision === MarketingConsentDecision.WITHDRAWN) {
+      return current;
+    }
+    if (current?.decision !== MarketingConsentDecision.GRANTED) {
+      throw new BadRequestException(
+        'This Customer does not currently have marketing permission to withdraw.',
+      );
+    }
+
     return this.prisma.marketingConsentEvidence.create({
       data: {
         organizationId: access.organizationId,

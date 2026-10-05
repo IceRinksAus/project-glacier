@@ -32,7 +32,6 @@ export interface CreateWaiverSubmissionInput {
   signatureData: string;
   signatoryParticipating: boolean;
   mediaConsent?: boolean;
-  marketingConsent?: boolean;
   bookingId?: string;
   publicAccessToken?: string;
   signatoryParticipantId?: string;

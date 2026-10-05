@@ -18,6 +18,27 @@ export default function CustomerDetailPage() {
   const { customerId } = useParams<{ customerId: string }>();
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [error, setError] = useState("");
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const currentMarketingEvidence = customer?.marketingConsentEvidence.filter(
+    (evidence, index, allEvidence) =>
+      evidence.event &&
+      allEvidence.findIndex(
+        (candidate) => candidate.eventId === evidence.eventId,
+      ) === index,
+  );
+
+  async function withdrawMarketing(eventId: string) {
+    setIsWithdrawing(true);
+    setError("");
+    try {
+      await customerService.withdrawMarketing(customerId, eventId);
+      setCustomer(await customerService.findOne(customerId));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to record the withdrawal.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  }
 
   useEffect(() => {
     void customerService
@@ -62,6 +83,32 @@ export default function CustomerDetailPage() {
                 <span>{customer.phone || "No phone"}</span>
               </div>
             </header>
+            <section className="rounded-xl border bg-card p-6 shadow-sm">
+              <h2 className="text-xl font-semibold">Marketing choice</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This applies only to the purchasing adult. Transactional Tickets, receipts and safety information remain available after withdrawal.
+              </p>
+              <div className="mt-5 space-y-3">
+                {currentMarketingEvidence?.map((evidence) => (
+                  <article key={evidence.eventId} className="flex flex-col justify-between gap-3 rounded-lg border p-4 sm:flex-row sm:items-center">
+                    <div>
+                      <p className="font-semibold">{evidence.event?.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {evidence.decision === "GRANTED" ? "Marketing permitted" : evidence.decision === "WITHDRAWN" ? "Permission withdrawn" : "Marketing declined"} · {new Date(evidence.occurredAt).toLocaleString("en-AU")}
+                      </p>
+                    </div>
+                    {evidence.decision === "GRANTED" && evidence.eventId ? (
+                      <button type="button" disabled={isWithdrawing} onClick={() => void withdrawMarketing(evidence.eventId!)} className="rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50">
+                        Record withdrawal
+                      </button>
+                    ) : null}
+                  </article>
+                ))}
+                {currentMarketingEvidence?.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No checkout marketing choice has been recorded.</p>
+                ) : null}
+              </div>
+            </section>
             <section className="rounded-xl border bg-card p-6 shadow-sm">
               <h2 className="text-xl font-semibold">Booking history</h2>
               <div className="mt-5 space-y-3">

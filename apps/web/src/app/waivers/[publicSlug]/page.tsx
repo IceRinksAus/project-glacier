@@ -176,7 +176,6 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
   const [signatoryParticipating, setSignatoryParticipating] = useState(true);
   const [signatoryParticipantId, setSignatoryParticipantId] = useState("");
   const [mediaConsent, setMediaConsent] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
   const [minors, setMinors] = useState<WaiverMinorInput[]>([]);
   const [bookingContext, setBookingContext] =
     useState<WaiverBookingContext | null>(null);
@@ -290,7 +289,6 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
         signatureData,
         signatoryParticipating,
         mediaConsent,
-        marketingConsent,
         bookingId: bookingCredential?.bookingId,
         publicAccessToken: bookingCredential?.publicAccessToken,
         signatoryParticipantId:
@@ -742,17 +740,6 @@ export default function PublicWaiverPage({ params }: PublicWaiverPageProps) {
               />
               <span className="text-sm leading-6 text-slate-700">
                 I consent to approved Event photography or video use.
-              </span>
-            </label>
-            <label className="mt-3 flex items-start gap-3 rounded-2xl border border-slate-200 p-4">
-              <input
-                type="checkbox"
-                checked={marketingConsent}
-                onChange={(event) => setMarketingConsent(event.target.checked)}
-                className="mt-1 size-5 accent-sky-800"
-              />
-              <span className="text-sm leading-6 text-slate-700">
-                I would like to receive optional Event updates and marketing.
               </span>
             </label>
           </section>

@@ -53,10 +53,6 @@ export class CreateWaiverSubmissionDto {
   mediaConsent?: boolean;
 
   @IsOptional()
-  @IsBoolean()
-  marketingConsent?: boolean;
-
-  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(100)

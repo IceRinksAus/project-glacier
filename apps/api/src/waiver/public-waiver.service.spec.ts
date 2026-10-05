@@ -276,7 +276,7 @@ describe('PublicWaiverService', () => {
           bookingId: 'booking-1',
           signatoryParticipantId: 'adult-1',
           mediaConsent: false,
-          marketingConsent: true,
+          marketingConsent: null,
           minors: {
             create: [
               expect.objectContaining({ bookingParticipantId: 'child-1' }),
