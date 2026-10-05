@@ -292,6 +292,18 @@ export interface PublicPaymentResponse {
   clientSecret?: string;
 }
 
+export interface PublicCheckoutDocuments {
+  terms: { id: string; version: number; title: string; content: string };
+  privacy: { id: string; version: number; title: string; content: string };
+  marketing: {
+    id: string;
+    version: number;
+    title: string;
+    content: string;
+  } | null;
+  marketingSenderName: string;
+}
+
 export interface PublicBookingStatus {
   id: string;
   bookingNumber: string;
@@ -410,12 +422,27 @@ export const publicBookingService = {
     return publicApi.post<PublicBookingResponse>("/public/bookings", data);
   },
 
-  createPayment(bookingId: string, publicAccessToken: string) {
+  getCheckoutDocuments(bookingId: string, publicAccessToken: string) {
+    return publicApi.post<PublicCheckoutDocuments>(
+      `/public/bookings/${bookingId}/checkout-documents`,
+      { publicAccessToken },
+    );
+  },
+
+  createPayment(
+    bookingId: string,
+    input: {
+      publicAccessToken: string;
+      termsAccepted: boolean;
+      termsDocumentId: string;
+      privacyDocumentId: string;
+      marketingDisclosureDocumentId?: string;
+      marketingAccepted?: boolean;
+    },
+  ) {
     return publicApi.post<PublicPaymentResponse>(
       `/public/bookings/${bookingId}/payments`,
-      {
-        publicAccessToken,
-      },
+      input,
     );
   },
 

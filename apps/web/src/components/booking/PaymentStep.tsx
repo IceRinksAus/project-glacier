@@ -2,6 +2,7 @@
 
 import {
   FormEvent,
+  useEffect,
   useState,
 } from "react";
 
@@ -17,6 +18,7 @@ import {
 
 import {
   PublicBookingResponse,
+  PublicCheckoutDocuments,
   publicBookingService,
 } from "@/services/public-booking.service";
 
@@ -206,6 +208,38 @@ export function PaymentStep({
     null,
   );
 
+  const [checkoutDocuments, setCheckoutDocuments] =
+    useState<PublicCheckoutDocuments | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [marketingAccepted, setMarketingAccepted] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    publicBookingService
+      .getCheckoutDocuments(
+        reservation.booking.id,
+        reservation.booking.publicAccessToken,
+      )
+      .then((documents) => {
+        if (active) setCheckoutDocuments(documents);
+      })
+      .catch((error) => {
+        if (active) {
+          setPaymentError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load checkout documents.",
+          );
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    reservation.booking.id,
+    reservation.booking.publicAccessToken,
+  ]);
+
   async function startPayment() {
     setPaymentError(null);
     setIsStartingPayment(true);
@@ -214,8 +248,18 @@ export function PaymentStep({
       const result =
         await publicBookingService.createPayment(
           reservation.booking.id,
-          reservation.booking
-            .publicAccessToken,
+          {
+            publicAccessToken:
+              reservation.booking.publicAccessToken,
+            termsAccepted,
+            termsDocumentId:
+              checkoutDocuments!.terms.id,
+            privacyDocumentId:
+              checkoutDocuments!.privacy.id,
+            marketingDisclosureDocumentId:
+              checkoutDocuments?.marketing?.id,
+            marketingAccepted,
+          },
         );
 
       if (!result.clientSecret) {
@@ -286,6 +330,60 @@ export function PaymentStep({
         </span>
       </div>
 
+      {checkoutDocuments ? (
+        <div className="mt-5 space-y-3 rounded-xl border bg-slate-50 p-4">
+          <details>
+            <summary className="cursor-pointer font-semibold">
+              {checkoutDocuments.terms.title} · version{" "}
+              {checkoutDocuments.terms.version}
+            </summary>
+            <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              {checkoutDocuments.terms.content}
+            </div>
+          </details>
+          <details>
+            <summary className="cursor-pointer font-semibold">
+              {checkoutDocuments.privacy.title} · version{" "}
+              {checkoutDocuments.privacy.version}
+            </summary>
+            <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+              {checkoutDocuments.privacy.content}
+            </div>
+          </details>
+          <label className="flex items-start gap-3 rounded-lg bg-white p-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1 size-4"
+              checked={termsAccepted}
+              onChange={(event) =>
+                setTermsAccepted(event.target.checked)
+              }
+            />
+            <span>
+              <strong>I accept the Ticketing Terms.</strong>{" "}
+              I have also been shown the Privacy Collection Notice.
+            </span>
+          </label>
+          {checkoutDocuments.marketing ? (
+            <label className="flex items-start gap-3 rounded-lg bg-white p-3 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1 size-4"
+                checked={marketingAccepted}
+                onChange={(event) =>
+                  setMarketingAccepted(event.target.checked)
+                }
+              />
+              <span>
+                <strong>Optional:</strong> I agree to receive marketing
+                from {checkoutDocuments.marketingSenderName}. This is not
+                required to purchase Tickets and can be withdrawn later.
+              </span>
+            </label>
+          ) : null}
+        </div>
+      ) : null}
+
       {paymentError ? (
         <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
           <p className="text-sm text-destructive">
@@ -297,7 +395,11 @@ export function PaymentStep({
       {!clientSecret ? (
         <button
           type="button"
-          disabled={isStartingPayment}
+          disabled={
+            isStartingPayment ||
+            !checkoutDocuments ||
+            !termsAccepted
+          }
           onClick={startPayment}
           className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-foreground px-5 py-3 font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >

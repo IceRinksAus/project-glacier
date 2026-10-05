@@ -189,6 +189,21 @@ export class CheckoutConsentService {
     channel: CheckoutAcceptanceChannel;
     recordedByUserId?: string;
   }) {
+    const existing = await this.prisma.bookingCheckoutAcceptance.findUnique({
+      where: { bookingId: input.bookingId },
+    });
+    if (existing) {
+      if (
+        existing.termsDocumentId === input.termsDocumentId &&
+        existing.privacyDocumentId === input.privacyDocumentId &&
+        existing.channel === input.channel
+      ) {
+        return existing;
+      }
+      throw new ConflictException(
+        'This Booking already retains different checkout acceptance evidence.',
+      );
+    }
     const booking = await this.prisma.booking.findFirst({
       where: {
         id: input.bookingId,
@@ -261,6 +276,26 @@ export class CheckoutConsentService {
     granted: boolean;
     senderName: string;
   }) {
+    const existing = await this.prisma.marketingConsentEvidence.findFirst({
+      where: {
+        bookingId: input.bookingId,
+        channel: MarketingConsentChannel.ONLINE,
+      },
+    });
+    if (existing) {
+      const expectedDecision = input.granted
+        ? MarketingConsentDecision.GRANTED
+        : MarketingConsentDecision.DECLINED;
+      if (
+        existing.disclosureDocumentId === input.disclosureDocumentId &&
+        existing.decision === expectedDecision
+      ) {
+        return existing;
+      }
+      throw new ConflictException(
+        'This Booking already retains a different marketing choice.',
+      );
+    }
     const senderName = input.senderName.trim();
     if (!senderName) throw new BadRequestException('Sender name is required.');
     const booking = await this.prisma.booking.findFirst({

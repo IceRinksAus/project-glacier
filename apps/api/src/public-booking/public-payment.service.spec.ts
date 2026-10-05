@@ -12,6 +12,7 @@ describe('PublicPaymentService', () => {
     booking: {
       findFirst: jest.fn(),
     },
+    checkoutDocument: { findMany: jest.fn() },
   };
 
   const paymentService = {
@@ -19,6 +20,25 @@ describe('PublicPaymentService', () => {
   };
   const ticketCredentials = {
     present: jest.fn(() => 'current-ticket-token'),
+  };
+  const checkoutConsent = {
+    recordBookingAcceptance: jest.fn(),
+    recordOnlineMarketingChoice: jest.fn(),
+  };
+  const paymentInput = {
+    publicAccessToken: 'a'.repeat(64),
+    termsAccepted: true,
+    termsDocumentId: 'terms-1',
+    privacyDocumentId: 'privacy-1',
+  };
+  const accessibleBooking = {
+    id: 'booking-1',
+    eventId: 'event-1',
+    customerId: 'customer-1',
+    event: {
+      organizationId: 'org-1',
+      organization: { name: 'Test Organiser', tradingName: null },
+    },
   };
 
   beforeEach(() => {
@@ -28,7 +48,24 @@ describe('PublicPaymentService', () => {
       prisma as never,
       paymentService as unknown as PaymentService,
       ticketCredentials as unknown as TicketCredentialService,
+      checkoutConsent as never,
     );
+    prisma.checkoutDocument.findMany.mockResolvedValue([
+      {
+        id: 'terms-1',
+        type: 'TICKETING_TERMS',
+        version: 1,
+        title: 'Terms',
+        content: 'Terms',
+      },
+      {
+        id: 'privacy-1',
+        type: 'PRIVACY_NOTICE',
+        version: 1,
+        title: 'Privacy',
+        content: 'Privacy',
+      },
+    ]);
   });
 
   it('should be defined', () => {
@@ -42,9 +79,7 @@ describe('PublicPaymentService', () => {
       .update(publicAccessToken)
       .digest('hex');
 
-    prisma.booking.findFirst.mockResolvedValue({
-      id: 'booking-1',
-    });
+    prisma.booking.findFirst.mockResolvedValue(accessibleBooking);
 
     paymentService.createPayment.mockResolvedValue({
       provider: 'MOCK',
@@ -52,24 +87,29 @@ describe('PublicPaymentService', () => {
       status: 'PENDING',
     });
 
-    await service.createPayment('booking-1', publicAccessToken);
-
-    expect(prisma.booking.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'booking-1',
-        publicAccessTokenHash: expectedHash,
-      },
-      select: {
-        id: true,
-      },
+    await service.createPayment('booking-1', {
+      ...paymentInput,
+      publicAccessToken,
     });
+
+    expect(prisma.booking.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'booking-1',
+          publicAccessTokenHash: expectedHash,
+        },
+      }),
+    );
   });
 
   it('should reject an unknown booking without calling the payment service', async () => {
     prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.createPayment('missing-booking', 'some-token'),
+      service.createPayment('missing-booking', {
+        ...paymentInput,
+        publicAccessToken: 'some-token',
+      }),
     ).rejects.toThrow(
       new NotFoundException('Booking not found or access token invalid.'),
     );
@@ -77,11 +117,25 @@ describe('PublicPaymentService', () => {
     expect(paymentService.createPayment).not.toHaveBeenCalled();
   });
 
+  it('rejects payment before lookup when required terms were not accepted', async () => {
+    await expect(
+      service.createPayment('booking-1', {
+        ...paymentInput,
+        termsAccepted: false,
+      }),
+    ).rejects.toThrow('Ticketing Terms must be accepted before payment.');
+    expect(prisma.booking.findFirst).not.toHaveBeenCalled();
+    expect(paymentService.createPayment).not.toHaveBeenCalled();
+  });
+
   it('should reject an invalid public access token without revealing whether the booking exists', async () => {
     prisma.booking.findFirst.mockResolvedValue(null);
 
     await expect(
-      service.createPayment('booking-1', 'wrong-token'),
+      service.createPayment('booking-1', {
+        ...paymentInput,
+        publicAccessToken: 'wrong-token',
+      }),
     ).rejects.toThrow(
       new NotFoundException('Booking not found or access token invalid.'),
     );
@@ -90,9 +144,7 @@ describe('PublicPaymentService', () => {
   });
 
   it('should delegate to PaymentService only after public booking access is verified', async () => {
-    prisma.booking.findFirst.mockResolvedValue({
-      id: 'booking-1',
-    });
+    prisma.booking.findFirst.mockResolvedValue(accessibleBooking);
 
     paymentService.createPayment.mockResolvedValue({
       provider: 'MOCK',
@@ -100,14 +152,23 @@ describe('PublicPaymentService', () => {
       status: 'PENDING',
     });
 
-    const result = await service.createPayment(
-      'booking-1',
-      'valid-public-token',
-    );
+    const result = await service.createPayment('booking-1', {
+      ...paymentInput,
+      publicAccessToken: 'valid-public-token',
+    });
 
     expect(paymentService.createPayment).toHaveBeenCalledTimes(1);
 
     expect(paymentService.createPayment).toHaveBeenCalledWith('booking-1');
+    expect(checkoutConsent.recordBookingAcceptance).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bookingId: 'booking-1',
+        customerId: 'customer-1',
+        termsDocumentId: 'terms-1',
+        privacyDocumentId: 'privacy-1',
+        channel: 'ONLINE',
+      }),
+    );
 
     expect(result).toEqual({
       provider: 'MOCK',

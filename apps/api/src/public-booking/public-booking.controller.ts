@@ -14,6 +14,7 @@ import { CreateBookingDto } from '../booking/dto/create-booking.dto';
 
 import { CreatePublicCustomerDto } from './dto/create-public-customer.dto';
 import { CreatePublicPaymentDto } from './dto/create-public-payment.dto';
+import { GetCheckoutDocumentsDto } from './dto/get-checkout-documents.dto';
 import { EvaluatePublicRulesDto } from './dto/evaluate-public-rules.dto';
 import { QuoteFlexibleTicketDto } from './dto/quote-flexible-ticket.dto';
 import { PublicBookingService } from './public-booking.service';
@@ -103,7 +104,16 @@ export class PublicBookingController {
     @Param('bookingId') bookingId: string,
     @Body() data: CreatePublicPaymentDto,
   ) {
-    return this.publicPaymentService.createPayment(
+    return this.publicPaymentService.createPayment(bookingId, data);
+  }
+
+  @Post('bookings/:bookingId/checkout-documents')
+  @Header('Cache-Control', 'no-store')
+  checkoutDocuments(
+    @Param('bookingId') bookingId: string,
+    @Body() data: GetCheckoutDocumentsDto,
+  ) {
+    return this.publicPaymentService.checkoutDocuments(
       bookingId,
       data.publicAccessToken,
     );
@@ -113,7 +123,7 @@ export class PublicBookingController {
   @Header('Cache-Control', 'no-store')
   getBookingStatus(
     @Param('bookingId') bookingId: string,
-    @Body() data: CreatePublicPaymentDto,
+    @Body() data: GetCheckoutDocumentsDto,
   ) {
     return this.publicPaymentService.getBookingStatus(
       bookingId,

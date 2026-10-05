@@ -271,7 +271,7 @@ describe('PublicBookingController', () => {
 
     expect(publicPaymentService.createPayment).toHaveBeenCalledWith(
       'booking-1',
-      'customer-public-access-token',
+      { publicAccessToken: 'customer-public-access-token' },
     );
 
     expect(result).toEqual(paymentResult);

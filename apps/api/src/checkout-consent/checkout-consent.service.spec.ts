@@ -36,8 +36,14 @@ describe('CheckoutConsentService', () => {
       },
       booking: { findFirst: jest.fn() },
       customer: { findFirst: jest.fn() },
-      bookingCheckoutAcceptance: { create: jest.fn() },
-      marketingConsentEvidence: { create: jest.fn() },
+      bookingCheckoutAcceptance: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+      },
+      marketingConsentEvidence: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+      },
       $transaction: jest.fn(),
     };
     accessControl = { assertEventAccess: jest.fn() };
