@@ -215,6 +215,20 @@ Status values:
 | GET    | `/public/waivers/:publicSlug`                      | Participant       | None                          | Strict controller pipe                  | PUBLIC | Retain active/published-only lookup.                                                 |
 | POST   | `/public/waivers/:publicSlug/submissions`          | Participant       | None                          | Strict nested DTO and local pipe        | PUBLIC | Server-authoritative evidence retained; deployment-edge abuse limit is a pilot gate. |
 
+## Checkout Documents and Marketing Choice
+
+| Method | Route                                                             | Audience   | Authentication    | Tenant path                                          | Status    | Boundary |
+| ------ | ----------------------------------------------------------------- | ---------- | ----------------- | ---------------------------------------------------- | --------- | -------- |
+| GET    | `/checkout-consent/events/:eventId`                               | Management | JWT OWNER/MANAGER | Event → Organisation + assignment                    | PROTECTED | Returns the authorised Event's document workspace and checkout readiness only. |
+| POST   | `/checkout-consent/events/:eventId/documents`                     | Management | JWT OWNER/MANAGER | Event → Organisation + assignment                    | PROTECTED | Creates a new immutable draft version from strict input; test-only wording cannot be published in production. |
+| POST   | `/checkout-consent/events/:eventId/documents/:documentId/publish` | Management | JWT OWNER/MANAGER | Document → Event → Organisation                      | PROTECTED | Atomically supersedes the same Event/type publication without rewriting history. |
+| POST   | `/customer/:id/events/:eventId/marketing-withdrawal`              | Management | JWT OWNER/MANAGER | Customer Booking → Event → Organisation + assignment | PROTECTED | Appends an attributable withdrawal only when current adult marketing authority is granted; repeated withdrawal is idempotent. |
+
+Public checkout receives only published document identifiers and explicit
+choices. The server resolves trusted content/version/hash evidence before
+Payment. Public Ticket, Booking-possession and Waiver-verification responses do
+not expose organiser checkout or marketing evidence.
+
 ## Event Waiver Administration
 
 | Route group                                        | Audience | Authentication/role | Tenant path          | Status    | Sprint 17 action                          |

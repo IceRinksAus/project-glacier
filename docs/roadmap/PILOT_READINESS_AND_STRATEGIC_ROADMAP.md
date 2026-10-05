@@ -494,13 +494,20 @@ POS, Booking and Customer context issues. Sprint 43 productised coherent
 organisation reporting with exact multi-Event scope, Event-local ranges,
 report-specific results and matching specifically named CSV/PDF evidence.
 
-The next bounded Product Comfort Gate is Sprint 44: separate versioned
+Sprint 44 completed the local checkout-consent boundary: separate versioned
 Ticketing Terms acceptance, Privacy Collection Notice presentation and optional
-adult-only marketing authority at checkout. It must preserve transactional
-communications and participation Waivers as distinct purposes, use fictional
-local documents only and retain final legal/privacy approval as a production
-gate. Phase 3 should also continue with locally actionable production findings
-without starting paid infrastructure or broad product expansion.
+adult-only marketing authority, including attributable withdrawal. POS records
+deliberate operator evidence without collecting marketing, while participation
+Waivers and dependant records remain separate. The implementation uses
+fictional local wording only; final legal/privacy approval, retention, sender
+ownership, delivery-provider unsubscribe controls and deployed evidence remain
+production gates.
+
+The next bounded Product Comfort Gate should be Sprint 45's public Event
+homepage and content structure, followed by another deliberate readiness
+reassessment rather than unrelated feature expansion. Phase 3 should continue
+with locally actionable production findings without starting paid
+infrastructure.
 Deployment-edge, managed-storage, monitoring,
 professional-review and real-device work remains queued behind the Product
 Comfort Gate and explicit expenditure approval.

@@ -28,6 +28,18 @@ Sprint 34 working register. This is a repository and local-configuration review,
 | SEC-31-008 | Privacy data lifecycle         |     High | The actual data flow and current deletion behaviour are now registered, but no legally approved retention schedule, privacy-request/anonymisation workflow, legal hold or deployed log/object/backup lifecycle exists. Customer, participant and Waiver identity currently has no automatic expiry. | Product/privacy owner with legal, accounting and insurer advisers | Before representative staging data or live operation              | Engineering register complete; production activation remains prohibited pending approval and implementation  |
 | SEC-31-009 | Ticket credential at rest      |   Medium | Sprint 32 replaced stored bearer values with a random selector, recorded key ID and HMAC-SHA-256 authority held outside PostgreSQL. Existing local credentials are accepted only through one-way hashes; raw values were cleared and a database constraint prohibits reintroduction. OWNER/assigned-MANAGER rotation immediately replaces the selector/key reference, clears legacy acceptance and records non-secret audit evidence. | Development/security owner | Implement before live Ticket use | **Closed locally 3 September 2026**; 47 migrations, 622 API tests, 88 web tests, production builds and tenant/role isolation passed. Managed production key custody and independent review remain separate pre-live evidence. |
 
+### Sprint 44 checkout-consent finding
+
+`SEC-44-010` (High before implementation) covered the risk that required sale
+terms, privacy presentation, transactional messages, optional marketing and
+participation Waivers were not independently evidenced. Sprint 44 locally
+resolves that workflow boundary with server-resolved versioned documents,
+Booking-level acceptance, adult-only grant/decline evidence, attributable
+withdrawal and no new Waiver-derived marketing authority. Final legal wording,
+retention, sender/provider ownership, deployed unsubscribe and abuse controls,
+and independent legal/privacy review remain open and prohibit production
+marketing.
+
 ## Current gate statement
 
 No unresolved Critical finding is currently known from the completed local evidence. That statement is deliberately bounded: items marked Pending have not been assessed, and open High findings prohibit internet/live exposure rather than being accepted as safe. Historical dependency evidence is recorded in `DEPENDENCY_AUDIT_2026-09-01.md`; the current remediated lockfile evidence is in `DEPENDENCY_AUDIT_2026-09-08.md`.

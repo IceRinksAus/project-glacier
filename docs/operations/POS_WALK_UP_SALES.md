@@ -142,6 +142,9 @@ The completion command requires:
 - current Event access for the operator;
 - Cash or Standalone EFTPOS as the method;
 - the exact authoritative Booking amount; and
+- deliberate operator confirmation that the purchasing adult was shown or
+  given access to the current Ticketing Terms and Privacy Collection Notice;
+  and
 - a unique client idempotency key.
 
 Glacier records:
@@ -153,6 +156,11 @@ Glacier records:
 - successful status and timestamp;
 - receiving operator identity; and
 - idempotency key.
+
+For Ticket sales, the same transaction also records the immutable published
+document versions and hashes, acceptance time, POS channel and authenticated
+operator. POS does not collect marketing permission on a customer's behalf.
+Merchandise-only sales do not manufacture a Booking or checkout acceptance.
 
 Booking confirmation and Payment creation occur in one serializable database transaction. Tickets are then issued through the existing duplicate-safe Ticket service. Retrying the same successful command does not create another Payment or another Ticket for a participant.
 

@@ -36,6 +36,14 @@
 - exercise authorised Ticket-link rotation and prove the former current and legacy links both fail without changing Ticket, Booking, Payment or scan history
 - prove personal-data deletion across denormalised snapshots, files, logs, subprocessors and restored backups
 - approve customer-facing privacy notices, subprocessors/data locations and children's/Waiver handling
+- obtain qualified approval for every Event's Ticketing Terms, Privacy
+  Collection Notice and optional marketing disclosure before publishing a
+  production version; test that missing/test-only documents fail closed
+- approve the checkout-acceptance and marketing-choice retention schedule,
+  withdrawal handling and transactional-versus-marketing communication rules
+- select and verify a sender/domain and provider-backed unsubscribe workflow
+  before enabling any marketing delivery; a recorded grant alone does not
+  authorise an unapproved delivery system
 - obtain current qualified approval for every jurisdiction/activity Waiver template and retain its approval reference; historical NSW/WA/VIC/SA forms are source material only
 - approve guardian capacity, optional media/marketing consent wording, Waiver retention and legal-hold behavior
 - verify deployed public Waiver submission/proof abuse limits and privacy-safe monitoring

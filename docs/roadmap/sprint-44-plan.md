@@ -1,6 +1,6 @@
 # Sprint 44 Plan — Checkout Terms, Privacy Notice and Marketing Choice
 
-**Status:** Approved for implementation on 5 October 2026
+**Status:** Implementation and complete local verification finished on 5 October 2026; organiser walkthrough remains available
 
 ## Outcome
 

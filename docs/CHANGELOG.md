@@ -1,5 +1,38 @@
 # Changelog
 
+# Sprint 44 – Checkout Terms, Privacy Notice and Marketing Choice
+
+## Complete
+
+- Added immutable Event-scoped Ticketing Terms, Privacy Collection Notice and
+  marketing disclosure versions with deliberate draft, preview and publication.
+- Added server-authoritative Booking acceptance evidence for online and POS
+  Ticket sales, bound to the exact published versions and hashes.
+- Kept optional marketing unchecked and adult-only, retained grant/decline and
+  attributable withdrawal history, and kept transactional communication valid
+  after withdrawal.
+- Removed marketing collection from new Waivers while preserving historical
+  Waiver evidence and separate optional media permission.
+- Preserved Organisation, Event assignment, Payment, Ticket, refund, capacity,
+  Product, Scanner, Flexible Ticket and merchandise-only boundaries.
+
+## Boundary
+
+Only fictional local wording is present. Final legal/privacy approval,
+retention, sender/domain/provider ownership, unsubscribe delivery, managed
+production controls, deployed devices and independent review remain future
+evidence. No campaigns or message delivery were implemented.
+
+## Verification
+
+- API: 94 suites / 709 tests; web: 51 files / 152 tests.
+- Both production builds passed.
+- All 56 migrations were current and replayed from empty state.
+- Disposable tenant/role/Event/MFA isolation passed 5/5.
+- Isolated restore matched 23 critical tables.
+- Tracked-secret scanning covered 726 tracked files / 6 rules.
+- The complete local release gate passed.
+
 # Sprint 40 – Reporting Hub and Core Reports
 
 ## Complete

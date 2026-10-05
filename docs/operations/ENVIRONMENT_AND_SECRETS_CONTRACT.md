@@ -43,6 +43,13 @@ must be separate from JWT, Stripe, webhook and database credentials. Key IDs may
 appear in controlled operational evidence; key values and Ticket credentials
 must never appear in logs.
 
+Checkout document approval is persisted Event configuration rather than an
+environment secret. Production Ticket payment fails closed unless the Event
+has published non-test Ticketing Terms, Privacy Collection Notice and marketing
+disclosure versions. Publishing fictional local wording does not satisfy the
+production legal/privacy gate, and no email/API credential should be configured
+until sender ownership and delivery scope are approved.
+
 MFA keys and the recovery-code pepper must be separate from each other and all
 other Glacier secrets. Retain an old encryption key until no factor references
 it. Factor rotation installs authority under the active key and revokes affected

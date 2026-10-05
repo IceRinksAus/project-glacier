@@ -18,7 +18,7 @@ Operational age, helmet, accompaniment and alcohol rules are Event policy unless
 
 ## Customer completion
 
-Booking confirmation opens the Waiver with bounded Booking possession authority in the browser fragment. The customer explicitly chooses the participating adult and each dependant. A general Event QR creates valid independent evidence without a Booking. Optional media and marketing choices are separate from mandatory risk acceptance.
+Booking confirmation opens the Waiver with bounded Booking possession authority in the browser fragment. The customer explicitly chooses the participating adult and each dependant. A general Event QR creates valid independent evidence without a Booking. Optional media permission remains separate from mandatory risk acceptance. New Waivers do not collect marketing permission: that adult-only choice belongs to checkout, while historical Waiver marketing values remain historical evidence only.
 
 The completion proof contains a high-entropy verification URL/QR, Event, version, acceptance time and covered-person count. It excludes names, signature and child details. Only the SHA-256 credential hash is stored. The customer may use browser Print / Save PDF; native Wallet passes are not yet supported.
 
