@@ -13,12 +13,36 @@ import { PaymentStep } from "./PaymentStep";
 vi.mock("@stripe/stripe-js", () => ({
   loadStripe: vi.fn(() => Promise.resolve({})),
 }));
-vi.mock("@stripe/react-stripe-js", () => ({
-  Elements: ({ children }: { children: React.ReactNode }) => children,
-  PaymentElement: () => <div>Stripe fields</div>,
-  useElements: () => ({}),
-  useStripe: () => ({}),
-}));
+vi.mock("@stripe/react-stripe-js", async () => {
+  const { useEffect } = await vi.importActual<typeof import("react")>("react");
+  return {
+    Elements: ({ children }: { children: React.ReactNode }) => children,
+    PaymentElement: ({
+      onLoadError,
+      onReady,
+    }: {
+      onLoadError?: (event: { error: { message: string } }) => void;
+      onReady?: () => void;
+    }) => {
+      useEffect(() => onReady?.(), []);
+      return (
+        <div>
+          Stripe fields
+          <button
+            type="button"
+            onClick={() =>
+              onLoadError?.({ error: { message: "Secure frame unavailable" } })
+            }
+          >
+            Simulate Stripe frame failure
+          </button>
+        </div>
+      );
+    },
+    useElements: () => ({}),
+    useStripe: () => ({}),
+  };
+});
 vi.mock("@/services/public-booking.service", () => ({
   publicBookingService: {
     getCheckoutDocuments: vi.fn(),
@@ -50,6 +74,9 @@ describe("PaymentStep checkout evidence", () => {
       },
       marketingSenderName: "Fictional Organiser",
     });
+    vi.mocked(publicBookingService.createPayment).mockResolvedValue({
+      clientSecret: "pi_test_secret_fictional",
+    } as never);
   });
 
   it("keeps payment disabled until terms are accepted and marketing remains optional", async () => {
@@ -77,5 +104,46 @@ describe("PaymentStep checkout evidence", () => {
     await user.click(checkboxes[0]);
     expect(button).toBeEnabled();
     expect(checkboxes[1]).not.toBeChecked();
+  });
+
+  it("fails safely and offers an in-place retry when Stripe fields cannot load", async () => {
+    const user = userEvent.setup();
+    render(
+      <PaymentStep
+        reservation={
+          {
+            booking: {
+              id: "booking-1",
+              publicAccessToken: "a".repeat(64),
+              total: 25,
+            },
+          } as never
+        }
+        onPaymentSubmitted={vi.fn()}
+      />,
+    );
+
+    await user.click((await screen.findAllByRole("checkbox"))[0]);
+    await user.click(
+      screen.getByRole("button", { name: "Continue to payment" }),
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Simulate Stripe frame failure",
+      }),
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Secure frame unavailable",
+    );
+    expect(
+      screen.getByRole("button", { name: "Loading secure payment..." }),
+    ).toBeDisabled();
+
+    await user.click(
+      screen.getByRole("button", { name: "Retry secure payment fields" }),
+    );
+    expect(await screen.findByText("Stripe fields")).toBeVisible();
   });
 });

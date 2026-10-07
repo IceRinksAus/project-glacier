@@ -62,6 +62,50 @@ function StripePaymentForm({
     null,
   );
 
+  const [
+    isPaymentElementReady,
+    setIsPaymentElementReady,
+  ] = useState(false);
+
+  const [
+    paymentElementError,
+    setPaymentElementError,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    paymentElementAttempt,
+    setPaymentElementAttempt,
+  ] = useState(0);
+
+  useEffect(() => {
+    if (
+      isPaymentElementReady ||
+      paymentElementError
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setPaymentElementError(
+        "Stripe’s secure payment fields did not load. No payment has been submitted.",
+      );
+    }, 15_000);
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    isPaymentElementReady,
+    paymentElementAttempt,
+    paymentElementError,
+  ]);
+
+  function retryPaymentElement() {
+    setPaymentElementError(null);
+    setIsPaymentElementReady(false);
+    setPaymentElementAttempt((attempt) => attempt + 1);
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -142,7 +186,35 @@ function StripePaymentForm({
       onSubmit={handleSubmit}
       className="mt-6"
     >
-      <PaymentElement />
+      <PaymentElement
+        key={paymentElementAttempt}
+        onReady={() => {
+          setPaymentElementError(null);
+          setIsPaymentElementReady(true);
+        }}
+        onLoadError={(event) => {
+          setIsPaymentElementReady(false);
+          setPaymentElementError(
+            event.error.message ||
+              "Stripe’s secure payment fields could not be loaded. No payment has been submitted.",
+          );
+        }}
+      />
+
+      {paymentElementError ? (
+        <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <p role="alert" className="text-sm text-destructive">
+            {paymentElementError}
+          </p>
+          <button
+            type="button"
+            onClick={retryPaymentElement}
+            className="mt-3 rounded-lg border bg-background px-3 py-2 text-sm font-semibold"
+          >
+            Retry secure payment fields
+          </button>
+        </div>
+      ) : null}
 
       {paymentError ? (
         <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
@@ -157,12 +229,16 @@ function StripePaymentForm({
         disabled={
           !stripe ||
           !elements ||
+          !isPaymentElementReady ||
+          Boolean(paymentElementError) ||
           isSubmitting
         }
         className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-foreground px-5 py-3 font-semibold text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
       >
         {isSubmitting
           ? "Processing payment..."
+          : !isPaymentElementReady
+            ? "Loading secure payment..."
           : `Pay ${new Intl.NumberFormat(
               "en-AU",
               {
