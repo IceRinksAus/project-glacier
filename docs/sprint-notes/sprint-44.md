@@ -1,6 +1,6 @@
 # Sprint 44 — Checkout Terms, Privacy Notice and Marketing Choice
 
-**Status:** Implementation and complete local verification finished; organiser walkthrough remains available
+**Status:** Complete; organiser walkthrough and final local release gates passed
 
 ## Objective
 
@@ -91,7 +91,7 @@ Use fictional data only:
 
 ## Verification evidence
 
-Completed 5 October 2026:
+Initial closeout completed 5 October 2026:
 
 - API: 94 suites / 709 tests passed;
 - web: 51 files / 152 tests passed;
@@ -112,11 +112,53 @@ local-network permission was granted, the entire gate was rerun from the
 beginning and passed. This was an execution-environment access boundary, not a
 database or application failure.
 
+## Organiser acceptance and remediation
+
+Completed with fictional local data by the organiser on 8 October 2026:
+
+- Event Settings showed the published Ticketing Terms, Privacy Collection
+  Notice and optional marketing disclosure used by public checkout.
+- Public checkout required affirmative Ticketing Terms acceptance while
+  leaving marketing optional. Purchases completed successfully with marketing
+  both declined and granted, without changing Booking, Ticket or payment
+  authority.
+- Customer marketing withdrawal completed while the related Booking and
+  Tickets remained available.
+- POS required deliberate terms confirmation, offered no marketing choice and
+  retained the existing walk-up sale behaviour.
+- Booking search initially did not find a Booking from its Ticket number. The
+  search authority was extended through the related Ticket records, focused
+  API/web verification passed, and the organiser confirmed the Ticket number
+  returned the correct Booking.
+- Stripe's secure iframe failed to load in the embedded browser and could leave
+  the payment control indefinitely unavailable without a clear recovery path.
+  Checkout now detects a load failure or timeout, confirms that no payment was
+  submitted, disables submission and offers an in-place retry. Focused web
+  verification and the production build passed.
+- A new public Waiver retained media permission where configured and presented
+  no marketing control. Its completion evidence and downloadable record
+  worked.
+- An older Waiver submission remained readable with its original details,
+  signature, historical choices and downloadable PDF intact.
+
+Final post-acceptance verification completed 8 October 2026:
+
+- API: 94 suites / 709 tests passed;
+- web: 51 files / 153 tests passed;
+- API and web production builds passed;
+- configured database: 56 migrations found and current;
+- disposable database: all 56 committed migrations replayed successfully;
+- tenant, role, Event-assignment and MFA isolation: 5/5 checks passed;
+- isolated PostgreSQL backup/restore: 23 critical tables matched, 0.47 MiB
+  archive, 0.68-second backup and 1.07-second restore;
+- tracked-secret scan: 726 tracked files / 6 rules passed; and
+- complete local release gate passed.
+
 ## Closeout
 
-All six verified implementation slices are committed locally on `main`.
-Nothing has been pushed for Sprint 44; organiser approval remains required
-before updating `origin/main`.
+All six implementation slices and the two organiser-acceptance remediations
+are verified locally on `main`. Nothing has been pushed for Sprint 44;
+explicit organiser approval remains required before updating `origin/main`.
 
 ## External gates retained
 
