@@ -171,7 +171,7 @@ export function BookingsWorkspace({
               <input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Name, email or Booking number"
+                placeholder="Name, email, Booking or Ticket number"
                 className="mt-2 h-10 w-full rounded-lg border bg-background px-3 font-normal"
               />
             </label>

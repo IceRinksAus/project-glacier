@@ -36,7 +36,7 @@ describe('BookingService search', () => {
     );
   });
 
-  it('searches name, email or Booking number inside the trusted tenant and filters by Session', async () => {
+  it('searches name, email, Booking or Ticket number inside the trusted tenant and filters by Session', async () => {
     prisma.$transaction.mockResolvedValue([
       1,
       [
@@ -66,7 +66,7 @@ describe('BookingService search', () => {
     ]);
 
     const query = Object.assign(new SearchBookingsQueryDto(), {
-      search: 'Jamie PG-1234',
+      search: 'Jamie TKT-1234',
       eventId: 'event-1',
       sessionId: 'session-1',
       bookingStatus: 'CONFIRMED' as const,
@@ -112,6 +112,18 @@ describe('BookingService search', () => {
         ],
       }),
     );
+
+    const countWhere = prisma.booking.count.mock.calls[0][0].where;
+    expect(countWhere.AND[1].OR).toContainEqual({
+      tickets: {
+        some: {
+          ticketNumber: {
+            contains: 'TKT-1234',
+            mode: 'insensitive',
+          },
+        },
+      },
+    });
 
     expect(result.items[0].total).toBe(74);
     expect(result.pagination).toEqual({

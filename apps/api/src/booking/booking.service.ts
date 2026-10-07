@@ -139,6 +139,16 @@ export class BookingService {
                   },
                 },
                 {
+                  tickets: {
+                    some: {
+                      ticketNumber: {
+                        contains: term,
+                        mode: 'insensitive',
+                      },
+                    },
+                  },
+                },
+                {
                   customer: {
                     firstName: {
                       contains: term,

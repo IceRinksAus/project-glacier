@@ -106,14 +106,14 @@ describe("BookingsPage", () => {
     );
   });
 
-  it("searches customer details and filters inside a selected Session", async () => {
+  it("searches customer, Booking or Ticket references and filters inside a selected Session", async () => {
     const user = userEvent.setup();
     render(<BookingsPage />);
     await screen.findByRole("link", { name: "PG-1234" });
 
     await user.type(
       screen.getByRole("textbox", { name: "Search bookings" }),
-      "jamie@example.com",
+      "TKT-TEST-1234",
     );
     await user.click(screen.getByRole("button", { name: "Search" }));
 
@@ -132,7 +132,7 @@ describe("BookingsPage", () => {
     await waitFor(() =>
       expect(search).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          search: "jamie@example.com",
+          search: "TKT-TEST-1234",
           eventId: "event-1",
           sessionId: "session-1",
         }),
