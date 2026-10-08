@@ -29,6 +29,8 @@ import { UploadBrandingAssetDto } from './dto/upload-branding-asset.dto';
 import { UpdateEventDetailsDto } from './dto/update-event-details.dto';
 import { FileAssetService } from '../file-asset/file-asset.service';
 import type { BrandingImageUpload } from '../file-asset/file-asset.types';
+import { EventSiteContentDto } from './dto/event-site-content.dto';
+import { EventSiteContentService } from './event-site-content.service';
 
 interface AuthenticatedUser extends AuthenticatedAccessContext {
   userId: string;
@@ -41,6 +43,7 @@ export class EventController {
   constructor(
     private readonly eventService: EventService,
     private readonly fileAssetService: FileAssetService,
+    private readonly eventSiteContentService: EventSiteContentService,
   ) {}
 
   @Get()
@@ -106,6 +109,38 @@ export class EventController {
     @Body() data: EventBrandingDto,
   ) {
     return this.eventService.updateBranding(id, user.organizationId, data);
+  }
+
+  @Roles('OWNER')
+  @Get(':id/site-content')
+  getSiteContent(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.eventSiteContentService.getWorkspace(id, user.organizationId);
+  }
+
+  @Roles('OWNER')
+  @Patch(':id/site-content/draft')
+  saveSiteContentDraft(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() data: EventSiteContentDto,
+  ) {
+    return this.eventSiteContentService.saveDraft(
+      id,
+      user.organizationId,
+      data,
+    );
+  }
+
+  @Roles('OWNER')
+  @Post(':id/site-content/publish')
+  publishSiteContent(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.eventSiteContentService.publish(id, user.organizationId);
   }
 
   @Roles('OWNER')

@@ -462,12 +462,73 @@ model Event {
   checkoutDocuments             CheckoutDocument[]
   checkoutAcceptances           BookingCheckoutAcceptance[]
   marketingConsentEvidence      MarketingConsentEvidence[]
+  siteContentVersions           EventSiteContentVersion[]
 
   entryOpensMinutesBeforeStart Int @default(30)
   entryClosesMinutesAfterEnd   Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum EventSiteContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model EventSiteContentVersion {
+  id String @id @default(cuid())
+
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  version Int
+  status  EventSiteContentStatus @default(DRAFT)
+
+  aboutTitle           String?
+  aboutBody            String?
+  arrivalInfo          String?
+  transportParkingInfo String?
+  accessibilityInfo    String?
+  foodDrinkInfo        String?
+  whatToBringInfo      String?
+
+  highlights EventSiteHighlight[]
+  faqs       EventSiteFaq[]
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([eventId, version])
+  @@index([eventId, status])
+}
+
+model EventSiteHighlight {
+  id String @id @default(cuid())
+
+  contentVersionId String
+  contentVersion   EventSiteContentVersion @relation(fields: [contentVersionId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String
+  sortOrder   Int
+
+  @@unique([contentVersionId, sortOrder])
+}
+
+model EventSiteFaq {
+  id String @id @default(cuid())
+
+  contentVersionId String
+  contentVersion   EventSiteContentVersion @relation(fields: [contentVersionId], references: [id], onDelete: Cascade)
+
+  question  String
+  answer    String
+  sortOrder Int
+
+  @@unique([contentVersionId, sortOrder])
 }
 
 model EventBranding {

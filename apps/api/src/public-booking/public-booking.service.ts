@@ -105,6 +105,28 @@ export class PublicBookingService {
             heroAsset: { select: { id: true, width: true, height: true } },
           },
         },
+        siteContentVersions: {
+          where: { status: 'PUBLISHED' },
+          orderBy: { version: 'desc' },
+          take: 1,
+          select: {
+            aboutTitle: true,
+            aboutBody: true,
+            arrivalInfo: true,
+            transportParkingInfo: true,
+            accessibilityInfo: true,
+            foodDrinkInfo: true,
+            whatToBringInfo: true,
+            highlights: {
+              orderBy: { sortOrder: 'asc' },
+              select: { title: true, description: true },
+            },
+            faqs: {
+              orderBy: { sortOrder: 'asc' },
+              select: { question: true, answer: true },
+            },
+          },
+        },
         waiver: {
           select: {
             publicSlug: true,
@@ -118,9 +140,10 @@ export class PublicBookingService {
       },
     });
     if (!event) throw new NotFoundException('Event not found.');
-    const { waiver, ...publicEvent } = event;
+    const { waiver, siteContentVersions, ...publicEvent } = event;
     return {
       ...publicEvent,
+      siteContent: siteContentVersions[0] ?? null,
       waiverPublicSlug:
         waiver && waiver.versions.length > 0 ? waiver.publicSlug : null,
     };

@@ -448,6 +448,21 @@ describe('PublicBookingService', () => {
         logoAsset: { id: 'logo-1', width: 512, height: 512 },
         heroAsset: null,
       },
+      siteContentVersions: [
+        {
+          aboutTitle: 'About the festival',
+          aboutBody: 'Fictional public information.',
+          arrivalInfo: 'Arrive 15 minutes early.',
+          transportParkingInfo: null,
+          accessibilityInfo: null,
+          foodDrinkInfo: null,
+          whatToBringInfo: 'Bring warm clothing.',
+          highlights: [
+            { title: 'Skating', description: 'Family skating sessions.' },
+          ],
+          faqs: [{ question: 'What to bring?', answer: 'Warm clothing.' }],
+        },
+      ],
     });
 
     const result = await service.findEventBySlug(
@@ -467,9 +482,33 @@ describe('PublicBookingService', () => {
         branding: expect.objectContaining({
           logoAsset: { id: 'logo-1', width: 512, height: 512 },
         }),
+        siteContent: expect.objectContaining({
+          aboutTitle: 'About the festival',
+          highlights: [
+            { title: 'Skating', description: 'Family skating sessions.' },
+          ],
+        }),
       }),
     );
     expect(result).not.toHaveProperty('organizationId');
+    expect(result.siteContent).not.toHaveProperty('id');
+    expect(result.siteContent).not.toHaveProperty('status');
+  });
+
+  it('returns the safe minimal Event site when no content is published', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      ...activeEvent,
+      venueName: 'Preview Ice Arena',
+      suburb: 'Melbourne',
+      branding: null,
+      siteContentVersions: [],
+    });
+
+    const result = await service.findEventBySlug(
+      'australian-ice-festival-2027',
+    );
+
+    expect(result.siteContent).toBeNull();
   });
 
   it('does not expose a draft or unknown Event site slug', async () => {
