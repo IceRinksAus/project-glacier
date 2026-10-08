@@ -29,6 +29,9 @@ const criticalTables = [
   "CheckoutDocument",
   "BookingCheckoutAcceptance",
   "MarketingConsentEvidence",
+  "EventSiteContentVersion",
+  "EventSiteHighlight",
+  "EventSiteFaq",
   "_prisma_migrations",
 ];
 

@@ -1,5 +1,31 @@
 # Changelog
 
+# Sprint 45 – Public Event Homepage and Content Structure
+
+## Complete locally; organiser acceptance pending
+
+- Added versioned Event-owned homepage content with one private draft, one
+  current published version and immutable archived publication history.
+- Added bounded ordered Experience Highlights and FAQs plus structured About
+  and Plan Your Visit information.
+- Extended the existing Website workspace with private draft editing,
+  authenticated preview and deliberate publication.
+- Rebuilt the public Event entry page with responsive navigation, Event
+  essentials, Highlights, visit information, FAQs and repeated booking actions.
+- Preserved a safe minimal fallback for Events without published content and
+  kept Session, price, Product, capacity, inventory, Payment and Waiver
+  authority outside the homepage.
+- Added server-side contrast enforcement for core Event website colour pairs.
+
+## Verification
+
+- API: 96 suites / 719 tests; web: 52 files / 158 tests.
+- API and web production builds passed.
+- All 57 migrations were current and replayed from empty state.
+- Disposable tenant/role/Event/MFA isolation passed 5/5.
+- Isolated restore matched 26 critical tables.
+- Tracked-secret scanning and the complete local release gate passed.
+
 # Sprint 44 – Checkout Terms, Privacy Notice and Marketing Choice
 
 ## Complete

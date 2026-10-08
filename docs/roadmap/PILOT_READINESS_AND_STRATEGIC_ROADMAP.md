@@ -503,9 +503,13 @@ fictional local wording only; final legal/privacy approval, retention, sender
 ownership, delivery-provider unsubscribe controls and deployed evidence remain
 production gates.
 
-The next bounded Product Comfort Gate should be Sprint 45's public Event
-homepage and content structure, followed by another deliberate readiness
-reassessment rather than unrelated feature expansion. Phase 3 should continue
+Sprint 45 completed the bounded public Event homepage and content structure:
+versioned draft/publish content, structured Highlights, visit information and
+FAQs, a coherent organiser Website studio, and a responsive accessible public
+homepage that retains the authoritative Date-first booking and Waiver flows.
+Existing Events keep a safe minimal fallback until content is deliberately
+published. The next step is another deliberate readiness reassessment rather
+than unrelated feature expansion. Phase 3 should continue
 with locally actionable production findings without starting paid
 infrastructure.
 Deployment-edge, managed-storage, monitoring,
