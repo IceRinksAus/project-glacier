@@ -25,6 +25,10 @@ boundaries.
   setup area.
 - Added private draft editing, ordered Highlight/FAQ controls, a complete
   authenticated content preview and deliberate publication status/actions.
+- Added ten common FAQ question templates covering arrival, skate hire,
+  clothing, age/suitability, Session length, transport, accessibility, food,
+  Waivers and booking changes. Templates require an Event-specific answer
+  before the draft can be saved.
 - Preserved the existing Website mutation authority.
 
 ### 3. Public Event homepage

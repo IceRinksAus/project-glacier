@@ -119,6 +119,40 @@ describe("EventSiteContentWorkspace", () => {
     );
   });
 
+  it("adds a common FAQ question but requires an Event-specific answer", async () => {
+    const user = userEvent.setup();
+    render(
+      <EventSiteContentWorkspace
+        eventId="event-1"
+        eventName="Fictional Winter Festival"
+        canEdit
+      />,
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Add · How early should I arrive?",
+      }),
+    );
+
+    expect(screen.getByLabelText("FAQ 1 question")).toHaveValue(
+      "How early should I arrive?",
+    );
+    expect(screen.getByLabelText("FAQ 1 answer")).toHaveValue("");
+    expect(
+      screen.getByRole("button", {
+        name: "Added · How early should I arrive?",
+      }),
+    ).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "every FAQ question and answer",
+    );
+    expect(saveSiteContentDraft).not.toHaveBeenCalled();
+  });
+
   it("keeps the content studio read-only when Website mutation is unavailable", async () => {
     render(
       <EventSiteContentWorkspace

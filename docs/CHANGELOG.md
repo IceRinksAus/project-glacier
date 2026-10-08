@@ -8,6 +8,8 @@
   current published version and immutable archived publication history.
 - Added bounded ordered Experience Highlights and FAQs plus structured About
   and Plan Your Visit information.
+- Added common FAQ question templates while requiring organisers to provide
+  the accurate Event-specific answer before saving.
 - Extended the existing Website workspace with private draft editing,
   authenticated preview and deliberate publication.
 - Rebuilt the public Event entry page with responsive navigation, Event

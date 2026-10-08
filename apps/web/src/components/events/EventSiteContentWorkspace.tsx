@@ -21,6 +21,19 @@ const emptyContent: EventSiteContentInput = {
   faqs: [],
 };
 
+const commonFaqTemplates = [
+  "How early should I arrive?",
+  "Is skate hire included with my ticket?",
+  "What clothing should I wear?",
+  "Is the Event suitable for beginners and children?",
+  "How long is each session?",
+  "Where can I park or find public transport?",
+  "What accessibility support is available?",
+  "Can I purchase food and drinks at the Event?",
+  "Do I need to complete a Waiver before attending?",
+  "Can I change or cancel my booking?",
+] as const;
+
 function editableContent(
   content: EventSiteContentVersion | null,
 ): EventSiteContentInput {
@@ -107,6 +120,18 @@ export function EventSiteContentWorkspace({
   }
 
   async function saveDraft() {
+    const incompleteHighlight = content.highlights.some(
+      (item) => !item.title.trim() || !item.description.trim(),
+    );
+    const incompleteFaq = content.faqs.some(
+      (item) => !item.question.trim() || !item.answer.trim(),
+    );
+    if (incompleteHighlight || incompleteFaq) {
+      setError(
+        "Complete every Highlight title and description and every FAQ question and answer before saving.",
+      );
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");
@@ -160,6 +185,23 @@ export function EventSiteContentWorkspace({
       ...current,
       faqs: [...current.faqs, { question: "", answer: "" }],
     }));
+  }
+
+  function addFaqTemplate(question: string) {
+    if (
+      content.faqs.length >= 12 ||
+      content.faqs.some(
+        (item) => item.question.trim().toLowerCase() === question.toLowerCase(),
+      )
+    ) {
+      return;
+    }
+    setContent((current) => ({
+      ...current,
+      faqs: [...current.faqs, { question, answer: "" }],
+    }));
+    setMessage("");
+    setError("");
   }
 
   function moveItem(type: "highlights" | "faqs", index: number, delta: number) {
@@ -232,6 +274,32 @@ export function EventSiteContentWorkspace({
         </ContentSection>
 
         <ContentSection title="Frequently asked questions">
+          <div className="rounded-xl border bg-muted/30 p-4">
+            <p className="text-sm font-semibold">Common FAQ templates</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add a common customer question, then write the answer that is accurate for this Event.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {commonFaqTemplates.map((question) => {
+                const alreadyAdded = content.faqs.some(
+                  (item) =>
+                    item.question.trim().toLowerCase() === question.toLowerCase(),
+                );
+                return (
+                  <Button
+                    key={question}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={alreadyAdded || content.faqs.length >= 12}
+                    onClick={() => addFaqTemplate(question)}
+                  >
+                    {alreadyAdded ? "Added · " : "Add · "}{question}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
           {content.faqs.map((item, index) => (
             <div key={index} className="rounded-xl border p-4">
               <TextField label={`FAQ ${index + 1} question`} maxLength={160} value={item.question} onChange={(value) => setContent((current) => ({ ...current, faqs: current.faqs.map((entry, itemIndex) => itemIndex === index ? { ...entry, question: value } : entry) }))} />
