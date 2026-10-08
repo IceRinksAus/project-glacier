@@ -32,6 +32,40 @@ export interface PersistedEventBranding extends EventBranding {
   heroAsset: EventBrandingAsset | null;
 }
 
+export interface EventSiteHighlight {
+  title: string;
+  description: string;
+}
+
+export interface EventSiteFaq {
+  question: string;
+  answer: string;
+}
+
+export interface EventSiteContentInput {
+  aboutTitle?: string;
+  aboutBody?: string;
+  arrivalInfo?: string;
+  transportParkingInfo?: string;
+  accessibilityInfo?: string;
+  foodDrinkInfo?: string;
+  whatToBringInfo?: string;
+  highlights: EventSiteHighlight[];
+  faqs: EventSiteFaq[];
+}
+
+export interface EventSiteContentVersion extends EventSiteContentInput {
+  id: string;
+  version: number;
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  publishedAt: string | null;
+}
+
+export interface EventSiteContentWorkspace {
+  draft: EventSiteContentVersion | null;
+  published: EventSiteContentVersion | null;
+}
+
 export interface GlacierEvent {
   id: string;
   name: string;
@@ -137,6 +171,21 @@ export const eventService = {
 
   updateBranding: (eventId: string, branding: EventBranding) =>
     api.patch<EventBranding>(`/event/${eventId}/branding`, branding),
+
+  getSiteContent: (eventId: string) =>
+    api.get<EventSiteContentWorkspace>(`/event/${eventId}/site-content`),
+
+  saveSiteContentDraft: (eventId: string, content: EventSiteContentInput) =>
+    api.patch<EventSiteContentVersion>(
+      `/event/${eventId}/site-content/draft`,
+      content,
+    ),
+
+  publishSiteContent: (eventId: string) =>
+    api.post<EventSiteContentVersion>(
+      `/event/${eventId}/site-content/publish`,
+      {},
+    ),
 
   uploadBrandingAsset: (
     eventId: string,

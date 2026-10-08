@@ -11,6 +11,7 @@ import {
   PersistedEventBranding,
   eventService,
 } from "@/services/event.service";
+import { EventSiteContentWorkspace } from "./EventSiteContentWorkspace";
 
 const defaults: EventBranding = {
   primaryColor: "#0F172A",
@@ -243,6 +244,13 @@ export function EventBrandingWorkspace({
           <div className="p-5" style={{ backgroundColor: branding.surfaceColor }}><p className="font-semibold">Your booking journey</p><p className="mt-1 text-sm">The same identity continues across every step.</p></div>
         </div>
       </section>
+      <div className="xl:col-span-2">
+        <EventSiteContentWorkspace
+          eventId={eventId}
+          eventName={eventName}
+          canEdit={canEdit}
+        />
+      </div>
     </div>
   );
 }

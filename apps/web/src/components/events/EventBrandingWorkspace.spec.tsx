@@ -4,8 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { EventBrandingWorkspace } from "./EventBrandingWorkspace";
 
-const { updateBranding, authRole, writeText } = vi.hoisted(() => ({
+const { updateBranding, getSiteContent, authRole, writeText } = vi.hoisted(() => ({
   updateBranding: vi.fn(),
+  getSiteContent: vi.fn(),
   authRole: { value: "OWNER" },
   writeText: vi.fn(),
 }));
@@ -17,6 +18,9 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/services/event.service", () => ({
   eventService: {
     updateBranding,
+    getSiteContent,
+    saveSiteContentDraft: vi.fn(),
+    publishSiteContent: vi.fn(),
     uploadBrandingAsset: vi.fn(),
     getBrandingAsset: vi.fn(),
   },
@@ -35,6 +39,8 @@ describe("EventBrandingWorkspace", () => {
   beforeEach(() => {
     updateBranding.mockReset();
     updateBranding.mockResolvedValue({});
+    getSiteContent.mockReset();
+    getSiteContent.mockResolvedValue({ draft: null, published: null });
     writeText.mockReset();
     writeText.mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
