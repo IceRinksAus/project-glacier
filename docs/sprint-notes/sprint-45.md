@@ -76,8 +76,8 @@ Complete local verification completed 8 October 2026:
 - tenant, role, Event-assignment and MFA isolation: 5/5 checks passed;
 - isolated PostgreSQL backup/restore: 26 critical tables matched, 0.48 MiB
   archive, 0.56-second backup and 1.13-second restore;
-- tracked-secret scan passed across the pre-closeout tracked set; the final
-  count is rechecked after committing these documentation files; and
+- tracked-secret scan: 736 tracked files / 6 rules passed after committing the
+  implementation documentation; and
 - complete local release gate passed.
 
 ## Organiser acceptance guide
