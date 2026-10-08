@@ -29,6 +29,17 @@ export interface PublicEventSite extends PublicEvent {
     logoAsset: { id: string; width: number; height: number } | null;
     heroAsset: { id: string; width: number; height: number } | null;
   } | null;
+  siteContent: {
+    aboutTitle: string | null;
+    aboutBody: string | null;
+    arrivalInfo: string | null;
+    transportParkingInfo: string | null;
+    accessibilityInfo: string | null;
+    foodDrinkInfo: string | null;
+    whatToBringInfo: string | null;
+    highlights: { title: string; description: string }[];
+    faqs: { question: string; answer: string }[];
+  } | null;
 }
 
 export interface PublicSession {

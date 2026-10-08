@@ -21,6 +21,7 @@ describe("PublicEventPage", () => {
       endDate: "2027-07-02T00:00:00.000Z", timezone: "Australia/Melbourne",
       status: "ACTIVE", waiverPublicSlug: null, venueName: "Preview Arena", suburb: "Melbourne",
       branding: { ...defaultTestBranding, heroHeadline: "The ice comes alive" },
+      siteContent: null,
     });
 
     const params = Promise.resolve({ eventSlug: "winter-night" });
@@ -34,8 +35,39 @@ describe("PublicEventPage", () => {
     });
 
     expect(await screen.findByRole("heading", { name: "The ice comes alive" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Book tickets/ })).toHaveAttribute("href", "/book/event-1/date");
-    expect(screen.getByText("Preview Arena, Melbourne")).toBeVisible();
+    expect(screen.getAllByRole("link", { name: /Book tickets/ })[0]).toHaveAttribute("href", "/book/event-1/date");
+    expect(screen.getAllByText("Preview Arena, Melbourne")[0]).toBeVisible();
+  });
+
+  it("renders published structured content as a navigable Event homepage", async () => {
+    getEventSite.mockResolvedValue({
+      id: "event-1", name: "Winter Night", slug: "winter-night",
+      description: "Short Event summary.", startDate: "2027-07-01T00:00:00.000Z",
+      endDate: "2027-07-02T00:00:00.000Z", timezone: "Australia/Melbourne",
+      status: "ACTIVE", waiverPublicSlug: "winter-waiver", venueName: "Preview Arena", suburb: "Melbourne",
+      branding: defaultTestBranding,
+      siteContent: {
+        aboutTitle: "A night on the ice", aboutBody: "Fictional long-form Event information.",
+        arrivalInfo: "Arrive 15 minutes early.", transportParkingInfo: "Use fictional public transport.",
+        accessibilityInfo: null, foodDrinkInfo: null, whatToBringInfo: "Bring warm clothing.",
+        highlights: [{ title: "Ice skating", description: "Family sessions under the lights." }],
+        faqs: [{ question: "Are skates included?", answer: "Yes, for this fictional Event." }],
+      },
+    });
+
+    const params = Promise.resolve({ eventSlug: "winter-night" });
+    await act(async () => {
+      render(<Suspense fallback={<p>Loading route…</p>}><PublicEventPage params={params} /></Suspense>);
+      await params;
+    });
+
+    expect(await screen.findByRole("heading", { name: "A night on the ice" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What's on" })).toBeVisible();
+    expect(screen.getByText("Ice skating")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Plan your visit" })).toBeVisible();
+    expect(screen.getByText("Arrive 15 minutes early.")).toBeVisible();
+    expect(screen.getByText("Are skates included?")).toBeVisible();
+    expect(screen.getByRole("link", { name: /participation Waiver/ })).toHaveAttribute("href", "/waivers/winter-waiver");
   });
 
   it("uses a non-enumerating unavailable state", async () => {

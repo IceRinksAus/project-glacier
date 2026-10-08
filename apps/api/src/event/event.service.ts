@@ -16,6 +16,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { EventReadiness, EventReadinessItem } from './event-readiness.types';
 import { EventBrandingDto } from './dto/event-branding.dto';
 import { UpdateEventDetailsDto } from './dto/update-event-details.dto';
+import { unsafeEventBrandingPair } from './event-branding.constants';
 
 const readinessInclude = {
   sessions: {
@@ -117,6 +118,8 @@ export class EventService {
       throw new BadRequestException('Event end must be after Event start.');
     }
 
+    if (data.branding) this.requireReadableBranding(data.branding);
+
     try {
       return await this.prisma.event.create({
         data: {
@@ -165,6 +168,7 @@ export class EventService {
     organizationId: string,
     branding: EventBrandingDto,
   ) {
+    this.requireReadableBranding(branding);
     const event = await this.prisma.event.findFirst({
       where: { id, organizationId },
       select: { id: true },
@@ -179,6 +183,15 @@ export class EventService {
       create: { eventId: event.id, ...branding },
       update: branding,
     });
+  }
+
+  private requireReadableBranding(branding: EventBrandingDto) {
+    const unsafePair = unsafeEventBrandingPair(branding);
+    if (unsafePair) {
+      throw new BadRequestException(
+        `Website colours need stronger contrast between ${unsafePair}.`,
+      );
+    }
   }
 
   async updateDetails(

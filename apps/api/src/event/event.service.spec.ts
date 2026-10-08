@@ -145,7 +145,7 @@ describe('EventService', () => {
     const branding = {
       primaryColor: '#112233',
       secondaryColor: '#223344',
-      accentColor: '#334455',
+      accentColor: '#7DD3FC',
       backgroundColor: '#FFFFFF',
       surfaceColor: '#F8FAFC',
       textColor: '#0F172A',
@@ -170,7 +170,7 @@ describe('EventService', () => {
     const branding = {
       primaryColor: '#112233',
       secondaryColor: '#223344',
-      accentColor: '#334455',
+      accentColor: '#7DD3FC',
       backgroundColor: '#FFFFFF',
       surfaceColor: '#F8FAFC',
       textColor: '#0F172A',
@@ -198,7 +198,7 @@ describe('EventService', () => {
       service.updateBranding('event-1', 'organization-2', {
         primaryColor: '#112233',
         secondaryColor: '#223344',
-        accentColor: '#334455',
+        accentColor: '#7DD3FC',
         backgroundColor: '#FFFFFF',
         surfaceColor: '#F8FAFC',
         textColor: '#0F172A',
@@ -206,6 +206,23 @@ describe('EventService', () => {
         bodyFont: 'INTER',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(prismaMock.eventBranding.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects branding that makes core public content unreadable', async () => {
+    await expect(
+      service.updateBranding('event-1', 'organization-1', {
+        primaryColor: '#FFFFFF',
+        secondaryColor: '#334155',
+        accentColor: '#FFFFFF',
+        backgroundColor: '#FFFFFF',
+        surfaceColor: '#FFFFFF',
+        textColor: '#F8FAFC',
+        headingFont: 'INTER',
+        bodyFont: 'INTER',
+      }),
+    ).rejects.toThrow('Website colours need stronger contrast');
+    expect(prismaMock.event.findFirst).not.toHaveBeenCalled();
     expect(prismaMock.eventBranding.upsert).not.toHaveBeenCalled();
   });
 
