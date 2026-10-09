@@ -569,6 +569,19 @@ export class PosService {
             issuedAt: 'asc',
           },
         },
+        productCollectionPasses: {
+          select: {
+            id: true,
+            passNumber: true,
+            credentialSelector: true,
+            credentialKeyId: true,
+            status: true,
+            productNameSnapshot: true,
+            variantNameSnapshot: true,
+            quantity: true,
+          },
+          orderBy: { issuedAt: 'asc' },
+        },
       },
     });
 
@@ -584,6 +597,17 @@ export class PosService {
         secureToken: this.ticketService.presentCredential(ticket),
         status: ticket.status,
         participant: ticket.participant,
+      })),
+      productCollectionPasses: (booking.productCollectionPasses ?? []).map((pass) => ({
+        id: pass.id,
+        passNumber: pass.passNumber,
+        secureToken:
+          this.ticketService.presentProductCollectionPassCredential(pass),
+        status: pass.status,
+        productName: pass.productNameSnapshot,
+        variantName: pass.variantNameSnapshot,
+        quantity: pass.quantity,
+        grantsAdmission: false,
       })),
       total: booking.total.toNumber(),
       payments: booking.payments.map((payment) => ({

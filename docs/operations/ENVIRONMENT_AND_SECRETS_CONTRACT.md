@@ -38,10 +38,13 @@ No database, Stripe secret, webhook secret, object store or authentication secre
 
 The API refuses to start in production when required variables are missing,
 when the JWT secret is too short, when public/CORS origins are not HTTPS origins,
-or when Ticket signing-key configuration is incomplete or invalid. Ticket keys
-must be separate from JWT, Stripe, webhook and database credentials. Key IDs may
-appear in controlled operational evidence; key values and Ticket credentials
-must never appear in logs.
+or when Ticket signing-key configuration is incomplete or invalid. The Ticket
+key ring also signs Product Collection Pass credentials under a separate
+version and cryptographic domain, so a pass credential cannot be substituted
+for an admission Ticket. Ticket keys must be separate from JWT, Stripe, webhook
+and database credentials. Key IDs may appear in controlled operational
+evidence; key values, Ticket credentials and Product Collection Pass
+credentials must never appear in logs.
 
 Checkout document approval is persisted Event configuration rather than an
 environment secret. Production Ticket payment fails closed unless the Event
@@ -57,9 +60,10 @@ sessions. Key values, TOTP secrets, setup URIs and recovery codes must never
 enter logs or operational evidence.
 
 Ticket-key rotation uses an overlap window: add the new key, make its ID active,
-reissue or naturally replace affected Ticket credentials, confirm no Ticket row
-references the retiring key, and only then remove it. Removing a referenced key
-would make Glacier unable to reconstruct that Ticket's current credential.
+reissue or naturally replace affected Ticket and Product Collection Pass
+credentials, confirm neither a Ticket nor Product Collection Pass row references
+the retiring key, and only then remove it. Removing a referenced key would make
+Glacier unable to reconstruct that credential.
 
 ## Web configuration
 

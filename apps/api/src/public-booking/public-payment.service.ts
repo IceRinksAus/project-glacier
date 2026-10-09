@@ -197,6 +197,20 @@ export class PublicPaymentService {
             issuedAt: 'asc',
           },
         },
+        productCollectionPasses: {
+          select: {
+            id: true,
+            passNumber: true,
+            credentialSelector: true,
+            credentialKeyId: true,
+            status: true,
+            productNameSnapshot: true,
+            variantNameSnapshot: true,
+            quantity: true,
+            collectedAt: true,
+          },
+          orderBy: { issuedAt: 'asc' },
+        },
         flexibleTicketEntitlements: {
           select: {
             entitlementNumber: true,
@@ -247,6 +261,18 @@ export class PublicPaymentService {
             secureToken: this.ticketCredentials.present(ticket),
             status: ticket.status,
             participant: ticket.participant,
+          }))
+        : [],
+      productCollectionPasses: confirmed
+        ? booking.productCollectionPasses.map((pass) => ({
+            passNumber: pass.passNumber,
+            secureToken: this.ticketCredentials.presentProductPass(pass),
+            status: pass.status,
+            productName: pass.productNameSnapshot,
+            variantName: pass.variantNameSnapshot,
+            quantity: pass.quantity,
+            collectedAt: pass.collectedAt,
+            grantsAdmission: false,
           }))
         : [],
       flexibleTicketEntitlements: confirmed

@@ -340,6 +340,16 @@ export interface PublicBookingStatus {
       lastName: string | null;
     };
   }>;
+  productCollectionPasses: Array<{
+    passNumber: string;
+    secureToken: string;
+    status: "ACTIVE" | "COLLECTED" | "CANCELLED";
+    productName: string;
+    variantName: string | null;
+    quantity: number;
+    collectedAt: string | null;
+    grantsAdmission: false;
+  }>;
   flexibleTicketEntitlements: Array<{
     entitlementNumber: string;
     status: string;
@@ -374,6 +384,25 @@ export interface PublicTicketPresentation {
       endDate: string;
     } | null;
   };
+}
+
+export interface PublicProductCollectionPassPresentation {
+  kind: "PRODUCT_COLLECTION_PASS";
+  passNumber: string;
+  status: "ACTIVE" | "COLLECTED" | "CANCELLED";
+  productName: string;
+  variantName: string | null;
+  quantity: number;
+  issuedAt: string;
+  collectedAt: string | null;
+  bookingNumber: string;
+  event: { name: string };
+  session: {
+    name: string;
+    startDate: string;
+    endDate: string;
+  } | null;
+  grantsAdmission: false;
 }
 
 export const publicBookingService = {
@@ -474,5 +503,15 @@ export const publicBookingService = {
 
   ticketQrUrl(token: string) {
     return `${process.env.NEXT_PUBLIC_API_URL}/ticket/token/${encodeURIComponent(token)}/qr`;
+  },
+
+  getProductCollectionPass(token: string) {
+    return publicApi.get<PublicProductCollectionPassPresentation>(
+      `/product-collection-pass/token/${encodeURIComponent(token)}`,
+    );
+  },
+
+  productCollectionPassQrUrl(token: string) {
+    return `${process.env.NEXT_PUBLIC_API_URL}/product-collection-pass/token/${encodeURIComponent(token)}/qr`;
   },
 };

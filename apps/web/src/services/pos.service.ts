@@ -97,6 +97,16 @@ export interface PosCompletion {
     status: string;
     participant: { firstName: string; lastName: string | null };
   }>;
+  productCollectionPasses: Array<{
+    id: string;
+    passNumber: string;
+    secureToken: string;
+    status: string;
+    productName: string;
+    variantName: string | null;
+    quantity: number;
+    grantsAdmission: false;
+  }>;
 }
 
 export interface PosTicketLookup {
@@ -131,6 +141,25 @@ export interface PosBookingTicketLookup {
   referenceType: "BOOKING";
   bookingNumber: string;
   tickets: PosTicketLookup[];
+}
+
+export interface PosProductCollectionPass {
+  kind: "PRODUCT_COLLECTION_PASS";
+  passNumber: string;
+  status: "ACTIVE" | "COLLECTED" | "CANCELLED";
+  productName: string;
+  variantName: string | null;
+  quantity: number;
+  issuedAt: string;
+  collectedAt: string | null;
+  bookingNumber: string;
+  event: { name: string };
+  session: {
+    name: string;
+    startDate: string;
+    endDate: string;
+  } | null;
+  grantsAdmission: false;
 }
 
 export interface RetailProductVariant {
@@ -296,6 +325,18 @@ export const posService = {
       token,
       mode: "TICKET_LOOKUP",
     }),
+
+  lookupProductPass: (eventId: string, reference: string) =>
+    api.post<PosProductCollectionPass>(
+      `/pos/events/${eventId}/product-passes/lookup`,
+      { reference },
+    ),
+
+  collectProductPass: (eventId: string, reference: string) =>
+    api.post<PosProductCollectionPass>(
+      `/pos/events/${eventId}/product-passes/collect`,
+      { reference },
+    ),
 
   getMerchandiseCatalogue: (eventId: string, sessionId?: string) =>
     api.get<RetailCatalogue>(

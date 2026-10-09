@@ -15,12 +15,14 @@ import {
   TicketValidationReason,
   TicketValidationResponseDto,
 } from './dto/ticket-validation-response.dto';
+import { ProductCollectionPassService } from './product-collection-pass.service';
 
 @Injectable()
 export class TicketService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly credentials: TicketCredentialService,
+    private readonly productCollectionPasses: ProductCollectionPassService,
   ) {}
 
   async issueTicketsForBooking(bookingId: string) {
@@ -46,28 +48,28 @@ export class TicketService {
       (participant) => !existingParticipantIds.has(participant.id),
     );
 
-    if (participantsWithoutTickets.length === 0) {
-      return booking.tickets;
+    if (participantsWithoutTickets.length > 0) {
+      await this.prisma.ticket.createMany({
+        data: participantsWithoutTickets.map((participant) => {
+          const id = randomUUID();
+          const credential = this.credentials.issue(id);
+          return {
+            id,
+            bookingId: booking.id,
+            participantId: participant.id,
+            ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
+              .toString('hex')
+              .toUpperCase()}`,
+            secureToken: null,
+            credentialSelector: credential.credentialSelector,
+            credentialKeyId: credential.credentialKeyId,
+            status: 'ACTIVE' as const,
+          };
+        }),
+      });
     }
 
-    await this.prisma.ticket.createMany({
-      data: participantsWithoutTickets.map((participant) => {
-        const id = randomUUID();
-        const credential = this.credentials.issue(id);
-        return {
-          id,
-          bookingId: booking.id,
-          participantId: participant.id,
-          ticketNumber: `TKT-${Date.now()}-${randomBytes(3)
-            .toString('hex')
-            .toUpperCase()}`,
-          secureToken: null,
-          credentialSelector: credential.credentialSelector,
-          credentialKeyId: credential.credentialKeyId,
-          status: 'ACTIVE' as const,
-        };
-      }),
-    });
+    await this.productCollectionPasses.issueForBooking(booking.id);
 
     return this.prisma.ticket.findMany({
       where: {
@@ -77,6 +79,14 @@ export class TicketService {
         participant: true,
       },
     });
+  }
+
+  presentProductCollectionPassCredential(pass: {
+    id: string;
+    credentialSelector: string;
+    credentialKeyId: string;
+  }) {
+    return this.credentials.presentProductPass(pass);
   }
 
   async activateFlexibleTicketsForBooking(

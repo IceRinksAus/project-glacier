@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { TicketScanResult } from './dto/ticket-scan-response.dto';
 import { TicketCredentialService } from './ticket-credential.service';
+import { ProductCollectionPassService } from './product-collection-pass.service';
 import { TicketService } from './ticket.service';
 
 jest.mock('qrcode', () => ({
@@ -66,6 +67,9 @@ describe('TicketService', () => {
       token: `gt1_${'b'.repeat(32)}_${'A'.repeat(43)}`,
     })),
   };
+  const productCollectionPassMock = {
+    issueForBooking: jest.fn().mockResolvedValue([]),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -79,6 +83,10 @@ describe('TicketService', () => {
         {
           provide: TicketCredentialService,
           useValue: credentialMock,
+        },
+        {
+          provide: ProductCollectionPassService,
+          useValue: productCollectionPassMock,
         },
       ],
     }).compile();
@@ -100,6 +108,10 @@ describe('TicketService', () => {
     prismaMock.ticket.findMany.mockResolvedValue([]);
 
     await service.issueTicketsForBooking('booking-1');
+
+    expect(productCollectionPassMock.issueForBooking).toHaveBeenCalledWith(
+      'booking-1',
+    );
 
     expect(prismaMock.ticket.createMany).toHaveBeenCalledWith({
       data: [

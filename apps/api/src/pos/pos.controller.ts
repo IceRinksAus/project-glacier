@@ -27,6 +27,9 @@ import { SearchRetailSalesQueryDto } from './dto/search-retail-sales-query.dto';
 import { ScannerTicketDto } from '../staff-scanner/dto/scanner-ticket.dto';
 import { StaffScannerService } from '../staff-scanner/staff-scanner.service';
 import { PosTicketReferenceDto } from './dto/pos-ticket-reference.dto';
+import { ProductCollectionPassReferenceDto } from './dto/product-collection-pass-reference.dto';
+import { ProductCollectionPassService } from '../ticket/product-collection-pass.service';
+import { AccessControlService } from '../access-control/access-control.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...OPERATOR_ROLES)
@@ -36,7 +39,38 @@ export class PosController {
     private readonly posService: PosService,
     private readonly retailSaleService: RetailSaleService,
     private readonly staffScannerService: StaffScannerService,
+    private readonly productCollectionPasses: ProductCollectionPassService,
+    private readonly accessControl: AccessControlService,
   ) {}
+
+  @Post('events/:eventId/product-passes/lookup')
+  async lookupProductPass(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('eventId') eventId: string,
+    @Body() data: ProductCollectionPassReferenceDto,
+  ) {
+    await this.accessControl.assertEventAccess(eventId, user);
+    return this.productCollectionPasses.lookup(
+      user.organizationId,
+      eventId,
+      data.reference,
+    );
+  }
+
+  @Post('events/:eventId/product-passes/collect')
+  async collectProductPass(
+    @CurrentUser() user: AuthenticatedAccessContext,
+    @Param('eventId') eventId: string,
+    @Body() data: ProductCollectionPassReferenceDto,
+  ) {
+    await this.accessControl.assertEventAccess(eventId, user);
+    return this.productCollectionPasses.collect(
+      user.organizationId,
+      eventId,
+      data.reference,
+      user.userId,
+    );
+  }
 
   @Post('events/:eventId/tickets/lookup')
   lookupTicket(

@@ -40,6 +40,18 @@ describe('TicketCredentialService', () => {
     expect(first.token).not.toBe(second.token);
   });
 
+  it('cryptographically separates Product Collection Passes from admission Tickets', () => {
+    const service = createService();
+    const ticket = service.issue('shared-id');
+    const pass = service.issueProductPass('shared-id');
+
+    expect(pass.token).toMatch(/^gp1_[a-f0-9]{32}_[A-Za-z0-9_-]{43}$/);
+    expect(service.matchesProductPass(pass, pass.token)).toBe(true);
+    expect(service.matchesProductPass(pass, ticket.token)).toBe(false);
+    expect(service.matches(ticket, pass.token)).toBe(false);
+    expect(service.lookupProductPassWhere(ticket.token)).toBeNull();
+  });
+
   it('invalidates the previous current and legacy credentials after rotation', () => {
     const service = createService();
     const previous = service.issue('ticket-1');

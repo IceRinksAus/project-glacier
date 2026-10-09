@@ -1,30 +1,42 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ScanLine, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  PackageCheck,
+  ScanLine,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ScannerCamera } from "@/components/scanner/ScannerCamera";
 import {
   PosBookingTicketLookup,
   PosTicketLookup,
+  PosProductCollectionPass,
   posService,
 } from "@/services/pos.service";
 
 const ticketReferencePattern =
-  /^(?:PG-[A-Z0-9-]{1,80}|TKT-[A-Z0-9-]{3,80}|[a-f0-9]{64}|gt1_[a-f0-9]{32}_[A-Za-z0-9_-]{43})$/i;
+  /^(?:PG-[A-Z0-9-]{1,80}|TKT-[A-Z0-9-]{3,80}|PRD-[A-Z0-9-]{3,80}|[a-f0-9]{64}|gt1_[a-f0-9]{32}_[A-Za-z0-9_-]{43}|gp1_[a-f0-9]{32}_[A-Za-z0-9_-]{43})$/i;
 
 function isBookingLookup(
-  lookup: PosTicketLookup | PosBookingTicketLookup,
+  lookup: PosTicketLookup | PosBookingTicketLookup | PosProductCollectionPass,
 ): lookup is PosBookingTicketLookup {
   return "referenceType" in lookup && lookup.referenceType === "BOOKING";
+}
+
+function isProductPass(
+  lookup: PosTicketLookup | PosBookingTicketLookup | PosProductCollectionPass,
+): lookup is PosProductCollectionPass {
+  return "kind" in lookup && lookup.kind === "PRODUCT_COLLECTION_PASS";
 }
 
 export function PosTicketService({ eventId }: { eventId: string }) {
   const [token, setToken] = useState("");
   const [activeToken, setActiveToken] = useState("");
   const [result, setResult] = useState<
-    PosTicketLookup | PosBookingTicketLookup | null
+    PosTicketLookup | PosBookingTicketLookup | PosProductCollectionPass | null
   >(null);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
@@ -32,7 +44,7 @@ export function PosTicketService({ eventId }: { eventId: string }) {
 
   async function lookupCredential(rawToken: string) {
     const rawReference = rawToken.trim();
-    const reference = /^(?:TKT|PG)-/i.test(rawReference)
+    const reference = /^(?:TKT|PG|PRD)-/i.test(rawReference)
       ? rawReference.toUpperCase()
       : rawReference;
     if (!eventId) return setError("Choose an Event before scanning a Ticket.");
@@ -43,7 +55,11 @@ export function PosTicketService({ eventId }: { eventId: string }) {
     setWorking(true);
     setError("");
     try {
-      setResult(await posService.lookupTicket(eventId, reference));
+      setResult(
+        /^(?:PRD-|gp1_)/i.test(reference)
+          ? await posService.lookupProductPass(eventId, reference)
+          : await posService.lookupTicket(eventId, reference),
+      );
       setActiveToken(reference);
       setToken("");
       setCameraActive(false);
@@ -89,6 +105,21 @@ export function PosTicketService({ eventId }: { eventId: string }) {
     }
   }
 
+  async function collectProduct() {
+    if (!activeToken) return;
+    setWorking(true);
+    setError("");
+    try {
+      setResult(await posService.collectProductPass(eventId, activeToken));
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Collection was not recorded.",
+      );
+    } finally {
+      setWorking(false);
+    }
+  }
+
   function reset() {
     setToken("");
     setActiveToken("");
@@ -104,8 +135,8 @@ export function PosTicketService({ eventId }: { eventId: string }) {
           <div>
             <h2 className="text-2xl font-semibold">Scan existing Ticket</h2>
             <p className="text-sm text-muted-foreground">
-              Scan the QR code, or enter the Booking or Ticket number shown
-              after sale.
+              Scan the QR code, or enter the Booking, Ticket or Product Pass
+              number shown after sale.
             </p>
           </div>
         </div>
@@ -114,13 +145,13 @@ export function PosTicketService({ eventId }: { eventId: string }) {
           className="mt-6 flex flex-col gap-3 sm:flex-row"
         >
           <label className="flex-1 text-sm font-medium">
-            Booking number, Ticket number or QR code
+            Booking, Ticket or Product Pass number, or QR code
             <input
               autoFocus
               value={token}
               onChange={(event) => setToken(event.target.value)}
               className="mt-2 h-14 w-full rounded-xl border px-4 font-mono"
-              placeholder="PG-…, TKT-… or scan QR code"
+              placeholder="PG-…, TKT-…, PRD-… or scan QR code"
             />
           </label>
           <Button
@@ -128,7 +159,7 @@ export function PosTicketService({ eventId }: { eventId: string }) {
             className="h-14 self-end px-8"
             disabled={working}
           >
-            {working ? "Checking…" : "Look up Ticket"}
+            {working ? "Checking…" : "Look up"}
           </Button>
         </form>
         <Button
@@ -150,7 +181,8 @@ export function PosTicketService({ eventId }: { eventId: string }) {
           </div>
         ) : null}
         <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950">
-          Lookup is read-only. It never consumes a Ticket or grants entry.
+          Lookup is read-only. Admission and Product collection each require a
+          separate confirmation.
         </div>
         {error ? (
           <p className="mt-4 text-sm text-destructive">{error}</p>
@@ -162,6 +194,53 @@ export function PosTicketService({ eventId }: { eventId: string }) {
           <div className="text-center text-muted-foreground">
             <ScanLine className="mx-auto size-10" />
             <p className="mt-3 font-medium">Ready for Ticket lookup</p>
+          </div>
+        ) : isProductPass(result) ? (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              {result.status === "ACTIVE" ? (
+                <PackageCheck className="size-7 text-cyan-700" />
+              ) : (
+                <TriangleAlert className="size-7 text-amber-600" />
+              )}
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                  Product Collection Pass
+                </p>
+                <h3 className="text-xl font-semibold">
+                  {result.productName} × {result.quantity}
+                </h3>
+              </div>
+            </div>
+            <p>
+              <strong>Pass:</strong> {result.passNumber}
+            </p>
+            <p>
+              <strong>Booking:</strong> {result.bookingNumber}
+            </p>
+            {result.session ? (
+              <p>
+                <strong>Session:</strong> {result.session.name}
+              </p>
+            ) : null}
+            <p>
+              <strong>Status:</strong> {result.status}
+            </p>
+            <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-950">
+              Product collection only — this pass does not grant rink entry.
+            </p>
+            {result.status === "ACTIVE" ? (
+              <Button
+                className="h-14 w-full"
+                disabled={working}
+                onClick={() => void collectProduct()}
+              >
+                Confirm Product collection
+              </Button>
+            ) : null}
+            <Button variant="outline" className="w-full" onClick={reset}>
+              Scan next Ticket or Product Pass
+            </Button>
           </div>
         ) : isBookingLookup(result) ? (
           <div className="space-y-4">

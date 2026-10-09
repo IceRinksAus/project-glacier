@@ -28,6 +28,7 @@ The Booking Engine is responsible for:
 - Payment preparation
 - Booking confirmation
 - Ticket issuance
+- Product Collection Pass issuance
 
 The backend remains authoritative for all booking decisions.
 
@@ -278,7 +279,8 @@ For a valid `RESERVED` Booking:
 6. Stripe sends a signed webhook.
 7. Glacier records provider success.
 8. Glacier atomically confirms the Booking only if it is still eligible.
-9. Tickets are issued only after successful Booking confirmation.
+9. Admission Tickets and any Product Collection Passes are issued only after
+   successful Booking confirmation.
 10. The customer browser polls the protected Booking status and renders Confirmation only when both Booking and payment state are authoritative.
 
 Provider success is necessary but not sufficient for fulfilment.
@@ -346,6 +348,34 @@ Each issued Ticket uses a separate high-entropy possession credential:
 - `GET /ticket/token/:token/qr` returns the corresponding PNG with `Cache-Control: private, no-store`.
 
 These public presentation operations do not check a Ticket in. Admission remains an authenticated Staff Scanner action.
+
+### Product Collection Passes
+
+A confirmed, paid Booking receives one Product Collection Pass for each
+`BookingProduct` line. The pass snapshots the Product, optional Variant and
+quantity purchased, so a Kanga or other collected Product remains visible even
+if its catalogue configuration later changes.
+
+Product Collection Passes are deliberately separate from admission Tickets:
+
+- each pass uses a versioned `gp1` possession credential with a signing domain
+  distinct from the `gt1` Ticket credential;
+- only the selector and signing-key ID are stored, never the usable raw
+  credential;
+- the customer confirmation page presents the pass and its QR only after the
+  Booking is both `CONFIRMED` and `PAID`;
+- Event-authorised POS staff can look up a pass and deliberately collect it in
+  one atomic action;
+- repeated collection attempts return the already-collected state rather than
+  issuing the Product again; and
+- a Product Collection Pass always reports `grantsAdmission: false` and never
+  changes Session admission capacity.
+
+The pass quantity represents the whole purchased BookingProduct line. Product
+availability and inventory remain reserved by the existing Booking engine;
+collection records fulfilment evidence only. Standalone merchandise
+`RetailSale` records remain a separate commerce path and do not create
+admission Tickets.
 
 ### Idempotency
 

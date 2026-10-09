@@ -20,6 +20,7 @@ describe('PublicPaymentService', () => {
   };
   const ticketCredentials = {
     present: jest.fn(() => 'current-ticket-token'),
+    presentProductPass: jest.fn(() => 'current-product-pass-token'),
   };
   const checkoutConsent = {
     recordBookingAcceptance: jest.fn(),
@@ -201,6 +202,7 @@ describe('PublicPaymentService', () => {
         },
       ],
       flexibleTicketEntitlements: [],
+      productCollectionPasses: [],
     });
 
     const result = await service.getBookingStatus(
@@ -254,6 +256,7 @@ describe('PublicPaymentService', () => {
       event: { name: 'Test Event', slug: 'test-event', waiver: null },
       tickets: [ticket],
       flexibleTicketEntitlements: [],
+      productCollectionPasses: [],
     });
 
     const result = await service.getBookingStatus(
@@ -267,6 +270,53 @@ describe('PublicPaymentService', () => {
         secureToken: 'current-ticket-token',
         status: 'ACTIVE',
         participant: { firstName: 'Jamie', lastName: 'Test' },
+      },
+    ]);
+  });
+
+  it('should expose paid Product Collection Passes separately from admission Tickets', async () => {
+    prisma.booking.findFirst.mockResolvedValue({
+      id: 'booking-1',
+      bookingNumber: 'PG-1',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      total: 34,
+      reservedUntil: null,
+      confirmedAt: new Date('2027-07-05T00:01:00.000Z'),
+      paidAt: new Date('2027-07-05T00:01:00.000Z'),
+      event: { name: 'Test Event', slug: 'test-event', waiver: null },
+      tickets: [],
+      flexibleTicketEntitlements: [],
+      productCollectionPasses: [
+        {
+          id: 'pass-1',
+          passNumber: 'PRD-1',
+          credentialSelector: 'b'.repeat(32),
+          credentialKeyId: 'local-v1',
+          status: 'ACTIVE',
+          productNameSnapshot: 'Kanga',
+          variantNameSnapshot: null,
+          quantity: 1,
+          collectedAt: null,
+        },
+      ],
+    });
+
+    const result = await service.getBookingStatus(
+      'booking-1',
+      'valid-public-token',
+    );
+
+    expect(result.productCollectionPasses).toEqual([
+      {
+        passNumber: 'PRD-1',
+        secureToken: 'current-product-pass-token',
+        status: 'ACTIVE',
+        productName: 'Kanga',
+        variantName: null,
+        quantity: 1,
+        collectedAt: null,
+        grantsAdmission: false,
       },
     ]);
   });

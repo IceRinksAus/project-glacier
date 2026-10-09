@@ -952,6 +952,19 @@ export default function PosPage() {
                   {ticket.participant.lastName}
                 </Link>
               ))}
+              {completion.productCollectionPasses.map((pass) => (
+                <Link
+                  key={pass.id}
+                  href={`/product-passes/${pass.secureToken}`}
+                  target="_blank"
+                  className="block rounded-lg border border-cyan-300 bg-white p-4 font-semibold underline-offset-4 hover:underline"
+                >
+                  {pass.passNumber} · {pass.productName} × {pass.quantity}
+                  <span className="mt-1 block text-xs font-medium text-amber-800">
+                    Product collection only — no rink admission
+                  </span>
+                </Link>
+              ))}
             </div> : null}
             <Button className="mt-6" onClick={resetSale}>
               Start next sale

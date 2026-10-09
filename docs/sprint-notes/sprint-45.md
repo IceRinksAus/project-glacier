@@ -148,4 +148,19 @@ present; the focused organiser workspace tests, lint and web type-check pass.
 A future setup-readiness improvement should make uncovered age ranges and
 missing dependent-Ticket/Product rules visible before an Event is published.
 
+The acceptance walkthrough also confirmed that paid Kanga Products appeared in
+the Booking but had no customer-presentable collection credential. Glacier now
+issues one separately signed Product Collection Pass per confirmed, paid
+BookingProduct line. Confirmation shows the Product, quantity and dedicated QR;
+Event-authorised POS staff can look it up and deliberately record collection.
+The action is atomic and attributable, repeats show the already-collected
+state, and the presentation explicitly cannot grant admission or alter Session
+admission capacity. This adds the 58th Prisma migration and expands the restore
+set to 27 critical tables.
+
+Focused Product Collection Pass, Ticket credential, Ticket issuance, public
+payment, POS API and web tests pass. Final complete release, migration replay,
+isolation, restore and tracked-secret evidence will be recorded after the
+acceptance-remediation slice is committed.
+
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

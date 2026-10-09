@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 
 const CURRENT_TOKEN_PATTERN = /^gt1_([a-f0-9]{32})_([A-Za-z0-9_-]{43})$/;
+const PRODUCT_PASS_TOKEN_PATTERN = /^gp1_([a-f0-9]{32})_([A-Za-z0-9_-]{43})$/;
 const LEGACY_TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 const KEY_ID_PATTERN = /^[A-Za-z0-9-]{1,32}$/;
 const KEY_VALUE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
@@ -43,6 +44,19 @@ export type IssuedTicketCredential = CurrentStoredTicketCredential & {
   token: string;
 };
 
+export type StoredProductPassCredential = {
+  id: string;
+  credentialSelector: string | null;
+  credentialKeyId: string | null;
+};
+
+export type IssuedProductPassCredential = {
+  id: string;
+  credentialSelector: string;
+  credentialKeyId: string;
+  token: string;
+};
+
 @Injectable()
 export class TicketCredentialService {
   private readonly activeKeyId: string;
@@ -76,12 +90,84 @@ export class TicketCredentialService {
     this.assertSelector(credentialSelector);
     this.assertKeyId(credentialKeyId);
 
-    const mac = this.createMac({
-      ...ticket,
+    const mac = this.createMac(
+      {
+        ...ticket,
+        credentialSelector,
+        credentialKeyId,
+      },
+      'ticket',
+      'gt1',
+    );
+    return `gt1_${credentialSelector}_${mac}`;
+  }
+
+  issueProductPass(passId: string): IssuedProductPassCredential {
+    const credentialSelector = randomBytes(16).toString('hex');
+    const credentialKeyId = this.activeKeyId;
+    const stored = {
+      id: passId,
       credentialSelector,
       credentialKeyId,
-    });
-    return `gt1_${credentialSelector}_${mac}`;
+    };
+    return {
+      ...stored,
+      token: this.presentProductPass(stored),
+    };
+  }
+
+  presentProductPass(pass: StoredProductPassCredential): string {
+    const credentialSelector = pass.credentialSelector;
+    const credentialKeyId = pass.credentialKeyId;
+    this.assertSelector(credentialSelector);
+    this.assertKeyId(credentialKeyId);
+    const mac = this.createMac(
+      { ...pass, credentialSelector, credentialKeyId },
+      'product-collection-pass',
+      'gp1',
+    );
+    return `gp1_${credentialSelector}_${mac}`;
+  }
+
+  lookupProductPassWhere(
+    token: string,
+  ): Prisma.ProductCollectionPassWhereUniqueInput | null {
+    const match = PRODUCT_PASS_TOKEN_PATTERN.exec(token);
+    return match ? { credentialSelector: match[1] } : null;
+  }
+
+  matchesProductPass(
+    pass: StoredProductPassCredential,
+    token: string,
+  ): boolean {
+    const match = PRODUCT_PASS_TOKEN_PATTERN.exec(token);
+    if (
+      !match ||
+      !pass.credentialSelector ||
+      !pass.credentialKeyId ||
+      match[1] !== pass.credentialSelector
+    ) {
+      return false;
+    }
+    let expectedMac: Buffer;
+    let suppliedMac: Buffer;
+    try {
+      expectedMac = Buffer.from(
+        this.createMac(
+          pass as CurrentStoredTicketCredential,
+          'product-collection-pass',
+          'gp1',
+        ),
+        'base64url',
+      );
+      suppliedMac = Buffer.from(match[2], 'base64url');
+    } catch {
+      return false;
+    }
+    return (
+      expectedMac.length === suppliedMac.length &&
+      timingSafeEqual(expectedMac, suppliedMac)
+    );
   }
 
   parse(token: string): ParsedTicketCredential | null {
@@ -141,7 +227,11 @@ export class TicketCredentialService {
 
     try {
       expectedMac = Buffer.from(
-        this.createMac(ticket as CurrentStoredTicketCredential),
+        this.createMac(
+          ticket as CurrentStoredTicketCredential,
+          'ticket',
+          'gt1',
+        ),
         'base64url',
       );
       suppliedMac = Buffer.from(parsed.mac, 'base64url');
@@ -167,7 +257,11 @@ export class TicketCredentialService {
     return this.activeKeyId;
   }
 
-  private createMac(ticket: CurrentStoredTicketCredential): string {
+  private createMac(
+    ticket: CurrentStoredTicketCredential,
+    purpose: 'ticket' | 'product-collection-pass',
+    version: 'gt1' | 'gp1',
+  ): string {
     const signingKey = this.signingKeys.get(ticket.credentialKeyId);
     if (!signingKey) {
       throw new Error(
@@ -177,8 +271,8 @@ export class TicketCredentialService {
 
     const message = [
       'project-glacier',
-      'ticket',
-      'gt1',
+      purpose,
+      version,
       ticket.id,
       ticket.credentialSelector,
       ticket.credentialKeyId,

@@ -196,33 +196,34 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  eventRoles                      EventUser[]
-  eventAccess                     UserEventAccess[]
-  organizations                   UserOrganization[]
-  publishedWaiverVersions         WaiverVersion[]
-  approvedWaiverTemplates         WaiverTemplate[]                @relation("WaiverTemplateApprovedBy")
-  waiverAssociationAudits         WaiverAssociationAudit[]
-  ticketScanAttempts              TicketScanAttempt[]
-  createdFileAssets               FileAsset[]
-  paymentReconciliationAttempts   PaymentReconciliationAttempt[]
-  paymentsReceived                Payment[]                       @relation("PaymentReceivedBy")
-  retailSalesCreated              RetailSale[]                    @relation("RetailSaleCreatedBy")
-  retailSalesCompleted            RetailSale[]                    @relation("RetailSaleCompletedBy")
-  ticketAdjustmentsRequested      TicketAdjustment[]              @relation("TicketAdjustmentRequestedBy")
-  bookingReschedulesRequested     BookingReschedule[]             @relation("BookingRescheduleRequestedBy")
-  flexibleTicketPoliciesCreated   FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyCreatedBy")
-  flexibleTicketPoliciesPublished FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyPublishedBy")
-  flexibleTicketRequestsReviewed  FlexibleTicketRequest[]         @relation("FlexibleTicketRequestReviewedBy")
-  accessChangesMade               OrganizationAccessAudit[]       @relation("OrganizationAccessAuditActor")
-  accessChangesReceived           OrganizationAccessAudit[]       @relation("OrganizationAccessAuditTarget")
-  authenticationSessions          AuthenticationSession[]
-  mfaAuditEntriesMade             MfaAudit[]                      @relation("MfaAuditActor")
-  mfaAuditEntriesReceived         MfaAudit[]                      @relation("MfaAuditTarget")
-  ticketCredentialRotations       TicketCredentialRotationAudit[] @relation("TicketCredentialRotationActor")
-  checkoutDocumentsCreated        CheckoutDocument[]              @relation("CheckoutDocumentCreatedBy")
-  checkoutDocumentsPublished      CheckoutDocument[]              @relation("CheckoutDocumentPublishedBy")
-  checkoutAcceptancesRecorded     BookingCheckoutAcceptance[]     @relation("CheckoutAcceptanceOperator")
-  marketingConsentEvidenceCreated MarketingConsentEvidence[]      @relation("MarketingConsentActor")
+  eventRoles                       EventUser[]
+  eventAccess                      UserEventAccess[]
+  organizations                    UserOrganization[]
+  publishedWaiverVersions          WaiverVersion[]
+  approvedWaiverTemplates          WaiverTemplate[]                @relation("WaiverTemplateApprovedBy")
+  waiverAssociationAudits          WaiverAssociationAudit[]
+  ticketScanAttempts               TicketScanAttempt[]
+  createdFileAssets                FileAsset[]
+  paymentReconciliationAttempts    PaymentReconciliationAttempt[]
+  paymentsReceived                 Payment[]                       @relation("PaymentReceivedBy")
+  retailSalesCreated               RetailSale[]                    @relation("RetailSaleCreatedBy")
+  retailSalesCompleted             RetailSale[]                    @relation("RetailSaleCompletedBy")
+  ticketAdjustmentsRequested       TicketAdjustment[]              @relation("TicketAdjustmentRequestedBy")
+  bookingReschedulesRequested      BookingReschedule[]             @relation("BookingRescheduleRequestedBy")
+  flexibleTicketPoliciesCreated    FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyCreatedBy")
+  flexibleTicketPoliciesPublished  FlexibleTicketPolicy[]          @relation("FlexibleTicketPolicyPublishedBy")
+  flexibleTicketRequestsReviewed   FlexibleTicketRequest[]         @relation("FlexibleTicketRequestReviewedBy")
+  accessChangesMade                OrganizationAccessAudit[]       @relation("OrganizationAccessAuditActor")
+  accessChangesReceived            OrganizationAccessAudit[]       @relation("OrganizationAccessAuditTarget")
+  authenticationSessions           AuthenticationSession[]
+  mfaAuditEntriesMade              MfaAudit[]                      @relation("MfaAuditActor")
+  mfaAuditEntriesReceived          MfaAudit[]                      @relation("MfaAuditTarget")
+  ticketCredentialRotations        TicketCredentialRotationAudit[] @relation("TicketCredentialRotationActor")
+  checkoutDocumentsCreated         CheckoutDocument[]              @relation("CheckoutDocumentCreatedBy")
+  checkoutDocumentsPublished       CheckoutDocument[]              @relation("CheckoutDocumentPublishedBy")
+  checkoutAcceptancesRecorded      BookingCheckoutAcceptance[]     @relation("CheckoutAcceptanceOperator")
+  marketingConsentEvidenceCreated  MarketingConsentEvidence[]      @relation("MarketingConsentActor")
+  productCollectionPassesCollected ProductCollectionPass[]         @relation("ProductCollectionPassCollector")
 }
 
 model AuthenticationSession {
@@ -746,6 +747,7 @@ model Product {
   sessionProducts SessionProduct[]
 
   bookingProducts              BookingProduct[]
+  productCollectionPasses      ProductCollectionPass[]
   retailSaleItems              RetailSaleItem[]
   rescheduleProductAllocations BookingRescheduleProductAllocation[]
 
@@ -927,6 +929,7 @@ model Booking {
   items                         BookingItem[]
   participants                  BookingParticipant[]
   products                      BookingProduct[]
+  productCollectionPasses       ProductCollectionPass[]
   tickets                       Ticket[]
   payments                      Payment[]
   paymentReconciliationAttempts PaymentReconciliationAttempt[]
@@ -1125,6 +1128,7 @@ model BookingProduct {
   productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
 
   rescheduleProductAllocations BookingRescheduleProductAllocation[]
+  collectionPass               ProductCollectionPass?
 
   quantity  Int
   unitPrice Decimal @db.Decimal(10, 2)
@@ -1135,6 +1139,52 @@ model BookingProduct {
   @@index([bookingId])
   @@index([productId])
   @@index([productVariantId])
+}
+
+enum ProductCollectionPassStatus {
+  ACTIVE
+  COLLECTED
+  CANCELLED
+}
+
+model ProductCollectionPass {
+  id String @id @default(cuid())
+
+  passNumber String @unique
+
+  credentialSelector String @unique
+  credentialKeyId    String
+
+  status ProductCollectionPassStatus @default(ACTIVE)
+
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  bookingProductId String         @unique
+  bookingProduct   BookingProduct @relation(fields: [bookingProductId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  productNameSnapshot String
+  variantNameSnapshot String?
+  quantity            Int
+
+  issuedAt DateTime @default(now())
+
+  collectedAt       DateTime?
+  collectedByUserId String?
+  collectedByUser   User?     @relation("ProductCollectionPassCollector", fields: [collectedByUserId], references: [id], onDelete: Restrict)
+
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([productId])
+  @@index([status])
+  @@index([collectedByUserId])
 }
 
 model RetailSale {

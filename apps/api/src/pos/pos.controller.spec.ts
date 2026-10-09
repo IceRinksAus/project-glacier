@@ -6,6 +6,8 @@ import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
 import { RetailSaleService } from './retail-sale.service';
 import { StaffScannerService } from '../staff-scanner/staff-scanner.service';
+import { ProductCollectionPassService } from '../ticket/product-collection-pass.service';
+import { AccessControlService } from '../access-control/access-control.service';
 
 describe('PosController', () => {
   const service = {
@@ -33,6 +35,11 @@ describe('PosController', () => {
     lookupBooking: jest.fn(),
     admit: jest.fn(),
   };
+  const productCollectionPasses = {
+    lookup: jest.fn(),
+    collect: jest.fn(),
+  };
+  const accessControl = { assertEventAccess: jest.fn() };
   let controller: PosController;
 
   beforeEach(async () => {
@@ -43,6 +50,11 @@ describe('PosController', () => {
         { provide: PosService, useValue: service },
         { provide: RetailSaleService, useValue: retailSaleService },
         { provide: StaffScannerService, useValue: staffScannerService },
+        {
+          provide: ProductCollectionPassService,
+          useValue: productCollectionPasses,
+        },
+        { provide: AccessControlService, useValue: accessControl },
       ],
     }).compile();
     controller = module.get(PosController);
@@ -73,6 +85,29 @@ describe('PosController', () => {
       'MANAGER',
       'STAFF',
     ]);
+  });
+
+  it('keeps Product collection lookup separate from atomic collection', async () => {
+    const data = { reference: 'PRD-1234-ABCDEF' };
+    await controller.lookupProductPass(user, 'event-1', data);
+    expect(accessControl.assertEventAccess).toHaveBeenCalledWith(
+      'event-1',
+      user,
+    );
+    expect(productCollectionPasses.lookup).toHaveBeenCalledWith(
+      'organization-1',
+      'event-1',
+      data.reference,
+    );
+    expect(productCollectionPasses.collect).not.toHaveBeenCalled();
+
+    await controller.collectProductPass(user, 'event-1', data);
+    expect(productCollectionPasses.collect).toHaveBeenCalledWith(
+      'organization-1',
+      'event-1',
+      data.reference,
+      'user-1',
+    );
   });
 
   it('resolves a Booking number to its Event-scoped Ticket list', async () => {

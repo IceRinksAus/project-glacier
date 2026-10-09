@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-09 — Product Collection Passes
+
+- Added a separately signed Product Collection Pass for every Product line on
+  a confirmed, paid Booking, including Kanga skating aids.
+- Added customer confirmation cards and a dedicated QR presentation page that
+  clearly state the pass does not grant rink admission.
+- Added Event-scoped POS lookup and deliberate atomic collection with
+  attributable staff evidence and safe already-collected handling.
+- Preserved admission Ticket, Session capacity, Product availability,
+  inventory, Payment and tenant boundaries.
+
 ## 2026-10-09 — Ticket age and companion enforcement
 
 - Enforced configured Ticket Type minimum and maximum ages at the authoritative

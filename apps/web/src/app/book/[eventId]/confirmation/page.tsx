@@ -65,6 +65,42 @@ export default function ConfirmationPage({
           ))}
         </div>
 
+        {(bookingStatus.productCollectionPasses ?? []).length ? (
+          <section className="mt-8 rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+            <h2 className="text-xl font-bold">Product collection passes</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              Show each QR code when collecting the listed Product. These passes
+              do not grant rink entry.
+            </p>
+            <div className="mt-4 grid gap-3">
+              {(bookingStatus.productCollectionPasses ?? []).map((pass) => (
+                <Link
+                  key={pass.passNumber}
+                  href={`/product-passes/${pass.secureToken}`}
+                  className="flex items-center justify-between rounded-xl border border-cyan-200 bg-white p-4 transition hover:bg-cyan-100"
+                >
+                  <div>
+                    <p className="font-bold">
+                      {pass.productName} × {pass.quantity}
+                    </p>
+                    {pass.variantName ? (
+                      <p className="mt-1 text-sm text-slate-600">
+                        {pass.variantName}
+                      </p>
+                    ) : null}
+                    <p className="mt-1 font-mono text-xs text-slate-500">
+                      {pass.passNumber}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 font-semibold">
+                    View pass <ExternalLink className="size-4" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {(bookingStatus.flexibleTicketEntitlements ?? []).length ? (
           <section className="mt-8 rounded-2xl border border-sky-200 bg-sky-50 p-6">
             <h2 className="text-xl font-bold">Flexible Ticket coverage</h2>

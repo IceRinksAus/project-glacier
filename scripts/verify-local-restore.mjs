@@ -32,6 +32,7 @@ const criticalTables = [
   "EventSiteContentVersion",
   "EventSiteHighlight",
   "EventSiteFaq",
+  "ProductCollectionPass",
   "_prisma_migrations",
 ];
 
