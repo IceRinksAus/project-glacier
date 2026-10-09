@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-09 — Ticket age and companion enforcement
+
+- Enforced configured Ticket Type minimum and maximum ages at the authoritative
+  Booking boundary for online and walk-up sales.
+- Added immediate public participant feedback when an entered age falls outside
+  the selected Ticket Type range.
+- Added an OWNER-managed companion Ticket requirement to Ticket Type setup so,
+  for example, a Young Child Ticket can require an Adult Ticket in the same
+  Booking through the shared Event Rule authority.
+
 # Sprint 45 – Public Event Homepage and Content Structure
 
 ## Complete locally; organiser acceptance pending

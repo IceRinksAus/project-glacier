@@ -18,6 +18,18 @@ export interface TicketType {
   eventId: string;
 }
 
+export interface TicketCompanionRule {
+  id: string;
+  eventId: string;
+  ruleType: string;
+  status: string;
+  conditions: {
+    all?: Array<{ field?: string; operator?: string; value?: unknown }>;
+  };
+  actions: { type?: string };
+  message: string | null;
+}
+
 export interface CreateTicketType {
   eventId: string;
   name: string;
@@ -61,4 +73,43 @@ export const ticketTypeService = {
 
   removeImage: (ticketTypeId: string) =>
     api.delete<void>(`/ticket-type/${ticketTypeId}/image`),
+
+  findRules: () => api.get<TicketCompanionRule[]>("/rule"),
+
+  createCompanionRule: (data: {
+    eventId: string;
+    name: string;
+    slug: string;
+    description: string;
+    ruleType: "TICKET_COMPANION_REQUIREMENT";
+    scope: "PARTICIPANT";
+    status: "ACTIVE";
+    priority: number;
+    conditions: {
+      all: Array<{
+        field: "ticketTypeId" | "bookingTicketTypeIds";
+        operator: "EQUALS" | "NOT_CONTAINS";
+        value: string;
+      }>;
+    };
+    actions: { type: "BLOCK_BOOKING" };
+    message: string;
+    stopProcessing: false;
+  }) => api.post<TicketCompanionRule>("/rule", data),
+
+  updateCompanionRule: (
+    ruleId: string,
+    data: {
+      status: "ACTIVE" | "INACTIVE";
+      conditions?: {
+        all: Array<{
+          field: "ticketTypeId" | "bookingTicketTypeIds";
+          operator: "EQUALS" | "NOT_CONTAINS";
+          value: string;
+        }>;
+      };
+      actions?: { type: "BLOCK_BOOKING" };
+      message?: string;
+    },
+  ) => api.patch<TicketCompanionRule>(`/rule/${ruleId}`, data),
 };

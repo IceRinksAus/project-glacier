@@ -133,8 +133,19 @@ Bathurst currently has Adult (18–99) and Child (6–17) Ticket Types, but no Y
 Child Ticket and no active Event Rules. A four-year-old can therefore no longer
 be booked against Child. Supporting that age requires the organiser to add an
 appropriate Young Child Ticket and deliberately configure both the Kanga
-requirement and adult-accompaniment rule. A future setup-readiness improvement
-should make uncovered age ranges and missing dependent-Ticket/Product rules
-visible before an Event is published.
+requirement and adult-accompaniment rule.
+
+The Ticket Types workspace now provides the missing first-class companion
+control. An OWNER can require at least one of the selected companion Ticket
+Types in the same Booking (for example Young Child requires Adult). Glacier
+stores this as an Event-scoped active Rule and the existing shared rule
+authority enforces it consistently during public and POS evaluation and again
+at reservation creation. The existing Products workspace remains the place to
+map one mandatory Kanga per matching Ticket participant. Focused rule-engine
+tests prove both rejection without the companion and acceptance when it is
+present; the focused organiser workspace tests, lint and web type-check pass.
+
+A future setup-readiness improvement should make uncovered age ranges and
+missing dependent-Ticket/Product rules visible before an Event is published.
 
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

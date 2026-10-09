@@ -8,6 +8,10 @@ const {
   authState,
   create,
   findForEvent,
+  findRules,
+  createCompanionRule,
+  updateCompanionRule,
+  updateAgePolicy,
   updatePresentation,
   uploadImage,
   removeImage,
@@ -15,6 +19,10 @@ const {
   authState: { role: "OWNER" },
   create: vi.fn(),
   findForEvent: vi.fn(),
+  findRules: vi.fn(),
+  createCompanionRule: vi.fn(),
+  updateCompanionRule: vi.fn(),
+  updateAgePolicy: vi.fn(),
   updatePresentation: vi.fn(),
   uploadImage: vi.fn(),
   removeImage: vi.fn(),
@@ -30,6 +38,10 @@ vi.mock("@/services/ticket-type.service", () => ({
   ticketTypeService: {
     create,
     findForEvent,
+    findRules,
+    createCompanionRule,
+    updateCompanionRule,
+    updateAgePolicy,
     updatePresentation,
     uploadImage,
     removeImage,
@@ -41,7 +53,11 @@ describe("TicketTypesWorkspace", () => {
     vi.clearAllMocks();
     authState.role = "OWNER";
     findForEvent.mockResolvedValue([]);
+    findRules.mockResolvedValue([]);
     create.mockResolvedValue({ id: "ticket-type-1" });
+    createCompanionRule.mockResolvedValue({ id: "rule-1" });
+    updateCompanionRule.mockResolvedValue({ id: "rule-1" });
+    updateAgePolicy.mockResolvedValue({ id: "ticket-type-1" });
     updatePresentation.mockResolvedValue({ id: "ticket-type-1" });
     uploadImage.mockResolvedValue({ id: "asset-1" });
     removeImage.mockResolvedValue(undefined);
@@ -140,6 +156,79 @@ describe("TicketTypesWorkspace", () => {
         tileLabel: "ADULT",
         tileColor: "#0B6CE3",
       }),
+    );
+  });
+
+  it("lets an OWNER require an Adult companion for a Young Child Ticket", async () => {
+    const user = userEvent.setup();
+    findForEvent.mockResolvedValue([
+      {
+        id: "ticket-young-child",
+        name: "Young Child",
+        description: null,
+        price: "10.00",
+        capacity: 100,
+        active: true,
+        eventId: "event-1",
+        tileLabel: "YOUNG CHILD",
+        tileColor: "#0B6CE3",
+        minimumAge: 0,
+        maximumAge: 5,
+        imageAsset: null,
+      },
+      {
+        id: "ticket-adult",
+        name: "Adult",
+        description: null,
+        price: "25.00",
+        capacity: 100,
+        active: true,
+        eventId: "event-1",
+        tileLabel: "ADULT",
+        tileColor: "#0B6CE3",
+        minimumAge: 18,
+        maximumAge: null,
+        imageAsset: null,
+      },
+    ]);
+
+    render(
+      <TicketTypesWorkspace eventId="event-1" onReturnToReadiness={vi.fn()} />,
+    );
+
+    const requirementControls = await screen.findAllByText(
+      "Manage companion Ticket requirement",
+    );
+    await user.click(requirementControls[0]);
+    await user.click(screen.getByRole("checkbox", { name: "Adult" }));
+    await user.click(
+      screen.getAllByRole("button", {
+        name: "Save companion requirement",
+      })[0],
+    );
+
+    await waitFor(() =>
+      expect(createCompanionRule).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: "event-1",
+          ruleType: "TICKET_COMPANION_REQUIREMENT",
+          conditions: {
+            all: [
+              {
+                field: "ticketTypeId",
+                operator: "EQUALS",
+                value: "ticket-young-child",
+              },
+              {
+                field: "bookingTicketTypeIds",
+                operator: "NOT_CONTAINS",
+                value: "ticket-adult",
+              },
+            ],
+          },
+          actions: { type: "BLOCK_BOOKING" },
+        }),
+      ),
     );
   });
 

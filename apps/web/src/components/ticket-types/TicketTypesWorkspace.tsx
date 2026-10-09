@@ -15,7 +15,11 @@ import {
   getServerAuthRoleSnapshot,
   subscribeAuthSession,
 } from "@/lib/auth";
-import { TicketType, ticketTypeService } from "@/services/ticket-type.service";
+import {
+  TicketCompanionRule,
+  TicketType,
+  ticketTypeService,
+} from "@/services/ticket-type.service";
 
 interface TicketTypesWorkspaceProps {
   eventId: string;
@@ -171,6 +175,70 @@ function TicketTypeAgePolicyEditor({
   );
 }
 
+function TicketCompanionEditor({
+  ticketType,
+  ticketTypes,
+  selectedIds,
+  disabled,
+  onSave,
+}: {
+  ticketType: TicketType;
+  ticketTypes: TicketType[];
+  selectedIds: string[];
+  disabled: boolean;
+  onSave: (ticketTypeIds: string[]) => Promise<void>;
+}) {
+  const [selection, setSelection] = useState(selectedIds);
+  const choices = ticketTypes.filter(
+    (candidate) => candidate.id !== ticketType.id && candidate.active,
+  );
+
+  return (
+    <details className="mt-4 border-t pt-3 text-sm">
+      <summary className="cursor-pointer font-medium">
+        Manage companion Ticket requirement
+      </summary>
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        Require at least one selected companion Ticket in the same booking. For
+        example, a Young Child Ticket can require an Adult Ticket.
+      </p>
+      {choices.length ? (
+        <div className="mt-3 space-y-2">
+          {choices.map((candidate) => (
+            <label key={candidate.id} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selection.includes(candidate.id)}
+                onChange={() =>
+                  setSelection((current) =>
+                    current.includes(candidate.id)
+                      ? current.filter((id) => id !== candidate.id)
+                      : [...current, candidate.id],
+                  )
+                }
+              />
+              {candidate.name}
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-3 rounded-lg bg-muted p-3 text-xs">
+          Create another active Ticket Type before adding this requirement.
+        </p>
+      )}
+      <Button
+        type="button"
+        size="sm"
+        className="mt-3"
+        disabled={disabled || choices.length === 0}
+        onClick={() => void onSave(selection)}
+      >
+        Save companion requirement
+      </Button>
+    </details>
+  );
+}
+
 export function TicketTypesWorkspace({
   eventId,
   onReturnToReadiness,
@@ -181,6 +249,9 @@ export function TicketTypesWorkspace({
     getServerAuthRoleSnapshot,
   );
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
+  const [companionRules, setCompanionRules] = useState<TicketCompanionRule[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -197,8 +268,18 @@ export function TicketTypesWorkspace({
 
   const loadTicketTypes = useCallback(async () => {
     try {
-      const result = await ticketTypeService.findForEvent(eventId);
+      const [result, rules] = await Promise.all([
+        ticketTypeService.findForEvent(eventId),
+        ticketTypeService.findRules(),
+      ]);
       setTicketTypes(result);
+      setCompanionRules(
+        rules.filter(
+          (rule) =>
+            rule.eventId === eventId &&
+            rule.ruleType === "TICKET_COMPANION_REQUIREMENT",
+        ),
+      );
       setError("");
     } catch (loadError) {
       setError(
@@ -212,21 +293,113 @@ export function TicketTypesWorkspace({
   }, [eventId]);
 
   useEffect(() => {
-    ticketTypeService
-      .findForEvent(eventId)
-      .then((result) => {
-        setTicketTypes(result);
-        setError("");
-      })
-      .catch((loadError) =>
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Unable to load Ticket Types.",
-        ),
-      )
-      .finally(() => setIsLoading(false));
-  }, [eventId]);
+    const timer = window.setTimeout(() => {
+      void loadTicketTypes()
+        .catch((loadError) =>
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load Ticket Types.",
+          ),
+        )
+        .finally(() => setIsLoading(false));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadTicketTypes]);
+
+  function companionRule(ticketType: TicketType) {
+    return companionRules.find((rule) =>
+      rule.conditions.all?.some(
+        (condition) =>
+          condition.field === "ticketTypeId" &&
+          condition.operator === "EQUALS" &&
+          condition.value === ticketType.id,
+      ),
+    );
+  }
+
+  function companionTicketTypeIds(ticketType: TicketType) {
+    const rule = companionRule(ticketType);
+    if (!rule || rule.status !== "ACTIVE") return [];
+    return (
+      rule.conditions.all
+        ?.filter(
+          (condition) =>
+            condition.field === "bookingTicketTypeIds" &&
+            condition.operator === "NOT_CONTAINS" &&
+            typeof condition.value === "string",
+        )
+        .map((condition) => condition.value as string) ?? []
+    );
+  }
+
+  async function saveCompanionRequirement(
+    ticketType: TicketType,
+    companionIds: string[],
+  ) {
+    setBusyTicketTypeId(ticketType.id);
+    setError("");
+    setSavedMessage("");
+    const rule = companionRule(ticketType);
+    const names = ticketTypes
+      .filter((candidate) => companionIds.includes(candidate.id))
+      .map((candidate) => candidate.name);
+    const message = `${ticketType.name} requires at least one ${names.join(" or ")} Ticket in the same booking.`;
+    const conditions = {
+      all: [
+        {
+          field: "ticketTypeId" as const,
+          operator: "EQUALS" as const,
+          value: ticketType.id,
+        },
+        ...companionIds.map((id) => ({
+          field: "bookingTicketTypeIds" as const,
+          operator: "NOT_CONTAINS" as const,
+          value: id,
+        })),
+      ],
+    };
+
+    try {
+      if (rule) {
+        await ticketTypeService.updateCompanionRule(rule.id, {
+          status: companionIds.length ? "ACTIVE" : "INACTIVE",
+          ...(companionIds.length
+            ? { conditions, actions: { type: "BLOCK_BOOKING" }, message }
+            : {}),
+        });
+      } else if (companionIds.length) {
+        await ticketTypeService.createCompanionRule({
+          eventId,
+          name: `${ticketType.name} companion Ticket requirement`,
+          slug: `ticket-${ticketType.id}-requires-companion`,
+          description: `Requires an eligible companion Ticket when ${ticketType.name} is booked.`,
+          ruleType: "TICKET_COMPANION_REQUIREMENT",
+          scope: "PARTICIPANT",
+          status: "ACTIVE",
+          priority: 200,
+          conditions,
+          actions: { type: "BLOCK_BOOKING" },
+          message,
+          stopProcessing: false,
+        });
+      }
+      await loadTicketTypes();
+      setSavedMessage(
+        companionIds.length
+          ? `${ticketType.name} companion requirement updated.`
+          : `${ticketType.name} companion requirement removed.`,
+      );
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Unable to update the companion requirement.",
+      );
+    } finally {
+      setBusyTicketTypeId("");
+    }
+  }
 
   async function createTicketType(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -466,6 +639,16 @@ export function TicketTypesWorkspace({
                             nextMinimumAge,
                             nextMaximumAge,
                           )
+                        }
+                      />
+                      <TicketCompanionEditor
+                        key={`${ticketType.id}:${companionTicketTypeIds(ticketType).join(",")}`}
+                        ticketType={ticketType}
+                        ticketTypes={ticketTypes}
+                        selectedIds={companionTicketTypeIds(ticketType)}
+                        disabled={busyTicketTypeId === ticketType.id}
+                        onSave={(companionIds) =>
+                          saveCompanionRequirement(ticketType, companionIds)
                         }
                       />
                     </>
