@@ -61,6 +61,8 @@ export interface PublicTicketType {
   price: number;
   capacity: number;
   active: boolean;
+  minimumAge: number | null;
+  maximumAge: number | null;
   saleStart: string | null;
   saleEnd: string | null;
   eventId: string;

@@ -41,6 +41,8 @@ describe('BookingService', () => {
     name: 'Adult',
     price: new Prisma.Decimal(24),
     active: true,
+    minimumAge: 18,
+    maximumAge: null,
     eventId: 'event-1',
   };
 
@@ -49,6 +51,8 @@ describe('BookingService', () => {
     name: 'Child',
     price: new Prisma.Decimal(18),
     active: true,
+    minimumAge: 6,
+    maximumAge: 17,
     eventId: 'event-1',
   };
 
@@ -488,6 +492,50 @@ describe('BookingService', () => {
 
     await expect(service.create(createBookingDto)).rejects.toThrow(
       'One or more ticket types are invalid, inactive, or belong to another event',
+    );
+
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('should reject a participant younger than the selected Ticket permits', async () => {
+    prisma.ticketType.findMany.mockResolvedValue([childTicketType]);
+
+    await expect(
+      service.create({
+        ...createBookingDto,
+        participants: [
+          {
+            firstName: 'Sam',
+            lastName: 'Stoller',
+            age: 4,
+            ticketTypeId: 'ticket-child',
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Sam must be at least 6 years old for the Child Ticket.',
+    );
+
+    expect(prisma.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('should reject a participant older than the selected Ticket permits', async () => {
+    prisma.ticketType.findMany.mockResolvedValue([childTicketType]);
+
+    await expect(
+      service.create({
+        ...createBookingDto,
+        participants: [
+          {
+            firstName: 'Sam',
+            lastName: 'Stoller',
+            age: 18,
+            ticketTypeId: 'ticket-child',
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Sam must be 17 years old or younger for the Child Ticket.',
     );
 
     expect(prisma.booking.create).not.toHaveBeenCalled();

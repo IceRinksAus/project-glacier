@@ -116,6 +116,25 @@ Use fictional local content only:
 
 ## Closeout state
 
-All implementation and automated verification is complete in local commits on
-`main`. Nothing from Sprint 45 has been pushed. The organiser walkthrough above
-remains the final product acceptance gate before closeout and push approval.
+The organiser walkthrough confirmed that draft/save/publish, the public Event
+homepage, booking actions, Event Waiver link and FAQ templates work as planned.
+
+The walkthrough also exposed an existing booking-boundary defect: a four-year-
+old participant could be assigned Bathurst's Child Ticket even though that
+Ticket is configured for ages 6–17. Booking creation now enforces each Ticket
+Type's minimum and maximum age authoritatively for online and walk-up sales, and
+the public participant step explains an invalid age immediately. Focused API
+tests (30/30), focused web tests (7/7), the API build and web type-check pass.
+The web production build remains to be repeated in the complete release gate;
+the isolated verification environment prevented its build worker from binding
+the temporary local port it requires.
+
+Bathurst currently has Adult (18–99) and Child (6–17) Ticket Types, but no Young
+Child Ticket and no active Event Rules. A four-year-old can therefore no longer
+be booked against Child. Supporting that age requires the organiser to add an
+appropriate Young Child Ticket and deliberately configure both the Kanga
+requirement and adult-accompaniment rule. A future setup-readiness improvement
+should make uncovered age ranges and missing dependent-Ticket/Product rules
+visible before an Event is published.
+
+All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

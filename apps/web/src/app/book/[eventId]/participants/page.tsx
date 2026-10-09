@@ -55,11 +55,14 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
   const complete = slots.length > 0 && slots.every((slot) => {
     const participant = participantData[slot.key];
     const age = Number(participant?.age);
+    const ticketType = ticketTypes.find(({ id }) => id === slot.ticketTypeId);
     return Boolean(
       participant?.firstName.trim() &&
       participant.age.trim() &&
       Number.isInteger(age) &&
-      age >= 0,
+      age >= 0 &&
+      (ticketType?.minimumAge == null || age >= ticketType.minimumAge) &&
+      (ticketType?.maximumAge == null || age <= ticketType.maximumAge),
     );
   });
 
@@ -104,13 +107,30 @@ export default function ParticipantsPage({ params }: { params: Promise<{ eventId
         <div className="mt-8 grid gap-5">
           {slots.map((slot) => {
             const participant = participantData[slot.key] ?? { firstName: "", lastName: "", age: "" };
+            const ticketType = ticketTypes.find(({ id }) => id === slot.ticketTypeId);
+            const age = Number(participant.age);
+            const ageOutsideRange = participant.age.trim().length > 0 && Number.isInteger(age) && (
+              (ticketType?.minimumAge != null && age < ticketType.minimumAge) ||
+              (ticketType?.maximumAge != null && age > ticketType.maximumAge)
+            );
+            const ageRange = ticketType?.minimumAge == null && ticketType?.maximumAge == null
+              ? null
+              : ticketType?.minimumAge == null
+                ? `Age ${ticketType?.maximumAge} or younger`
+                : ticketType?.maximumAge == null
+                  ? `Age ${ticketType.minimumAge} or older`
+                  : `Ages ${ticketType.minimumAge}–${ticketType.maximumAge}`;
             return (
               <fieldset key={slot.key} className="rounded-2xl border p-5">
                 <legend className="px-2 font-bold">{slot.ticketTypeName} participant {slot.participantNumber}</legend>
                 <div className="mt-2 grid gap-4 sm:grid-cols-2">
                   <label className="grid gap-2"><span className="text-sm font-semibold">First name</span><input required value={participant.firstName} onChange={(event) => updateParticipant(slot.key, "firstName", event.target.value)} className="h-11 rounded-xl border px-3" /></label>
                   <label className="grid gap-2"><span className="text-sm font-semibold">Last name <span className="font-normal text-slate-500">(optional)</span></span><input value={participant.lastName} onChange={(event) => updateParticipant(slot.key, "lastName", event.target.value)} className="h-11 rounded-xl border px-3" /></label>
-                  <label className="grid gap-2 sm:max-w-44"><span className="text-sm font-semibold">Age</span><input required type="number" min="0" step="1" value={participant.age} onChange={(event) => updateParticipant(slot.key, "age", event.target.value)} className="h-11 rounded-xl border px-3" /></label>
+                  <label className="grid gap-2 sm:max-w-56">
+                    <span className="text-sm font-semibold">Age</span>
+                    <input required type="number" min={ticketType?.minimumAge ?? 0} max={ticketType?.maximumAge ?? 130} step="1" value={participant.age} onChange={(event) => updateParticipant(slot.key, "age", event.target.value)} className={`h-11 rounded-xl border px-3 ${ageOutsideRange ? "border-red-500" : ""}`} />
+                    {ageRange ? <span className={`text-xs ${ageOutsideRange ? "font-semibold text-red-700" : "text-slate-500"}`}>{ageOutsideRange ? `This Ticket is for ${ageRange.toLowerCase()}.` : ageRange}</span> : null}
+                  </label>
                 </div>
               </fieldset>
             );

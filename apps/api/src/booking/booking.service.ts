@@ -814,6 +814,34 @@ export class BookingService {
       ticketTypes.map((ticketType) => [ticketType.id, ticketType]),
     );
 
+    for (const participant of data.participants) {
+      const ticketType = ticketTypeMap.get(participant.ticketTypeId);
+
+      if (!ticketType) {
+        throw new BadRequestException(
+          'One or more participant Ticket Types are invalid',
+        );
+      }
+
+      if (
+        ticketType.minimumAge !== null &&
+        participant.age < ticketType.minimumAge
+      ) {
+        throw new BadRequestException(
+          `${participant.firstName} must be at least ${ticketType.minimumAge} years old for the ${ticketType.name} Ticket.`,
+        );
+      }
+
+      if (
+        ticketType.maximumAge !== null &&
+        participant.age > ticketType.maximumAge
+      ) {
+        throw new BadRequestException(
+          `${participant.firstName} must be ${ticketType.maximumAge} years old or younger for the ${ticketType.name} Ticket.`,
+        );
+      }
+    }
+
     /*
      * Validate session capacity.
      */

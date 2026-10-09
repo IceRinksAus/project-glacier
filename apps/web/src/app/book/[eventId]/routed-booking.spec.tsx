@@ -156,6 +156,35 @@ describe("routed public booking pages", () => {
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
+  it("prevents an age outside the selected Ticket range", async () => {
+    Object.assign(journey, {
+      selectedDateKey: "2027-07-01",
+      selectedSessionId: "session-1",
+      ticketQuantities: { child: 1 },
+      participantData: {
+        "child-0": { firstName: "Sam", lastName: "", age: "4" },
+      },
+      totalTicketQuantity: 1,
+    });
+    mocks.getTicketTypes.mockResolvedValue([
+      {
+        id: "child",
+        name: "Child",
+        price: 18,
+        minimumAge: 6,
+        maximumAge: 17,
+      },
+    ]);
+
+    await renderRoute(<ParticipantsPage params={params} />);
+
+    expect(await screen.findByText("This Ticket is for ages 6–17.")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Continue to Add-ons/ }),
+    ).toBeDisabled();
+    expect(mocks.evaluateRules).not.toHaveBeenCalled();
+  });
+
   it("offers Flexible Ticket immediately after Tickets are selected", async () => {
     const user = userEvent.setup();
     Object.assign(journey, {

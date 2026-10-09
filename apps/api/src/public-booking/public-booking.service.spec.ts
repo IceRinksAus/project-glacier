@@ -622,6 +622,8 @@ describe('PublicBookingService', () => {
         price: true,
         capacity: true,
         active: true,
+        minimumAge: true,
+        maximumAge: true,
         saleStart: true,
         saleEnd: true,
         eventId: true,
