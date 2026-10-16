@@ -50,7 +50,7 @@ export function PosTicketService({ eventId }: { eventId: string }) {
     if (!eventId) return setError("Choose an Event before scanning a Ticket.");
     if (!ticketReferencePattern.test(reference))
       return setError(
-        "Enter a Booking or Ticket number, or scan a valid Glacier Ticket code.",
+        "Enter a Booking, Ticket or Product Pass number, or scan a valid Glacier QR code.",
       );
     setWorking(true);
     setError("");
@@ -133,7 +133,9 @@ export function PosTicketService({ eventId }: { eventId: string }) {
         <div className="flex items-center gap-3">
           <ScanLine className="size-7 text-primary" />
           <div>
-            <h2 className="text-2xl font-semibold">Scan existing Ticket</h2>
+            <h2 className="text-2xl font-semibold">
+              Scan or look up a Ticket/Product Pass
+            </h2>
             <p className="text-sm text-muted-foreground">
               Scan the QR code, or enter the Booking, Ticket or Product Pass
               number shown after sale.
@@ -208,7 +210,10 @@ export function PosTicketService({ eventId }: { eventId: string }) {
                   Product Collection Pass
                 </p>
                 <h3 className="text-xl font-semibold">
-                  {result.productName} × {result.quantity}
+                  {result.productName}
+                  {result.unitNumber && result.unitCount
+                    ? ` ${result.unitNumber} of ${result.unitCount}`
+                    : ` × ${result.quantity}`}
                 </h3>
               </div>
             </div>

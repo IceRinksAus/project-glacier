@@ -27,7 +27,7 @@ export class ProductCollectionPassService {
             quantity: true,
             product: { select: { name: true } },
             productVariant: { select: { name: true } },
-            collectionPass: { select: { id: true } },
+            collectionPasses: { select: { id: true, unitNumber: true } },
           },
         },
       },
@@ -38,12 +38,29 @@ export class ProductCollectionPassService {
       return [];
     }
 
-    const missing = booking.products.filter(
-      (bookingProduct) => !bookingProduct.collectionPass,
-    );
+    const missing = booking.products.flatMap((bookingProduct) => {
+      // A pre-unit pass is retained as historical grouped fulfilment evidence.
+      // It already covers the full line and must never be duplicated.
+      if (
+        bookingProduct.collectionPasses.some(
+          (pass) => pass.unitNumber === null,
+        )
+      ) {
+        return [];
+      }
+      const existingUnits = new Set(
+        bookingProduct.collectionPasses.map((pass) => pass.unitNumber),
+      );
+      return Array.from(
+        { length: bookingProduct.quantity },
+        (_, index) => index + 1,
+      )
+        .filter((unitNumber) => !existingUnits.has(unitNumber))
+        .map((unitNumber) => ({ bookingProduct, unitNumber }));
+    });
     if (missing.length) {
       await this.prisma.productCollectionPass.createMany({
-        data: missing.map((bookingProduct) => {
+        data: missing.map(({ bookingProduct, unitNumber }) => {
           const id = randomUUID();
           const credential = this.credentials.issueProductPass(id);
           return {
@@ -58,7 +75,9 @@ export class ProductCollectionPassService {
             productId: bookingProduct.productId,
             productNameSnapshot: bookingProduct.product.name,
             variantNameSnapshot: bookingProduct.productVariant?.name ?? null,
-            quantity: bookingProduct.quantity,
+            quantity: 1,
+            unitNumber,
+            unitCountSnapshot: bookingProduct.quantity,
           };
         }),
         skipDuplicates: true,
@@ -194,6 +213,8 @@ export class ProductCollectionPassService {
     productNameSnapshot: string;
     variantNameSnapshot: string | null;
     quantity: number;
+    unitNumber: number | null;
+    unitCountSnapshot: number | null;
     issuedAt: Date;
     collectedAt: Date | null;
     booking: {
@@ -209,6 +230,8 @@ export class ProductCollectionPassService {
       productName: pass.productNameSnapshot,
       variantName: pass.variantNameSnapshot,
       quantity: pass.quantity,
+      unitNumber: pass.unitNumber,
+      unitCount: pass.unitCountSnapshot,
       issuedAt: pass.issuedAt,
       collectedAt: pass.collectedAt,
       bookingNumber: pass.booking.bookingNumber,

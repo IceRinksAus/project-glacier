@@ -105,6 +105,8 @@ export interface PosCompletion {
     productName: string;
     variantName: string | null;
     quantity: number;
+    unitNumber?: number | null;
+    unitCount?: number | null;
     grantsAdmission: false;
   }>;
 }
@@ -150,6 +152,8 @@ export interface PosProductCollectionPass {
   productName: string;
   variantName: string | null;
   quantity: number;
+  unitNumber?: number | null;
+  unitCount?: number | null;
   issuedAt: string;
   collectedAt: string | null;
   bookingNumber: string;

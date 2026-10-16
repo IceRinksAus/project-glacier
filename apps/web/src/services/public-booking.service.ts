@@ -347,6 +347,8 @@ export interface PublicBookingStatus {
     productName: string;
     variantName: string | null;
     quantity: number;
+    unitNumber?: number | null;
+    unitCount?: number | null;
     collectedAt: string | null;
     grantsAdmission: false;
   }>;
@@ -393,6 +395,8 @@ export interface PublicProductCollectionPassPresentation {
   productName: string;
   variantName: string | null;
   quantity: number;
+  unitNumber?: number | null;
+  unitCount?: number | null;
   issuedAt: string;
   collectedAt: string | null;
   bookingNumber: string;

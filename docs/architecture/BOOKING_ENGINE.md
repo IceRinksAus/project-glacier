@@ -352,9 +352,10 @@ These public presentation operations do not check a Ticket in. Admission remains
 ### Product Collection Passes
 
 A confirmed, paid Booking receives one Product Collection Pass for each
-`BookingProduct` line. The pass snapshots the Product, optional Variant and
-quantity purchased, so a Kanga or other collected Product remains visible even
-if its catalogue configuration later changes.
+physical unit on a `BookingProduct` line. Each pass snapshots the Product,
+optional Variant and its unit position (for example, Kanga 1 of 2), so units may
+be handed out and collected independently even if catalogue configuration later
+changes.
 
 Product Collection Passes are deliberately separate from admission Tickets:
 
@@ -371,11 +372,12 @@ Product Collection Passes are deliberately separate from admission Tickets:
 - a Product Collection Pass always reports `grantsAdmission: false` and never
   changes Session admission capacity.
 
-The pass quantity represents the whole purchased BookingProduct line. Product
-availability and inventory remain reserved by the existing Booking engine;
-collection records fulfilment evidence only. Standalone merchandise
-`RetailSale` records remain a separate commerce path and do not create
-admission Tickets.
+Product availability and inventory remain reserved by the existing Booking
+engine; per-unit collection records fulfilment evidence only. Grouped passes
+issued before the per-unit refinement retain their original line quantity as
+historical authority and are not duplicated. Standalone merchandise
+`RetailSale` records remain a separate commerce path and do not create admission
+Tickets.
 
 ### Idempotency
 

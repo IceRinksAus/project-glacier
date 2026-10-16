@@ -81,7 +81,10 @@ export default function ConfirmationPage({
                 >
                   <div>
                     <p className="font-bold">
-                      {pass.productName} × {pass.quantity}
+                      {pass.productName}
+                      {pass.unitNumber && pass.unitCount
+                        ? ` ${pass.unitNumber} of ${pass.unitCount}`
+                        : ` × ${pass.quantity}`}
                     </p>
                     {pass.variantName ? (
                       <p className="mt-1 text-sm text-slate-600">

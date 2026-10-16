@@ -1128,7 +1128,7 @@ model BookingProduct {
   productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
 
   rescheduleProductAllocations BookingRescheduleProductAllocation[]
-  collectionPass               ProductCollectionPass?
+  collectionPasses             ProductCollectionPass[]
 
   quantity  Int
   unitPrice Decimal @db.Decimal(10, 2)
@@ -1169,6 +1169,8 @@ model ProductCollectionPass {
   productNameSnapshot String
   variantNameSnapshot String?
   quantity            Int
+  unitNumber          Int?
+  unitCountSnapshot   Int?
 
   issuedAt DateTime @default(now())
 
@@ -1181,6 +1183,7 @@ model ProductCollectionPass {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([bookingProductId, unitNumber])
   @@index([bookingId])
   @@index([productId])
   @@index([status])

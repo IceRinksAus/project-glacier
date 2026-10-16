@@ -207,6 +207,8 @@ export class PublicPaymentService {
             productNameSnapshot: true,
             variantNameSnapshot: true,
             quantity: true,
+            unitNumber: true,
+            unitCountSnapshot: true,
             collectedAt: true,
           },
           orderBy: { issuedAt: 'asc' },
@@ -271,6 +273,8 @@ export class PublicPaymentService {
             productName: pass.productNameSnapshot,
             variantName: pass.variantNameSnapshot,
             quantity: pass.quantity,
+            unitNumber: pass.unitNumber,
+            unitCount: pass.unitCountSnapshot,
             collectedAt: pass.collectedAt,
             grantsAdmission: false,
           }))

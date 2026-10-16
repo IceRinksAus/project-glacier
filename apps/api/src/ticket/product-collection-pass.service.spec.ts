@@ -13,6 +13,8 @@ describe('ProductCollectionPassService', () => {
     productNameSnapshot: 'Kanga',
     variantNameSnapshot: null,
     quantity: 1,
+    unitNumber: 1,
+    unitCountSnapshot: 2,
     issuedAt: new Date('2027-07-01T00:00:00.000Z'),
     collectedAt: null,
     booking: {
@@ -67,7 +69,7 @@ describe('ProductCollectionPassService', () => {
     );
   });
 
-  it('issues one signed non-admission pass for each paid Booking Product line', async () => {
+  it('issues one signed non-admission pass for each paid Product unit', async () => {
     prisma.booking.findUnique.mockResolvedValue({
       id: 'booking-1',
       status: 'CONFIRMED',
@@ -79,16 +81,16 @@ describe('ProductCollectionPassService', () => {
           quantity: 2,
           product: { name: 'Kanga' },
           productVariant: null,
-          collectionPass: null,
+          collectionPasses: [],
         },
       ],
     });
-    prisma.productCollectionPass.createMany.mockResolvedValue({ count: 1 });
+    prisma.productCollectionPass.createMany.mockResolvedValue({ count: 2 });
 
     await service.issueForBooking('booking-1');
 
     expect(prisma.productCollectionPass.createMany).toHaveBeenCalledWith({
-      data: [
+      data: expect.arrayContaining([
         expect.objectContaining({
           id: expect.any(String),
           passNumber: expect.stringMatching(/^PRD-\d+-[A-F0-9]{6}$/),
@@ -96,11 +98,19 @@ describe('ProductCollectionPassService', () => {
           bookingProductId: 'booking-product-1',
           productId: 'product-kanga',
           productNameSnapshot: 'Kanga',
-          quantity: 2,
+          quantity: 1,
+          unitNumber: 1,
+          unitCountSnapshot: 2,
           credentialSelector: 'b'.repeat(32),
           credentialKeyId: 'local-v1',
         }),
-      ],
+        expect.objectContaining({
+          bookingProductId: 'booking-product-1',
+          quantity: 1,
+          unitNumber: 2,
+          unitCountSnapshot: 2,
+        }),
+      ]),
       skipDuplicates: true,
     });
   });
@@ -117,7 +127,62 @@ describe('ProductCollectionPassService', () => {
           quantity: 1,
           product: { name: 'Kanga' },
           productVariant: null,
-          collectionPass: { id: 'pass-1' },
+          collectionPasses: [{ id: 'pass-1', unitNumber: 1 }],
+        },
+      ],
+    });
+
+    await service.issueForBooking('booking-1');
+
+    expect(prisma.productCollectionPass.createMany).not.toHaveBeenCalled();
+  });
+
+  it('issues only a missing unit when fulfilment resumes after a partial write', async () => {
+    prisma.booking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      products: [
+        {
+          id: 'booking-product-1',
+          productId: 'product-kanga',
+          quantity: 2,
+          product: { name: 'Kanga' },
+          productVariant: null,
+          collectionPasses: [{ id: 'pass-1', unitNumber: 1 }],
+        },
+      ],
+    });
+    prisma.productCollectionPass.createMany.mockResolvedValue({ count: 1 });
+
+    await service.issueForBooking('booking-1');
+
+    expect(prisma.productCollectionPass.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          bookingProductId: 'booking-product-1',
+          quantity: 1,
+          unitNumber: 2,
+          unitCountSnapshot: 2,
+        }),
+      ],
+      skipDuplicates: true,
+    });
+  });
+
+  it('preserves a legacy grouped pass without duplicating collection authority', async () => {
+    prisma.booking.findUnique.mockResolvedValue({
+      id: 'booking-1',
+      status: 'CONFIRMED',
+      paymentStatus: 'PAID',
+      products: [
+        {
+          id: 'booking-product-1',
+          productId: 'product-kanga',
+          quantity: 2,
+          product: { name: 'Kanga' },
+          productVariant: null,
+          collectionPasses: [{ id: 'legacy-pass', unitNumber: null }],
         },
       ],
     });

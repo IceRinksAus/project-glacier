@@ -108,6 +108,8 @@ describe("PosTicketService", () => {
       productName: "Kanga",
       variantName: null,
       quantity: 1,
+      unitNumber: 1,
+      unitCount: 2,
       bookingNumber: "PG-1234",
       event: { name: "Test Event" },
       session: { name: "10am" },
@@ -120,6 +122,8 @@ describe("PosTicketService", () => {
       productName: "Kanga",
       variantName: null,
       quantity: 1,
+      unitNumber: 1,
+      unitCount: 2,
       bookingNumber: "PG-1234",
       event: { name: "Test Event" },
       session: { name: "10am" },
@@ -133,7 +137,7 @@ describe("PosTicketService", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Look up" }));
 
-    expect(await screen.findByText("Kanga × 1")).toBeInTheDocument();
+    expect(await screen.findByText("Kanga 1 of 2")).toBeInTheDocument();
     expect(lookupProductPass).toHaveBeenCalledWith(
       "event-1",
       "PRD-1234-ABCDEF",

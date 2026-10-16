@@ -433,7 +433,7 @@ export default function PosPage() {
           <p className="mt-2 text-muted-foreground">
             {saleMode === "TICKETS"
               ? "Sell Tickets and Products together, or either one on its own."
-              : "Look up a pre-purchased Ticket, then admit it only after confirmation."}
+              : "Look up a Booking, Ticket or Product Pass, then deliberately admit or collect it."}
           </p>
           <Link
             href="/pos/sales"
@@ -462,9 +462,11 @@ export default function PosPage() {
             className={`rounded-lg border p-4 text-left ${saleMode === "TICKET_SERVICE" ? "border-primary bg-primary/5" : ""}`}
             onClick={() => setSaleMode("TICKET_SERVICE")}
           >
-            <span className="font-semibold">Scan existing Ticket</span>
+            <span className="font-semibold">
+              Scan or look up Ticket/Product Pass
+            </span>
             <span className="mt-1 block text-sm text-muted-foreground">
-              Read-only lookup, then deliberate admission
+              Read-only lookup, then deliberate admission or collection
             </span>
           </button>
         </section>
@@ -959,7 +961,10 @@ export default function PosPage() {
                   target="_blank"
                   className="block rounded-lg border border-cyan-300 bg-white p-4 font-semibold underline-offset-4 hover:underline"
                 >
-                  {pass.passNumber} · {pass.productName} × {pass.quantity}
+                  {pass.passNumber} · {pass.productName}
+                  {pass.unitNumber && pass.unitCount
+                    ? ` ${pass.unitNumber} of ${pass.unitCount}`
+                    : ` × ${pass.quantity}`}
                   <span className="mt-1 block text-xs font-medium text-amber-800">
                     Product collection only — no rink admission
                   </span>

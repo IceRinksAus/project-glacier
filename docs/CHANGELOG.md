@@ -10,6 +10,11 @@
   attributable staff evidence and safe already-collected handling.
 - Preserved admission Ticket, Session capacity, Product availability,
   inventory, Payment and tenant boundaries.
+- Refined new issuance to create one independently collectible QR pass per
+  physical Product unit (for example Kanga 1 of 2 and Kanga 2 of 2), while
+  retaining previously issued grouped passes as historical evidence.
+- Renamed the POS lookup presentation to make its shared Booking, Ticket and
+  Product Pass scanning capability explicit.
 
 ## 2026-10-09 — Ticket age and companion enforcement
 

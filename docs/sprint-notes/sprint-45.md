@@ -175,4 +175,14 @@ remained healthy. Repeating the gates with explicit local connectivity produced
 the successful evidence above; no PostgreSQL defect or data recovery action was
 required.
 
+During organiser acceptance, a quantity-two Kanga purchase correctly received
+one grouped pass labelled `2 × Kanga`. Operationally, however, two physical
+Kangas may be handed out separately. New purchases now receive one independently
+collectible pass per unit, labelled `Kanga 1 of 2` and `Kanga 2 of 2`. Existing
+grouped passes remain valid historical collection evidence and are never
+silently duplicated. The POS service wording now explicitly covers Booking,
+Ticket and Product Pass lookup. This refinement adds the 59th additive Prisma
+migration without changing Product reservation, inventory or admission
+capacity authority.
+
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

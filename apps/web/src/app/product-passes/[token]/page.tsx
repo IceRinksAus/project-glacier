@@ -45,7 +45,10 @@ export default function ProductCollectionPassPage({
               Product Collection Pass
             </p>
             <h1 className="mt-2 text-3xl font-bold">
-              {pass.productName} × {pass.quantity}
+              {pass.productName}
+              {pass.unitNumber && pass.unitCount
+                ? ` ${pass.unitNumber} of ${pass.unitCount}`
+                : ` × ${pass.quantity}`}
             </h1>
             {pass.variantName ? (
               <p className="mt-2 text-slate-600">{pass.variantName}</p>
@@ -69,6 +72,14 @@ export default function ProductCollectionPassPage({
                 <dt className="text-slate-500">Pass</dt>
                 <dd className="font-mono">{pass.passNumber}</dd>
               </div>
+              {pass.unitNumber && pass.unitCount ? (
+                <div>
+                  <dt className="text-slate-500">Collection unit</dt>
+                  <dd className="font-semibold">
+                    {pass.unitNumber} of {pass.unitCount}
+                  </dd>
+                </div>
+              ) : null}
               <div>
                 <dt className="text-slate-500">Status</dt>
                 <dd className="font-semibold">{pass.status}</dd>

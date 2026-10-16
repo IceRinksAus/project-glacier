@@ -30,6 +30,8 @@ describe("ProductCollectionPassPage", () => {
       productName: "Kanga",
       variantName: null,
       quantity: 1,
+      unitNumber: 1,
+      unitCount: 2,
       issuedAt: "2027-07-01T00:00:00.000Z",
       collectedAt: null,
       bookingNumber: "PG-1",
@@ -50,7 +52,10 @@ describe("ProductCollectionPassPage", () => {
       );
     });
 
-    expect(await screen.findByRole("heading", { name: "Kanga × 1" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Kanga 1 of 2" }),
+    ).toBeVisible();
+    expect(screen.getByText("Collection unit")).toBeVisible();
     expect(screen.getByText(/does not grant rink entry/)).toBeVisible();
     expect(
       screen.getByRole("img", { name: "QR code for Kanga collection" }),
