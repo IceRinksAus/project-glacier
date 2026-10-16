@@ -1,6 +1,6 @@
 "use client";
 
-import { PackageCheck } from "lucide-react";
+import { PackageCheck, Printer } from "lucide-react";
 import { use, useEffect, useState } from "react";
 
 import {
@@ -34,8 +34,8 @@ export default function ProductCollectionPassPage({
   }, [token]);
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950">
-      <section className="mx-auto max-w-xl rounded-3xl border bg-white p-6 shadow-sm sm:p-9">
+    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-950 print:bg-white print:p-0">
+      <section className="mx-auto max-w-xl rounded-3xl border bg-white p-6 shadow-sm print:max-w-none print:rounded-none print:shadow-none sm:p-9">
         {error ? <p role="alert">{error}</p> : null}
         {!pass && !error ? <p>Loading Product Collection Pass…</p> : null}
         {pass ? (
@@ -97,6 +97,14 @@ export default function ProductCollectionPassPage({
               This pass is for Product collection only. It does not grant rink
               entry.
             </p>
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-bold text-white print:hidden"
+            >
+              <Printer className="size-5" />
+              Print / Save PDF
+            </button>
           </>
         ) : null}
       </section>

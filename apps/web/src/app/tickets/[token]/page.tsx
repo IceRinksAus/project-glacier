@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Clock } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Printer } from "lucide-react";
 import { use, useEffect, useState } from "react";
 
 import {
@@ -58,8 +58,8 @@ export default function PublicTicketPage({
     .join(" ");
 
   return (
-    <main className="min-h-screen bg-slate-100 px-5 py-10 text-slate-950">
-      <article className="mx-auto max-w-lg overflow-hidden rounded-3xl border bg-white shadow-xl">
+    <main className="min-h-screen bg-slate-100 px-5 py-10 text-slate-950 print:bg-white print:p-0">
+      <article className="mx-auto max-w-lg overflow-hidden rounded-3xl border bg-white shadow-xl print:max-w-none print:rounded-none print:shadow-none">
         <header className="bg-slate-950 p-7 text-white">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] opacity-70">
             Glacier Ticket
@@ -132,6 +132,14 @@ export default function PublicTicketPage({
               private.
             </p>
           ) : null}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-bold text-white print:hidden"
+          >
+            <Printer className="size-5" />
+            Print / Save PDF
+          </button>
         </div>
       </article>
     </main>

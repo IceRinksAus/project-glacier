@@ -194,4 +194,13 @@ requirement but no companion-Ticket Rule. Its Young Child Ticket is now
 explicitly configured to require at least one Adult Ticket in the same Booking;
 the shared rule authority remains responsible for preview and final rejection.
 
+Customers can now print or use the browser's Save as PDF action from every
+admission Ticket and Product Collection Pass. Print presentation removes the
+screen-only control and surrounding page treatment while retaining the QR,
+credential identity, Event and relevant Session information. Glacier does not
+yet send Booking or Ticket email: delivery remains future work until an
+approved provider, controlled sender identity, delivery state, resend history
+and communication audit design exist. A combined Booking-level pass pack is a
+related future usability enhancement rather than part of this focused slice.
+
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

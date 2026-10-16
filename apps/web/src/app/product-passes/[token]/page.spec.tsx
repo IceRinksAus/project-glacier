@@ -1,4 +1,5 @@
 import { act, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { getProductCollectionPass, productCollectionPassQrUrl } = vi.hoisted(
@@ -20,7 +21,10 @@ vi.mock("@/services/public-booking.service", () => ({
 import ProductCollectionPassPage from "./page";
 
 describe("ProductCollectionPassPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.print = vi.fn();
+  });
 
   it("shows a paid Product credential without presenting it as admission", async () => {
     getProductCollectionPass.mockResolvedValue({
@@ -60,6 +64,11 @@ describe("ProductCollectionPassPage", () => {
     expect(
       screen.getByRole("img", { name: "QR code for Kanga collection" }),
     ).toHaveAttribute("src", "http://localhost:3000/product-pass-qr");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Print / Save PDF" }),
+    );
+    expect(window.print).toHaveBeenCalled();
   });
 
   it("hides the QR code after collection", async () => {

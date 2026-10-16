@@ -18,6 +18,10 @@
 - Kept the paid Booking confirmation journey open when customers view an
   admission Ticket or Product Collection Pass, preventing browser-back from
   losing the in-memory confirmation context.
+- Added print-ready presentation and a **Print / Save PDF** action to admission
+  Tickets and Product Collection Passes.
+- Kept customer email delivery explicitly deferred until Glacier has an
+  approved provider, sender identity and delivery-evidence design.
 
 ## 2026-10-09 — Ticket age and companion enforcement
 
