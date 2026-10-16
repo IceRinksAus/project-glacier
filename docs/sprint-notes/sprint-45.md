@@ -1,6 +1,7 @@
 # Sprint 45 — Public Event Homepage and Content Structure
 
-**Status:** Implementation and complete local verification finished; organiser walkthrough remains
+**Status:** Complete locally, including organiser acceptance remediation and
+full verification
 
 ## Objective
 
@@ -125,9 +126,6 @@ Ticket is configured for ages 6–17. Booking creation now enforces each Ticket
 Type's minimum and maximum age authoritatively for online and walk-up sales, and
 the public participant step explains an invalid age immediately. Focused API
 tests (30/30), focused web tests (7/7), the API build and web type-check pass.
-The web production build remains to be repeated in the complete release gate;
-the isolated verification environment prevented its build worker from binding
-the temporary local port it requires.
 
 Bathurst currently has Adult (18–99) and Child (6–17) Ticket Types, but no Young
 Child Ticket and no active Event Rules. A four-year-old can therefore no longer
@@ -158,9 +156,23 @@ state, and the presentation explicitly cannot grant admission or alter Session
 admission capacity. This adds the 58th Prisma migration and expands the restore
 set to 27 critical tables.
 
-Focused Product Collection Pass, Ticket credential, Ticket issuance, public
-payment, POS API and web tests pass. Final complete release, migration replay,
-isolation, restore and tracked-secret evidence will be recorded after the
-acceptance-remediation slice is committed.
+Final acceptance-remediation verification completed 17 October 2026:
+
+- API: 98 suites / 730 tests passed;
+- web: 53 files / 164 tests passed;
+- API and web production builds passed;
+- configured database: 58 migrations found and current;
+- disposable database: all 58 committed migrations replayed successfully;
+- tenant, role, Event-assignment and MFA isolation: 5/5 checks passed;
+- isolated PostgreSQL backup/restore: 27 critical tables matched, 0.50 MiB
+  archive, 1.08-second backup and 1.99-second restore;
+- tracked-secret scan: 744 tracked files / 6 rules passed; and
+- complete local release gate passed.
+
+The initial database checks were misleadingly blocked by the execution
+sandbox's local-network restriction even though the PostgreSQL launch daemon
+remained healthy. Repeating the gates with explicit local connectivity produced
+the successful evidence above; no PostgreSQL defect or data recovery action was
+required.
 
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.
