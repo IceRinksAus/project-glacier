@@ -203,4 +203,17 @@ approved provider, controlled sender identity, delivery state, resend history
 and communication audit design exist. A combined Booking-level pass pack is a
 related future usability enhancement rather than part of this focused slice.
 
+The complete local closeout gate was repeated after the navigation and
+print-ready pass refinements on 17 October 2026:
+
+- API: 98 suites / 732 tests passed;
+- web: 54 files / 166 tests passed;
+- API and web production builds passed;
+- configured database: 59 migrations found and current;
+- disposable database: all 59 committed migrations replayed successfully;
+- tenant, role, Event-assignment and MFA isolation: 5/5 checks passed;
+- isolated PostgreSQL backup/restore: 27 critical tables matched, 0.50 MiB
+  archive, 0.79-second backup and 1.83-second restore; and
+- tracked-secret scan: 746 tracked files / 6 rules passed.
+
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.
