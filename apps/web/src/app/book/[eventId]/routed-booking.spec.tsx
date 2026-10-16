@@ -124,6 +124,10 @@ describe("routed public booking pages", () => {
   });
 
   it("opens issued Tickets and Product Passes without replacing confirmation", async () => {
+    const user = userEvent.setup();
+    const openSpy = vi
+      .spyOn(window, "open")
+      .mockImplementation(() => null);
     Object.assign(journey, {
       bookingStatus: {
         status: "CONFIRMED",
@@ -154,14 +158,24 @@ describe("routed public booking pages", () => {
 
     await renderRoute(<ConfirmationPage params={params} />);
 
-    expect(screen.getByRole("link", { name: /View Ticket/ })).toHaveAttribute(
+    const ticketLink = screen.getByRole("link", { name: /View Ticket/ });
+    const productPassLink = screen.getByRole("link", { name: /View pass/ });
+
+    expect(ticketLink).toHaveAttribute(
       "target",
       "_blank",
     );
-    expect(screen.getByRole("link", { name: /View pass/ })).toHaveAttribute(
-      "target",
+    expect(productPassLink).toHaveAttribute("target", "_blank");
+
+    await user.click(productPassLink);
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/product-passes/product-token"),
       "_blank",
+      "noopener,noreferrer",
     );
+    expect(mocks.push).not.toHaveBeenCalled();
+    expect(mocks.replace).not.toHaveBeenCalled();
   });
 
   it("keeps the customer on Participants when authoritative Rules reject the party", async () => {

@@ -3,11 +3,16 @@
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useEffect } from "react";
+import { type MouseEvent, use, useEffect } from "react";
 
 import { useBookingJourney } from "@/components/booking/BookingJourneyProvider";
 import { BookingJourneyShell } from "@/components/booking/BookingJourneyShell";
 import { FlexibleTicketRequestCustomerPanel } from "@/components/flexible-ticket/FlexibleTicketRequestCustomerPanel";
+
+function openIssuedItemInNewTab(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  window.open(event.currentTarget.href, "_blank", "noopener,noreferrer");
+}
 
 export default function ConfirmationPage({
   params,
@@ -45,11 +50,12 @@ export default function ConfirmationPage({
 
         <div className="mt-8 grid gap-3">
           {bookingStatus.tickets.map((ticket) => (
-            <Link
+            <a
               key={ticket.ticketNumber}
               href={`/tickets/${ticket.secureToken}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={openIssuedItemInNewTab}
               className="flex items-center justify-between rounded-2xl border p-5 transition hover:bg-slate-50"
             >
               <div>
@@ -63,7 +69,7 @@ export default function ConfirmationPage({
               <span className="inline-flex items-center gap-2 font-semibold">
                 View Ticket <ExternalLink className="size-4" />
               </span>
-            </Link>
+            </a>
           ))}
         </div>
 
@@ -76,11 +82,12 @@ export default function ConfirmationPage({
             </p>
             <div className="mt-4 grid gap-3">
               {(bookingStatus.productCollectionPasses ?? []).map((pass) => (
-                <Link
+                <a
                   key={pass.passNumber}
                   href={`/product-passes/${pass.secureToken}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={openIssuedItemInNewTab}
                   className="flex items-center justify-between rounded-xl border border-cyan-200 bg-white p-4 transition hover:bg-cyan-100"
                 >
                   <div>
@@ -102,7 +109,7 @@ export default function ConfirmationPage({
                   <span className="inline-flex items-center gap-2 font-semibold">
                     View pass <ExternalLink className="size-4" />
                   </span>
-                </Link>
+                </a>
               ))}
             </div>
           </section>
