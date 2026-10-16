@@ -216,4 +216,6 @@ print-ready pass refinements on 17 October 2026:
   archive, 0.79-second backup and 1.83-second restore; and
 - tracked-secret scan: 746 tracked files / 6 rules passed.
 
-All changes remain local on `main`. Nothing from Sprint 45 has been pushed.
+Sprint 45 and its organiser-acceptance refinements are complete, verified and
+pushed to `origin/main`. The final release evidence was recorded at `ab54bcd`;
+this closeout wording is the only subsequent documentation change.
