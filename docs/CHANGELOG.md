@@ -15,6 +15,9 @@
   retaining previously issued grouped passes as historical evidence.
 - Renamed the POS lookup presentation to make its shared Booking, Ticket and
   Product Pass scanning capability explicit.
+- Kept the paid Booking confirmation journey open when customers view an
+  admission Ticket or Product Collection Pass, preventing browser-back from
+  losing the in-memory confirmation context.
 
 ## 2026-10-09 — Ticket age and companion enforcement
 

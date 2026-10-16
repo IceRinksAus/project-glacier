@@ -59,6 +59,7 @@ import ParticipantsPage from "./participants/page";
 import PaymentPage from "./payment/page";
 import ReviewPage from "./review/page";
 import TicketsPage from "./tickets/page";
+import ConfirmationPage from "./confirmation/page";
 
 const params = Promise.resolve({ eventId: "event-1" });
 
@@ -120,6 +121,47 @@ describe("routed public booking pages", () => {
         "Kanga skating aids and other add-ons can be added on the next page.",
       ),
     ).toBeVisible();
+  });
+
+  it("opens issued Tickets and Product Passes without replacing confirmation", async () => {
+    Object.assign(journey, {
+      bookingStatus: {
+        status: "CONFIRMED",
+        paymentStatus: "PAID",
+        bookingNumber: "PG-1",
+        event: { name: "Test Event" },
+        tickets: [
+          {
+            ticketNumber: "TKT-1",
+            secureToken: "ticket-token",
+            participant: { firstName: "Alex", lastName: "Test" },
+          },
+        ],
+        productCollectionPasses: [
+          {
+            passNumber: "PRD-1",
+            secureToken: "product-token",
+            productName: "Kanga",
+            variantName: null,
+            quantity: 1,
+            unitNumber: 1,
+            unitCount: 1,
+          },
+        ],
+        flexibleTicketEntitlements: [],
+      },
+    });
+
+    await renderRoute(<ConfirmationPage params={params} />);
+
+    expect(screen.getByRole("link", { name: /View Ticket/ })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+    expect(screen.getByRole("link", { name: /View pass/ })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
   });
 
   it("keeps the customer on Participants when authoritative Rules reject the party", async () => {

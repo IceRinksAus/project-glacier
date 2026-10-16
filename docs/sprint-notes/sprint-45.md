@@ -185,4 +185,13 @@ Ticket and Product Pass lookup. This refinement adds the 59th additive Prisma
 migration without changing Product reservation, inventory or admission
 capacity authority.
 
+The next acceptance purchase exposed two configuration/journey issues. Viewing
+an issued Product Pass replaced the routed Booking journey, so browser-back
+remounted an empty journey and correctly returned to Date selection. Issued
+Ticket and Product Pass links now open in a separate tab, preserving the paid
+confirmation page. Bathurst's local Event data also contained the active Kanga
+requirement but no companion-Ticket Rule. Its Young Child Ticket is now
+explicitly configured to require at least one Adult Ticket in the same Booking;
+the shared rule authority remains responsible for preview and final rejection.
+
 All changes remain local on `main`. Nothing from Sprint 45 has been pushed.

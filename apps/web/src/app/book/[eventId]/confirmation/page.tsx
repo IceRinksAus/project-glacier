@@ -48,6 +48,8 @@ export default function ConfirmationPage({
             <Link
               key={ticket.ticketNumber}
               href={`/tickets/${ticket.secureToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center justify-between rounded-2xl border p-5 transition hover:bg-slate-50"
             >
               <div>
@@ -77,6 +79,8 @@ export default function ConfirmationPage({
                 <Link
                   key={pass.passNumber}
                   href={`/product-passes/${pass.secureToken}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-between rounded-xl border border-cyan-200 bg-white p-4 transition hover:bg-cyan-100"
                 >
                   <div>
